@@ -1,6 +1,8 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System.IO;
 
+
+//Main 씬, 결정 씬, 전투 씬에 각각 저장이 될 수 있게 Main 씬에서 부터 메모리에 올라가고 싱글톤으로 구성하면 좋을 듯?
 public class JsonManager : IJsonSerializer
 {
     public T LoadData<T>(string fileName)
