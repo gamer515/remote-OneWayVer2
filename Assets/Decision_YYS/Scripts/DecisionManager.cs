@@ -21,8 +21,6 @@ public class DecisionManager : MonoBehaviour
 
     private GameState currentState;
 
-    private IJsonSerializer jsonManager;
-
     // [추가] 저장된 진행도 및 스탯을 관리하는 클래스로 구분해야 함.
     #region Data
     ScenarioData scenarioData;
@@ -187,8 +185,7 @@ public class DecisionManager : MonoBehaviour
     // 기존 Start() 대신 코루틴 사용
     private IEnumerator Start()
     {
-        jsonManager = new JsonManager();
-        currentOmnibus = jsonManager.LoadData<OmnibusData>("Omnibus_01");
+        currentOmnibus = JsonManager.Instance.LoadData<OmnibusData>("Omnibus_01");
 
         // 문제 1 해결: AI가 아직 스토리를 만들고 있다면 대기
         if (AIManager.Instance != null && AIManager.Instance.isAiProcessing)
@@ -294,12 +291,12 @@ public class DecisionManager : MonoBehaviour
 
         // [테스트 로직] AI가 수정한 NewStory 파일이 있는지 먼저 확인합니다.
         string aiFileName = "NewStory_" + fullPath.Replace("/", "_");
-        scenarioData = jsonManager.LoadData<ScenarioData>(aiFileName);
+        scenarioData = JsonManager.Instance.LoadData<ScenarioData>(aiFileName);
 
         // AI 수정본이 없다면 원본 데이터를 로드합니다.
         if (scenarioData == null || scenarioData.MainStory == null || scenarioData.MainStory.Count == 0)
         {
-            scenarioData = jsonManager.LoadData<ScenarioData>(fullPath);
+            scenarioData = JsonManager.Instance.LoadData<ScenarioData>(fullPath);
         }
         else
         {

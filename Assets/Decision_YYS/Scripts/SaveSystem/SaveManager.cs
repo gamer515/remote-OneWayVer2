@@ -1,9 +1,25 @@
-using System.IO;
+﻿using System.IO;
 using UnityEngine;
+
 
 public class SaveManager : ISaveSystem
 {
-    // ���� ������ ��ġ�� �⺻ ���
+    //지금 singleto으로 변경을 할려고 하는데 경로가 static이 아니여서 초기화 방법 생각해봐야 함.
+
+    //private static SaveManager _instance;
+    //public static SaveManager Instance
+    //{
+    //    get
+    //    {
+    //        if (_instance == null)
+    //        {
+    //            _instance = new SaveManager();
+    //        }
+    //        return _instance;
+    //    }
+    //}
+
+    // 저장 파일이 위치할 기본 경로
     private string BasePath => Path.Combine(Application.persistentDataPath, "Saves");
 
     public SaveManager() 
@@ -19,6 +35,7 @@ public class SaveManager : ISaveSystem
         string path = Path.Combine(BasePath, $"{category}.json");
         string json = JsonUtility.ToJson(data, true);
         File.WriteAllText(path, json);
+        Debug.Log($"[SaveManager] 데이터 저장 성공: {path}");
     }
 
     public T Load<T>(string category) 
@@ -35,17 +52,17 @@ public class SaveManager : ISaveSystem
         return File.Exists(Path.Combine(BasePath, $"{category}.json"));
     }
 
-    public string[] GetAllSaveFiles() 
-    {
-        if (!Directory.Exists(BasePath)) return new string[0];
+    //public string[] GetAllSaveFiles() 
+    //{
+    //    if (!Directory.Exists(BasePath)) return new string[0];
         
-        string[] files = Directory.GetFiles(BasePath, "*.json");
-        for (int i = 0; i < files.Length; i++) 
-        {
-            files[i] = Path.GetFileNameWithoutExtension(files[i]);
-        }
-        return files;
-    }
+    //    string[] files = Directory.GetFiles(BasePath, "*.json");
+    //    for (int i = 0; i < files.Length; i++) 
+    //    {
+    //        files[i] = Path.GetFileNameWithoutExtension(files[i]);
+    //    }
+    //    return files;
+    //}
 
     public void DeleteAllSaves()
     {
@@ -53,6 +70,37 @@ public class SaveManager : ISaveSystem
         {
             Directory.Delete(BasePath, true);
             Directory.CreateDirectory(BasePath);
+        }
+    }
+
+    public T LoadData<T>(string fileName, string resourcesSubFolder = "Story_Json_Data")
+    {
+        // 1. 빌드 환경에서도 읽고 쓰기가 가능한 유저 데이터 폴더 경로
+        string savePath = Path.Combine(Application.persistentDataPath, fileName + ".json");
+
+        // 2. 만약 AI가 수정한 세이브 파일이 존재한다면, 그걸 우선적으로 읽습니다. (2회차 이상)
+        if (File.Exists(savePath))
+        {
+            string json = File.ReadAllText(savePath);
+            Debug.Log($"[JsonManager] 수정된 세이브 데이터를 불러옵니다: {fileName} (경로: {savePath})");
+            return JsonUtility.FromJson<T>(json);
+        }
+        else
+        {
+            // 3. 세이브 파일이 없다면(1회차), Resources 폴더에 있는 원본을 읽어옵니다.
+            // 파일이 Assets/Decision_YYS/Resources/Story_Json_Data/ 폴더 안에 있어야 합니다.
+            string resourcePathr = string.IsNullOrEmpty(resourcesSubFolder) ? fileName : $"{resourcesSubFolder}/{fileName}";
+
+            TextAsset textAsset = Resources.Load<TextAsset>(resourcePathr);
+
+            if (textAsset == null)
+            {
+                Debug.LogError($"[JsonManager] 원본 JSON 파일도 찾을 수 없습니다. 파일명: {resourcePathr}");
+                return default;
+            }
+
+            Debug.Log($"[JsonManager] 원본 리소스 데이터를 불러옵니다: {resourcePathr}");
+            return JsonUtility.FromJson<T>(textAsset.text);
         }
     }
 }

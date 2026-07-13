@@ -86,6 +86,7 @@ public class AIManager : MonoBehaviour
             if (request.result != UnityWebRequest.Result.Success)
             {
                 Debug.LogError($"[AI SYSTEM] API 통신 실패: {request.error}\n원본 스토리를 유지합니다.");
+                ApplyAndSave(packet, null);
                 isAiProcessing = false;
                 yield break;
             }
@@ -105,6 +106,7 @@ public class AIManager : MonoBehaviour
             catch (Exception e)
             {
                 Debug.LogError($"[AI SYSTEM] JSON 파싱 에러: {e.Message}\n원본 스토리를 유지합니다.");
+                ApplyAndSave(packet, null);
             }
         }
 
@@ -115,23 +117,29 @@ public class AIManager : MonoBehaviour
     {
         if (string.IsNullOrEmpty(packet.fileName)) return;
 
-        JsonManager jsonManager = new JsonManager();
-        ScenarioData originalData = jsonManager.LoadData<ScenarioData>(packet.fileName);
+        ScenarioData originalData = JsonManager.Instance.LoadData<ScenarioData>(packet.fileName);
         if (originalData == null || originalData.MainStory == null) return;
 
-        // 원본 데이터에 AI 수정 텍스트 덮어쓰기
-        foreach (var item in modifiedItems)
+        if(modifiedItems != null)
         {
-            var targetDialogue = originalData.MainStory.Find(d => d.id == item.id);
-            if (targetDialogue != null)
+            // 원본 데이터에 AI 수정 텍스트 덮어쓰기
+            foreach (var item in modifiedItems)
             {
-                targetDialogue.text = item.text;
-                Debug.Log($"<color=cyan>[AI System] ID {targetDialogue.id} 스토리 교체 완료</color>");
+                var targetDialogue = originalData.MainStory.Find(d => d.id == item.id);
+                if (targetDialogue != null)
+                {
+                    targetDialogue.text = item.text;
+                    Debug.Log($"<color=cyan>[AI System] ID {targetDialogue.id} 스토리 교체 완료</color>");
+                }
             }
+        }
+        else
+        {
+            Debug.LogWarning("<color=yellow>[AI System] 수정된 데이터가 없습니다. 원본 스토리를 유지합니다.</color>");
         }
 
         string saveFileName = "NewStory_" + packet.fileName.Replace("/", "_");
-        jsonManager.SaveData(originalData, saveFileName);
+        JsonManager.Instance.SaveData(originalData, saveFileName);
         Debug.Log($"<color=#f5e642><b>[AI SYSTEM] 최종 스토리 저장 완료: {saveFileName}</b></color>");
     }
 }

@@ -3,8 +3,28 @@ using System.IO;
 
 
 //Main 씬, 결정 씬, 전투 씬에 각각 저장이 될 수 있게 Main 씬에서 부터 메모리에 올라가고 싱글톤으로 구성하면 좋을 듯?
-public class JsonManager : IJsonSerializer
+public class JsonManager
 {
+    // Saves 파일에는 진행도, 전투, 결정 이렇게 세개의 파일로 나누어서 각각 저장.
+    // 결정된 이야기의 경우는 게임 플레이가 진행이 끝나면 _1 이렇게 나누어서 회차별로 저장.
+    // Main 씬에서 그걸 토대로 삭제 및 불어오기 기능 구현.
+
+    private static JsonManager _instance;
+
+    public static JsonManager Instance
+    {
+        get
+        {
+            if (_instance == null)
+            {
+                _instance = new JsonManager();
+            }
+            return _instance;
+        }
+    }
+
+    private JsonManager() { }
+
     public T LoadData<T>(string fileName)
     {
         // 1. 빌드 환경에서도 읽고 쓰기가 가능한 유저 데이터 폴더 경로
