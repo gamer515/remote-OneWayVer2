@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
 [System.Serializable]
 public class ChapterResult
@@ -11,6 +11,7 @@ public class ChapterResult
 [System.Serializable]
 public class GameProgress 
 {
+    public int bookmarkIndex;
     public int chapterIndex;
     public int episodeIndex;
     public int storyIndex;

@@ -64,7 +64,7 @@ public class DecisionManager : MonoBehaviour
     private void Awake()
     {
         currentState = GameState.ShowingStory;
-        saveDataManager = new SaveDataManager(new SaveManager());
+        saveDataManager = new SaveDataManager();
     }
 
     private void SpawnPlayer()
@@ -185,15 +185,15 @@ public class DecisionManager : MonoBehaviour
     // 기존 Start() 대신 코루틴 사용
     private IEnumerator Start()
     {
-        currentOmnibus = JsonManager.Instance.LoadData<OmnibusData>("Omnibus_01");
+        currentOmnibus = SaveManager.Instance.LoadData<OmnibusData>("Omnibus_01");
 
         // 문제 1 해결: AI가 아직 스토리를 만들고 있다면 대기
-        if (AIManager.Instance != null && AIManager.Instance.isAiProcessing)
+        if (AIAPIClient.Instance != null && AIAPIClient.Instance.isAiProcessing)
         {
             Debug.Log("[DecisionManager] AI 스토리를 기다리는 중...");
             // TODO: 여기에 "스토리 생성 중..." 같은 로딩 UI나 패널을 켜는 코드를 추가하면 더 좋아.
 
-            yield return new WaitUntil(() => !AIManager.Instance.isAiProcessing);
+            yield return new WaitUntil(() => !AIAPIClient.Instance.isAiProcessing);
 
             // TODO: 로딩 UI 비활성화
         }
@@ -291,12 +291,12 @@ public class DecisionManager : MonoBehaviour
 
         // [테스트 로직] AI가 수정한 NewStory 파일이 있는지 먼저 확인합니다.
         string aiFileName = "NewStory_" + fullPath.Replace("/", "_");
-        scenarioData = JsonManager.Instance.LoadData<ScenarioData>(aiFileName);
+        scenarioData = SaveManager.Instance.LoadData<ScenarioData>(aiFileName);
 
         // AI 수정본이 없다면 원본 데이터를 로드합니다.
         if (scenarioData == null || scenarioData.MainStory == null || scenarioData.MainStory.Count == 0)
         {
-            scenarioData = JsonManager.Instance.LoadData<ScenarioData>(fullPath);
+            scenarioData = SaveManager.Instance.LoadData<ScenarioData>(fullPath);
         }
         else
         {

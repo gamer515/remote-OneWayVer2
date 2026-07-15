@@ -5,20 +5,20 @@ using System.Text;
 using System.Collections;
 using System.Collections.Generic;
 
-public class AIManager : MonoBehaviour
+public class AIAPIClient : MonoBehaviour
 {
-    private static AIManager _instance;
-    public static AIManager Instance
+    private static AIAPIClient _instance;
+    public static AIAPIClient Instance
     {
         get
         {
             if (_instance == null)
             {
-                _instance = FindFirstObjectByType<AIManager>();
+                _instance = FindFirstObjectByType<AIAPIClient>();
                 if (_instance == null)
                 {
-                    GameObject go = new GameObject("AIManager");
-                    _instance = go.AddComponent<AIManager>();
+                    GameObject go = new GameObject("AIAPIClient");
+                    _instance = go.AddComponent<AIAPIClient>();
                     DontDestroyOnLoad(go);
                 }
             }
@@ -117,7 +117,7 @@ public class AIManager : MonoBehaviour
     {
         if (string.IsNullOrEmpty(packet.fileName)) return;
 
-        ScenarioData originalData = JsonManager.Instance.LoadData<ScenarioData>(packet.fileName);
+        ScenarioData originalData = SaveManager.Instance.LoadData<ScenarioData>(packet.fileName);
         if (originalData == null || originalData.MainStory == null) return;
 
         if(modifiedItems != null)
@@ -139,7 +139,7 @@ public class AIManager : MonoBehaviour
         }
 
         string saveFileName = "NewStory_" + packet.fileName.Replace("/", "_");
-        JsonManager.Instance.SaveData(originalData, saveFileName);
+        SaveManager.Instance.Save(saveFileName, originalData);
         Debug.Log($"<color=#f5e642><b>[AI SYSTEM] 최종 스토리 저장 완료: {saveFileName}</b></color>");
     }
 }
