@@ -48,6 +48,7 @@ public class DecisionManager : MonoBehaviour
     [SerializeField] private StoryRelayManager relayManager;
     [SerializeField] private GameObject playerViewUI; 
     
+    // 맵 관련 클래스랑 구분.
     private bool isPlayerViewActive = false;
     public bool IsPlayerViewActive => isPlayerViewActive; // 조이스틱에서 참조하는 프로퍼티
 
@@ -67,6 +68,7 @@ public class DecisionManager : MonoBehaviour
         saveDataManager = new SaveDataManager();
     }
 
+    // 맵에서 플레이어 이동 관련 클래스 구분.
     private void SpawnPlayer()
     {
         if (playerInstance == null && playerPrefab != null)
@@ -118,6 +120,7 @@ public class DecisionManager : MonoBehaviour
         playerInstance.SetTargetZ(targetZ);
     }
 
+    // 이렇게 하면 statContainer에서 굳이 해당 클래스를 참조할 필요가 없겠다.
     private void OnEnable()
     {
         if (statContainer != null)
@@ -429,7 +432,9 @@ public class DecisionManager : MonoBehaviour
 
     public void ConfirmChoice(int gear)
     {
-        if (isPlayerViewActive) return; // 플레이어 시점일 때는 선택 무시
+        // 플레이어 시점일 때는 선택 무시
+        if (isPlayerViewActive) return; 
+
         if (currentState ==  GameState.ShowingStory)
         {
             OnScreenClicked();

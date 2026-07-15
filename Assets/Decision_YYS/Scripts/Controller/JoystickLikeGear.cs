@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.UI;
 
 public class JoystickLikeGear : MonoBehaviour
@@ -33,6 +33,7 @@ public class JoystickLikeGear : MonoBehaviour
     [SerializeField] private float slotWidth = 60f;
     [SerializeField] private float smoothTime = 0.08f;     
 
+    //이벤트 함수로 decisionManager에 있는 함수를 넘겨 줄까?
     [SerializeField] DecisionManager decisionManager;
     [SerializeField] private DynamicFaceController faceController;
 
@@ -40,7 +41,29 @@ public class JoystickLikeGear : MonoBehaviour
     private Vector2 currentVelocity;
     private int currentGearSlot = 0; 
 
-    public int CurrentGear => currentGearSlot;
+    //public int CurrentGear => currentGearSlot;
+    private void Update()
+    {
+        if (joystick_Button == null || pivot == null) return;
+
+        HandleSelectionInput();
+        CheckGearState();
+        HandleMouseProximity();
+    }
+
+    private void LateUpdate()
+    {
+        if (gear3D != null)
+        {
+            // 매 프레임 UI 위치에 맞춰 3D 기어의 회전값을 업데이트합니다.
+            Update3DGearRotation();
+        }
+    }
+
+    private void FixedUpdate()
+    {
+        MoveGearSmoothly();
+    }
 
     public int GetCurrentGearDirectly()
     {
@@ -71,42 +94,7 @@ public class JoystickLikeGear : MonoBehaviour
         }
     }
 
-    private void Update()
-    {
-        if (joystick_Button == null || pivot == null) return;
 
-        HandleSelectionInput();
-        CheckGearState();
-        HandleMouseProximity();
-    }
-
-    private void LateUpdate()
-    {
-        if (gear3D != null)
-        {
-            // 매 프레임 UI 위치에 맞춰 3D 기어의 회전값을 업데이트합니다.
-            Update3DGearRotation();
-        }
-    }
-
-    private void FixedUpdate()
-    {
-        MoveGearSmoothly();
-    }
-
-    // 현재 화면 비율에 맞춰 조정된 실제 인식 영역(Rect)을 계산합니다.
-    private Rect GetScaledInteractionRect()
-    {
-        float scaleX = (float)Screen.width / referenceResolution.x;
-        float scaleY = (float)Screen.height / referenceResolution.y;
-
-        return new Rect(
-            origin.x * scaleX,
-            origin.y * scaleY,
-            areaSize.x * scaleX,
-            areaSize.y * scaleY
-        );
-    }
 
     private void OnDrawGizmos()
     {
@@ -134,15 +122,6 @@ public class JoystickLikeGear : MonoBehaviour
         Gizmos.DrawLine(topLeft, bottomRight);
     }
 
-    private bool IsMouseValid(out Rect scaledRect)
-    {
-        scaledRect = GetScaledInteractionRect();
-        if (useScreenArea)
-        {
-           return scaledRect.Contains(Input.mousePosition);
-        }
-        return false;
-    }
 
     private void HandleMouseProximity()
     {
@@ -249,6 +228,7 @@ public class JoystickLikeGear : MonoBehaviour
         {
             if (currentGearSlot != 0)
             {
+                // 이벤트로 해당 메서드 가져오기?
                 decisionManager.ConfirmChoice(currentGearSlot);
             }
             else
@@ -256,5 +236,29 @@ public class JoystickLikeGear : MonoBehaviour
                 decisionManager.OnScreenClicked();
             }
         }
+    }
+
+    private bool IsMouseValid(out Rect scaledRect)
+    {
+        scaledRect = GetScaledInteractionRect();
+        if (useScreenArea)
+        {
+           return scaledRect.Contains(Input.mousePosition);
+        }
+        return false;
+    }
+
+    // 현재 화면 비율에 맞춰 조정된 실제 인식 영역(Rect)을 계산합니다.
+    private Rect GetScaledInteractionRect()
+    {
+        float scaleX = (float)Screen.width / referenceResolution.x;
+        float scaleY = (float)Screen.height / referenceResolution.y;
+
+        return new Rect(
+            origin.x * scaleX,
+            origin.y * scaleY,
+            areaSize.x * scaleX,
+            areaSize.y * scaleY
+        );
     }
 }
