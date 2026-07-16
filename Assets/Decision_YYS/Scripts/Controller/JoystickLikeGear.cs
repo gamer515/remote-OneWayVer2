@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 using UnityEngine.UI;
 
 public class JoystickLikeGear : MonoBehaviour
@@ -33,15 +34,21 @@ public class JoystickLikeGear : MonoBehaviour
     [SerializeField] private float slotWidth = 60f;
     [SerializeField] private float smoothTime = 0.08f;     
 
-    //이벤트 함수로 decisionManager에 있는 함수를 넘겨 줄까?
-    [SerializeField] DecisionManager decisionManager;
+    public event Action<int> OnGearChanged;
+    public event Action<int> OnGearConfirmed;
+    public event Action OnScreenCliked;
+
     [SerializeField] private DynamicFaceController faceController;
 
     private Vector2 targetPosition;
     private Vector2 currentVelocity;
     private int currentGearSlot = 0; 
 
+    // 3D 기어의 초기 회전값 저장
+    private Quaternion gear3DOriginRot;
+
     //public int CurrentGear => currentGearSlot;
+
     private void Update()
     {
         if (joystick_Button == null || pivot == null) return;
@@ -81,9 +88,6 @@ public class JoystickLikeGear : MonoBehaviour
         return gear;
     }
 
-    // 3D 기어의 초기 회전값 저장
-    private Quaternion gear3DOriginRot;
-
     private void Start()
     {
         if (mainCamera == null) mainCamera = Camera.main;
@@ -93,8 +97,6 @@ public class JoystickLikeGear : MonoBehaviour
             gear3DOriginRot = gear3D.localRotation;
         }
     }
-
-
 
     private void OnDrawGizmos()
     {
@@ -122,6 +124,111 @@ public class JoystickLikeGear : MonoBehaviour
         Gizmos.DrawLine(topLeft, bottomRight);
     }
 
+    #region faceController 관련
+    private void MoveGearSmoothly()
+    {
+        joystick_Button.anchoredPosition = Vector2.SmoothDamp(
+            joystick_Button.anchoredPosition, 
+            targetPosition, 
+            ref currentVelocity, 
+            smoothTime
+        );
+
+        // [추가] 얼굴 표정 컨트롤러에 현재 기어 위치 비율 전달
+        if (faceController != null)
+        {
+            float xRatio = joystick_Button.anchoredPosition.x / horizontalRange;
+            float yRatio = joystick_Button.anchoredPosition.y / verticalRange;
+            faceController.SetGearRatio(xRatio, yRatio);
+        }
+    }
+    #endregion
+
+    #region 3D Gear Rotation
+    private void Update3DGearRotation()
+    {
+        // UI 조이스틱 위치 비율(-1 ~ 1) 계산
+        float xRatio = joystick_Button.anchoredPosition.x / horizontalRange;
+        float yRatio = joystick_Button.anchoredPosition.y / verticalRange;
+
+        // [수정] 좌우 회전 방향 반전: 마우스 이동 방향과 기어 기울기 방향을 일치시킵니다.
+        float rotX = yRatio * maxTiltAngle; 
+        float rotZ = -xRatio * maxTiltAngle; 
+
+        // 초기 회전값에 계산된 회전 오프셋을 쿼터니언 곱셈으로 적용
+        gear3D.localRotation = gear3DOriginRot * Quaternion.Euler(rotX, 0, rotZ);
+    }
+    #endregion
+
+    #region Gear State Checking
+    private void CheckGearState()
+    {
+        int gear = 0;
+
+        // 추후 여러 형태의 기어 표지판일 경우에 맞는 로직을 짜야 할 듯.
+        Vector2 pos = joystick_Button.anchoredPosition;
+
+        float xThreshold = horizontalRange * 0.75f;
+        float yThreshold = verticalRange * 0.75f;
+
+        if (pos.x < -xThreshold && pos.y > yThreshold) gear = 1;
+        else if (pos.x < -xThreshold && pos.y < -yThreshold) gear = 2;
+        else if (pos.x > xThreshold && pos.y > yThreshold) gear = 3;
+        else if (pos.x > xThreshold && pos.y < -yThreshold) gear = 4;
+
+        if (gear != currentGearSlot)
+        {
+            currentGearSlot = gear;
+
+            OnGearChanged?.Invoke(currentGearSlot);
+        }
+    }
+    #endregion
+
+    #region Input Handling
+    private void HandleSelectionInput()
+    {
+        // [수정] 스페이스바 대신 마우스 왼쪽 클릭(0) 감지
+        // 마우스가 조이스틱 인식 영역 내에 있을 때만 동작하도록 제한
+        Rect scaledRect;
+        if (Input.GetMouseButtonDown(0) && IsMouseValid(out scaledRect))
+        {
+            if (currentGearSlot != 0)
+            {
+                // 이벤트로 해당 메서드 가져오기?
+                OnGearConfirmed?.Invoke(currentGearSlot);
+            }
+            else
+            {
+                OnScreenCliked?.Invoke();
+            }
+        }
+    }
+
+    private bool IsMouseValid(out Rect scaledRect)
+    {
+        scaledRect = GetScaledInteractionRect();
+        if (useScreenArea)
+        {
+           return scaledRect.Contains(Input.mousePosition);
+        }
+        return false;
+    }
+
+    // 현재 화면 비율에 맞춰 조정된 실제 인식 영역(Rect)을 계산합니다.
+    private Rect GetScaledInteractionRect()
+    {
+        float scaleX = (float)Screen.width / referenceResolution.x;
+        float scaleY = (float)Screen.height / referenceResolution.y;
+
+        return new Rect(
+            origin.x * scaleX,
+            origin.y * scaleY,
+            areaSize.x * scaleX,
+            areaSize.y * scaleY
+        );
+    }
+    #endregion
 
     private void HandleMouseProximity()
     {
@@ -161,104 +268,5 @@ public class JoystickLikeGear : MonoBehaviour
         }
 
         targetPosition = new Vector2(tx, ty);
-    }
-
-    private void MoveGearSmoothly()
-    {
-        joystick_Button.anchoredPosition = Vector2.SmoothDamp(
-            joystick_Button.anchoredPosition, 
-            targetPosition, 
-            ref currentVelocity, 
-            smoothTime
-        );
-
-        // [추가] 얼굴 표정 컨트롤러에 현재 기어 위치 비율 전달
-        if (faceController != null)
-        {
-            float xRatio = joystick_Button.anchoredPosition.x / horizontalRange;
-            float yRatio = joystick_Button.anchoredPosition.y / verticalRange;
-            faceController.SetGearRatio(xRatio, yRatio);
-        }
-    }
-
-    private void Update3DGearRotation()
-    {
-        // UI 조이스틱 위치 비율(-1 ~ 1) 계산
-        float xRatio = joystick_Button.anchoredPosition.x / horizontalRange;
-        float yRatio = joystick_Button.anchoredPosition.y / verticalRange;
-
-        // [수정] 좌우 회전 방향 반전: 마우스 이동 방향과 기어 기울기 방향을 일치시킵니다.
-        float rotX = yRatio * maxTiltAngle; 
-        float rotZ = -xRatio * maxTiltAngle; 
-
-        // 초기 회전값에 계산된 회전 오프셋을 쿼터니언 곱셈으로 적용
-        gear3D.localRotation = gear3DOriginRot * Quaternion.Euler(rotX, 0, rotZ);
-    }
-
-    private void CheckGearState()
-    {
-        int gear = 0;
-        Vector2 pos = joystick_Button.anchoredPosition;
-
-        float xThreshold = horizontalRange * 0.75f;
-        float yThreshold = verticalRange * 0.75f;
-
-        if (pos.x < -xThreshold && pos.y > yThreshold) gear = 1;
-        else if (pos.x < -xThreshold && pos.y < -yThreshold) gear = 2;
-        else if (pos.x > xThreshold && pos.y > yThreshold) gear = 3;
-        else if (pos.x > xThreshold && pos.y < -yThreshold) gear = 4;
-
-        if (gear != currentGearSlot)
-        {
-            currentGearSlot = gear;
-            // 플레이어 시점이 아닐 때만 텍스트를 업데이트합니다.
-            if (decisionManager != null && !decisionManager.IsPlayerViewActive)
-            {
-                decisionManager.ShowOptionText(gear);
-            }
-        }
-    }
-
-    private void HandleSelectionInput()
-    {
-        // [수정] 스페이스바 대신 마우스 왼쪽 클릭(0) 감지
-        // 마우스가 조이스틱 인식 영역 내에 있을 때만 동작하도록 제한
-        Rect scaledRect;
-        if (Input.GetMouseButtonDown(0) && IsMouseValid(out scaledRect))
-        {
-            if (currentGearSlot != 0)
-            {
-                // 이벤트로 해당 메서드 가져오기?
-                decisionManager.ConfirmChoice(currentGearSlot);
-            }
-            else
-            {
-                decisionManager.OnScreenClicked();
-            }
-        }
-    }
-
-    private bool IsMouseValid(out Rect scaledRect)
-    {
-        scaledRect = GetScaledInteractionRect();
-        if (useScreenArea)
-        {
-           return scaledRect.Contains(Input.mousePosition);
-        }
-        return false;
-    }
-
-    // 현재 화면 비율에 맞춰 조정된 실제 인식 영역(Rect)을 계산합니다.
-    private Rect GetScaledInteractionRect()
-    {
-        float scaleX = (float)Screen.width / referenceResolution.x;
-        float scaleY = (float)Screen.height / referenceResolution.y;
-
-        return new Rect(
-            origin.x * scaleX,
-            origin.y * scaleY,
-            areaSize.x * scaleX,
-            areaSize.y * scaleY
-        );
     }
 }

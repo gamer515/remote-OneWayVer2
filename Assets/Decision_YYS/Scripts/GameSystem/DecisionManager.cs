@@ -127,6 +127,13 @@ public class DecisionManager : MonoBehaviour
         {
             statContainer.OnTargetStatReached += HandleTargetStatReached;
         }
+
+        if (gearController != null)
+        {
+            gearController.OnGearChanged += ShowOptionText;
+            gearController.OnGearConfirmed += ConfirmChoice;
+            gearController.OnScreenCliked += OnScreenClicked;
+        }
     }
 
     private void OnDisable()
@@ -134,6 +141,13 @@ public class DecisionManager : MonoBehaviour
         if (statContainer != null)
         {
             statContainer.OnTargetStatReached -= HandleTargetStatReached;
+        }
+
+        if (gearController != null)
+        {
+            gearController.OnGearChanged -= ShowOptionText;
+            gearController.OnGearConfirmed -= ConfirmChoice;
+            gearController.OnScreenCliked -= OnScreenClicked;
         }
     }
 
