@@ -5,10 +5,15 @@ using System.Collections;
 using UnityEngine.UI;
 using System.Collections.Generic;
 
+/// <summary>
+/// 게임 진행 데이터 관리.
+/// </summary>
 public class DecisionManager : MonoBehaviour
 {
+    // Player 객체가 생성이 되면 그때 같이 생성이 되는 형태로.
     [SerializeField] private StatContainer statContainer;
 
+    // 게임 요소를 담당하는(decision만 담당하는 매니저) 만들고, 세부 기능은 각각 나누어서 이벤트 발생시에 전달하도록 
     // [추가] 스탯 변화에 따른 전투 씬 진입을 관리하기 위한 이벤트 구독 및 처리 메서드를 클래스로 구분해야 함.
     #region CardAnimation
     [SerializeField] private RectTransform cardFront;
@@ -19,13 +24,14 @@ public class DecisionManager : MonoBehaviour
     [SerializeField] private TextMeshProUGUI option_Text;
     #endregion
 
-    private GameState currentState;
+    private StoryState currentState;
 
+    // 게임이 시작이 되면 GameManager에서 전달.
     // [추가] 저장된 진행도 및 스탯을 관리하는 클래스로 구분해야 함.
     #region Data
-    ScenarioData scenarioData;
-
     private OmnibusData currentOmnibus;
+    private ScenarioData scenarioData;
+
     // 인트로, 무협~
     private int chapterIndex = 0;
     // initial_1, initial_2~, martial_1~
@@ -50,7 +56,7 @@ public class DecisionManager : MonoBehaviour
     
     // 맵 관련 클래스랑 구분.
     private bool isPlayerViewActive = false;
-    public bool IsPlayerViewActive => isPlayerViewActive; // 조이스틱에서 참조하는 프로퍼티
+    //public bool IsPlayerViewActive => isPlayerViewActive; // 조이스틱에서 참조하는 프로퍼티
 
     [Header("Player Movement")]
     [SerializeField] private GameObject playerPrefab;
@@ -60,64 +66,13 @@ public class DecisionManager : MonoBehaviour
     private float[] chapterLengths = { 4f, 8f, 8f };
 
     // 추후에 전투 씬도 추가한 후에는, 전투 씬과 관련된 데이터 관리 및 저장 기능도 별도의 클래스로 구분하는 것을 권장.
-    private SaveDataManager saveDataManager;
+    private SaveManager saveDataManager;
 
     private void Awake()
     {
-        currentState = GameState.ShowingStory;
-        saveDataManager = new SaveDataManager();
-    }
-
-    // 맵에서 플레이어 이동 관련 클래스 구분.
-    private void SpawnPlayer()
-    {
-        if (playerInstance == null && playerPrefab != null)
-        {
-            GameObject go = Instantiate(playerPrefab);
-            go.SetActive(true); // [추가] 플레이어를 항상 활성화된 상태로 생성합니다.
-            playerInstance = go.GetComponent<Player>();
-            
-            // [추가] 플레이어 자식 객체에서 카메라를 찾아 저장합니다.
-            playerCamera = go.GetComponentInChildren<Camera>();
-            if (playerCamera != null)
-            {
-                // 초기에는 카메라 상태를 현재 모드에 맞춥니다.
-                playerCamera.enabled = isPlayerViewActive;
-            }
-
-            // 현재 진행도에 맞는 위치 계산하여 그 자리에서 생성
-            float currentZ = CalculateTargetZ();
-            playerInstance.Initialize(new Vector3(-55f, 0.35f, currentZ));
-        }
-    }
-
-    private float CalculateTargetZ()
-    {
-        if (currentOmnibus == null || scenarioData == null || chapterIndex >= chapterStartZs.Length) 
-            return 23f;
-
-        // 현재 챕터의 전체 에피소드 수
-        int totalEpisodes = currentOmnibus.MainStories[chapterIndex].Title.Count;
-        if (totalEpisodes <= 0) totalEpisodes = 1;
-
-        // 현재 에피소드의 전체 스토리(지문) 수
-        int totalStories = (scenarioData.MainStory != null && scenarioData.MainStory.Count > 0) ? scenarioData.MainStory.Count : 1;
-
-        // 챕터 내 진행도 계산 (0.0 ~ 1.0)
-        float episodeProgress = (float)episodeIndex / totalEpisodes;
-        float storyProgressInEpisode = ((float)storyIndex / totalStories) / totalEpisodes;
-        float totalChapterProgress = episodeProgress + storyProgressInEpisode;
-
-        // 목표 Z 계산
-        return chapterStartZs[chapterIndex] + (totalChapterProgress * chapterLengths[chapterIndex]);
-    }
-
-    private void UpdatePlayerPosition()
-    {
-        if (playerInstance == null) return;
-        
-        float targetZ = CalculateTargetZ();
-        playerInstance.SetTargetZ(targetZ);
+        currentState = StoryState.ShowingStory;
+        // [추가] SaveDataManager 인스턴스 생성
+        saveDataManager = new SaveManager();
     }
 
     // 이렇게 하면 statContainer에서 굳이 해당 클래스를 참조할 필요가 없겠다.
@@ -151,6 +106,61 @@ public class DecisionManager : MonoBehaviour
         }
     }
 
+    // 맵에서 플레이어 이동 관련 클래스 구분. => player
+    private void SpawnPlayer()
+    {
+        if (playerInstance == null && playerPrefab != null)
+        {
+            GameObject go = Instantiate(playerPrefab);
+            go.SetActive(true); // [추가] 플레이어를 항상 활성화된 상태로 생성합니다.
+            playerInstance = go.GetComponent<Player>();
+            
+            // [추가] 플레이어 자식 객체에서 카메라를 찾아 저장합니다.
+            playerCamera = go.GetComponentInChildren<Camera>();
+            if (playerCamera != null)
+            {
+                // 초기에는 카메라 상태를 현재 모드에 맞춥니다.
+                playerCamera.enabled = isPlayerViewActive;
+            }
+
+            // 현재 진행도에 맞는 위치 계산하여 그 자리에서 생성
+            float currentZ = CalculateTargetZ();
+            playerInstance.Initialize(new Vector3(-55f, 0.35f, currentZ));
+        }
+    }
+
+    // => player or map
+    private float CalculateTargetZ()
+    {
+        if (currentOmnibus == null || scenarioData == null || chapterIndex >= chapterStartZs.Length) 
+            return 23f;
+
+        // 현재 챕터의 전체 에피소드 수
+        int totalEpisodes = currentOmnibus.MainStories[chapterIndex].Title.Count;
+        if (totalEpisodes <= 0) totalEpisodes = 1;
+
+        // 현재 에피소드의 전체 스토리(지문) 수
+        int totalStories = (scenarioData.MainStory != null && scenarioData.MainStory.Count > 0) ? scenarioData.MainStory.Count : 1;
+
+        // 챕터 내 진행도 계산 (0.0 ~ 1.0)
+        float episodeProgress = (float)episodeIndex / totalEpisodes;
+        float storyProgressInEpisode = ((float)storyIndex / totalStories) / totalEpisodes;
+        float totalChapterProgress = episodeProgress + storyProgressInEpisode;
+
+        // 목표 Z 계산
+        return chapterStartZs[chapterIndex] + (totalChapterProgress * chapterLengths[chapterIndex]);
+    }
+
+    // playr or map
+    private void UpdatePlayerPosition()
+    {
+        if (playerInstance == null) return;
+        
+        float targetZ = CalculateTargetZ();
+        playerInstance.SetTargetZ(targetZ);
+    }
+
+
     private void HandleTargetStatReached()
     {
         // Initial 챕터(인덱스 0)일 때는 무시합니다.
@@ -158,6 +168,7 @@ public class DecisionManager : MonoBehaviour
 
         Debug.Log("전투 발생! 현재 진행 상황을 저장하고 전투 씬으로 이동합니다.");
 
+        // player에서 statContainer의 기능을 가져와서 쓰는 걸로.
         // [중요] 전투 씬으로 넘어가기 직전에 현재 챕터 결과 기록 및 다음 챕터 준비
         if (currentOmnibus != null && chapterIndex < currentOmnibus.MainStories.Count)
         {
@@ -181,28 +192,33 @@ public class DecisionManager : MonoBehaviour
                 relayManager.Relay("MidTransition", currentScenarioPath, playedHistory, statContainer.stats, chapterIndex);
             }
 
+            // GameManager
             // 3. 다음 챕터로 인덱스 준비
             chapterIndex++;
             episodeIndex = 0;
             storyIndex = 0;
 
+            // GameManager
             // 4. 저장 (씬이 다시 로드될 때 여기서부터 시작하기 위함)
             saveDataManager.SaveProgress(chapterIndex, episodeIndex, storyIndex);
             
+            // Player or statContainer
             // 5. 스탯 초기화 및 초기화된 스탯 저장
             statContainer.ResetAllStats();
             saveDataManager.SaveStats(statContainer.stats);
 
+            // GameManager
             // 6. 전투 씬으로 전환
-            currentState = GameState.Transitioning;
+            currentState = StoryState.Transitioning;
             UnityEngine.SceneManagement.SceneManager.LoadScene("BattleScene");
         }
     }
 
+    // GameManager
     // 기존 Start() 대신 코루틴 사용
     private IEnumerator Start()
     {
-        currentOmnibus = SaveManager.Instance.LoadData<OmnibusData>("Omnibus_01");
+        currentOmnibus = SaveIOService.Instance.LoadData<OmnibusData>("Omnibus_01");
 
         // 문제 1 해결: AI가 아직 스토리를 만들고 있다면 대기
         if (AIAPIClient.Instance != null && AIAPIClient.Instance.isAiProcessing)
@@ -220,6 +236,7 @@ public class DecisionManager : MonoBehaviour
         if (playerViewUI != null) playerViewUI.SetActive(true);
     }
 
+    // GameManager
     private void LoadGame()
     {
         // 1. 스탯 복구
@@ -243,8 +260,10 @@ public class DecisionManager : MonoBehaviour
         LoadNextStory();
     }
 
+
     private void MoveToNextChapter()
     {
+        // player에서 statContainer의 기능을 가져와서 쓰는 걸로.
         // 1. 현재 챕터 결과 기록
         int bestStatIndex = 0;
         int maxValue = -1;
@@ -266,17 +285,19 @@ public class DecisionManager : MonoBehaviour
             relayManager.Relay("ChapterEnd", currentScenarioPath, playedHistory, statContainer.stats, chapterIndex);
         }
 
+        // GameManager
         // 2. 다음 챕터로 인덱스 변경
         chapterIndex++;
         episodeIndex = 0;
         storyIndex = 0;
 
+        // Player or statContainer
         // [추가] 챕터가 바뀌었으므로 플레이 기록 초기화
         playedHistory.Clear();
-
         // 3. 스탯 초기화
         statContainer.ResetAllStats();
 
+        // GameManager
         // 4. 저장 및 다음 스토리 로드
         saveDataManager.SaveProgress(chapterIndex, episodeIndex, storyIndex);
         saveDataManager.SaveStats(statContainer.stats);
@@ -284,6 +305,7 @@ public class DecisionManager : MonoBehaviour
         LoadNextStory();
     }
 
+    // GameManager
     private void LoadNextStory()
     {
         if (currentOmnibus == null || currentOmnibus.MainStories == null || chapterIndex >= currentOmnibus.MainStories.Count)
@@ -306,14 +328,15 @@ public class DecisionManager : MonoBehaviour
 
         currentScenarioPath = fullPath; // 현재 파일 경로 저장
 
+        // 추후에 다음 이야기 파일을 찾기 위해서는 하드 코딩을 피해야 한다.
         // [테스트 로직] AI가 수정한 NewStory 파일이 있는지 먼저 확인합니다.
         string aiFileName = "NewStory_" + fullPath.Replace("/", "_");
-        scenarioData = SaveManager.Instance.LoadData<ScenarioData>(aiFileName);
+        scenarioData = SaveIOService.Instance.LoadData<ScenarioData>(aiFileName);
 
         // AI 수정본이 없다면 원본 데이터를 로드합니다.
         if (scenarioData == null || scenarioData.MainStory == null || scenarioData.MainStory.Count == 0)
         {
-            scenarioData = SaveManager.Instance.LoadData<ScenarioData>(fullPath);
+            scenarioData = SaveIOService.Instance.LoadData<ScenarioData>(fullPath);
         }
         else
         {
@@ -332,6 +355,7 @@ public class DecisionManager : MonoBehaviour
         }
     }
 
+    // UI 화면 쪽.
     private void DisplayCurrentStory()
     {
         if (scenarioData == null || scenarioData.MainStory == null || scenarioData.MainStory.Count == 0) return;
@@ -354,16 +378,17 @@ public class DecisionManager : MonoBehaviour
         }
         else
         {
-            currentState = GameState.ShowingStory;
+            currentState = StoryState.ShowingStory;
             option_Text.gameObject.SetActive(false);
         }
 
         UpdatePlayerPosition();
     }
 
+    // UI 화면 쪽.
     private void EnterChoiceState()
     {
-        currentState =  GameState.WaitingForChoice;
+        currentState = StoryState.WaitingForChoice;
         option_Text.gameObject.SetActive(true);
 
         // [수정] 캐시된 CurrentGear 대신 직접 현재 물리적 위치를 확인하여 즉시 반영
@@ -380,6 +405,7 @@ public class DecisionManager : MonoBehaviour
         }
     }
 
+    // UI 화면 쪽.
     private void ApplyBackground(RectTransform card, string bgData)
     {
         if (string.IsNullOrEmpty(bgData) || bgData.ToLower() == "none") return;
@@ -404,6 +430,7 @@ public class DecisionManager : MonoBehaviour
         }
     }
 
+    // UI 화면 쪽.
     public void TogglePlayerView()
     {
         isPlayerViewActive = !isPlayerViewActive;
@@ -423,15 +450,16 @@ public class DecisionManager : MonoBehaviour
         Debug.Log(isPlayerViewActive ? "플레이어 시점 ON" : "플레이어 시점 OFF");
     }
 
+    // UI 화면 쪽.
     public void OnScreenClicked()
     {
         if (isPlayerViewActive) return; // 플레이어 시점일 때는 클릭 무시
-        if (currentState ==  GameState.Transitioning || scenarioData == null || scenarioData.MainStory == null) return;
+        if (currentState == StoryState.Transitioning || scenarioData == null || scenarioData.MainStory == null) return;
         if (storyIndex < 0 || storyIndex >= scenarioData.MainStory.Count) return;
 
         var currentStory = scenarioData.MainStory[storyIndex];
 
-        if (currentState ==  GameState.ShowingStory)
+        if (currentState == StoryState.ShowingStory)
         {
             if (currentStory.type == "Choice")
             {
@@ -444,18 +472,19 @@ public class DecisionManager : MonoBehaviour
         }
     }
 
+    // UI 화면 쪽.
     public void ConfirmChoice(int gear)
     {
         // 플레이어 시점일 때는 선택 무시
         if (isPlayerViewActive) return; 
 
-        if (currentState ==  GameState.ShowingStory)
+        if (currentState == StoryState.ShowingStory)
         {
             OnScreenClicked();
             return;
         }
 
-        if (currentState !=  GameState.WaitingForChoice || scenarioData == null) return;
+        if (currentState != StoryState.WaitingForChoice || scenarioData == null) return;
         if (storyIndex < 0 || storyIndex >= scenarioData.MainStory.Count) return;
 
         var currentStory = scenarioData.MainStory[storyIndex];
@@ -473,12 +502,13 @@ public class DecisionManager : MonoBehaviour
             Debug.Log($"[{currentStory.option[optionIndex]}] 선택됨!");
         }
 
-        if (currentState !=  GameState.Transitioning)
+        if (currentState != StoryState.Transitioning)
         {
             ProceedToNextStory();
         }
     }
 
+    // UI 화면 쪽.
     private void ProceedToNextStory()
     {
         storyIndex++;  
@@ -489,7 +519,7 @@ public class DecisionManager : MonoBehaviour
             if (nextStory.isTransition)
             {
                 option_Text.gameObject.SetActive(false);
-                currentState =  GameState.Transitioning;
+                currentState = StoryState.Transitioning;
                 StartCoroutine(SwipeTransition(nextStory));
             }
             else
@@ -509,6 +539,7 @@ public class DecisionManager : MonoBehaviour
         }
     }
 
+    // UI 화면 쪽.
     public void ShowOptionText(int gear)
     {
         if (scenarioData == null || scenarioData.MainStory == null || storyIndex < 0 || storyIndex >= scenarioData.MainStory.Count) return;
@@ -528,6 +559,7 @@ public class DecisionManager : MonoBehaviour
         }
     }
 
+    // UI 화면 쪽.
     private int GetOptionIndexFromGear(int gear)
     {
         if (gear == (int) Gear.EvilGood) return 0;
@@ -537,6 +569,7 @@ public class DecisionManager : MonoBehaviour
         return -1;
     }
 
+    // UI 화면 쪽.
     private IEnumerator SwipeTransition(Dialogue nextStory)
     {
         back_Dialogue_Text.text = SanitizeText(nextStory.text);
@@ -600,6 +633,7 @@ public class DecisionManager : MonoBehaviour
         DisplayCurrentStory();
     }
 
+    // UI 화면 쪽.
     private string SanitizeText(string input)
     {
         if (string.IsNullOrEmpty(input)) return input;

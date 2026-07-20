@@ -117,7 +117,7 @@ public class AIAPIClient : MonoBehaviour
     {
         if (string.IsNullOrEmpty(packet.fileName)) return;
 
-        ScenarioData originalData = SaveManager.Instance.LoadData<ScenarioData>(packet.fileName);
+        ScenarioData originalData = SaveIOService.Instance.LoadData<ScenarioData>(packet.fileName);
         if (originalData == null || originalData.MainStory == null) return;
 
         if(modifiedItems != null)
@@ -139,7 +139,7 @@ public class AIAPIClient : MonoBehaviour
         }
 
         string saveFileName = "NewStory_" + packet.fileName.Replace("/", "_");
-        SaveManager.Instance.Save(saveFileName, originalData);
+        SaveIOService.Instance.Save(saveFileName, originalData);
         Debug.Log($"<color=#f5e642><b>[AI SYSTEM] 최종 스토리 저장 완료: {saveFileName}</b></color>");
     }
 }

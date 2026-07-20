@@ -1,154 +1,76 @@
-﻿using System.IO;
-using System.Runtime.CompilerServices;
-using UnityEngine;
-
+﻿using UnityEngine;
 
 public class SaveManager
 {
-    private static SaveManager _instance;
+    private GameProgress cachedProgress;
 
-    public static SaveManager Instance
+    public SaveManager()
     {
-        get
-        {
-            if (_instance == null)
-            {
-                _instance = new SaveManager();
-            }
-            return _instance;
-        }
+        // 초기화 시점에 한 번 로드하여 메모리에 보관합니다.
+        cachedProgress = SaveIOService.Instance.Load<GameProgress>("Progress") ?? new GameProgress();
     }
 
-    // 저장 파일이 위치할 기본 경로
-    private string BasePath => Path.Combine(Application.persistentDataPath, "Saves");
-    //private string ScenarioPath => Path.Combine(BasePath, "Scenario");
-
-    private int scenarioIndex = 0;
-
-    public int ScenarioIndex
+    /// <summary>
+    /// 게임 진행도 저장.
+    /// </summary>
+    /// <param name="chapterIndex">챕터 인덱스. 예: Initial, Martial, Wisdom</param>
+    /// <param name="episodeIndex">각 챕터 내부 에피스도 인덱스.</param>
+    /// <param name="storyIndex">내부 대화 인텍스.</param>
+    public void SaveProgress(int chapterIndex, int episodeIndex, int storyIndex)
     {
-        get => scenarioIndex;
-        set 
-        {
-            ++scenarioIndex;
-        }
+        cachedProgress.chapterIndex = chapterIndex;
+        cachedProgress.episodeIndex = episodeIndex;
+        cachedProgress.storyIndex = storyIndex;
+
+        SaveIOService.Instance.Save("Progress", cachedProgress);
+        Debug.Log($"[Save] Progress Saved: Ch {chapterIndex}, Ep {episodeIndex}, St {storyIndex}");
     }
 
-    private SaveManager() 
+    public void SaveStats(int[] statsArray)
     {
-        if (!Directory.Exists(BasePath))
+        PlayerStats stats = new PlayerStats
         {
-            Directory.CreateDirectory(BasePath);
-        }
+            stats = statsArray
+        };
+        SaveIOService.Instance.Save("Stats", stats);
     }
 
-    public void Save<T>(string fileName, T data)
+    /// <summary>
+    /// 각 챕터마다 가장 높은 수치 저장.
+    /// </summary>
+    /// <param name="chapter">가장 수치가 높았던 챕터.</param>
+    /// <param name="bestIndex">스탯 순서.</param>
+    /// <param name="value">해당 스탯의 값.</param>
+    public void RecordChapterResult(int chapter, int bestIndex, int value)
     {
-        string subFolder = "";
-
-        if(data is ScenarioData scenarioData)
+        // 메모리에 유지 중인 객체에 히스토리를 추가합니다.
+        cachedProgress.chapterHistory.Add(new ChapterResult
         {
-            subFolder = "Scenario" + scenarioIndex;
-        }
+            chapterIndex = chapter,
+            dominantStatIndex = bestIndex,
+            dominantStatValue = value
+        });
 
-        string directoryPath = Path.Combine(BasePath, subFolder);
-
-        string path = Path.Combine(directoryPath, $"{fileName}.json");
-        if(!Directory.Exists(directoryPath))
-        {
-            Directory.CreateDirectory(directoryPath);
-        }
-
-        string json = JsonUtility.ToJson(data, true);
-
-        File.WriteAllText(path, json);
-
-        Debug.Log($"[SaveManager] 데이터 저장 성공: {path}");
+        SaveIOService.Instance.Save("Progress", cachedProgress);
+        Debug.Log($"[Save] Chapter {chapter} Result Recorded: BestStat {bestIndex} ({value})");
     }
 
-    public T Load<T>(string fileName) 
+    public GameProgress LoadProgress()
     {
-        string subFolder = "";
-
-        if(typeof(T) == typeof(ScenarioData))
-        {
-            subFolder = "Scenario" + scenarioIndex;
-        }
-
-        string directoryPath = Path.Combine(BasePath, subFolder);
-        string path = Path.Combine(directoryPath, $"{fileName}.json");
-        if (!File.Exists(path)) return default;
-
-        string json = File.ReadAllText(path);
-
-        return JsonUtility.FromJson<T>(json);
+        return cachedProgress;
     }
 
-    public bool Exists(string category) 
+    public PlayerStats LoadStats()
     {
-        return File.Exists(Path.Combine(BasePath, $"{category}.json"));
+        if (SaveIOService.Instance.Exists("Stats"))
+        {
+            return SaveIOService.Instance.Load<PlayerStats>("Stats");
+        }
+        return null;
     }
 
-    public string[] GetAllSaveFiles()
+    public bool HasSaveData(string key)
     {
-        if (!Directory.Exists(BasePath)) return new string[0];
-
-        string[] files = Directory.GetFiles(BasePath, "*.json");
-        for (int i = 0; i < files.Length; i++)
-        {
-            files[i] = Path.GetFileNameWithoutExtension(files[i]);
-        }
-
-        return files;
-    }
-
-    public void DeleteAllSaves()
-    {
-        if (Directory.Exists(BasePath))
-        {
-            Directory.Delete(BasePath, true);
-            Directory.CreateDirectory(BasePath);
-        }
-    }
-
-    public T LoadData<T>(string fileName, string resourcesSubFolder = "Story_Json_Data")
-    {
-        // 1. 빌드 환경에서도 읽고 쓰기가 가능한 유저 데이터 폴더 경로
-        string saveFolder = "";
-
-        if(typeof(T) == typeof(ScenarioData))
-        {
-            saveFolder = "scenario" + scenarioIndex;
-        }
-
-        string savePath = Path.Combine(BasePath, saveFolder, $"{fileName}.json");
-
-        // 2. 만약 AI가 수정한 세이브 파일이 존재한다면, 그걸 우선적으로 읽습니다. (2회차 이상)
-        if (File.Exists(savePath))
-        {
-            string json = File.ReadAllText(savePath);
-            Debug.Log($"[JsonManager] 수정된 세이브 데이터를 불러옵니다: {fileName} (경로: {savePath})");
-
-            return JsonUtility.FromJson<T>(json);
-        }
-        else
-        {
-            // 3. 세이브 파일이 없다면(1회차), Resources 폴더에 있는 원본을 읽어옵니다.
-            // 파일이 Assets/Decision_YYS/Resources/Story_Json_Data/ 폴더 안에 있어야 합니다.
-            string resourcePathr = string.IsNullOrEmpty(resourcesSubFolder) ? fileName : $"{resourcesSubFolder}/{fileName}";
-
-            TextAsset textAsset = Resources.Load<TextAsset>(resourcePathr);
-
-            if (textAsset == null)
-            {
-                Debug.LogError($"[JsonManager] 원본 JSON 파일도 찾을 수 없습니다. 파일명: {resourcePathr}");
-
-                return default;
-            }
-
-            Debug.Log($"[JsonManager] 원본 리소스 데이터를 불러옵니다: {resourcePathr}");
-
-            return JsonUtility.FromJson<T>(textAsset.text);
-        }
+        return SaveIOService.Instance.Exists(key);
     }
 }
