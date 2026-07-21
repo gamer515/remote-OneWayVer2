@@ -10,8 +10,6 @@ using System.Collections.Generic;
 /// </summary>
 public class DecisionManager : MonoBehaviour
 {
-    // Player 객체가 생성이 되면 그때 같이 생성이 되는 형태로.
-    [SerializeField] private StatContainer statContainer;
 
     // 게임 요소를 담당하는(decision만 담당하는 매니저) 만들고, 세부 기능은 각각 나누어서 이벤트 발생시에 전달하도록 
     // [추가] 스탯 변화에 따른 전투 씬 진입을 관리하기 위한 이벤트 구독 및 처리 메서드를 클래스로 구분해야 함.
@@ -24,11 +22,10 @@ public class DecisionManager : MonoBehaviour
     [SerializeField] private TextMeshProUGUI option_Text;
     #endregion
 
+    #region storyState
     private StoryState currentState;
-
-    // 게임이 시작이 되면 GameManager에서 전달.
     // [추가] 저장된 진행도 및 스탯을 관리하는 클래스로 구분해야 함.
-    #region Data
+
     private OmnibusData currentOmnibus;
     private ScenarioData scenarioData;
 
@@ -41,10 +38,7 @@ public class DecisionManager : MonoBehaviour
 
     // [추가] 현재 로드된 시나리오 파일 경로 기록
     private string currentScenarioPath;
-    #endregion
 
-    // [추가] 현재 챕터에서 플레이어가 읽은 모든 지문 기록을 클래스로 구분해야 함.
-    #region
     private List<Dialogue> playedHistory = new List<Dialogue>();
     #endregion
 
@@ -52,28 +46,23 @@ public class DecisionManager : MonoBehaviour
     [Header("View & Control Settings")]
     [SerializeField] private JoystickLikeGear gearController;
     [SerializeField] private StoryRelayManager relayManager;
-    [SerializeField] private GameObject playerViewUI; 
-    
+    [SerializeField] private GameObject playerViewUI;
+
+    #region Map & Player Movement
     // 맵 관련 클래스랑 구분.
     private bool isPlayerViewActive = false;
-    //public bool IsPlayerViewActive => isPlayerViewActive; // 조이스틱에서 참조하는 프로퍼티
 
     [Header("Player Movement")]
-    [SerializeField] private GameObject playerPrefab;
     private Player playerInstance;
     private Camera playerCamera; // 플레이어 객체에 붙은 카메라 저장용
     private float[] chapterStartZs = { 23f, 27f, 35f };
     private float[] chapterLengths = { 4f, 8f, 8f };
+    #endregion
 
     // 추후에 전투 씬도 추가한 후에는, 전투 씬과 관련된 데이터 관리 및 저장 기능도 별도의 클래스로 구분하는 것을 권장.
-    private SaveManager saveDataManager;
-
-    private void Awake()
-    {
-        currentState = StoryState.ShowingStory;
-        // [추가] SaveDataManager 인스턴스 생성
-        saveDataManager = new SaveManager();
-    }
+    private SaveManager saveManager;
+    // Player 객체가 생성이 되면 그때 같이 생성이 되는 형태로.
+    [SerializeField] private StatContainer statContainer;
 
     // 이렇게 하면 statContainer에서 굳이 해당 클래스를 참조할 필요가 없겠다.
     private void OnEnable()
@@ -106,206 +95,28 @@ public class DecisionManager : MonoBehaviour
         }
     }
 
-    // 맵에서 플레이어 이동 관련 클래스 구분. => player
-    private void SpawnPlayer()
+    private void Start()
     {
-        if (playerInstance == null && playerPrefab != null)
+        if (GameManager.Instance.CurrentState == GameState.Main)
         {
-            GameObject go = Instantiate(playerPrefab);
-            go.SetActive(true); // [추가] 플레이어를 항상 활성화된 상태로 생성합니다.
-            playerInstance = go.GetComponent<Player>();
-            
-            // [추가] 플레이어 자식 객체에서 카메라를 찾아 저장합니다.
-            playerCamera = go.GetComponentInChildren<Camera>();
-            if (playerCamera != null)
+            PlayerStats playerStats = null;
+            (currentOmnibus, chapterIndex, episodeIndex, storyIndex, playerInstance, playerStats, saveManager) = GameManager.Instance.StartGame();
+
+            LoadNextStory();
+
+            if (playerStats != null && playerStats.stats != null)
             {
-                // 초기에는 카메라 상태를 현재 모드에 맞춥니다.
-                playerCamera.enabled = isPlayerViewActive;
+                statContainer.SetStats(playerStats.stats);
             }
 
-            // 현재 진행도에 맞는 위치 계산하여 그 자리에서 생성
             float currentZ = CalculateTargetZ();
             playerInstance.Initialize(new Vector3(-55f, 0.35f, currentZ));
-        }
-    }
-
-    // => player or map
-    private float CalculateTargetZ()
-    {
-        if (currentOmnibus == null || scenarioData == null || chapterIndex >= chapterStartZs.Length) 
-            return 23f;
-
-        // 현재 챕터의 전체 에피소드 수
-        int totalEpisodes = currentOmnibus.MainStories[chapterIndex].Title.Count;
-        if (totalEpisodes <= 0) totalEpisodes = 1;
-
-        // 현재 에피소드의 전체 스토리(지문) 수
-        int totalStories = (scenarioData.MainStory != null && scenarioData.MainStory.Count > 0) ? scenarioData.MainStory.Count : 1;
-
-        // 챕터 내 진행도 계산 (0.0 ~ 1.0)
-        float episodeProgress = (float)episodeIndex / totalEpisodes;
-        float storyProgressInEpisode = ((float)storyIndex / totalStories) / totalEpisodes;
-        float totalChapterProgress = episodeProgress + storyProgressInEpisode;
-
-        // 목표 Z 계산
-        return chapterStartZs[chapterIndex] + (totalChapterProgress * chapterLengths[chapterIndex]);
-    }
-
-    // playr or map
-    private void UpdatePlayerPosition()
-    {
-        if (playerInstance == null) return;
-        
-        float targetZ = CalculateTargetZ();
-        playerInstance.SetTargetZ(targetZ);
-    }
-
-
-    private void HandleTargetStatReached()
-    {
-        // Initial 챕터(인덱스 0)일 때는 무시합니다.
-        if (chapterIndex == 0) return;
-
-        Debug.Log("전투 발생! 현재 진행 상황을 저장하고 전투 씬으로 이동합니다.");
-
-        // player에서 statContainer의 기능을 가져와서 쓰는 걸로.
-        // [중요] 전투 씬으로 넘어가기 직전에 현재 챕터 결과 기록 및 다음 챕터 준비
-        if (currentOmnibus != null && chapterIndex < currentOmnibus.MainStories.Count)
-        {
-            // 1. 현재 완료된 챕터의 최고 스탯 결과 기록
-            int bestStatIndex = 0;
-            int maxValue = -1;
-            int[] currentStats = statContainer.stats;
-            for (int i = 0; i < currentStats.Length; i++)
-            {
-                if (currentStats[i] > maxValue)
-                {
-                    maxValue = currentStats[i];
-                    bestStatIndex = i;
-                }
-            }
-            saveDataManager.RecordChapterResult(chapterIndex, bestStatIndex, maxValue);
-
-            // 2. 외부 데이터 전송 (이미 필터링된 핵심 데이터 전송)
-            if (relayManager != null)
-            {
-                relayManager.Relay("MidTransition", currentScenarioPath, playedHistory, statContainer.stats, chapterIndex);
-            }
-
-            // GameManager
-            // 3. 다음 챕터로 인덱스 준비
-            chapterIndex++;
-            episodeIndex = 0;
-            storyIndex = 0;
-
-            // GameManager
-            // 4. 저장 (씬이 다시 로드될 때 여기서부터 시작하기 위함)
-            saveDataManager.SaveProgress(chapterIndex, episodeIndex, storyIndex);
-            
-            // Player or statContainer
-            // 5. 스탯 초기화 및 초기화된 스탯 저장
-            statContainer.ResetAllStats();
-            saveDataManager.SaveStats(statContainer.stats);
-
-            // GameManager
-            // 6. 전투 씬으로 전환
-            currentState = StoryState.Transitioning;
-            UnityEngine.SceneManagement.SceneManager.LoadScene("BattleScene");
-        }
-    }
-
-    // GameManager
-    // 기존 Start() 대신 코루틴 사용
-    private IEnumerator Start()
-    {
-        currentOmnibus = SaveIOService.Instance.LoadData<OmnibusData>("Omnibus_01");
-
-        // 문제 1 해결: AI가 아직 스토리를 만들고 있다면 대기
-        if (AIAPIClient.Instance != null && AIAPIClient.Instance.isAiProcessing)
-        {
-            Debug.Log("[DecisionManager] AI 스토리를 기다리는 중...");
-            // TODO: 여기에 "스토리 생성 중..." 같은 로딩 UI나 패널을 켜는 코드를 추가하면 더 좋아.
-
-            yield return new WaitUntil(() => !AIAPIClient.Instance.isAiProcessing);
-
-            // TODO: 로딩 UI 비활성화
+            if (playerViewUI != null) playerViewUI.SetActive(true);
         }
 
-        LoadGame();
-        SpawnPlayer();
-        if (playerViewUI != null) playerViewUI.SetActive(true);
+        currentState = StoryState.ShowingStory;
     }
 
-    // GameManager
-    private void LoadGame()
-    {
-        // 1. 스탯 복구
-        var savedStats = saveDataManager.LoadStats();
-        if (savedStats != null && savedStats.stats != null)
-        {
-            statContainer.SetStats(savedStats.stats);
-        }
-
-        // 2. 진행도 복구
-        var progress = saveDataManager.LoadProgress();
-        if (progress != null)
-        {
-            chapterIndex = progress.chapterIndex;
-            episodeIndex = progress.episodeIndex;
-            storyIndex = progress.storyIndex;
-
-            Debug.Log($"[Load] 저장된 지점에서 재시작: Chapter {chapterIndex}, Episode {episodeIndex}, Story {storyIndex}");
-        }
-
-        LoadNextStory();
-    }
-
-
-    private void MoveToNextChapter()
-    {
-        // player에서 statContainer의 기능을 가져와서 쓰는 걸로.
-        // 1. 현재 챕터 결과 기록
-        int bestStatIndex = 0;
-        int maxValue = -1;
-        int[] currentStats = statContainer.stats;
-        for (int i = 0; i < currentStats.Length; i++)
-        {
-            if (currentStats[i] > maxValue)
-            {
-                maxValue = currentStats[i];
-                bestStatIndex = i;
-            }
-        }
-
-        saveDataManager.RecordChapterResult(chapterIndex, bestStatIndex, maxValue);
-
-        // [추가] 챕터 종료 데이터 전송 (전체 히스토리)
-        if (relayManager != null)
-        {
-            relayManager.Relay("ChapterEnd", currentScenarioPath, playedHistory, statContainer.stats, chapterIndex);
-        }
-
-        // GameManager
-        // 2. 다음 챕터로 인덱스 변경
-        chapterIndex++;
-        episodeIndex = 0;
-        storyIndex = 0;
-
-        // Player or statContainer
-        // [추가] 챕터가 바뀌었으므로 플레이 기록 초기화
-        playedHistory.Clear();
-        // 3. 스탯 초기화
-        statContainer.ResetAllStats();
-
-        // GameManager
-        // 4. 저장 및 다음 스토리 로드
-        saveDataManager.SaveProgress(chapterIndex, episodeIndex, storyIndex);
-        saveDataManager.SaveStats(statContainer.stats);
-
-        LoadNextStory();
-    }
-
-    // GameManager
     private void LoadNextStory()
     {
         if (currentOmnibus == null || currentOmnibus.MainStories == null || chapterIndex >= currentOmnibus.MainStories.Count)
@@ -353,6 +164,134 @@ public class DecisionManager : MonoBehaviour
         {
             Debug.LogError($"스토리를 불러올 수 없습니다: {fullPath}");
         }
+    }
+
+    private void HandleTargetStatReached()
+    {
+        // Initial 챕터(인덱스 0)일 때는 무시합니다.
+        if (chapterIndex == 0) return;
+
+        Debug.Log("전투 발생! 현재 진행 상황을 저장하고 전투 씬으로 이동합니다.");
+
+        // player에서 statContainer의 기능을 가져와서 쓰는 걸로.
+        // [중요] 전투 씬으로 넘어가기 직전에 현재 챕터 결과 기록 및 다음 챕터 준비
+        if (currentOmnibus != null && chapterIndex < currentOmnibus.MainStories.Count)
+        {
+            // 1. 현재 완료된 챕터의 최고 스탯 결과 기록
+            int bestStatIndex = 0;
+            int maxValue = -1;
+            int[] currentStats = statContainer.stats;
+            for (int i = 0; i < currentStats.Length; i++)
+            {
+                if (currentStats[i] > maxValue)
+                {
+                    maxValue = currentStats[i];
+                    bestStatIndex = i;
+                }
+            }
+            saveManager.RecordChapterResult(chapterIndex, bestStatIndex, maxValue);
+
+            // 2. 외부 데이터 전송 (이미 필터링된 핵심 데이터 전송)
+            if (relayManager != null)
+            {
+                relayManager.Relay("MidTransition", currentScenarioPath, playedHistory, statContainer.stats, chapterIndex);
+            }
+
+            // GameManager
+            // 3. 다음 챕터로 인덱스 준비
+            chapterIndex++;
+            episodeIndex = 0;
+            storyIndex = 0;
+
+            // GameManager
+            // 4. 저장 (씬이 다시 로드될 때 여기서부터 시작하기 위함)
+            saveManager.SaveProgress(chapterIndex, episodeIndex, storyIndex);
+            
+            // Player or statContainer
+            // 5. 스탯 초기화 및 초기화된 스탯 저장
+            statContainer.ResetAllStats();
+            saveManager.SaveStats(statContainer.stats);
+
+            // GameManager
+            // 6. 전투 씬으로 전환
+            currentState = StoryState.Transitioning;
+            UnityEngine.SceneManagement.SceneManager.LoadScene("BattleScene");
+        }
+    }
+
+    private void MoveToNextChapter()
+    {
+        // player에서 statContainer의 기능을 가져와서 쓰는 걸로.
+        // 1. 현재 챕터 결과 기록
+        int bestStatIndex = 0;
+        int maxValue = -1;
+        int[] currentStats = statContainer.stats;
+        for (int i = 0; i < currentStats.Length; i++)
+        {
+            if (currentStats[i] > maxValue)
+            {
+                maxValue = currentStats[i];
+                bestStatIndex = i;
+            }
+        }
+
+        saveManager.RecordChapterResult(chapterIndex, bestStatIndex, maxValue);
+
+        // [추가] 챕터 종료 데이터 전송 (전체 히스토리)
+        if (relayManager != null)
+        {
+            relayManager.Relay("ChapterEnd", currentScenarioPath, playedHistory, statContainer.stats, chapterIndex);
+        }
+
+        // GameManager
+        // 2. 다음 챕터로 인덱스 변경
+        chapterIndex++;
+        episodeIndex = 0;
+        storyIndex = 0;
+
+        // Player or statContainer
+        // [추가] 챕터가 바뀌었으므로 플레이 기록 초기화
+        playedHistory.Clear();
+        // 3. 스탯 초기화
+        statContainer.ResetAllStats();
+
+        // GameManager
+        // 4. 저장 및 다음 스토리 로드
+        saveManager.SaveProgress(chapterIndex, episodeIndex, storyIndex);
+        saveManager.SaveStats(statContainer.stats);
+
+        LoadNextStory();
+    }
+
+    // => player or map
+    private float CalculateTargetZ()
+    {
+        if (currentOmnibus == null || scenarioData == null || chapterIndex >= chapterStartZs.Length) 
+            return 23f;
+
+        // 현재 챕터의 전체 에피소드 수
+        int totalEpisodes = currentOmnibus.MainStories[chapterIndex].Title.Count;
+        if (totalEpisodes <= 0) totalEpisodes = 1;
+
+        // 현재 에피소드의 전체 스토리(지문) 수
+        int totalStories = (scenarioData.MainStory != null && scenarioData.MainStory.Count > 0) ? scenarioData.MainStory.Count : 1;
+
+        // 챕터 내 진행도 계산 (0.0 ~ 1.0)
+        float episodeProgress = (float)episodeIndex / totalEpisodes;
+        float storyProgressInEpisode = ((float)storyIndex / totalStories) / totalEpisodes;
+        float totalChapterProgress = episodeProgress + storyProgressInEpisode;
+
+        // 목표 Z 계산
+        return chapterStartZs[chapterIndex] + (totalChapterProgress * chapterLengths[chapterIndex]);
+    }
+
+    // playr or map
+    private void UpdatePlayerPosition()
+    {
+        if (playerInstance == null) return;
+        
+        float targetZ = CalculateTargetZ();
+        playerInstance.SetTargetZ(targetZ);
     }
 
     // UI 화면 쪽.
@@ -496,7 +435,7 @@ public class DecisionManager : MonoBehaviour
             if (chapterIndex > 0)
             {
                 statContainer.AddStat(optionIndex, currentStory.figure[optionIndex]);
-                saveDataManager.SaveStats(statContainer.stats);
+                saveManager.SaveStats(statContainer.stats);
             }
 
             Debug.Log($"[{currentStory.option[optionIndex]}] 선택됨!");
@@ -527,14 +466,14 @@ public class DecisionManager : MonoBehaviour
                 DisplayCurrentStory();
             }
 
-            saveDataManager.SaveProgress(chapterIndex, episodeIndex, storyIndex);
+            saveManager.SaveProgress(chapterIndex, episodeIndex, storyIndex);
         }
         else
         {
             // 현재 에피소드가 끝났으므로 다음 스토리 로드
             episodeIndex++;
             storyIndex = 0;
-            saveDataManager.SaveProgress(chapterIndex, episodeIndex, storyIndex);
+            saveManager.SaveProgress(chapterIndex, episodeIndex, storyIndex);
             LoadNextStory();
         }
     }
