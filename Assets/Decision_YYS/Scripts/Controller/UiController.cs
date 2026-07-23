@@ -1,16 +1,33 @@
+﻿using System;
+using TMPro;
 using UnityEngine;
+
 
 public class UiController : MonoBehaviour
 {
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
+    [SerializeField] private MainStoryUi mainStoryUi;
+    //public StatUi statUi;
+
+    public void ActiveOptionTextUi(bool isActive)
     {
-        
+        mainStoryUi.SetActiveTextUi(isActive);
     }
 
-    // Update is called once per frame
-    void Update()
+    public void ChangeUiText(string text)
     {
-        
+        mainStoryUi.WriteText(text);
+    }
+
+    public void ChangeUiImage(Dialogue dialogue)
+    {
+        Dialogue reviseDialogue = SanitizeText(dialogue);
+        mainStoryUi.StartSwapStoryScreen(reviseDialogue);
+    }
+
+    private Dialogue SanitizeText(Dialogue dialogue)
+    {
+        if (dialogue == null || string.IsNullOrEmpty(dialogue.text)) return null;
+        dialogue.text = dialogue.text.Replace("{", "").Replace("}", "");
+        return dialogue;
     }
 }

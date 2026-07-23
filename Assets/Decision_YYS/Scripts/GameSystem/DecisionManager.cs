@@ -47,6 +47,7 @@ public class DecisionManager : MonoBehaviour
     [SerializeField] private JoystickLikeGear gearController;
     [SerializeField] private StoryRelayManager relayManager;
     [SerializeField] private GameObject playerViewUI;
+    [SerializeField] private UiController uiController;
 
     #region Map & Player Movement
     // 맵 관련 클래스랑 구분.
@@ -112,9 +113,10 @@ public class DecisionManager : MonoBehaviour
             float currentZ = CalculateTargetZ();
             playerInstance.Initialize(new Vector3(-55f, 0.35f, currentZ));
             if (playerViewUI != null) playerViewUI.SetActive(true);
+            
+            currentState = StoryState.ShowingStory;
         }
 
-        currentState = StoryState.ShowingStory;
     }
 
     private void LoadNextStory()
@@ -389,7 +391,6 @@ public class DecisionManager : MonoBehaviour
         Debug.Log(isPlayerViewActive ? "플레이어 시점 ON" : "플레이어 시점 OFF");
     }
 
-    // UI 화면 쪽.
     public void OnScreenClicked()
     {
         if (isPlayerViewActive) return; // 플레이어 시점일 때는 클릭 무시
@@ -411,7 +412,6 @@ public class DecisionManager : MonoBehaviour
         }
     }
 
-    // UI 화면 쪽.
     public void ConfirmChoice(int gear)
     {
         // 플레이어 시점일 때는 선택 무시
@@ -447,7 +447,6 @@ public class DecisionManager : MonoBehaviour
         }
     }
 
-    // UI 화면 쪽.
     private void ProceedToNextStory()
     {
         storyIndex++;  
@@ -457,14 +456,12 @@ public class DecisionManager : MonoBehaviour
 
             if (nextStory.isTransition)
             {
-                option_Text.gameObject.SetActive(false);
                 currentState = StoryState.Transitioning;
-                StartCoroutine(SwipeTransition(nextStory));
+                uiController.ActiveOptionTextUi(false);
+                uiController.ChangeUiImage(nextStory);
             }
-            else
-            {
-                DisplayCurrentStory();
-            }
+
+            DisplayCurrentStory();
 
             saveManager.SaveProgress(chapterIndex, episodeIndex, storyIndex);
         }
