@@ -1,26 +1,17 @@
 ﻿using UnityEngine;
 using TMPro;
 using static Constants;
-using System.Collections;
 using UnityEngine.UI;
 using System.Collections.Generic;
 
 /// <summary>
-/// 게임 진행 데이터 관리.
+/// 게임 진행 관리.
 /// </summary>
 public class DecisionManager : MonoBehaviour
 {
 
     // 게임 요소를 담당하는(decision만 담당하는 매니저) 만들고, 세부 기능은 각각 나누어서 이벤트 발생시에 전달하도록 
     // [추가] 스탯 변화에 따른 전투 씬 진입을 관리하기 위한 이벤트 구독 및 처리 메서드를 클래스로 구분해야 함.
-    #region CardAnimation
-    [SerializeField] private RectTransform cardFront;
-    [SerializeField] private RectTransform cardBack;
-
-    [SerializeField] private TextMeshProUGUI front_Dialogue_Text;
-    [SerializeField] private TextMeshProUGUI back_Dialogue_Text;
-    [SerializeField] private TextMeshProUGUI option_Text;
-    #endregion
 
     #region storyState
     private StoryState currentState;
@@ -265,7 +256,7 @@ public class DecisionManager : MonoBehaviour
         LoadNextStory();
     }
 
-    // => player or map
+    // MapController.
     private float CalculateTargetZ()
     {
         if (currentOmnibus == null || scenarioData == null || chapterIndex >= chapterStartZs.Length) 
@@ -287,7 +278,7 @@ public class DecisionManager : MonoBehaviour
         return chapterStartZs[chapterIndex] + (totalChapterProgress * chapterLengths[chapterIndex]);
     }
 
-    // playr or map
+    // MapController.
     private void UpdatePlayerPosition()
     {
         if (playerInstance == null) return;
@@ -296,13 +287,12 @@ public class DecisionManager : MonoBehaviour
         playerInstance.SetTargetZ(targetZ);
     }
 
-    // UI 화면 쪽.
     private void DisplayCurrentStory()
     {
         if (scenarioData == null || scenarioData.MainStory == null || scenarioData.MainStory.Count == 0) return;
 
         var currentStory = scenarioData.MainStory[storyIndex];
-        front_Dialogue_Text.text = SanitizeText(currentStory.text);
+        uiController.ChangeUiText(TextTarget.FrontDialogue, currentStory);
 
         // [추가] 플레이어가 읽은 지문을 기록 리스트에 추가 (중복 방지: 이미 마지막 항목과 같으면 패스)
         if (playedHistory.Count == 0 || playedHistory[playedHistory.Count - 1] != currentStory)
@@ -311,7 +301,7 @@ public class DecisionManager : MonoBehaviour
         }
 
         // 배경 설정 적용
-        ApplyBackground(cardFront, currentStory.background);
+        uiController.ChangeBackground(currentStory.background);
 
         if (currentStory.type == "Choice")
         {
@@ -320,17 +310,16 @@ public class DecisionManager : MonoBehaviour
         else
         {
             currentState = StoryState.ShowingStory;
-            option_Text.gameObject.SetActive(false);
+            uiController.ActiveOptionTextUi(false);
         }
 
         UpdatePlayerPosition();
     }
 
-    // UI 화면 쪽.
     private void EnterChoiceState()
     {
         currentState = StoryState.WaitingForChoice;
-        option_Text.gameObject.SetActive(true);
+        uiController.ActiveOptionTextUi(true);
 
         // [수정] 캐시된 CurrentGear 대신 직접 현재 물리적 위치를 확인하여 즉시 반영
         int currentGear = (gearController != null) ? gearController.GetCurrentGearDirectly() : 0;
@@ -342,36 +331,11 @@ public class DecisionManager : MonoBehaviour
         else
         {
             // [수정] 중앙(0)일 때는 안내 문구로 복구
-            option_Text.text = "선택지를 선택하세요.";
+            uiController.ChangeUiText(TextTarget.Option, text: "선택지를 선택하세요.");
         }
     }
 
-    // UI 화면 쪽.
-    private void ApplyBackground(RectTransform card, string bgData)
-    {
-        if (string.IsNullOrEmpty(bgData) || bgData.ToLower() == "none") return;
-
-        Image dgImg = card.GetComponent<Image>();
-        if (dgImg == null) return;
-
-        Color customColor;
-        if (ColorUtility.TryParseHtmlString(bgData, out customColor))
-        {
-            dgImg.sprite = null;
-            dgImg.color = customColor;
-        }
-        else
-        {
-            Sprite loadedSprite = Resources.Load<Sprite>(bgData);
-            if (loadedSprite != null)
-            {
-                dgImg.sprite = loadedSprite;
-                dgImg.color = Color.white;
-            }
-        }
-    }
-
-    // UI 화면 쪽.
+    // MapController.
     public void TogglePlayerView()
     {
         isPlayerViewActive = !isPlayerViewActive;
@@ -475,7 +439,6 @@ public class DecisionManager : MonoBehaviour
         }
     }
 
-    // UI 화면 쪽.
     public void ShowOptionText(int gear)
     {
         if (scenarioData == null || scenarioData.MainStory == null || storyIndex < 0 || storyIndex >= scenarioData.MainStory.Count) return;
@@ -484,18 +447,18 @@ public class DecisionManager : MonoBehaviour
         // [추가] 기어가 중앙(0)이면 안내 문구로 복구
         if (gear == 0)
         {
-            option_Text.text = "선택지를 선택하세요.";
+            uiController.ChangeUiText(TextTarget.Option, text: "선택지를 선택하세요.");
             return;
         }
 
         int index = GetOptionIndexFromGear(gear);
         if (index >= 0 && index < scenarioData.MainStory[storyIndex].option.Length)
         {
-            option_Text.text = scenarioData.MainStory[storyIndex].option[index];
+            uiController.ChangeUiText(TextTarget.Option, text: scenarioData.MainStory[storyIndex].option[index]);
         }
     }
 
-    // UI 화면 쪽.
+    // JoyStickLikeGear.
     private int GetOptionIndexFromGear(int gear)
     {
         if (gear == (int) Gear.EvilGood) return 0;
@@ -503,76 +466,5 @@ public class DecisionManager : MonoBehaviour
         if (gear == (int) Gear.GoodGood) return 2;
         if (gear == (int) Gear.GoodBad) return 3;
         return -1;
-    }
-
-    // UI 화면 쪽.
-    private IEnumerator SwipeTransition(Dialogue nextStory)
-    {
-        back_Dialogue_Text.text = SanitizeText(nextStory.text);
-        string bgData = nextStory.background;
-
-        if (!string.IsNullOrEmpty(bgData) && bgData.ToLower() != "none")
-        {
-            Image dgImg = cardBack.GetComponent<Image>();
-            Color customColor;
-
-            if (ColorUtility.TryParseHtmlString(bgData, out customColor))
-            {
-                Debug.Log($"Color detected: {bgData}, applying color: {customColor}");
-                dgImg.sprite = null;
-                dgImg.color = customColor;
-            }
-            else
-            {
-                Debug.Log($"Not a color, trying to load resource: {bgData}");
-                Sprite loadedSprite = Resources.Load<Sprite>(bgData);
-                if (loadedSprite != null)
-                {
-                    dgImg.sprite = loadedSprite;
-                    dgImg.color = Color.white;
-                }
-            }
-        }
-
-        float duration = 0.5f;
-        float elasped = 0f;
-        Vector2 startPos = cardFront.anchoredPosition;
-        Quaternion startRot = cardFront.localRotation;
-
-        Vector2 targetPos = startPos + new Vector2(-1000f, -200f);
-        Quaternion targetRot = Quaternion.Euler(0f, 0f, 30f);
-
-        while (elasped < duration)
-        {
-            elasped += Time.deltaTime;
-            float t = Mathf.Clamp01(elasped / duration);
-
-            cardFront.anchoredPosition = Vector2.Lerp(startPos, targetPos, t);
-            cardFront.localRotation = Quaternion.Slerp(startRot, targetRot, t);
-            yield return null;
-        }
-
-        front_Dialogue_Text.text = SanitizeText(nextStory.text);
-
-        Image frontImg = cardFront.GetComponent<Image>();
-        Image backImg = cardBack.GetComponent<Image>();
-
-        if(frontImg != null && backImg != null)
-        {
-            frontImg.sprite = backImg.sprite;
-            frontImg.color = backImg.color;
-        }
-
-        cardFront.anchoredPosition = startPos;
-        cardFront.localRotation = startRot;
-
-        DisplayCurrentStory();
-    }
-
-    // UI 화면 쪽.
-    private string SanitizeText(string input)
-    {
-        if (string.IsNullOrEmpty(input)) return input;
-        return input.Replace("{", "").Replace("}", "");
     }
 }
