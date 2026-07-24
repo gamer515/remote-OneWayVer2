@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using static Constants;
 
-public class MainStoryUi : MonoBehaviour
+public class MainStoryUi : ParentUi
 {
     [SerializeField] private RectTransform cardFront;
     [SerializeField] private RectTransform cardBack;
@@ -12,6 +12,12 @@ public class MainStoryUi : MonoBehaviour
     [SerializeField] private TextMeshProUGUI front_Dialogue_Text;
     [SerializeField] private TextMeshProUGUI back_Dialogue_Text;
     [SerializeField] private TextMeshProUGUI option_Text;
+
+    public override void SetActivateUi(bool turn)
+    {
+        cardFront.gameObject.SetActive(turn);
+        cardBack.gameObject.SetActive(turn);
+    }
 
     public void SetActiveTextUi(bool isActive)
     {
@@ -33,25 +39,6 @@ public class MainStoryUi : MonoBehaviour
     {
         StartCoroutine(SwipeTransition(nextStory));
     }
-
-    //public void ShowOptionText(int gear)
-    //{
-    //    if (scenarioData == null || scenarioData.MainStory == null || storyIndex < 0 || storyIndex >= scenarioData.MainStory.Count) return;
-    //    if (scenarioData.MainStory[storyIndex].type != "Choice") return;
-
-    //    // [추가] 기어가 중앙(0)이면 안내 문구로 복구
-    //    if (gear == 0)
-    //    {
-    //        option_Text.text = "선택지를 선택하세요.";
-    //        return;
-    //    }
-
-    //    int index = GetOptionIndexFromGear(gear);
-    //    if (index >= 0 && index < scenarioData.MainStory[storyIndex].option.Length)
-    //    {
-    //        option_Text.text = scenarioData.MainStory[storyIndex].option[index];
-    //    }
-    //}
 
     public void ApplyBackground(string bgData)
     {

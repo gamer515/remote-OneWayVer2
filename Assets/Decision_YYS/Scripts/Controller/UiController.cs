@@ -6,8 +6,9 @@ using static Constants;
 public class UiController : MonoBehaviour
 {
     [SerializeField] private MainStoryUi mainStoryUi;
-    //public StatUi statUi;
+    [SerializeField] private MapUi mapUi;
 
+    #region MainStoryUi
     public void ActiveOptionTextUi(bool isActive)
     {
         mainStoryUi.SetActiveTextUi(isActive);
@@ -42,5 +43,20 @@ public class UiController : MonoBehaviour
         if (dialogue == null || string.IsNullOrEmpty(dialogue.text)) return null;
         dialogue.text = dialogue.text.Replace("{", "").Replace("}", "");
         return dialogue;
+    }
+    #endregion
+
+    #region MapUi
+    public void TurnOn_Off3DView()
+    {
+        ActiveMapOrStoryView(mapUi.TurnOn_OffCamera);
+        mapUi.ChangeScreen3DView();
+    }
+    #endregion
+
+    public void ActiveMapOrStoryView(bool turn)
+    {
+        mapUi.SetActivateUi(turn);
+        mainStoryUi.SetActivateUi(!turn);
     }
 }

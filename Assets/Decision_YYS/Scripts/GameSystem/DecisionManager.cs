@@ -9,44 +9,51 @@ using System.Collections.Generic;
 /// </summary>
 public class DecisionManager : MonoBehaviour
 {
-
-    // 게임 요소를 담당하는(decision만 담당하는 매니저) 만들고, 세부 기능은 각각 나누어서 이벤트 발생시에 전달하도록 
     // [추가] 스탯 변화에 따른 전투 씬 진입을 관리하기 위한 이벤트 구독 및 처리 메서드를 클래스로 구분해야 함.
+    // [추가] 저장된 진행도 및 스탯을 관리하는 클래스로 구분해야 함.
 
     #region storyState
     private StoryState currentState;
-    // [추가] 저장된 진행도 및 스탯을 관리하는 클래스로 구분해야 함.
 
     private OmnibusData currentOmnibus;
     private ScenarioData scenarioData;
 
-    // 인트로, 무협~
+    // Initials, MartialArts, Wisdoms,...
     private int chapterIndex = 0;
-    // initial_1, initial_2~, martial_1~
+    // initial_1, initial_2 | martialArt_1, martialArt_2 |...
     private int episodeIndex = 0;
-    // 각 에피소드 내에서 지문 하나하나
+    // initial_1(1), initial_1(2), initial_1(3),...
     private int storyIndex = 0;
 
     // [추가] 현재 로드된 시나리오 파일 경로 기록
     private string currentScenarioPath;
 
+    // 지금까지 진행된 이야기까지 수정하는 건데,
+    // 뒷 이야기를 보지 않았기에 앞부분까지 수정이 맞는 지, 아니면 이야기 분위기가 변경이
+    // 되기에 전체적으로 변경을 해야 하는 지 확인해 봐야 함.
     private List<Dialogue> playedHistory = new List<Dialogue>();
     #endregion
 
     // 과한 coupling을 줄여야 하는데, 일단은 편의상 DecisionManager에서 직접 참조하는 중.
     [Header("View & Control Settings")]
+    // 추후에 화면 전환이 일어나면 기어로 주변 환경을 보게만 만들고 그 외의 선택되는 기능은 막던가
+    // 아니면 객체를 따로 만들고 넣고 해서 관리를 하도록 하자.
     [SerializeField] private JoystickLikeGear gearController;
-    [SerializeField] private StoryRelayManager relayManager;
-    [SerializeField] private GameObject playerViewUI;
     [SerializeField] private UiController uiController;
+    
+    // 이것도 전투씬에 들어가면 어떻게 플레이를 했냐에 따라 데이터 수집이 필요해서 싱글톤이 맞는 듯.
+    [SerializeField] private StoryRelayManager relayManager;
 
+    // 이거는 MapController로 이동시켜야 함.
+    [SerializeField] private GameObject playerViewUI;
     #region Map & Player Movement
-    // 맵 관련 클래스랑 구분.
+
+    // MapController.
     private bool isPlayerViewActive = false;
 
     [Header("Player Movement")]
     private Player playerInstance;
-    private Camera playerCamera; // 플레이어 객체에 붙은 카메라 저장용
+    // PlayerController.
     private float[] chapterStartZs = { 23f, 27f, 35f };
     private float[] chapterLengths = { 4f, 8f, 8f };
     #endregion
@@ -190,22 +197,18 @@ public class DecisionManager : MonoBehaviour
                 relayManager.Relay("MidTransition", currentScenarioPath, playedHistory, statContainer.stats, chapterIndex);
             }
 
-            // GameManager
             // 3. 다음 챕터로 인덱스 준비
             chapterIndex++;
             episodeIndex = 0;
             storyIndex = 0;
 
-            // GameManager
             // 4. 저장 (씬이 다시 로드될 때 여기서부터 시작하기 위함)
             saveManager.SaveProgress(chapterIndex, episodeIndex, storyIndex);
             
-            // Player or statContainer
             // 5. 스탯 초기화 및 초기화된 스탯 저장
             statContainer.ResetAllStats();
             saveManager.SaveStats(statContainer.stats);
 
-            // GameManager
             // 6. 전투 씬으로 전환
             currentState = StoryState.Transitioning;
             UnityEngine.SceneManagement.SceneManager.LoadScene("BattleScene");
@@ -256,7 +259,7 @@ public class DecisionManager : MonoBehaviour
         LoadNextStory();
     }
 
-    // MapController.
+    // PlayerController.
     private float CalculateTargetZ()
     {
         if (currentOmnibus == null || scenarioData == null || chapterIndex >= chapterStartZs.Length) 
@@ -278,7 +281,7 @@ public class DecisionManager : MonoBehaviour
         return chapterStartZs[chapterIndex] + (totalChapterProgress * chapterLengths[chapterIndex]);
     }
 
-    // MapController.
+    // PlayerController.
     private void UpdatePlayerPosition()
     {
         if (playerInstance == null) return;
@@ -333,26 +336,6 @@ public class DecisionManager : MonoBehaviour
             // [수정] 중앙(0)일 때는 안내 문구로 복구
             uiController.ChangeUiText(TextTarget.Option, text: "선택지를 선택하세요.");
         }
-    }
-
-    // MapController.
-    public void TogglePlayerView()
-    {
-        isPlayerViewActive = !isPlayerViewActive;
-        
-        // 1. UI 활성화/비활성화
-        if (playerViewUI != null)
-        {
-            playerViewUI.SetActive(isPlayerViewActive);
-        }
-
-        // 2. 플레이어 객체에 붙은 카메라 켜기/끄기
-        if (playerCamera != null)
-        {
-            playerCamera.enabled = isPlayerViewActive;
-        }
-        
-        Debug.Log(isPlayerViewActive ? "플레이어 시점 ON" : "플레이어 시점 OFF");
     }
 
     public void OnScreenClicked()
@@ -458,7 +441,6 @@ public class DecisionManager : MonoBehaviour
         }
     }
 
-    // JoyStickLikeGear.
     private int GetOptionIndexFromGear(int gear)
     {
         if (gear == (int) Gear.EvilGood) return 0;
