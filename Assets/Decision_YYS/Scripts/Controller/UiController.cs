@@ -6,7 +6,7 @@ using static Constants;
 public class UiController : MonoBehaviour
 {
     [SerializeField] private MainStoryUi mainStoryUi;
-    [SerializeField] private MapUi mapUi;
+    [SerializeField] private ViewUi viewUi;
 
     #region MainStoryUi
     public void ActiveOptionTextUi(bool isActive)
@@ -49,14 +49,14 @@ public class UiController : MonoBehaviour
     #region MapUi
     public void TurnOn_Off3DView()
     {
-        ActiveMapOrStoryView(mapUi.TurnOn_OffCamera);
-        mapUi.ChangeScreen3DView();
+        ActiveMapOrStoryView(viewUi.TurnOn_OffCamera);
+        viewUi.ChangeScreen3DView();
     }
     #endregion
 
     public void ActiveMapOrStoryView(bool turn)
     {
-        mapUi.SetActivateUi(turn);
+        viewUi.SetActivateUi(turn);
         mainStoryUi.SetActivateUi(!turn);
     }
 }

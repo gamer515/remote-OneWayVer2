@@ -1,7 +1,7 @@
 ﻿using Unity.VisualScripting;
 using UnityEngine;
 
-public class MapUi : ParentUi
+public class ViewUi : ParentUi
 {
     [SerializeField] private RectTransform view;
 

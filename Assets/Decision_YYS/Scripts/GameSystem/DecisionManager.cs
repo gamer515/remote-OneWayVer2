@@ -55,6 +55,7 @@ public class DecisionManager : MonoBehaviour
     private Player playerInstance;
     // PlayerController.
     private float[] chapterStartZs = { 23f, 27f, 35f };
+    [SerializeField] private GameObject terrainObj;
     private float[] chapterLengths = { 4f, 8f, 8f };
     #endregion
 
@@ -109,7 +110,9 @@ public class DecisionManager : MonoBehaviour
             }
 
             float currentZ = CalculateTargetZ();
-            playerInstance.Initialize(new Vector3(-55f, 0.35f, currentZ));
+            Vector3 tVector3 = terrainObj.transform.position;
+            playerInstance.Initialize(tVector3);
+            //playerInstance.Initialize(new Vector3(-55f, 0.35f, currentZ));
             if (playerViewUI != null) playerViewUI.SetActive(true);
             
             currentState = StoryState.ShowingStory;
