@@ -2,6 +2,7 @@
 using static Constants;
 using System.Collections;
 
+//로딩에 필요한 데이터 구분 고려
 public class GameManager : MonoBehaviour
 {
     private static GameManager instance;

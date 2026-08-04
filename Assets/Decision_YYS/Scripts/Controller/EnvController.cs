@@ -1,5 +1,7 @@
-﻿using UnityEngine;
+﻿using System.Collections.Generic;
+using UnityEngine;
 
+//로딩에 필요한 데이터 구분 고려
 public class EnvController : MonoBehaviour
 {
     // terrain 저장소
@@ -10,7 +12,7 @@ public class EnvController : MonoBehaviour
 
     private TerrainDataRoot currentTerrainData;
 
-    private void Start()
+    private void Awake()
     {
         // 초기화
         if (terrain != null)
@@ -22,7 +24,7 @@ public class EnvController : MonoBehaviour
         //Debug.Log("<color=green>Current Terrain Data2: </color>" + currentTerrainData.TerrainInfo.places.Length);
     }
 
-    public void LoadTerrain(string terrainFilePath)
+    private void LoadTerrain(string terrainFilePath)
     {
         currentTerrainData = SaveIOService.Instance.LoadData<TerrainDataRoot>(terrainFilePath);
 
@@ -33,7 +35,7 @@ public class EnvController : MonoBehaviour
             {
                 //ScriptableObject로 건물을 구분을 할려고 함.
                 //GameObject prefab = Resources.Load<GameObject>(place.prefadId);
-                if (prefab != null)
+                if (prefab != null && !string.IsNullOrEmpty(place.destination))
                 {
                     Vector3 origin = terrain.transform.position;
                     Vector3 eachPosition = new Vector3(place.position.x, place.position.y, place.position.z + chunkSize * place.chunkIndex);
@@ -44,7 +46,7 @@ public class EnvController : MonoBehaviour
                 }
                 else
                 {
-                    Debug.LogWarning($"Prefab not found for ID: {place.prefadId}");
+                    Debug.LogWarning($"Prefab not found or destination is empty for ID");
                 }
             }
         }
@@ -52,5 +54,43 @@ public class EnvController : MonoBehaviour
         {
             Debug.LogWarning("Failed to load terrain data or terrain GameObject is not assigned.");
         }
+    }
+
+    public TerrainData getTerrainData()
+    {
+        return currentTerrainData.TerrainInfo;
+    }
+
+    public float getChunkSize()
+    {
+        return chunkSize;
+    }
+
+    public List<string> FindPlace()
+    {
+        TerrainData terrainData = currentTerrainData.TerrainInfo;
+        if(terrainData == null || terrainData.places == null)
+        {
+            Debug.LogWarning("Terrain data or places are null.");
+            return new List<string>();
+        }
+
+        List<string> placeData = new List<string>();
+
+        foreach (var place in terrainData.places)
+        {
+            if (!string.IsNullOrEmpty(place.destination))
+            {
+                placeData.Add(place.destination);
+            }
+            else
+            {
+                placeData.Add("noPlace");
+            }
+        }
+
+        Debug.Log("<color=blue>Place Data: </color>" + string.Join(", ", placeData));
+
+        return placeData;
     }
 }

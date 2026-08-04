@@ -1,8 +1,9 @@
-﻿using UnityEngine;
-using TMPro;
-using static Constants;
-using UnityEngine.UI;
+﻿using System;
 using System.Collections.Generic;
+using TMPro;
+using UnityEngine;
+using UnityEngine.UI;
+using static Constants;
 
 /// <summary>
 /// 게임 진행 관리.
@@ -25,6 +26,9 @@ public class DecisionManager : MonoBehaviour
     // initial_1(1), initial_1(2), initial_1(3),...
     private int storyIndex = 0;
 
+    private int nextDestinationIndex = 0;
+    private float stepLength = 0.0f;
+
     // [추가] 현재 로드된 시나리오 파일 경로 기록
     private string currentScenarioPath;
 
@@ -43,6 +47,8 @@ public class DecisionManager : MonoBehaviour
     
     // 이것도 전투씬에 들어가면 어떻게 플레이를 했냐에 따라 데이터 수집이 필요해서 싱글톤이 맞는 듯.
     [SerializeField] private StoryRelayManager relayManager;
+    
+    [SerializeField] private EnvController envController;
 
     // 이거는 MapController로 이동시켜야 함.
     [SerializeField] private GameObject playerViewUI;
@@ -110,7 +116,8 @@ public class DecisionManager : MonoBehaviour
                 statContainer.SetStats(playerStats.stats);
             }
 
-            float currentZ = CalculateTargetZ();
+            //float currentZ = CalculateTargetZ();
+            float currentZ = CalculateTargetZForDestination();
             Vector3 tVector3 = terrainObj.transform.position;
             playerInstance.Initialize(tVector3);
             //playerInstance.Initialize(new Vector3(-55f, 0.35f, currentZ));
@@ -287,8 +294,51 @@ public class DecisionManager : MonoBehaviour
 
     private float CalculateTargetZForDestination()
     {
-        // 해당 목적지까지 찾는 거 확인. => 
-        return 0f;
+        // 언제 목표 지검 계산을 하는 지 확인.
+        // 목표 지점이 있는 경우와 없는 경우 생각.
+        // storyIndex 불일치 문제 해결.
+        // 다음 목표 지점으로 넘어가는 과정도 생각.
+        
+        TerrainData terrainData = envController.getTerrainData();
+        for(int i = nextDestinationIndex; i < terrainData.places.Length; i++)
+        {
+            if (!string.IsNullOrEmpty(terrainData.places[i].destination))
+            {
+                nextDestinationIndex = i;
+                Debug.LogWarning($"Next destination found: {terrainData.places[i].destination} at index {i}");
+                break;
+            }
+        }
+
+        // 처음부터 하는 것보다는 다음 지점부터 확인가능하게 구상.
+
+        int dialogueCount = (scenarioData.MainStory != null) ? scenarioData.MainStory.Count : 0;
+        int stepCount = 0;
+
+        for (int i = 0; i < dialogueCount; i++)
+        {
+            var dialogue = scenarioData.MainStory[i];
+            if (string.IsNullOrEmpty(dialogue.destination))
+            {
+                stepCount++;
+            }
+            else
+            {
+                Debug.LogWarning($"{dialogue.destination} will be arrived by {stepCount} step(s).");
+                break;
+            }
+        }
+
+        stepLength = (stepCount > 0) ? terrainData.places[nextDestinationIndex].position.z + envController.getChunkSize() * terrainData.places[nextDestinationIndex].chunkIndex / stepCount : 0;
+        Debug.LogWarning($"<color=red>Calculated step length: {stepLength} for destination {terrainData.places[nextDestinationIndex].destination} at index {nextDestinationIndex}</color>");
+
+        //여기서 목표에 도착 혹은 목표까지 걸음 폭이나 이런 조건을 구분.
+        if (scenarioData.MainStory[storyIndex].destination != terrainData.places[nextDestinationIndex].destination)
+        {
+            return stepLength;
+        }
+
+        return stepLength;
     }
 
     // PlayerController.
@@ -296,7 +346,8 @@ public class DecisionManager : MonoBehaviour
     {
         if (playerInstance == null) return;
         
-        float targetZ = CalculateTargetZ();
+        //float targetZ = CalculateTargetZ();
+        float targetZ = CalculateTargetZForDestination();
         playerInstance.SetTargetZ(targetZ);
     }
 
