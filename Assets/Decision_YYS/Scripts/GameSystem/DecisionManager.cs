@@ -97,6 +97,7 @@ public class DecisionManager : MonoBehaviour
 
     private void Start()
     {
+        // GameState가 특정 시점에 따른 수정을 해야 한다.
         if (GameManager.Instance.CurrentState == GameState.Main)
         {
             PlayerStats playerStats = null;
@@ -282,6 +283,12 @@ public class DecisionManager : MonoBehaviour
 
         // 목표 Z 계산
         return chapterStartZs[chapterIndex] + (totalChapterProgress * chapterLengths[chapterIndex]);
+    }
+
+    private float CalculateTargetZForDestination()
+    {
+        // 해당 목적지까지 찾는 거 확인. => 
+        return 0f;
     }
 
     // PlayerController.

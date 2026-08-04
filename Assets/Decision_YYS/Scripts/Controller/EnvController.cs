@@ -5,6 +5,8 @@ public class EnvController : MonoBehaviour
     // terrain 저장소
 
     [SerializeField] private GameObject terrain;
+    [SerializeField] private GameObject prefab;
+    private float chunkSize = 100f;
 
     private TerrainDataRoot currentTerrainData;
 
@@ -13,7 +15,7 @@ public class EnvController : MonoBehaviour
         // 초기화
         if (terrain != null)
         {
-            currentTerrainData = SaveIOService.Instance.LoadData<TerrainDataRoot>("Initial_Terrain/TerrainInfo_Initial");
+            LoadTerrain("Initial_Terrain/TerrainInfo_Initial");
         }
 
         //Debug.Log("<color=green>Current Terrain Data1: </color>" + currentTerrainData.TerrainInfo.terrainName);
@@ -23,20 +25,21 @@ public class EnvController : MonoBehaviour
     public void LoadTerrain(string terrainFilePath)
     {
         currentTerrainData = SaveIOService.Instance.LoadData<TerrainDataRoot>(terrainFilePath);
+
         if (currentTerrainData != null && terrain != null)
         {
-            // 기존 terrain 제거
-            foreach (Transform child in terrain.transform)
-            {
-                Destroy(child.gameObject);
-            }
             // 새로운 terrain 생성
             foreach (var place in currentTerrainData.TerrainInfo.places)
             {
-                GameObject prefab = Resources.Load<GameObject>(place.prefadId);
+                //ScriptableObject로 건물을 구분을 할려고 함.
+                //GameObject prefab = Resources.Load<GameObject>(place.prefadId);
                 if (prefab != null)
                 {
-                    GameObject newPlace = Instantiate(prefab, place.position, Quaternion.Euler(place.rotation), terrain.transform);
+                    Vector3 origin = terrain.transform.position;
+                    Vector3 eachPosition = new Vector3(place.position.x, place.position.y, place.position.z + chunkSize * place.chunkIndex);
+                    Vector3 position = origin + eachPosition;
+
+                    GameObject newPlace = Instantiate(prefab, position, Quaternion.Euler(place.rotation), terrain.transform);
                     newPlace.name = $"Place_{place.chunkIndex}";
                 }
                 else

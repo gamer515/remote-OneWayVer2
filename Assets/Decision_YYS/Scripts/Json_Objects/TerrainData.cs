@@ -18,6 +18,7 @@ public class PlaceData
 {
     public int chunkIndex;
     public string prefadId;
+    public string destination;
     public Vector3 position;
     public Vector3 rotation;
 }

@@ -16,6 +16,7 @@ public class Dialogue
     public string type;
     public bool isTransition; // 제거 or 수정
     public string background; // 제거 or 수정
+    public string destination;
     public string character; // 제거 or 수정
     public string text;
     public string[] option;
