@@ -88,6 +88,28 @@ public class StatContainer : MonoBehaviour
         RefreshAllUI();
     }
 
+    public ChapterResult CreateChapterResult(int chapterIndex)
+    {
+        int dominantStatIndex = 0;
+        int dominantStatValue = statEntries.Count > 0 ? statEntries[0].value : 0;
+
+        for (int i = 1; i < statEntries.Count; i++)
+        {
+            if (statEntries[i].value <= dominantStatValue)
+                continue;
+
+            dominantStatValue = statEntries[i].value;
+            dominantStatIndex = i;
+        }
+
+        return new ChapterResult
+        {
+            chapterIndex = chapterIndex,
+            dominantStatIndex = dominantStatIndex,
+            dominantStatValue = dominantStatValue
+        };
+    }
+
     /// <summary>
     /// 특정 인덱스의 UI를 갱신합니다. (이름과 수치 각각 반영)
     /// </summary>

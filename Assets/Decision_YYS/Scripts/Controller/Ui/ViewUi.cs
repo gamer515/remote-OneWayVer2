@@ -1,30 +1,36 @@
-﻿using Unity.VisualScripting;
 using UnityEngine;
 
 public class ViewUi : ParentUi
 {
     [SerializeField] private RectTransform view;
 
-    private bool turnOn_OffCamera = true;
-    public bool TurnOn_OffCamera { get { return turnOn_OffCamera; } }
+    private bool willEnablePlayerView = true;
+    public bool WillEnablePlayerView => willEnablePlayerView;
 
-    public void ChangeScreen3DView()
+    public bool ApplyPlayerViewToggle()
     {
-        Debug.Log("ChangeScreen3DView 호출됨");
-
         Player player = FindFirstObjectByType<Player>();
-        if (player == null) { Debug.Log("Player 찾지 못함."); return; }
+        if (player == null)
+        {
+            Debug.LogWarning("플레이어를 찾을 수 없습니다.");
+            return false;
+        }
 
-        Camera cam = player.gameObject.GetComponentInChildren<Camera>(true);
-        if (cam == null) { Debug.Log("카메라를 찾지 못함"); return; }
+        Camera playerCamera = player.GetComponentInChildren<Camera>(true);
+        if (playerCamera == null)
+        {
+            Debug.LogWarning("플레이어 카메라를 찾을 수 없습니다.");
+            return false;
+        }
 
-        cam.enabled = turnOn_OffCamera;
-
-        turnOn_OffCamera = !turnOn_OffCamera;
+        playerCamera.enabled = willEnablePlayerView;
+        willEnablePlayerView = !willEnablePlayerView;
+        return true;
     }
 
-    public override void SetActivateUi(bool turn)
+    public override void SetActivateUi(bool isActive)
     {
-        view.gameObject.SetActive(turn);
+        if (view != null)
+            view.gameObject.SetActive(isActive);
     }
 }

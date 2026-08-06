@@ -36,7 +36,7 @@ public class JoystickLikeGear : MonoBehaviour
 
     public event Action<int> OnGearChanged;
     public event Action<int> OnGearConfirmed;
-    public event Action OnScreenCliked;
+    public event Action OnScreenClicked;
 
     [SerializeField] private DynamicFaceController faceController;
 
@@ -200,7 +200,7 @@ public class JoystickLikeGear : MonoBehaviour
             }
             else
             {
-                OnScreenCliked?.Invoke();
+                OnScreenClicked?.Invoke();
             }
         }
     }

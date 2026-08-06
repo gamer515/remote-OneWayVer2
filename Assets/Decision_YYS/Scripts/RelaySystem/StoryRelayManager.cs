@@ -2,6 +2,12 @@
 using System.Collections.Generic;
 using System.Text;
 
+public enum StoryRelayTrigger
+{
+    MidTransition,
+    ChapterEnd
+}
+
 public class StoryRelayManager : MonoBehaviour
 {
     [SerializeField] private PromptData promptData;
@@ -9,30 +15,31 @@ public class StoryRelayManager : MonoBehaviour
     /// <summary>
     /// 이야기 데이터를 필터링하고 요약하여 외부로 전송합니다.
     /// </summary>
-    /// <param name="triggerType">"MidTransition" 또는 "ChapterEnd"</param>
-    public void Relay(string triggerType, string currentFileName, List<Dialogue> history, int[] stats, int chapter)
+    public void Relay(StoryRelayTrigger trigger, string currentFileName, List<Dialogue> history, int[] stats, int chapter)
     {
-        // 1. 'change'가 "true"인 지문만 필터링 (핵심 지문만 압축)
-        List<Dialogue> filtered = history.FindAll(d => d.change != null && d.change.ToLower() == "true");
-        
-        // 2. 텍스트 요약 생성 (ID 포함)
-        string summary = BuildSummary(filtered);
+        if (promptData == null)
+        {
+            Debug.LogError("StoryRelayManager에 PromptData가 연결되지 않았습니다.", this);
+            return;
+        }
 
-        // 3. 가장 높은 스탯 찾기 및 분위기 결정
+        string triggerType = trigger.ToString();
+        // 전체 기록 대신 change=true인 핵심 지문만 보내 프롬프트 크기를 제한합니다.
+        List<Dialogue> filtered = history != null
+            ? history.FindAll(d => d != null && d.ShouldRelay)
+            : new List<Dialogue>();
+        
+        string summary = BuildSummary(filtered);
         int maxStat = GetMaxStat(stats);
         string atmosphere = DetermineAtmosphere(maxStat);
-        
-        // 4. 트리거 타입에 따른 템플릿 선택 및 프롬프트 결합
-        string template = (triggerType == "MidTransition") 
+
+        string template = (trigger == StoryRelayTrigger.MidTransition)
             ? promptData.midTransitionTemplate 
             : promptData.chapterEndTemplate;
             
         string finalPrompt = string.Format(template, summary, atmosphere, promptData.responseFormatTemplate);
         
-        // 5. 패킷 생성 (파일명 포함)
         StoryPacket packet = new StoryPacket(triggerType, currentFileName, finalPrompt, filtered, stats, chapter);
-        
-        // 6. 전송 시뮬레이션
         SendPacket(packet);
     }
 
@@ -70,7 +77,12 @@ public class StoryRelayManager : MonoBehaviour
 
     private void SendPacket(StoryPacket packet)
     {
-        // 모든 데이터를 포함한 패킷을 AI 매니저에게 전달
+        if (AIAPIClient.Instance == null)
+        {
+            Debug.LogError("AIAPIClient 인스턴스를 찾을 수 없습니다.");
+            return;
+        }
+
         AIAPIClient.Instance.ProcessPacket(packet);
     }
 }

@@ -1,96 +1,39 @@
-﻿using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
-//로딩에 필요한 데이터 구분 고려
+/// <summary>
+/// 환경 데이터 로딩과 지형 생성을 연결하는 Unity 진입점입니다.
+/// </summary>
 public class EnvController : MonoBehaviour
 {
-    // terrain 저장소
+    private const string InitialTerrainPath = "Initial_Terrain/TerrainInfo_Initial";
 
     [SerializeField] private GameObject terrain;
     [SerializeField] private GameObject prefab;
-    private float chunkSize = 100f;
+    [SerializeField] private float chunkSize = 100f;
 
-    private TerrainDataRoot currentTerrainData;
+    public TerrainData TerrainData { get; private set; }
+    public TerrainPlaceRegistry PlaceRegistry { get; private set; }
+    public float ChunkSize => chunkSize;
+    public Vector3 TerrainOrigin => terrain != null ? terrain.transform.position : Vector3.zero;
+
+    private readonly TerrainRepository terrainRepository = new TerrainRepository();
+    private readonly TerrainBuilder terrainBuilder = new TerrainBuilder();
 
     private void Awake()
     {
-        // 초기화
-        if (terrain != null)
+        TerrainData = terrainRepository.Load(InitialTerrainPath);
+        PlaceRegistry = new TerrainPlaceRegistry(TerrainData, TerrainOrigin, chunkSize);
+
+        if (TerrainData == null)
         {
-            LoadTerrain("Initial_Terrain/TerrainInfo_Initial");
+            Debug.LogError($"지형 데이터를 불러올 수 없습니다: {InitialTerrainPath}");
+            return;
         }
 
-        //Debug.Log("<color=green>Current Terrain Data1: </color>" + currentTerrainData.TerrainInfo.terrainName);
-        //Debug.Log("<color=green>Current Terrain Data2: </color>" + currentTerrainData.TerrainInfo.places.Length);
-    }
-
-    private void LoadTerrain(string terrainFilePath)
-    {
-        currentTerrainData = SaveIOService.Instance.LoadData<TerrainDataRoot>(terrainFilePath);
-
-        if (currentTerrainData != null && terrain != null)
-        {
-            // 새로운 terrain 생성
-            foreach (var place in currentTerrainData.TerrainInfo.places)
-            {
-                //ScriptableObject로 건물을 구분을 할려고 함.
-                //GameObject prefab = Resources.Load<GameObject>(place.prefadId);
-                if (prefab != null && !string.IsNullOrEmpty(place.destination))
-                {
-                    Vector3 origin = terrain.transform.position;
-                    Vector3 eachPosition = new Vector3(place.position.x, place.position.y, place.position.z + chunkSize * place.chunkIndex);
-                    Vector3 position = origin + eachPosition;
-
-                    GameObject newPlace = Instantiate(prefab, position, Quaternion.Euler(place.rotation), terrain.transform);
-                    newPlace.name = $"Place_{place.chunkIndex}";
-                }
-                else
-                {
-                    Debug.LogWarning($"Prefab not found or destination is empty for ID");
-                }
-            }
-        }
-        else
-        {
-            Debug.LogWarning("Failed to load terrain data or terrain GameObject is not assigned.");
-        }
-    }
-
-    public TerrainData getTerrainData()
-    {
-        return currentTerrainData.TerrainInfo;
-    }
-
-    public float getChunkSize()
-    {
-        return chunkSize;
-    }
-
-    public List<string> FindPlace()
-    {
-        TerrainData terrainData = currentTerrainData.TerrainInfo;
-        if(terrainData == null || terrainData.places == null)
-        {
-            Debug.LogWarning("Terrain data or places are null.");
-            return new List<string>();
-        }
-
-        List<string> placeData = new List<string>();
-
-        foreach (var place in terrainData.places)
-        {
-            if (!string.IsNullOrEmpty(place.destination))
-            {
-                placeData.Add(place.destination);
-            }
-            else
-            {
-                placeData.Add("noPlace");
-            }
-        }
-
-        Debug.Log("<color=blue>Place Data: </color>" + string.Join(", ", placeData));
-
-        return placeData;
+        terrainBuilder.Build(
+            TerrainData,
+            PlaceRegistry,
+            prefab,
+            terrain != null ? terrain.transform : null);
     }
 }

@@ -21,7 +21,8 @@ public class MainStoryUi : ParentUi
 
     public void SetActiveTextUi(bool isActive)
     {
-        option_Text.gameObject.SetActive(isActive);
+        if (option_Text != null)
+            option_Text.gameObject.SetActive(isActive);
     }
 
     public void WriteText(TextTarget target , string text)
@@ -35,14 +36,18 @@ public class MainStoryUi : ParentUi
         targetText.text = text;
     }
 
-    public void StartSwapStoryScreen(Dialogue nextStory)
+    public void StartSwapStoryScreen(
+        Dialogue nextStory,
+        string displayText,
+        System.Action onCompleted = null)
     {
-        StartCoroutine(SwipeTransition(nextStory));
+        StartCoroutine(SwipeTransition(nextStory, displayText, onCompleted));
     }
 
     public void ApplyBackground(string bgData)
     {
-        if (string.IsNullOrEmpty(bgData) || bgData.ToLower() == "none") return;
+        if (string.IsNullOrEmpty(bgData) ||
+            string.Equals(bgData, "none", System.StringComparison.OrdinalIgnoreCase)) return;
 
         Image dgImg = cardFront.GetComponent<Image>();
         if (dgImg == null) return;
@@ -79,12 +84,16 @@ public class MainStoryUi : ParentUi
         }
     }
 
-    private IEnumerator SwipeTransition(Dialogue nextStory)
+    private IEnumerator SwipeTransition(
+        Dialogue nextStory,
+        string displayText,
+        System.Action onCompleted)
     {
-        back_Dialogue_Text.text = nextStory.text;
+        back_Dialogue_Text.text = displayText;
         string bgData = nextStory.background;
 
-        if (!string.IsNullOrEmpty(bgData) && bgData.ToLower() != "none")
+        if (!string.IsNullOrEmpty(bgData) &&
+            !string.Equals(bgData, "none", System.StringComparison.OrdinalIgnoreCase))
         {
             Image dgImg = cardBack.GetComponent<Image>();
             Color customColor;
@@ -125,7 +134,7 @@ public class MainStoryUi : ParentUi
             yield return null;
         }
 
-        front_Dialogue_Text.text = nextStory.text;
+        front_Dialogue_Text.text = displayText;
 
         Image frontImg = cardFront.GetComponent<Image>();
         Image backImg = cardBack.GetComponent<Image>();
@@ -138,5 +147,6 @@ public class MainStoryUi : ParentUi
 
         cardFront.anchoredPosition = startPos;
         cardFront.localRotation = startRot;
+        onCompleted?.Invoke();
     }
 }

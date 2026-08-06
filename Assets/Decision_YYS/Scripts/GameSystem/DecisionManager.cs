@@ -1,76 +1,66 @@
 ﻿using System;
 using System.Collections.Generic;
-using TMPro;
 using UnityEngine;
-using UnityEngine.UI;
 using static Constants;
 
 /// <summary>
-/// 게임 진행 관리.
+/// DecisionScene의 입력, 스토리, 이동, 저장 및 전환 흐름을 조율합니다.
+/// 세부 계산과 Unity 표현은 각 전용 컨트롤러에 위임합니다.
 /// </summary>
 public class DecisionManager : MonoBehaviour
 {
-    // [추가] 스탯 변화에 따른 전투 씬 진입을 관리하기 위한 이벤트 구독 및 처리 메서드를 클래스로 구분해야 함.
-    // [추가] 저장된 진행도 및 스탯을 관리하는 클래스로 구분해야 함.
-
-    #region storyState
     private StoryState currentState;
 
-    private OmnibusData currentOmnibus;
-    private ScenarioData scenarioData;
+    private DecisionSession session;
+    private StoryProgressController storyProgressController;
+    private DestinationController destinationController;
+    private DecisionSaveService saveService;
+    private ChapterFlowController chapterFlowController;
+    private DecisionInputController inputController;
+    private DecisionPresentationController presentationController;
+    private readonly ChoiceController choiceController = new ChoiceController();
+    private readonly ScenarioRepository scenarioRepository = new ScenarioRepository();
+    private readonly SceneTransitionService sceneTransitionService = new SceneTransitionService();
 
-    // Initials, MartialArts, Wisdoms,...
-    private int chapterIndex = 0;
-    // initial_1, initial_2 | martialArt_1, martialArt_2 |...
-    private int episodeIndex = 0;
-    // initial_1(1), initial_1(2), initial_1(3),...
-    private int storyIndex = 0;
-
-    private int nextDestinationIndex = 0;
-    private float stepLength = 0.0f;
-
-    // [추가] 현재 로드된 시나리오 파일 경로 기록
-    private string currentScenarioPath;
-
-    // 지금까지 진행된 이야기까지 수정하는 건데,
-    // 뒷 이야기를 보지 않았기에 앞부분까지 수정이 맞는 지, 아니면 이야기 분위기가 변경이
-    // 되기에 전체적으로 변경을 해야 하는 지 확인해 봐야 함.
-    private List<Dialogue> playedHistory = new List<Dialogue>();
-    #endregion
-
-    // 과한 coupling을 줄여야 하는데, 일단은 편의상 DecisionManager에서 직접 참조하는 중.
+    private OmnibusData currentOmnibus => session?.Omnibus;
+    private int chapterIndex
+    {
+        get => session.ChapterIndex;
+        set => session.ChapterIndex = value;
+    }
+    private int episodeIndex
+    {
+        get => session.EpisodeIndex;
+        set => session.EpisodeIndex = value;
+    }
+    private int storyIndex
+    {
+        get => session.StoryIndex;
+        set => session.StoryIndex = value;
+    }
+    private string currentScenarioPath
+    {
+        get => session.ScenarioPath;
+        set => session.ScenarioPath = value;
+    }
+    private List<Dialogue> playedHistory => session.PlayedHistory;
     [Header("View & Control Settings")]
-    // 추후에 화면 전환이 일어나면 기어로 주변 환경을 보게만 만들고 그 외의 선택되는 기능은 막던가
-    // 아니면 객체를 따로 만들고 넣고 해서 관리를 하도록 하자.
     [SerializeField] private JoystickLikeGear gearController;
     [SerializeField] private UiController uiController;
-    
-    // 이것도 전투씬에 들어가면 어떻게 플레이를 했냐에 따라 데이터 수집이 필요해서 싱글톤이 맞는 듯.
     [SerializeField] private StoryRelayManager relayManager;
-    
     [SerializeField] private EnvController envController;
-
-    // 이거는 MapController로 이동시켜야 함.
     [SerializeField] private GameObject playerViewUI;
-    #region Map & Player Movement
-
-    // MapController.
-    private bool isPlayerViewActive = false;
-
     [Header("Player Movement")]
-    private Player playerInstance;
-    // PlayerController.
-    private float[] chapterStartZs = { 23f, 27f, 35f };
-    [SerializeField] private GameObject terrainObj;
-    private float[] chapterLengths = { 4f, 8f, 8f };
-    #endregion
+    private DecisionPlayerController playerController;
 
-    // 추후에 전투 씬도 추가한 후에는, 전투 씬과 관련된 데이터 관리 및 저장 기능도 별도의 클래스로 구분하는 것을 권장.
-    private SaveManager saveManager;
-    // Player 객체가 생성이 되면 그때 같이 생성이 되는 형태로.
     [SerializeField] private StatContainer statContainer;
 
-    // 이렇게 하면 statContainer에서 굳이 해당 클래스를 참조할 필요가 없겠다.
+    private void Awake()
+    {
+        inputController = new DecisionInputController(gearController, uiController);
+        presentationController = new DecisionPresentationController(uiController, playerViewUI);
+    }
+
     private void OnEnable()
     {
         if (statContainer != null)
@@ -78,11 +68,12 @@ public class DecisionManager : MonoBehaviour
             statContainer.OnTargetStatReached += HandleTargetStatReached;
         }
 
-        if (gearController != null)
+        if (inputController != null)
         {
-            gearController.OnGearChanged += ShowOptionText;
-            gearController.OnGearConfirmed += ConfirmChoice;
-            gearController.OnScreenCliked += OnScreenClicked;
+            inputController.GearChanged += HandleGearChanged;
+            inputController.GearConfirmed += HandleChoiceConfirmed;
+            inputController.ScreenClicked += HandleScreenClicked;
+            inputController.Enable();
         }
     }
 
@@ -93,421 +84,336 @@ public class DecisionManager : MonoBehaviour
             statContainer.OnTargetStatReached -= HandleTargetStatReached;
         }
 
-        if (gearController != null)
+        if (inputController != null)
         {
-            gearController.OnGearChanged -= ShowOptionText;
-            gearController.OnGearConfirmed -= ConfirmChoice;
-            gearController.OnScreenCliked -= OnScreenClicked;
+            inputController.GearChanged -= HandleGearChanged;
+            inputController.GearConfirmed -= HandleChoiceConfirmed;
+            inputController.ScreenClicked -= HandleScreenClicked;
+            inputController.Disable();
         }
     }
 
     private void Start()
     {
-        // GameState가 특정 시점에 따른 수정을 해야 한다.
-        if (GameManager.Instance.CurrentState == GameState.Main)
-        {
-            PlayerStats playerStats = null;
-            (currentOmnibus, chapterIndex, episodeIndex, storyIndex, playerInstance, playerStats, saveManager) = GameManager.Instance.StartGame();
+        if (GameManager.Instance.CurrentState != GameState.Main)
+            return;
 
-            LoadNextStory();
-
-            if (playerStats != null && playerStats.stats != null)
-            {
-                statContainer.SetStats(playerStats.stats);
-            }
-
-            //float currentZ = CalculateTargetZ();
-            float currentZ = CalculateTargetZForDestination();
-            Vector3 tVector3 = terrainObj.transform.position;
-            playerInstance.Initialize(tVector3);
-            //playerInstance.Initialize(new Vector3(-55f, 0.35f, currentZ));
-            if (playerViewUI != null) playerViewUI.SetActive(true);
-            
-            currentState = StoryState.ShowingStory;
-        }
-
+        Initialize();
     }
 
-    private void LoadNextStory()
+    private void Initialize()
     {
-        if (currentOmnibus == null || currentOmnibus.MainStories == null || chapterIndex >= currentOmnibus.MainStories.Count)
+        if (!ValidateDependencies())
+        {
+            enabled = false;
+            return;
+        }
+
+        DecisionStartData startData = GameManager.Instance.StartGame();
+        if (startData?.Session?.Omnibus?.MainStories == null ||
+            startData.SaveManager == null || startData.Player == null)
+        {
+            Debug.LogError("DecisionScene 초기 데이터 또는 플레이어를 준비하지 못했습니다.");
+            enabled = false;
+            return;
+        }
+
+        session = startData.Session;
+        playerController = new DecisionPlayerController(startData.Player);
+        saveService = new DecisionSaveService(startData.SaveManager);
+        storyProgressController = new StoryProgressController(session);
+        chapterFlowController = new ChapterFlowController(
+            session,
+            statContainer,
+            relayManager,
+            saveService);
+
+        Vector3 startPosition = startData.SavedPlayerPosition ?? envController.TerrainOrigin;
+        playerController.Initialize(startPosition);
+        destinationController = new DestinationController(
+            envController.PlaceRegistry,
+            startPosition.z);
+
+        if (startData.PlayerStats?.stats != null)
+            statContainer.SetStats(startData.PlayerStats.stats);
+
+        LoadCurrentEpisode();
+        presentationController.ShowPlayerViewControl();
+    }
+
+    private bool ValidateDependencies()
+    {
+        bool isValid = true;
+        isValid &= ValidateReference(gearController, nameof(gearController));
+        isValid &= ValidateReference(uiController, nameof(uiController));
+        isValid &= ValidateReference(envController, nameof(envController));
+        isValid &= ValidateReference(statContainer, nameof(statContainer));
+
+        if (envController != null &&
+            (envController.TerrainData == null || envController.PlaceRegistry == null))
+        {
+            Debug.LogError("EnvController의 장소 데이터가 초기화되지 않았습니다.", this);
+            isValid = false;
+        }
+
+        return isValid;
+    }
+
+    private bool ValidateReference(UnityEngine.Object reference, string fieldName)
+    {
+        if (reference != null)
+            return true;
+
+        Debug.LogError($"DecisionManager 필수 참조 누락: {fieldName}", this);
+        return false;
+    }
+
+    private void LoadCurrentEpisode()
+    {
+        if (currentOmnibus?.MainStories == null ||
+            chapterIndex < 0 || chapterIndex >= currentOmnibus.MainStories.Count)
         {
             Debug.Log("모든 메인 스토리가 종료되었습니다.");
+            currentState = StoryState.Transitioning;
             return;
         }
 
         var mainStory = currentOmnibus.MainStories[chapterIndex];
 
-        if (episodeIndex >= mainStory.Title.Count)
+        if (mainStory?.Title == null || mainStory.Title.Count == 0)
         {
-            MoveToNextChapter();
+            Debug.LogError($"챕터 {chapterIndex}에 에피소드가 없습니다.");
+            currentState = StoryState.Transitioning;
             return;
         }
 
-        string folder = mainStory.Chapter;
-        string file = mainStory.Title[episodeIndex];
-        string fullPath = $"{folder}/{file}";
+        if (episodeIndex < 0)
+            episodeIndex = 0;
 
-        currentScenarioPath = fullPath; // 현재 파일 경로 저장
-
-        // 추후에 다음 이야기 파일을 찾기 위해서는 하드 코딩을 피해야 한다.
-        // [테스트 로직] AI가 수정한 NewStory 파일이 있는지 먼저 확인합니다.
-        string aiFileName = "NewStory_" + fullPath.Replace("/", "_");
-        scenarioData = SaveIOService.Instance.LoadData<ScenarioData>(aiFileName);
-
-        // AI 수정본이 없다면 원본 데이터를 로드합니다.
-        if (scenarioData == null || scenarioData.MainStory == null || scenarioData.MainStory.Count == 0)
+        if (episodeIndex >= mainStory.Title.Count)
         {
-            scenarioData = SaveIOService.Instance.LoadData<ScenarioData>(fullPath);
+            CompleteChapter();
+            return;
         }
-        else
+
+        if (string.IsNullOrWhiteSpace(mainStory.Chapter) ||
+            string.IsNullOrWhiteSpace(mainStory.Title[episodeIndex]))
         {
-            Debug.Log($"<color=yellow><b>[AI 적용 완료]</b> 수정된 시나리오 데이터를 사용합니다: {aiFileName}</color>");
+            Debug.LogError($"챕터 {chapterIndex}, 에피소드 {episodeIndex}의 경로가 비어 있습니다.");
+            currentState = StoryState.Transitioning;
+            return;
+        }
+
+        ScenarioLoadResult loadResult = scenarioRepository.Load(
+            mainStory.Chapter,
+            mainStory.Title[episodeIndex]);
+        ScenarioData loadedScenario = loadResult.Scenario;
+        currentScenarioPath = loadResult.SourcePath;
+
+        if (loadResult.UsesAiRevision)
+        {
+            Debug.Log($"<color=yellow><b>[AI 적용 완료]</b> 수정된 시나리오 데이터를 사용합니다: {currentScenarioPath}</color>");
         }
         
-        if (scenarioData != null)
+        if (loadedScenario != null)
         {
-            if (storyIndex >= scenarioData.MainStory.Count) storyIndex = 0;
-            DisplayCurrentStory();
-            UpdatePlayerPosition();
+            storyProgressController.SetScenario(loadedScenario);
+            destinationController.BeginScenario(loadedScenario, storyIndex);
+            PresentCurrentStory();
         }
         else
         {
-            Debug.LogError($"스토리를 불러올 수 없습니다: {fullPath}");
+            Debug.LogError(
+                $"스토리를 불러올 수 없습니다: {currentScenarioPath}. " +
+                loadResult.ErrorMessage);
         }
     }
 
     private void HandleTargetStatReached()
     {
-        // Initial 챕터(인덱스 0)일 때는 무시합니다.
+        if (currentState == StoryState.Transitioning || chapterFlowController == null)
+            return;
+
+        // Initial은 성향을 소개하는 구간이므로 스탯 임계치 전투를 발생시키지 않습니다.
         if (chapterIndex == 0) return;
 
         Debug.Log("전투 발생! 현재 진행 상황을 저장하고 전투 씬으로 이동합니다.");
 
-        // player에서 statContainer의 기능을 가져와서 쓰는 걸로.
-        // [중요] 전투 씬으로 넘어가기 직전에 현재 챕터 결과 기록 및 다음 챕터 준비
-        if (currentOmnibus != null && chapterIndex < currentOmnibus.MainStories.Count)
+        if (chapterFlowController.PrepareBattleTransition())
         {
-            // 1. 현재 완료된 챕터의 최고 스탯 결과 기록
-            int bestStatIndex = 0;
-            int maxValue = -1;
-            int[] currentStats = statContainer.stats;
-            for (int i = 0; i < currentStats.Length; i++)
-            {
-                if (currentStats[i] > maxValue)
-                {
-                    maxValue = currentStats[i];
-                    bestStatIndex = i;
-                }
-            }
-            saveManager.RecordChapterResult(chapterIndex, bestStatIndex, maxValue);
-
-            // 2. 외부 데이터 전송 (이미 필터링된 핵심 데이터 전송)
-            if (relayManager != null)
-            {
-                relayManager.Relay("MidTransition", currentScenarioPath, playedHistory, statContainer.stats, chapterIndex);
-            }
-
-            // 3. 다음 챕터로 인덱스 준비
-            chapterIndex++;
-            episodeIndex = 0;
-            storyIndex = 0;
-
-            // 4. 저장 (씬이 다시 로드될 때 여기서부터 시작하기 위함)
-            saveManager.SaveProgress(chapterIndex, episodeIndex, storyIndex);
-            
-            // 5. 스탯 초기화 및 초기화된 스탯 저장
-            statContainer.ResetAllStats();
-            saveManager.SaveStats(statContainer.stats);
-
-            // 6. 전투 씬으로 전환
             currentState = StoryState.Transitioning;
-            UnityEngine.SceneManagement.SceneManager.LoadScene("BattleScene");
+            sceneTransitionService.LoadBattleScene();
         }
     }
 
-    private void MoveToNextChapter()
+    private void CompleteChapter()
     {
-        // player에서 statContainer의 기능을 가져와서 쓰는 걸로.
-        // 1. 현재 챕터 결과 기록
-        int bestStatIndex = 0;
-        int maxValue = -1;
-        int[] currentStats = statContainer.stats;
-        for (int i = 0; i < currentStats.Length; i++)
-        {
-            if (currentStats[i] > maxValue)
-            {
-                maxValue = currentStats[i];
-                bestStatIndex = i;
-            }
-        }
-
-        saveManager.RecordChapterResult(chapterIndex, bestStatIndex, maxValue);
-
-        // [추가] 챕터 종료 데이터 전송 (전체 히스토리)
-        if (relayManager != null)
-        {
-            relayManager.Relay("ChapterEnd", currentScenarioPath, playedHistory, statContainer.stats, chapterIndex);
-        }
-
-        // GameManager
-        // 2. 다음 챕터로 인덱스 변경
-        chapterIndex++;
-        episodeIndex = 0;
-        storyIndex = 0;
-
-        // Player or statContainer
-        // [추가] 챕터가 바뀌었으므로 플레이 기록 초기화
-        playedHistory.Clear();
-        // 3. 스탯 초기화
-        statContainer.ResetAllStats();
-
-        // GameManager
-        // 4. 저장 및 다음 스토리 로드
-        saveManager.SaveProgress(chapterIndex, episodeIndex, storyIndex);
-        saveManager.SaveStats(statContainer.stats);
-
-        LoadNextStory();
+        if (chapterFlowController.CompleteChapter())
+            LoadCurrentEpisode();
     }
 
-    // PlayerController.
-    private float CalculateTargetZ()
-    {
-        if (currentOmnibus == null || scenarioData == null || chapterIndex >= chapterStartZs.Length) 
-            return 23f;
-
-        // 현재 챕터의 전체 에피소드 수
-        int totalEpisodes = currentOmnibus.MainStories[chapterIndex].Title.Count;
-        if (totalEpisodes <= 0) totalEpisodes = 1;
-
-        // 현재 에피소드의 전체 스토리(지문) 수
-        int totalStories = (scenarioData.MainStory != null && scenarioData.MainStory.Count > 0) ? scenarioData.MainStory.Count : 1;
-
-        // 챕터 내 진행도 계산 (0.0 ~ 1.0)
-        float episodeProgress = (float)episodeIndex / totalEpisodes;
-        float storyProgressInEpisode = ((float)storyIndex / totalStories) / totalEpisodes;
-        float totalChapterProgress = episodeProgress + storyProgressInEpisode;
-
-        // 목표 Z 계산
-        return chapterStartZs[chapterIndex] + (totalChapterProgress * chapterLengths[chapterIndex]);
-    }
-
-    private float CalculateTargetZForDestination()
-    {
-        // 언제 목표 지검 계산을 하는 지 확인.
-        // 목표 지점이 있는 경우와 없는 경우 생각.
-        // storyIndex 불일치 문제 해결.
-        // 다음 목표 지점으로 넘어가는 과정도 생각.
-        
-        TerrainData terrainData = envController.getTerrainData();
-        for(int i = nextDestinationIndex; i < terrainData.places.Length; i++)
-        {
-            if (!string.IsNullOrEmpty(terrainData.places[i].destination))
-            {
-                nextDestinationIndex = i;
-                Debug.LogWarning($"Next destination found: {terrainData.places[i].destination} at index {i}");
-                break;
-            }
-        }
-
-        // 처음부터 하는 것보다는 다음 지점부터 확인가능하게 구상.
-
-        int dialogueCount = (scenarioData.MainStory != null) ? scenarioData.MainStory.Count : 0;
-        int stepCount = 0;
-
-        for (int i = 0; i < dialogueCount; i++)
-        {
-            var dialogue = scenarioData.MainStory[i];
-            if (string.IsNullOrEmpty(dialogue.destination))
-            {
-                stepCount++;
-            }
-            else
-            {
-                Debug.LogWarning($"{dialogue.destination} will be arrived by {stepCount} step(s).");
-                break;
-            }
-        }
-
-        stepLength = (stepCount > 0) ? terrainData.places[nextDestinationIndex].position.z + envController.getChunkSize() * terrainData.places[nextDestinationIndex].chunkIndex / stepCount : 0;
-        Debug.LogWarning($"<color=red>Calculated step length: {stepLength} for destination {terrainData.places[nextDestinationIndex].destination} at index {nextDestinationIndex}</color>");
-
-        //여기서 목표에 도착 혹은 목표까지 걸음 폭이나 이런 조건을 구분.
-        if (scenarioData.MainStory[storyIndex].destination != terrainData.places[nextDestinationIndex].destination)
-        {
-            return stepLength;
-        }
-
-        return stepLength;
-    }
-
-    // PlayerController.
     private void UpdatePlayerPosition()
     {
-        if (playerInstance == null) return;
+        if (playerController == null || !playerController.IsAvailable || destinationController == null) return;
         
-        //float targetZ = CalculateTargetZ();
-        float targetZ = CalculateTargetZForDestination();
-        playerInstance.SetTargetZ(targetZ);
+        float targetZ = destinationController.GetTargetZ(storyIndex);
+        playerController.MoveToZ(targetZ);
     }
 
-    private void DisplayCurrentStory()
+    private void PresentCurrentStory()
     {
-        if (scenarioData == null || scenarioData.MainStory == null || scenarioData.MainStory.Count == 0) return;
+        if (storyProgressController == null || !storyProgressController.HasCurrentDialogue) return;
 
-        var currentStory = scenarioData.MainStory[storyIndex];
-        uiController.ChangeUiText(TextTarget.FrontDialogue, currentStory);
+        Dialogue currentStory = storyProgressController.Current;
+        presentationController.ShowDialogue(currentStory);
+        RecordPlayedStory(currentStory);
 
-        // [추가] 플레이어가 읽은 지문을 기록 리스트에 추가 (중복 방지: 이미 마지막 항목과 같으면 패스)
-        if (playedHistory.Count == 0 || playedHistory[playedHistory.Count - 1] != currentStory)
-        {
-            playedHistory.Add(currentStory);
-        }
-
-        // 배경 설정 적용
-        uiController.ChangeBackground(currentStory.background);
-
-        if (currentStory.type == "Choice")
+        if (currentStory.IsChoice)
         {
             EnterChoiceState();
         }
         else
         {
             currentState = StoryState.ShowingStory;
-            uiController.ActiveOptionTextUi(false);
+            presentationController.ExitChoice();
         }
 
         UpdatePlayerPosition();
     }
 
+    private void RecordPlayedStory(Dialogue dialogue)
+    {
+        if (dialogue == null)
+            return;
+
+        if (playedHistory.Count == 0 || playedHistory[playedHistory.Count - 1] != dialogue)
+            playedHistory.Add(dialogue);
+    }
+
     private void EnterChoiceState()
     {
         currentState = StoryState.WaitingForChoice;
-        uiController.ActiveOptionTextUi(true);
-
-        // [수정] 캐시된 CurrentGear 대신 직접 현재 물리적 위치를 확인하여 즉시 반영
-        int currentGear = (gearController != null) ? gearController.GetCurrentGearDirectly() : 0;
-
-        if (currentGear != 0)
-        {
-            ShowOptionText(currentGear);
-        }
-        else
-        {
-            // [수정] 중앙(0)일 때는 안내 문구로 복구
-            uiController.ChangeUiText(TextTarget.Option, text: "선택지를 선택하세요.");
-        }
+        int currentGear = inputController?.CurrentGear ?? 0;
+        string optionText = choiceController.GetOptionText(
+            storyProgressController.Current,
+            currentGear);
+        presentationController.EnterChoice(optionText);
     }
 
-    public void OnScreenClicked()
+    private void HandleScreenClicked()
     {
-        if (isPlayerViewActive) return; // 플레이어 시점일 때는 클릭 무시
-        if (currentState == StoryState.Transitioning || scenarioData == null || scenarioData.MainStory == null) return;
-        if (storyIndex < 0 || storyIndex >= scenarioData.MainStory.Count) return;
+        if (currentState == StoryState.Transitioning || storyProgressController == null) return;
+        if (!storyProgressController.HasCurrentDialogue) return;
 
-        var currentStory = scenarioData.MainStory[storyIndex];
+        Dialogue currentStory = storyProgressController.Current;
 
         if (currentState == StoryState.ShowingStory)
         {
-            if (currentStory.type == "Choice")
+            if (currentStory.IsChoice)
             {
                 EnterChoiceState();
             }
             else
             {
-                ProceedToNextStory();
+                AdvanceStory();
             }
         }
     }
 
-    public void ConfirmChoice(int gear)
+    private void HandleChoiceConfirmed(int gear)
     {
-        // 플레이어 시점일 때는 선택 무시
-        if (isPlayerViewActive) return; 
-
         if (currentState == StoryState.ShowingStory)
         {
-            OnScreenClicked();
+            HandleScreenClicked();
             return;
         }
 
-        if (currentState != StoryState.WaitingForChoice || scenarioData == null) return;
-        if (storyIndex < 0 || storyIndex >= scenarioData.MainStory.Count) return;
+        if (currentState != StoryState.WaitingForChoice || storyProgressController == null) return;
+        if (!storyProgressController.HasCurrentDialogue) return;
 
-        var currentStory = scenarioData.MainStory[storyIndex];
-        int optionIndex = GetOptionIndexFromGear(gear);
-        
-        if (optionIndex >= 0 && optionIndex < currentStory.figure.Length)
+        Dialogue currentStory = storyProgressController.Current;
+        ChoiceResult choice = choiceController.Resolve(currentStory, gear);
+
+        if (choice.IsValid)
         {
-            // Initial 챕터(인덱스 0)가 아닐 때만 스탯을 증가시킵니다.
+            // Initial 선택은 튜토리얼 성격이므로 실제 스탯에는 반영하지 않습니다.
             if (chapterIndex > 0)
             {
-                statContainer.AddStat(optionIndex, currentStory.figure[optionIndex]);
-                saveManager.SaveStats(statContainer.stats);
+                statContainer.AddStat(choice.OptionIndex, choice.StatChange);
+                saveService.SaveStats(statContainer.stats);
             }
 
-            Debug.Log($"[{currentStory.option[optionIndex]}] 선택됨!");
+            Debug.Log($"[{choice.OptionText}] 선택됨!");
         }
 
         if (currentState != StoryState.Transitioning)
         {
-            ProceedToNextStory();
+            AdvanceStory();
         }
     }
 
-    private void ProceedToNextStory()
+    private void AdvanceStory()
     {
-        storyIndex++;  
-        if (scenarioData != null && scenarioData.MainStory != null && storyIndex < scenarioData.MainStory.Count)
+        StoryAdvanceResult result = storyProgressController.Advance();
+        if (result == StoryAdvanceResult.NextDialogue)
         {
-            var nextStory = scenarioData.MainStory[storyIndex];
+            destinationController.OnStoryAdvanced(storyIndex);
+
+            var nextStory = storyProgressController.Current;
 
             if (nextStory.isTransition)
             {
                 currentState = StoryState.Transitioning;
-                uiController.ActiveOptionTextUi(false);
-                uiController.ChangeUiImage(nextStory);
+                RecordPlayedStory(nextStory);
+                UpdatePlayerPosition();
+                presentationController.PlayStoryTransition(
+                    nextStory,
+                    HandleStoryTransitionCompleted);
+            }
+            else
+            {
+                PresentCurrentStory();
             }
 
-            DisplayCurrentStory();
-
-            saveManager.SaveProgress(chapterIndex, episodeIndex, storyIndex);
+            saveService.SaveProgress(session, playerController.TargetPosition);
+        }
+        else if (result == StoryAdvanceResult.EpisodeCompleted)
+        {
+            saveService.SaveProgress(session);
+            LoadCurrentEpisode();
         }
         else
         {
-            // 현재 에피소드가 끝났으므로 다음 스토리 로드
-            episodeIndex++;
-            storyIndex = 0;
-            saveManager.SaveProgress(chapterIndex, episodeIndex, storyIndex);
-            LoadNextStory();
+            Debug.LogError("현재 스토리를 진행할 수 없습니다.");
+            currentState = StoryState.Transitioning;
         }
     }
 
-    public void ShowOptionText(int gear)
+    private void HandleStoryTransitionCompleted()
     {
-        if (scenarioData == null || scenarioData.MainStory == null || storyIndex < 0 || storyIndex >= scenarioData.MainStory.Count) return;
-        if (scenarioData.MainStory[storyIndex].type != "Choice") return;
-
-        // [추가] 기어가 중앙(0)이면 안내 문구로 복구
-        if (gear == 0)
-        {
-            uiController.ChangeUiText(TextTarget.Option, text: "선택지를 선택하세요.");
+        // 카드 전환 중에는 Transitioning을 유지하고, 연출이 끝난 뒤에만 입력 가능한 상태로 복귀합니다.
+        if (storyProgressController == null || !storyProgressController.HasCurrentDialogue)
             return;
-        }
 
-        int index = GetOptionIndexFromGear(gear);
-        if (index >= 0 && index < scenarioData.MainStory[storyIndex].option.Length)
+        if (storyProgressController.Current.IsChoice)
         {
-            uiController.ChangeUiText(TextTarget.Option, text: scenarioData.MainStory[storyIndex].option[index]);
+            EnterChoiceState();
+        }
+        else
+        {
+            currentState = StoryState.ShowingStory;
+            presentationController.ExitChoice();
         }
     }
 
-    private int GetOptionIndexFromGear(int gear)
+    private void HandleGearChanged(int gear)
     {
-        if (gear == (int) Gear.EvilGood) return 0;
-        if (gear == (int) Gear.EvilBad) return 1;
-        if (gear == (int) Gear.GoodGood) return 2;
-        if (gear == (int) Gear.GoodBad) return 3;
-        return -1;
+        if (currentState != StoryState.WaitingForChoice) return;
+        if (storyProgressController == null || !storyProgressController.HasCurrentDialogue) return;
+        Dialogue currentStory = storyProgressController.Current;
+        if (!currentStory.IsChoice) return;
+
+        string optionText = choiceController.GetOptionText(currentStory, gear);
+        presentationController.ShowOption(optionText);
     }
 }

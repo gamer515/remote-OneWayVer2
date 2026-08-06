@@ -8,18 +8,23 @@ public class UiController : MonoBehaviour
     [SerializeField] private MainStoryUi mainStoryUi;
     [SerializeField] private ViewUi viewUi;
 
+    public event Action<bool> OnPlayerViewChanged;
+
     #region MainStoryUi
     public void ActiveOptionTextUi(bool isActive)
     {
-        mainStoryUi.SetActiveTextUi(isActive);
+        if (mainStoryUi != null)
+            mainStoryUi.SetActiveTextUi(isActive);
     }
 
     public void ChangeUiText(TextTarget target, Dialogue dialogue = null, string text = null)
     {
+        if (mainStoryUi == null)
+            return;
+
         if (dialogue != null) 
         { 
-            Dialogue dialogueForText = SanitizeText(dialogue);
-            mainStoryUi.WriteText(target, dialogueForText.text);
+            mainStoryUi.WriteText(target, SanitizeText(dialogue.text));
         }
         else
         {
@@ -27,36 +32,49 @@ public class UiController : MonoBehaviour
         }
     }
 
-    public void ChangeUiImage(Dialogue dialogue)
+    public void ChangeUiImage(Dialogue dialogue, Action onCompleted = null)
     {
-        Dialogue reviseDialogue = SanitizeText(dialogue);
-        mainStoryUi.StartSwapStoryScreen(reviseDialogue);
+        if (dialogue == null)
+            return;
+
+        mainStoryUi.StartSwapStoryScreen(
+            dialogue,
+            SanitizeText(dialogue.text),
+            onCompleted);
     }
 
     public void ChangeBackground(string bgData)
     {
-        mainStoryUi.ApplyBackground(bgData);
+        if (mainStoryUi != null)
+            mainStoryUi.ApplyBackground(bgData);
     }
 
-    private Dialogue SanitizeText(Dialogue dialogue)
+    private string SanitizeText(string text)
     {
-        if (dialogue == null || string.IsNullOrEmpty(dialogue.text)) return null;
-        dialogue.text = dialogue.text.Replace("{", "").Replace("}", "");
-        return dialogue;
+        return string.IsNullOrEmpty(text)
+            ? string.Empty
+            : text.Replace("{", "").Replace("}", "");
     }
     #endregion
 
     #region MapUi
     public void TurnOn_Off3DView()
     {
-        ActiveMapOrStoryView(viewUi.TurnOn_OffCamera);
-        viewUi.ChangeScreen3DView();
+        if (viewUi == null)
+            return;
+
+        bool playerViewActive = viewUi.WillEnablePlayerView;
+        if (!viewUi.ApplyPlayerViewToggle())
+            return;
+
+        ActiveMapOrStoryView(playerViewActive);
+        OnPlayerViewChanged?.Invoke(playerViewActive);
     }
     #endregion
 
     public void ActiveMapOrStoryView(bool turn)
     {
-        viewUi.SetActivateUi(turn);
-        mainStoryUi.SetActivateUi(!turn);
+        if (viewUi != null) viewUi.SetActivateUi(turn);
+        if (mainStoryUi != null) mainStoryUi.SetActivateUi(!turn);
     }
 }
