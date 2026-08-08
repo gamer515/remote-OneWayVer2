@@ -110,6 +110,9 @@ public class DecisionManager : MonoBehaviour
         }
 
         DecisionStartData startData = GameManager.Instance.StartGame();
+        
+        envController.BindPlayer(startData.Player);
+
         if (startData?.Session?.Omnibus?.MainStories == null ||
             startData.SaveManager == null || startData.Player == null)
         {

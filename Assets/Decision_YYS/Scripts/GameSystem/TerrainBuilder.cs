@@ -1,3 +1,4 @@
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
@@ -5,6 +6,34 @@ using UnityEngine;
 /// </summary>
 public sealed class TerrainBuilder
 {
+    private Dictionary<int, GameObject> chunkInstances = new Dictionary<int, GameObject>();
+
+    public void CreateOrLoadChunk(int chunkIndex, GameObject placePrefab = null, Transform parent = null)
+    {
+        if(placePrefab == null || parent == null)
+        {
+            return;
+        }
+
+        if (chunkInstances.ContainsKey(chunkIndex))
+        {
+            chunkInstances[chunkIndex].SetActive(true);
+            return;
+        }
+
+        GameObject chunk = Object.Instantiate(new GameObject($"Chunk_{chunkIndex}"), parent);
+        chunk.transform.position = parent.position;
+        chunkInstances[chunkIndex] = chunk;
+    }
+
+    public void UnloadChunk(int chunkIndex)
+    {
+        if (chunkInstances.TryGetValue(chunkIndex, out GameObject chunk))
+        {
+            chunk.SetActive(false);
+        }
+    }
+
     public void Build(
         TerrainData terrainData,
         TerrainPlaceRegistry placeRegistry,
