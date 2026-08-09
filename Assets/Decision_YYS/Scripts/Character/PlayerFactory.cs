@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 /// <summary>
 /// 플레이어 프리팹 생성과 초기 카메라 상태 설정을 담당합니다.

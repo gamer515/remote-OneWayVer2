@@ -74,7 +74,7 @@ public sealed class ChapterFlowController
 
         statContainer.ResetAllStats();
         // 다음 챕터가 이전 지형 위치에서 시작하지 않도록 진행도와 함께 위치를 초기화합니다.
-        saveService.ClearPlayerPosition();
+        // 챕터 지형이 한 월드로 이어지므로 이전 챕터의 플레이어 위치를 그대로 보존합니다.
         saveService.SaveCheckpoint(session, statContainer.stats);
     }
 }

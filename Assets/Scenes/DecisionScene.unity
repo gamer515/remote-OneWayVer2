@@ -2256,6 +2256,7 @@ GameObject:
   - component: {fileID: 993891293}
   - component: {fileID: 993891292}
   - component: {fileID: 993891290}
+  - component: {fileID: 993891294}
   m_Layer: 0
   m_Name: Road_View_Camera
   m_TagString: Untagged
@@ -2342,7 +2343,7 @@ Camera:
   far clip plane: 200
   field of view: 60
   orthographic: 1
-  orthographic size: 6
+  orthographic size: 20
   m_Depth: 0
   m_CullingMask:
     serializedVersion: 2
@@ -2366,13 +2367,25 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 993891289}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.31584695, y: -0, z: -0, w: 0.94881016}
-  m_LocalPosition: {x: -200, y: 90, z: -93.5}
+  m_LocalRotation: {x: 0.25882, y: -0, z: -0, w: 0.96592563}
+  m_LocalPosition: {x: -200, y: 18, z: 82.5}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 36.824, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 30, y: 0, z: 0}
+--- !u!114 &993891294
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 993891289}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 24c8926add5fe9d44a1a71d94d088e5d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RoadViewCameraController
 --- !u!1 &996758927
 GameObject:
   m_ObjectHideFlags: 0
@@ -4472,6 +4485,7 @@ MonoBehaviour:
   relayManager: {fileID: 996758929}
   envController: {fileID: 9096609592010750969}
   playerViewUI: {fileID: 2099550373}
+  roadViewCameraController: {fileID: 993891294}
   statContainer: {fileID: 1847397749}
 --- !u!1 &1900901585
 GameObject:
@@ -6808,8 +6822,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnvController
   environment: {fileID: 9096609592010750968}
-  prefab: {fileID: 1988859258794082476, guid: f4139c7f60a4d4f43a3b1f48439be84b, type: 3}
+  groundPrefab: {fileID: 643677564533035715, guid: 36835a6f65580b64ca6fe695fc404586, type: 3}
+  housePrefab: {fileID: 1988859258794082476, guid: f4139c7f60a4d4f43a3b1f48439be84b, type: 3}
   chunkSize: 100
+  loadRadius: 1
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -6818,12 +6834,12 @@ SceneRoots:
   - {fileID: 1476855645}
   - {fileID: 238914006}
   - {fileID: 604054469}
-  - {fileID: 1043700222}
   - {fileID: 990850072}
   - {fileID: 1880279075}
   - {fileID: 996758928}
   - {fileID: 673403531}
-  - {fileID: 2824981429584861652}
   - {fileID: 993891293}
+  - {fileID: 2824981429584861652}
   - {fileID: 744299911}
+  - {fileID: 1043700222}
   - {fileID: 126777796}

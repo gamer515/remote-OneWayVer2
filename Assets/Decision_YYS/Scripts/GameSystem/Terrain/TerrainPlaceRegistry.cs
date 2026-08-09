@@ -49,4 +49,9 @@ public sealed class TerrainPlaceRegistry
             place.position.y,
             place.position.z + chunkSize * place.chunkIndex);
     }
+
+    public Vector3 GetChunkWorldPosition(int chunkIndex)
+    {
+        return terrainOrigin + Vector3.forward * (chunkSize * chunkIndex);
+    }
 }

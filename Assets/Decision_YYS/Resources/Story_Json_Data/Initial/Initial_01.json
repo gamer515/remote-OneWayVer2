@@ -4,8 +4,21 @@
       "id": 0,
       "change": "none",
       "type": "Next",
+      "isTransition": true,
+      "background": "#FFF3E0",
+      "destination": null,
+      "character": "none",
+      "text": "{1. 시작}",
+      "option": [ "none" ],
+      "npcEmotion": "none",
+      "figure": [ 0 ]
+    },
+    {
+      "id": 1,
+      "change": "none",
+      "type": "Next",
       "isTransition": false,
-      "background": "Backgrounds/TempBackground",
+      "background": "#FFE0B2",
       "destination": null,
       "character": "none",
       "text": "당신은 끝이 보이지 않는 긴 외길 위에 서 있습니다. 사방은 짙은 안개로 가득합니다.",
@@ -14,11 +27,11 @@
       "figure": [ 0 ]
     },
     {
-      "id": 1,
+      "id": 2,
       "change": "none",
       "type": "Choice",
       "isTransition": true,
-      "background": "#FFEBEE",
+      "background": "#FFCC80",
       "destination": null,
       "character": "Unknown Voice",
       "text": "갑자기 안개 속에서 누군가의 목소리가 들려옵니다. '이 길의 끝에 무엇이 있을 것 같나?'",
@@ -27,11 +40,11 @@
       "figure": [ 2, 5, 2, 0 ]
     },
     {
-      "id": 2,
+      "id": 3,
       "change": "none",
       "type": "Next",
       "isTransition": false,
-      "background": "#E3F2FD",
+      "background": "#FFB74D",
       "destination": "store",
       "character": "none",
       "text": "목소리는 낮게 읊조리며 사라집니다. 이제 당신은 첫 번째 나침반을 확인해야 합니다.",
@@ -40,11 +53,11 @@
       "figure": [ 0 ]
     },
     {
-      "id": 3,
+      "id": 4,
       "change": "none",
       "type": "Choice",
       "isTransition": true,
-      "background": "#F1F8E9",
+      "background": "#FFA726",
       "destination": null,
       "character": "Compass",
       "text": "나침반 바늘이 미친 듯이 회전하다가 한 곳을 가리킵니다. 당신의 의지는 어느 쪽을 향합니까?",
@@ -53,11 +66,11 @@
       "figure": [ 5, 2, 0, 5 ]
     },
     {
-      "id": 4,
+      "id": 5,
       "change": "none",
       "type": "End",
       "isTransition": false,
-      "background": "#FFFDE7",
+      "background": "#FB8C00",
       "destination": null,
       "character": "none",
       "text": "결정은 내려졌습니다. 이제 이 외길을 따라 당신의 운명이 시작됩니다.",

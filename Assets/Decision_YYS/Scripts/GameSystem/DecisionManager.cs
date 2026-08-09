@@ -21,7 +21,6 @@ public class DecisionManager : MonoBehaviour
     private readonly ChoiceController choiceController = new ChoiceController();
     private readonly ScenarioRepository scenarioRepository = new ScenarioRepository();
     private readonly SceneTransitionService sceneTransitionService = new SceneTransitionService();
-
     private OmnibusData currentOmnibus => session?.Omnibus;
     private int chapterIndex
     {
@@ -50,6 +49,7 @@ public class DecisionManager : MonoBehaviour
     [SerializeField] private StoryRelayManager relayManager;
     [SerializeField] private EnvController envController;
     [SerializeField] private GameObject playerViewUI;
+    [SerializeField] private RoadViewCameraController roadViewCameraController;
     [Header("Player Movement")]
     private DecisionPlayerController playerController;
 
@@ -110,8 +110,6 @@ public class DecisionManager : MonoBehaviour
         }
 
         DecisionStartData startData = GameManager.Instance.StartGame();
-        
-        envController.BindPlayer(startData.Player);
 
         if (startData?.Session?.Omnibus?.MainStories == null ||
             startData.SaveManager == null || startData.Player == null)
@@ -131,11 +129,19 @@ public class DecisionManager : MonoBehaviour
             relayManager,
             saveService);
 
-        Vector3 startPosition = startData.SavedPlayerPosition ?? envController.TerrainOrigin;
+        // 중간 챕터 저장에서 시작해도 각 지형의 월드 시작점이 항상 같도록 순서대로 등록합니다.
+        if (!RegisterTerrainsThroughCurrentProgress())
+        {
+            enabled = false;
+            return;
+        }
+
+        Vector3 startPosition = startData.SavedPlayerPosition ?? envController.TerrainOrigin + new Vector3(0, 1.3f, 10);
         playerController.Initialize(startPosition);
-        destinationController = new DestinationController(
-            envController.PlaceRegistry,
-            startPosition.z);
+
+        // 실제 시작 위치가 적용된 후 스트리밍과 카메라에 Player를 연결합니다.
+        envController.BindPlayer(startData.Player);
+        roadViewCameraController.BindPlayerTransform(startData.Player.transform);
 
         if (startData.PlayerStats?.stats != null)
             statContainer.SetStats(startData.PlayerStats.stats);
@@ -152,14 +158,39 @@ public class DecisionManager : MonoBehaviour
         isValid &= ValidateReference(envController, nameof(envController));
         isValid &= ValidateReference(statContainer, nameof(statContainer));
 
-        if (envController != null &&
-            (envController.TerrainData == null || envController.PlaceRegistry == null))
+        return isValid;
+    }
+
+    private bool RegisterTerrainsThroughCurrentProgress()
+    {
+        if (currentOmnibus?.MainStories == null) return false;
+
+        int lastChapterIndex = Mathf.Min(chapterIndex, currentOmnibus.MainStories.Count - 1);
+        for (int currentChapterIndex = 0;
+             currentChapterIndex <= lastChapterIndex;
+             currentChapterIndex++)
         {
-            Debug.LogError("EnvController의 장소 데이터가 초기화되지 않았습니다.", this);
-            isValid = false;
+            var chapter = currentOmnibus.MainStories[currentChapterIndex];
+            if (chapter?.Title == null) return false;
+
+            int episodeCount = currentChapterIndex < lastChapterIndex
+                ? chapter.Title.Count
+                : Mathf.Min(episodeIndex + 1, chapter.Title.Count);
+
+            for (int currentEpisodeIndex = 0;
+                 currentEpisodeIndex < episodeCount;
+                 currentEpisodeIndex++)
+            {
+                if (!envController.RegisterTerrain(
+                    chapter.Chapter,
+                    chapter.Title[currentEpisodeIndex]))
+                {
+                    return false;
+                }
+            }
         }
 
-        return isValid;
+        return true;
     }
 
     private bool ValidateReference(UnityEngine.Object reference, string fieldName)
@@ -206,6 +237,20 @@ public class DecisionManager : MonoBehaviour
             currentState = StoryState.Transitioning;
             return;
         }
+
+        // 새 지형은 기존 지형을 지우지 않고 마지막 전역 청크 뒤에 이어 붙입니다.
+        if (!envController.RegisterTerrain(
+            mainStory.Chapter,
+            mainStory.Title[episodeIndex]))
+        {
+            currentState = StoryState.Transitioning;
+            return;
+        }
+
+        // 챕터별 목적지는 해당 지형의 월드 시작점을 가진 Registry로 다시 계산합니다.
+        destinationController = new DestinationController(
+            envController.PlaceRegistry,
+            playerController.TargetPosition.z);
 
         ScenarioLoadResult loadResult = scenarioRepository.Load(
             mainStory.Chapter,
