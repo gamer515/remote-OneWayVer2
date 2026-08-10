@@ -38,9 +38,13 @@ public sealed class DecisionSaveService
         saveManager.SaveStats(stats);
     }
 
-    public void SaveCheckpoint(DecisionSession session, int[] stats)
+    public void SaveCheckpoint(
+        DecisionSession session,
+        int[] stats,
+        UnityEngine.Vector3 playerPosition)
     {
-        SaveProgress(session);
+        // 씬 전환 체크포인트는 진행도와 위치를 함께 저장해 서로 다른 시점의 값이 섞이지 않게 합니다.
+        SaveProgress(session, playerPosition);
         SaveStats(stats);
     }
 

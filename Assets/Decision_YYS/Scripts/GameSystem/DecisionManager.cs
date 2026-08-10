@@ -287,7 +287,8 @@ public class DecisionManager : MonoBehaviour
 
         Debug.Log("전투 발생! 현재 진행 상황을 저장하고 전투 씬으로 이동합니다.");
 
-        if (chapterFlowController.PrepareBattleTransition())
+        if (chapterFlowController.PrepareBattleTransition(
+            playerController.TargetPosition))
         {
             currentState = StoryState.Transitioning;
             sceneTransitionService.LoadBattleScene();
@@ -296,7 +297,8 @@ public class DecisionManager : MonoBehaviour
 
     private void CompleteChapter()
     {
-        if (chapterFlowController.CompleteChapter())
+        if (chapterFlowController.CompleteChapter(
+            playerController.TargetPosition))
             LoadCurrentEpisode();
     }
 
