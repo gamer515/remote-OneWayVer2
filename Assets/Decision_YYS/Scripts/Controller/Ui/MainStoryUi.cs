@@ -1,4 +1,3 @@
-﻿using System.Collections;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -12,6 +11,18 @@ public class MainStoryUi : ParentUi
     [SerializeField] private TextMeshProUGUI front_Dialogue_Text;
     [SerializeField] private TextMeshProUGUI back_Dialogue_Text;
     [SerializeField] private TextMeshProUGUI option_Text;
+    [SerializeField] private StoryShutterTransition shutterTransition;
+
+    private void Awake()
+    {
+        if (shutterTransition != null)
+            return;
+
+        // 전용 셔터 UI가 없는 현재 씬에서는 기본 셔터를 생성해 바로 연출을 확인합니다.
+        shutterTransition = gameObject.AddComponent<StoryShutterTransition>();
+        // 셔터는 전체 Canvas가 아니라 960x660 Front_Background 영역 안에서만 보이게 합니다.
+        shutterTransition.CreateRuntimeShutter(cardFront);
+    }
 
     public override void SetActivateUi(bool turn)
     {
@@ -25,13 +36,11 @@ public class MainStoryUi : ParentUi
             option_Text.gameObject.SetActive(isActive);
     }
 
-    public void WriteText(TextTarget target , string text)
+    public void WriteText(TextTarget target, string text)
     {
         TextMeshProUGUI targetText = GetTextTarget(target);
-        if(targetText == null)
-        {
+        if (targetText == null)
             return;
-        }
 
         targetText.text = text;
     }
@@ -41,31 +50,49 @@ public class MainStoryUi : ParentUi
         string displayText,
         System.Action onCompleted = null)
     {
-        StartCoroutine(SwipeTransition(nextStory, displayText, onCompleted));
+        if (nextStory == null)
+        {
+            onCompleted?.Invoke();
+            return;
+        }
+
+        if (shutterTransition == null)
+        {
+            ApplyNextStory(nextStory, displayText);
+            onCompleted?.Invoke();
+            return;
+        }
+
+        shutterTransition.Play(
+            // 셔터가 닫혀 현재 카드가 가려진 순간에 다음 내용을 적용합니다.
+            onClosed: () => ApplyNextStory(nextStory, displayText),
+            onCompleted: onCompleted);
     }
 
     public void ApplyBackground(string bgData)
     {
         if (string.IsNullOrEmpty(bgData) ||
-            string.Equals(bgData, "none", System.StringComparison.OrdinalIgnoreCase)) return;
-
-        Image dgImg = cardFront.GetComponent<Image>();
-        if (dgImg == null) return;
-
-        Color customColor;
-        if (ColorUtility.TryParseHtmlString(bgData, out customColor))
+            string.Equals(bgData, "none", System.StringComparison.OrdinalIgnoreCase))
         {
-            dgImg.sprite = null;
-            dgImg.color = customColor;
+            return;
         }
-        else
+
+        Image dialogueImage = cardFront.GetComponent<Image>();
+        if (dialogueImage == null)
+            return;
+
+        if (ColorUtility.TryParseHtmlString(bgData, out Color customColor))
         {
-            Sprite loadedSprite = Resources.Load<Sprite>(bgData);
-            if (loadedSprite != null)
-            {
-                dgImg.sprite = loadedSprite;
-                dgImg.color = Color.white;
-            }
+            dialogueImage.sprite = null;
+            dialogueImage.color = customColor;
+            return;
+        }
+
+        Sprite loadedSprite = Resources.Load<Sprite>(bgData);
+        if (loadedSprite != null)
+        {
+            dialogueImage.sprite = loadedSprite;
+            dialogueImage.color = Color.white;
         }
     }
 
@@ -84,69 +111,10 @@ public class MainStoryUi : ParentUi
         }
     }
 
-    private IEnumerator SwipeTransition(
-        Dialogue nextStory,
-        string displayText,
-        System.Action onCompleted)
+    private void ApplyNextStory(Dialogue nextStory, string displayText)
     {
-        back_Dialogue_Text.text = displayText;
-        string bgData = nextStory.background;
-
-        if (!string.IsNullOrEmpty(bgData) &&
-            !string.Equals(bgData, "none", System.StringComparison.OrdinalIgnoreCase))
-        {
-            Image dgImg = cardBack.GetComponent<Image>();
-            Color customColor;
-
-            if (ColorUtility.TryParseHtmlString(bgData, out customColor))
-            {
-                Debug.Log($"Color detected: {bgData}, applying color: {customColor}");
-                dgImg.sprite = null;
-                dgImg.color = customColor;
-            }
-            else
-            {
-                Debug.Log($"Not a color, trying to load resource: {bgData}");
-                Sprite loadedSprite = Resources.Load<Sprite>(bgData);
-                if (loadedSprite != null)
-                {
-                    dgImg.sprite = loadedSprite;
-                    dgImg.color = Color.white;
-                }
-            }
-        }
-
-        float duration = 0.5f;
-        float elasped = 0f;
-        Vector2 startPos = cardFront.anchoredPosition;
-        Quaternion startRot = cardFront.localRotation;
-
-        Vector2 targetPos = startPos + new Vector2(-1000f, -200f);
-        Quaternion targetRot = Quaternion.Euler(0f, 0f, 30f);
-
-        while (elasped < duration)
-        {
-            elasped += Time.deltaTime;
-            float t = Mathf.Clamp01(elasped / duration);
-
-            cardFront.anchoredPosition = Vector2.Lerp(startPos, targetPos, t);
-            cardFront.localRotation = Quaternion.Slerp(startRot, targetRot, t);
-            yield return null;
-        }
-
+        // 기존 카드 이동 대신 같은 카드의 내용만 교체하므로 위치와 회전은 유지됩니다.
         front_Dialogue_Text.text = displayText;
-
-        Image frontImg = cardFront.GetComponent<Image>();
-        Image backImg = cardBack.GetComponent<Image>();
-
-        if (frontImg != null && backImg != null)
-        {
-            frontImg.sprite = backImg.sprite;
-            frontImg.color = backImg.color;
-        }
-
-        cardFront.anchoredPosition = startPos;
-        cardFront.localRotation = startRot;
-        onCompleted?.Invoke();
+        ApplyBackground(nextStory.background);
     }
 }
