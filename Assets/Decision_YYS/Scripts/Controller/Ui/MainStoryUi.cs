@@ -1,4 +1,4 @@
-using TMPro;
+﻿using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using static Constants;
@@ -11,17 +11,15 @@ public class MainStoryUi : ParentUi
     [SerializeField] private TextMeshProUGUI front_Dialogue_Text;
     [SerializeField] private TextMeshProUGUI back_Dialogue_Text;
     [SerializeField] private TextMeshProUGUI option_Text;
-    [SerializeField] private StoryShutterTransition shutterTransition;
+    [SerializeField] private Animator shutterAnimator;
+
+    private StoryShutterTransition shutterTransition;
 
     private void Awake()
     {
-        if (shutterTransition != null)
-            return;
-
-        // 전용 셔터 UI가 없는 현재 씬에서는 기본 셔터를 생성해 바로 연출을 확인합니다.
-        shutterTransition = gameObject.AddComponent<StoryShutterTransition>();
-        // 셔터는 전체 Canvas가 아니라 960x660 Front_Background 영역 안에서만 보이게 합니다.
-        shutterTransition.CreateRuntimeShutter(cardFront);
+        // 씬에 배치된 CameraShutter Animator를 일반 전환 객체에 주입합니다.
+        if (shutterAnimator != null)
+            shutterTransition = new StoryShutterTransition(shutterAnimator);
     }
 
     public override void SetActivateUi(bool turn)
@@ -63,10 +61,9 @@ public class MainStoryUi : ParentUi
             return;
         }
 
-        shutterTransition.Play(
-            // 셔터가 닫혀 현재 카드가 가려진 순간에 다음 내용을 적용합니다.
+        StartCoroutine(shutterTransition.Play(
             onClosed: () => ApplyNextStory(nextStory, displayText),
-            onCompleted: onCompleted);
+            onCompleted: onCompleted));
     }
 
     public void ApplyBackground(string bgData)
@@ -113,7 +110,7 @@ public class MainStoryUi : ParentUi
 
     private void ApplyNextStory(Dialogue nextStory, string displayText)
     {
-        // 기존 카드 이동 대신 같은 카드의 내용만 교체하므로 위치와 회전은 유지됩니다.
+        // 셔터 뒤에서 같은 카드의 내용만 교체하므로 UI 위치는 그대로 유지됩니다.
         front_Dialogue_Text.text = displayText;
         ApplyBackground(nextStory.background);
     }

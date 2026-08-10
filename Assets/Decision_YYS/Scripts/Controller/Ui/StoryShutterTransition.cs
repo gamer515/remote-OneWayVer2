@@ -1,176 +1,75 @@
 ﻿using System;
 using System.Collections;
 using UnityEngine;
-using UnityEngine.UI;
 
 /// <summary>
-/// 여러 셔터 날개를 화면 중앙으로 모았다가 펼치는 이야기 전환 연출입니다.
+/// CameraShutter Animator의 닫힘과 열림 재생 순서를 관리합니다.
+/// Unity 생명주기가 필요하지 않아 일반 C# 객체로 사용합니다.
 /// </summary>
-public sealed class StoryShutterTransition : MonoBehaviour
+public sealed class StoryShutterTransition
 {
-    [Header("Shutter References")]
-    [SerializeField] private RectTransform shutterRoot;
-    [SerializeField] private RectTransform[] shutterBlades;
+    private const string CloseStateName = "Base Layer.CameraShutter_Close";
+    private const string OpenStateName = "Base Layer.CameraShutter_Open";
 
-    [Header("Animation Settings")]
-    [SerializeField, Min(0f)] private float openOffset = 1500f;
-    [SerializeField] private float openRotationOffset = -25f;
-    [SerializeField, Min(0.01f)] private float closeDuration = 1f;
-    [SerializeField, Min(0f)] private float closedHoldDuration = 0.04f;
-    [SerializeField, Min(0.01f)] private float openDuration = 2f;
+    private static readonly int CloseStateHash = Animator.StringToHash(CloseStateName);
+    private static readonly int OpenStateHash = Animator.StringToHash(OpenStateName);
 
-    [Header("Sound")]
-    [SerializeField] private AudioSource audioSource;
-    [SerializeField] private AudioClip shutterSound;
-
+    private readonly Animator shutterAnimator;
+    private readonly GameObject shutterObject;
     private bool isPlaying;
 
-    public void CreateRuntimeShutter(RectTransform parent)
+    public StoryShutterTransition(Animator shutterAnimator)
     {
-        if (shutterRoot != null || parent == null)
-            return;
+        this.shutterAnimator = shutterAnimator;
+        shutterObject = shutterAnimator != null ? shutterAnimator.gameObject : null;
 
-        // 별도 UI 에셋이 없어도 효과를 확인할 수 있도록 기본 6날 셔터를 런타임에 구성합니다.
-        GameObject rootObject = new GameObject(
-            "StoryShutterOverlay",
-            typeof(RectTransform),
-            typeof(RectMask2D));
-        shutterRoot = rootObject.GetComponent<RectTransform>();
-        shutterRoot.SetParent(parent, false);
-        shutterRoot.anchorMin = Vector2.zero;
-        shutterRoot.anchorMax = Vector2.one;
-        shutterRoot.offsetMin = Vector2.zero;
-        shutterRoot.offsetMax = Vector2.zero;
-        shutterRoot.SetAsLastSibling();
+        if (shutterAnimator != null)
+            shutterAnimator.updateMode = AnimatorUpdateMode.UnscaledTime;
 
-        // Front_Background의 사각형 밖으로 이동한 셔터 날개는 화면에 표시하지 않습니다.
-        Vector2 panelSize = parent.rect.size;
-        float panelDiagonal = Mathf.Sqrt(
-            panelSize.x * panelSize.x + panelSize.y * panelSize.y);
-        openOffset = panelDiagonal * 1.2f;
-
-        shutterBlades = new RectTransform[6];
-        for (int index = 0; index < shutterBlades.Length; index++)
-        {
-            GameObject bladeObject = new GameObject(
-                $"ShutterBlade_{index}",
-                typeof(RectTransform),
-                typeof(Image));
-
-            RectTransform blade = bladeObject.GetComponent<RectTransform>();
-            blade.SetParent(shutterRoot, false);
-            blade.anchorMin = new Vector2(0.5f, 0.5f);
-            blade.anchorMax = new Vector2(0.5f, 0.5f);
-            blade.pivot = new Vector2(0.5f, 0.5f);
-            // 패널 크기를 기준으로 날개를 만들어 다른 Canvas 해상도에서도 같은 비율을 유지합니다.
-            blade.sizeDelta = new Vector2(
-                panelDiagonal * 1.5f,
-                panelDiagonal * 0.75f);
-
-            Image bladeImage = bladeObject.GetComponent<Image>();
-            bladeImage.color = new Color(0.025f, 0.025f, 0.025f, 1f);
-            bladeImage.raycastTarget = true;
-            shutterBlades[index] = blade;
-        }
-
-        ApplyProgress(0f);
-        shutterRoot.gameObject.SetActive(false);
+        if (shutterObject != null)
+            shutterObject.SetActive(false);
     }
 
-    private void Awake()
+    public IEnumerator Play(Action onClosed, Action onCompleted)
     {
-        ApplyProgress(0f);
-
-        if (shutterRoot != null)
-            shutterRoot.gameObject.SetActive(false);
-    }
-
-    public void Play(Action onClosed, Action onCompleted)
-    {
-        if (isPlaying)
-            return;
-
-        if (!HasValidReferences())
+        if (isPlaying || shutterAnimator == null || shutterAnimator.runtimeAnimatorController == null)
         {
-            // 셔터 UI가 아직 연결되지 않았어도 이야기 진행이 멈추지 않게 즉시 완료합니다.
             onClosed?.Invoke();
             onCompleted?.Invoke();
-            return;
+            yield break;
         }
 
-        StartCoroutine(PlayRoutine(onClosed, onCompleted));
-    }
-
-    private IEnumerator PlayRoutine(Action onClosed, Action onCompleted)
-    {
         isPlaying = true;
-        shutterRoot.gameObject.SetActive(true);
+        shutterObject.SetActive(true);
 
-        yield return Animate(0f, 1f, closeDuration);
+        shutterAnimator.Play(CloseStateHash, 0, 0f);
+        shutterAnimator.Update(0f);
+        yield return WaitForStateCompleted(CloseStateHash);
 
-        // 화면이 완전히 가려진 동안 다음 이야기로 교체해 변경 장면이 보이지 않게 합니다.
+        // 셔터가 완전히 닫혀 화면이 가려진 뒤에만 다음 이야기 내용을 적용합니다.
         onClosed?.Invoke();
 
-        if (audioSource != null && shutterSound != null)
-            audioSource.PlayOneShot(shutterSound);
+        shutterAnimator.Play(OpenStateHash, 0, 0f);
+        shutterAnimator.Update(0f);
+        yield return WaitForStateCompleted(OpenStateHash);
 
-        if (closedHoldDuration > 0f)
-            yield return new WaitForSecondsRealtime(closedHoldDuration);
-
-        yield return Animate(1f, 0f, openDuration);
-
-        shutterRoot.gameObject.SetActive(false);
+        shutterObject.SetActive(false);
         isPlaying = false;
         onCompleted?.Invoke();
     }
 
-    private IEnumerator Animate(float startProgress, float endProgress, float duration)
+    private IEnumerator WaitForStateCompleted(int stateHash)    
     {
-        float elapsed = 0f;
-
-        while (elapsed < duration)
+        while (true)
         {
-            elapsed += Time.unscaledDeltaTime;
-            float time = Mathf.Clamp01(elapsed / duration);
-            float easedTime = time * time * (3f - 2f * time);
+            AnimatorStateInfo stateInfo = shutterAnimator.GetCurrentAnimatorStateInfo(0);
+            bool isRequestedState = stateInfo.fullPathHash == stateHash;
+            bool isCompleted = stateInfo.normalizedTime >= 1f;
 
-            ApplyProgress(Mathf.Lerp(startProgress, endProgress, easedTime));
+            if (isRequestedState && isCompleted && !shutterAnimator.IsInTransition(0))
+                yield break;
+
             yield return null;
         }
-
-        ApplyProgress(endProgress);
-    }
-
-    private void ApplyProgress(float progress)
-    {
-        if (shutterBlades == null || shutterBlades.Length == 0)
-            return;
-
-        float angleStep = 360f / shutterBlades.Length;
-        for (int index = 0; index < shutterBlades.Length; index++)
-        {
-            RectTransform blade = shutterBlades[index];
-            if (blade == null)
-                continue;
-
-            float baseAngle = angleStep * index;
-            float radians = baseAngle * Mathf.Deg2Rad;
-            Vector2 openDirection = new Vector2(Mathf.Sin(radians), Mathf.Cos(radians));
-
-            blade.anchoredPosition = openDirection * Mathf.Lerp(openOffset, 0f, progress);
-            blade.localRotation = Quaternion.Euler(
-                0f, 0f, baseAngle + Mathf.Lerp(openRotationOffset, 0f, progress));
-        }
-    }
-
-    private bool HasValidReferences()
-    {
-        if (shutterRoot == null || shutterBlades == null || shutterBlades.Length == 0)
-        {
-            Debug.LogWarning("StoryShutterTransition의 셔터 UI 참조가 연결되지 않았습니다.", this);
-            return false;
-        }
-
-        return true;
     }
 }
