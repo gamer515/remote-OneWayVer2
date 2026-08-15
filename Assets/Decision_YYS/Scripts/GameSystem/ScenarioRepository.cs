@@ -1,3 +1,6 @@
+﻿using System;
+using System.Collections.Generic;
+
 public readonly struct ScenarioLoadResult
 {
     public ScenarioData Scenario { get; }
@@ -19,7 +22,7 @@ public readonly struct ScenarioLoadResult
 }
 
 /// <summary>
-/// AI 수정 시나리오를 우선 확인하고, 없으면 원본을 불러옵니다.
+/// 분리된 이야기/선택지 JSON을 id로 병합하고, AI 통합본이 있으면 우선 사용합니다.
 /// </summary>
 public sealed class ScenarioRepository
 {
@@ -27,16 +30,104 @@ public sealed class ScenarioRepository
     {
         string originalPath = $"{folder}/{file}";
         string aiPath = "NewStory_" + originalPath.Replace("/", "_");
-        ScenarioData scenario = SaveIOService.Instance.LoadData<ScenarioData>(aiPath);
+        ScenarioData aiScenario = SaveIOService.Instance.LoadData<ScenarioData>(aiPath);
 
-        if (ScenarioValidator.TryValidate(scenario, out _))
-            return new ScenarioLoadResult(scenario, originalPath, true);
+        if (ScenarioValidator.TryValidate(aiScenario, out _))
+            return new ScenarioLoadResult(aiScenario, originalPath, true);
 
-        scenario = SaveIOService.Instance.LoadData<ScenarioData>(originalPath);
-        if (ScenarioValidator.TryValidate(scenario, out string errorMessage))
-            return new ScenarioLoadResult(scenario, originalPath, false);
+        ScenarioData originalScenario = LoadOriginal(folder, file, out string mergeError);
+        if (ScenarioValidator.TryValidate(originalScenario, out string validationError))
+            return new ScenarioLoadResult(originalScenario, originalPath, false);
 
-        return new ScenarioLoadResult(null, originalPath, false, errorMessage);
+        string error = string.IsNullOrEmpty(mergeError) ? validationError : mergeError;
+        return new ScenarioLoadResult(null, originalPath, false, error);
+    }
+
+    public ScenarioData LoadOriginalByPath(string originalPath, out string errorMessage)
+    {
+        if (string.IsNullOrWhiteSpace(originalPath))
+        {
+            errorMessage = "시나리오 경로가 비어 있습니다.";
+            return null;
+        }
+
+        int separatorIndex = originalPath.LastIndexOf('/');
+        if (separatorIndex <= 0 || separatorIndex >= originalPath.Length - 1)
+        {
+            errorMessage = $"시나리오 경로 형식이 올바르지 않습니다: {originalPath}";
+            return null;
+        }
+
+        return LoadOriginal(
+            originalPath.Substring(0, separatorIndex),
+            originalPath.Substring(separatorIndex + 1),
+            out errorMessage);
+    }
+
+    private ScenarioData LoadOriginal(string folder, string file, out string errorMessage)
+    {
+        StoryContentData contentData = SaveIOService.Instance.LoadData<StoryContentData>(
+            $"{folder}/{file}_Story");
+        StoryChoiceData choiceData = SaveIOService.Instance.LoadData<StoryChoiceData>(
+            $"{folder}/{file}_Choice");
+
+        if (contentData?.MainStory == null || choiceData?.StoryChoices == null)
+        {
+            errorMessage = $"분리된 시나리오 파일을 불러오지 못했습니다: {folder}/{file}";
+            return null;
+        }
+
+        Dictionary<int, StoryChoice> choicesById = new Dictionary<int, StoryChoice>();
+        foreach (StoryChoice choice in choiceData.StoryChoices)
+        {
+            if (choice == null || !choicesById.TryAdd(choice.id, choice))
+            {
+                errorMessage = $"선택지 JSON에 null 또는 중복 id가 있습니다: {choice?.id}";
+                return null;
+            }
+        }
+
+        ScenarioData scenario = new ScenarioData { MainStory = new List<Dialogue>() };
+        HashSet<int> storyIds = new HashSet<int>();
+
+        foreach (StoryContent content in contentData.MainStory)
+        {
+            if (content == null || !storyIds.Add(content.id))
+            {
+                errorMessage = $"이야기 JSON에 null 또는 중복 id가 있습니다: {content?.id}";
+                return null;
+            }
+
+            if (!choicesById.TryGetValue(content.id, out StoryChoice choice))
+            {
+                errorMessage = $"이야기 id {content.id}에 대응하는 선택지 정보가 없습니다.";
+                return null;
+            }
+
+            scenario.MainStory.Add(new Dialogue
+            {
+                id = content.id,
+                change = content.change,
+                type = content.type,
+                isTransition = content.isTransition,
+                background = content.background,
+                destination = content.destination,
+                character = content.character,
+                text = content.text,
+                option = choice.option,
+                figure = choice.figure,
+                npcEmotion = choice.npcEmotion
+            });
+        }
+
+        if (storyIds.Count != choicesById.Count)
+        {
+            errorMessage = "이야기 없이 선택지 JSON에만 존재하는 id가 있습니다.";
+            return null;
+        }
+
+        errorMessage = null;
+        return scenario;
     }
 }
 
@@ -50,12 +141,13 @@ public static class ScenarioValidator
             return false;
         }
 
+        HashSet<int> ids = new HashSet<int>();
         for (int i = 0; i < scenario.MainStory.Count; i++)
         {
             Dialogue dialogue = scenario.MainStory[i];
-            if (dialogue == null)
+            if (dialogue == null || !ids.Add(dialogue.id))
             {
-                errorMessage = $"MainStory[{i}]가 null입니다.";
+                errorMessage = $"MainStory[{i}]가 null이거나 id가 중복됩니다.";
                 return false;
             }
 

@@ -11,7 +11,7 @@ public sealed class TerrainBuilder
         public TerrainData Data;
         public TerrainPlaceRegistry Registry;
         public GameObject GroundPrefab;
-        public GameObject PlacePrefab;
+        public TerrainPrefabCatalog PrefabCatalog;
         public Transform Parent;
         public int FirstGlobalChunkIndex;
         public int ChunkCount;
@@ -21,7 +21,7 @@ public sealed class TerrainBuilder
     private readonly Dictionary<int, GameObject> chunkInstances = new Dictionary<int, GameObject>();
 
     public void RegisterTerrain(TerrainData terrainData, TerrainPlaceRegistry placeRegistry,
-        GameObject groundPrefab, GameObject placePrefab, Transform parent,
+        GameObject groundPrefab, TerrainPrefabCatalog prefabCatalog, Transform parent,
         int firstGlobalChunkIndex, int chunkCount)
     {
         if (terrainData?.places == null || placeRegistry == null || parent == null || chunkCount <= 0)
@@ -33,7 +33,7 @@ public sealed class TerrainBuilder
             Data = terrainData,
             Registry = placeRegistry,
             GroundPrefab = groundPrefab,
-            PlacePrefab = placePrefab,
+            PrefabCatalog = prefabCatalog,
             Parent = parent,
             FirstGlobalChunkIndex = firstGlobalChunkIndex,
             ChunkCount = chunkCount
@@ -95,16 +95,21 @@ public sealed class TerrainBuilder
 
     private static void CreatePlaces(TerrainSegment segment, int localChunkIndex, Transform chunkParent)
     {
-        if (segment.PlacePrefab == null) return;
-
         foreach (PlaceData place in segment.Data.places)
         {
-            if (place == null || place.chunkIndex != localChunkIndex ||
-                string.IsNullOrWhiteSpace(place.destination)) continue;
+            if (place == null || place.chunkIndex != localChunkIndex) continue;
 
-            GameObject instance = Object.Instantiate(segment.PlacePrefab,
+            if (segment.PrefabCatalog == null ||
+                !segment.PrefabCatalog.TryGetPrefab(place.prefabId, out GameObject placePrefab))
+            {
+                Debug.LogWarning($"prefabId '{place.prefabId}'에 연결된 지형 프리팹이 없습니다.");
+                continue;
+            }
+
+            // destination이 없는 장식 건물도 생성하며, 위치는 청크 로컬 JSON 값을 사용합니다.
+            GameObject instance = Object.Instantiate(placePrefab,
                 segment.Registry.GetWorldPosition(place), Quaternion.Euler(place.rotation), chunkParent);
-            instance.name = $"Place_{place.destination}_{localChunkIndex}";
+            instance.name = $"Place_{place.placeId}_{place.prefabId}";
         }
     }
 }

@@ -1,81 +1,31 @@
-﻿{
+{
   "TerrainInfo": {
     "terrainName": "Plain",
+    "chunkCount": 5,
     "places": [
       {
+        "placeId": "initial_chunk_0_farmhouse_0",
         "chunkIndex": 0,
-        "prefadId": 0,
-        "destination": null,
-        "position": {
-          "x": 15,
-          "y": 0.5,
-          "z": 50
-        },
-        "rotation": {
-          "x": 0,
-          "y": 0,
-          "z": 0
-        }
+        "prefabId": "farmhouse",
+        "destination": null
       },
       {
+        "placeId": "initial_chunk_1_house_0",
         "chunkIndex": 1,
-        "prefadId": 0,
-        "destination": "store",
-        "position": {
-          "x": 15,
-          "y": 0.5,
-          "z": 50
-        },
-        "rotation": {
-          "x": 0,
-          "y": 0,
-          "z": 0
-        }
+        "prefabId": "house",
+        "destination": "store"
       },
       {
-        "chunkIndex": 2,
-        "prefadId": 0,
-        "destination": null,
-        "position": {
-          "x": 15,
-          "y": 0.5,
-          "z": 50
-        },
-        "rotation": {
-          "x": 0,
-          "y": 0,
-          "z": 0
-        }
+        "placeId": "initial_chunk_1_monument_0",
+        "chunkIndex": 1,
+        "prefabId": "monument",
+        "destination": null
       },
       {
+        "placeId": "initial_chunk_3_pleasure_house_0",
         "chunkIndex": 3,
-        "prefadId": 0,
-        "destination": null,
-        "position": {
-          "x": 15,
-          "y": 0.5,
-          "z": 50
-        },
-        "rotation": {
-          "x": 0,
-          "y": 0,
-          "z": 0
-        }
-      },
-      {
-        "chunkIndex": 4,
-        "prefadId": 0,
-        "destination": null,
-        "position": {
-          "x": 15,
-          "y": 0.5,
-          "z": 50
-        },
-        "rotation": {
-          "x": 0,
-          "y": 0,
-          "z": 0
-        }
+        "prefabId": "pleasure_house",
+        "destination": null
       }
     ]
   }

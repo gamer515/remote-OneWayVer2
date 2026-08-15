@@ -13,7 +13,42 @@ public enum DialogueType
 public class ScenarioData
 {
     public List<Dialogue> MainStory;
-    //public List<Dialogue> SideStory;
+}
+
+/// <summary>이야기의 진행과 화면 표시에 필요한 원본 JSON 묶음입니다.</summary>
+[Serializable]
+public class StoryContentData
+{
+    public List<StoryContent> MainStory;
+}
+
+[Serializable]
+public class StoryContent
+{
+    public int id;
+    public string change;
+    public string type;
+    public bool isTransition;
+    public string background;
+    public string destination;
+    public string character;
+    public string text;
+}
+
+/// <summary>선택지, 수치와 NPC 감정에 필요한 원본 JSON 묶음입니다.</summary>
+[Serializable]
+public class StoryChoiceData
+{
+    public List<StoryChoice> StoryChoices;
+}
+
+[Serializable]
+public class StoryChoice
+{
+    public int id;
+    public string[] option;
+    public int[] figure;
+    public string npcEmotion;
 }
 
 [Serializable]

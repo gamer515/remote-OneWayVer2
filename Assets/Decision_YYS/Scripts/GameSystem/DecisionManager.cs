@@ -136,12 +136,18 @@ public class DecisionManager : MonoBehaviour
             return;
         }
 
-        Vector3 startPosition = startData.SavedPlayerPosition ?? envController.TerrainOrigin + new Vector3(0, 1.3f, 10);
+        Vector3 startPosition = startData.SavedPlayerPosition ?? envController.TerrainOrigin + new Vector3(0, 1f, 10);
         playerController.Initialize(startPosition);
 
         // 실제 시작 위치가 적용된 후 스트리밍과 카메라에 Player를 연결합니다.
         envController.BindPlayer(startData.Player);
-        roadViewCameraController.BindPlayerTransform(startData.Player.transform);
+
+        // 새 게임/재회차는 기준 좌표에서 시작하고, 저장 복원은 플레이어 위치로 즉시 스냅합니다.
+        bool useInitialCameraPosition =
+            chapterIndex == 0 && !startData.SavedPlayerPosition.HasValue;
+        roadViewCameraController.Initialize(
+            startData.Player.transform,
+            useInitialCameraPosition);
 
         if (startData.PlayerStats?.stats != null)
             statContainer.SetStats(startData.PlayerStats.stats);
@@ -156,6 +162,7 @@ public class DecisionManager : MonoBehaviour
         isValid &= ValidateReference(gearController, nameof(gearController));
         isValid &= ValidateReference(uiController, nameof(uiController));
         isValid &= ValidateReference(envController, nameof(envController));
+        isValid &= ValidateReference(roadViewCameraController, nameof(roadViewCameraController));
         isValid &= ValidateReference(statContainer, nameof(statContainer));
 
         return isValid;

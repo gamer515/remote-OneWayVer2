@@ -117,7 +117,12 @@ public class AIAPIClient : MonoBehaviour
     {
         if (string.IsNullOrEmpty(packet.fileName)) return;
 
-        ScenarioData originalData = SaveIOService.Instance.LoadData<ScenarioData>(packet.fileName);
+        // 원본은 이야기/선택지 파일로 분리되어 있으므로 Repository를 통해 병합해 불러옵니다.
+        ScenarioData originalData = new ScenarioRepository().LoadOriginalByPath(
+            packet.fileName,
+            out string loadError);
+        if (!string.IsNullOrEmpty(loadError))
+            Debug.LogError($"[AI SYSTEM] 원본 시나리오 병합 실패: {loadError}");
         if (originalData == null || originalData.MainStory == null) return;
 
         if(modifiedItems != null)

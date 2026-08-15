@@ -1773,7 +1773,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 1, y: 0}
   m_AnchorMax: {x: 1, y: 0}
-  m_AnchoredPosition: {x: -240, y: -135}
+  m_AnchoredPosition: {x: -240, y: -155}
   m_SizeDelta: {x: 480, y: 270}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &764321777
@@ -2386,6 +2386,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 24c8926add5fe9d44a1a71d94d088e5d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RoadViewCameraController
+  initialCameraPosition: {x: -200, y: 18, z: 10.5}
+  playerFollowOffsetZ: 0.5
+  maxDistance: 20
+  smoothTime: 2
 --- !u!1 &996758927
 GameObject:
   m_ObjectHideFlags: 0
@@ -6823,7 +6827,18 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EnvController
   environment: {fileID: 9096609592010750968}
   groundPrefab: {fileID: 643677564533035715, guid: 36835a6f65580b64ca6fe695fc404586, type: 3}
-  housePrefab: {fileID: 1988859258794082476, guid: f4139c7f60a4d4f43a3b1f48439be84b, type: 3}
+  terrainPrefabCatalog:
+    entries:
+    - prefabId: monument
+      prefab: {fileID: 1642671123154795548, guid: 379247cb14e89dd4a8060eca2a0aa65b, type: 3}
+    - prefabId: farmhouse
+      prefab: {fileID: 5137015417179983629, guid: e84cd29c16bb8f548aef75dd1aa0a9fc, type: 3}
+    - prefabId: castle
+      prefab: {fileID: 3106447559508398488, guid: 74949ec7f13158e47a415bcfcc554508, type: 3}
+    - prefabId: house
+      prefab: {fileID: 7555587507197295519, guid: c6e8649fa2639be4ab547db7bda40260, type: 3}
+    - prefabId: pleasure_house
+      prefab: {fileID: 193807623305003356, guid: 3a11ca6d34303ff4ca406fbcb9d60331, type: 3}
   chunkSize: 100
   loadRadius: 1
 --- !u!1660057539 &9223372036854775807

@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Serialization;
 
@@ -16,8 +16,7 @@ public class EnvController : MonoBehaviour
     [FormerlySerializedAs("terrain")]
     [SerializeField] private GameObject environment;
     [SerializeField] private GameObject groundPrefab;
-    [FormerlySerializedAs("prefab")]
-    [SerializeField] private GameObject housePrefab;
+    [SerializeField] private TerrainPrefabCatalog terrainPrefabCatalog;
     [SerializeField, Min(0.01f)] private float chunkSize = 100f;
     [SerializeField, Min(0)] private int loadRadius = 1;
 
@@ -45,6 +44,15 @@ public class EnvController : MonoBehaviour
 
         if (groundPrefab == null)
             Debug.LogWarning("groundPrefab이 없어 청크의 바닥은 생성하지 않습니다.", this);
+
+        if (terrainPrefabCatalog == null)
+        {
+            Debug.LogError("지형 프리팹 카탈로그가 지정되지 않았습니다.", this);
+        }
+        else if (!terrainPrefabCatalog.TryValidate(out string catalogError))
+        {
+            Debug.LogError(catalogError, this);
+        }
 
         terrainStreamingController = new TerrainStreamingController(
             terrainBuilder, chunkSize, TerrainOrigin.z, loadRadius);
@@ -78,7 +86,7 @@ public class EnvController : MonoBehaviour
             terrainData, segmentOrigin, chunkSize);
 
         terrainBuilder.RegisterTerrain(terrainData, registry, groundPrefab,
-            housePrefab, environment.transform, nextGlobalChunkIndex, chunkCount);
+            terrainPrefabCatalog, environment.transform, nextGlobalChunkIndex, chunkCount);
 
         registeredTerrains.Add(terrainPath, new RegisteredTerrain
         {
@@ -125,7 +133,13 @@ public class EnvController : MonoBehaviour
 
     private static int GetChunkCount(TerrainData terrainData)
     {
-        if (terrainData?.places == null || terrainData.places.Length == 0) return 0;
+        if (terrainData == null) return 0;
+
+        // 건물이 없는 마지막 청크도 유지할 수 있도록 JSON의 명시적인 청크 수를 우선 사용합니다.
+        if (terrainData.chunkCount > 0) return terrainData.chunkCount;
+
+        // 이전 형식의 Terrain JSON을 위한 호환 처리입니다.
+        if (terrainData.places == null || terrainData.places.Length == 0) return 0;
 
         int maximumChunkIndex = -1;
         foreach (PlaceData place in terrainData.places)
@@ -135,5 +149,77 @@ public class EnvController : MonoBehaviour
         }
 
         return maximumChunkIndex + 1;
+    }
+}
+
+[System.Serializable]
+public sealed class TerrainPrefabEntry
+{
+    public string prefabId;
+    public GameObject prefab;
+}
+
+/// <summary>
+/// JSON의 논리적인 prefabId와 Unity 프리팹 참조를 연결합니다.
+/// 에셋 경로를 JSON에 저장하지 않으므로 프리팹을 이동해도 연결이 유지됩니다.
+/// </summary>
+[System.Serializable]
+public sealed class TerrainPrefabCatalog
+{
+    [SerializeField] private TerrainPrefabEntry[] entries;
+
+    private Dictionary<string, GameObject> prefabsById;
+
+    public bool TryGetPrefab(string prefabId, out GameObject prefab)
+    {
+        BuildLookupIfNeeded();
+        prefab = null;
+        return !string.IsNullOrWhiteSpace(prefabId) &&
+               prefabsById.TryGetValue(prefabId, out prefab) && prefab != null;
+    }
+
+    public bool TryValidate(out string errorMessage)
+    {
+        prefabsById = null;
+        BuildLookupIfNeeded();
+
+        if (entries == null || entries.Length == 0)
+        {
+            errorMessage = "지형 프리팹 카탈로그가 비어 있습니다.";
+            return false;
+        }
+
+        HashSet<string> ids = new HashSet<string>(System.StringComparer.Ordinal);
+        foreach (TerrainPrefabEntry entry in entries)
+        {
+            if (entry == null || string.IsNullOrWhiteSpace(entry.prefabId) || entry.prefab == null)
+            {
+                errorMessage = "지형 프리팹 카탈로그에 ID 또는 프리팹이 비어 있는 항목이 있습니다.";
+                return false;
+            }
+
+            if (!ids.Add(entry.prefabId))
+            {
+                errorMessage = $"지형 프리팹 ID가 중복되었습니다: {entry.prefabId}";
+                return false;
+            }
+        }
+
+        errorMessage = null;
+        return true;
+    }
+
+    private void BuildLookupIfNeeded()
+    {
+        if (prefabsById != null) return;
+
+        prefabsById = new Dictionary<string, GameObject>(System.StringComparer.Ordinal);
+        if (entries == null) return;
+
+        foreach (TerrainPrefabEntry entry in entries)
+        {
+            if (entry == null || string.IsNullOrWhiteSpace(entry.prefabId)) continue;
+            prefabsById[entry.prefabId] = entry.prefab;
+        }
     }
 }

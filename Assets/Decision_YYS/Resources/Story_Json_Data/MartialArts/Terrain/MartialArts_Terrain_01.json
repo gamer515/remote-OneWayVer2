@@ -1,41 +1,31 @@
 {
   "TerrainInfo": {
     "terrainName": "TrainingRoad",
+    "chunkCount": 5,
     "places": [
       {
-        "chunkIndex": 0,
-        "prefadId": 0,
-        "destination": null,
-        "position": { "x": 15, "y": 0.5, "z": 50 },
-        "rotation": { "x": 0, "y": 0, "z": 0 }
-      },
-      {
+        "placeId": "martial_chunk_1_monument_0",
         "chunkIndex": 1,
-        "prefadId": 0,
-        "destination": "training_ground",
-        "position": { "x": 15, "y": 0.5, "z": 50 },
-        "rotation": { "x": 0, "y": 180, "z": 0 }
+        "prefabId": "monument",
+        "destination": "training_ground"
       },
       {
-        "chunkIndex": 2,
-        "prefadId": 0,
-        "destination": null,
-        "position": { "x": -12, "y": 0.5, "z": 50 },
-        "rotation": { "x": 0, "y": 0, "z": 0 }
+        "placeId": "martial_chunk_1_farmhouse_0",
+        "chunkIndex": 1,
+        "prefabId": "farmhouse",
+        "destination": null
       },
       {
+        "placeId": "martial_chunk_3_castle_0",
         "chunkIndex": 3,
-        "prefadId": 0,
-        "destination": "dojo",
-        "position": { "x": 15, "y": 0.5, "z": 50 },
-        "rotation": { "x": 0, "y": 180, "z": 0 }
+        "prefabId": "castle",
+        "destination": "dojo"
       },
       {
+        "placeId": "martial_chunk_4_house_0",
         "chunkIndex": 4,
-        "prefadId": 0,
-        "destination": null,
-        "position": { "x": 15, "y": 0.5, "z": 50 },
-        "rotation": { "x": 0, "y": 0, "z": 0 }
+        "prefabId": "house",
+        "destination": null
       }
     ]
   }

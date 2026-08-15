@@ -1,41 +1,31 @@
 {
   "TerrainInfo": {
     "terrainName": "AncientKnowledgeRoad",
+    "chunkCount": 5,
     "places": [
       {
-        "chunkIndex": 0,
-        "prefadId": 0,
-        "destination": null,
-        "position": { "x": 15, "y": 0.5, "z": 50 },
-        "rotation": { "x": 0, "y": 0, "z": 0 }
-      },
-      {
+        "placeId": "wisdom_chunk_1_monument_0",
         "chunkIndex": 1,
-        "prefadId": 0,
-        "destination": "stone_monument",
-        "position": { "x": -15, "y": 0.5, "z": 50 },
-        "rotation": { "x": 0, "y": 90, "z": 0 }
+        "prefabId": "monument",
+        "destination": "stone_monument"
       },
       {
-        "chunkIndex": 2,
-        "prefadId": 0,
-        "destination": null,
-        "position": { "x": 15, "y": 0.5, "z": 50 },
-        "rotation": { "x": 0, "y": 0, "z": 0 }
+        "placeId": "wisdom_chunk_1_house_0",
+        "chunkIndex": 1,
+        "prefabId": "house",
+        "destination": null
       },
       {
+        "placeId": "wisdom_chunk_3_pleasure_house_0",
         "chunkIndex": 3,
-        "prefadId": 0,
-        "destination": "sage_orb",
-        "position": { "x": 15, "y": 0.5, "z": 50 },
-        "rotation": { "x": 0, "y": 90, "z": 0 }
+        "prefabId": "pleasure_house",
+        "destination": "sage_orb"
       },
       {
-        "chunkIndex": 4,
-        "prefadId": 0,
-        "destination": null,
-        "position": { "x": 15, "y": 0.5, "z": 50 },
-        "rotation": { "x": 0, "y": 0, "z": 0 }
+        "placeId": "wisdom_chunk_3_castle_0",
+        "chunkIndex": 3,
+        "prefabId": "castle",
+        "destination": null
       }
     ]
   }
