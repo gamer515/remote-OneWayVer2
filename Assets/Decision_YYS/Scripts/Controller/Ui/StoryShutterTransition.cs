@@ -49,6 +49,7 @@ public sealed class StoryShutterTransition
         // 셔터가 완전히 닫혀 화면이 가려진 뒤에만 다음 이야기 내용을 적용합니다.
         onClosed?.Invoke();
 
+        shutterAnimator.speed = 1.5f;
         shutterAnimator.Play(OpenStateHash, 0, 0f);
         shutterAnimator.Update(0f);
         yield return WaitForStateCompleted(OpenStateHash);
