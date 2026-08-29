@@ -58,6 +58,8 @@ public class TerrainTransformData
 public class TerrainPlaceTransform
 {
     public string placeId;
-    public Vector3 position;
+    public string side;
+    public float y;
+    public int z;
     public Vector3 rotation;
 }

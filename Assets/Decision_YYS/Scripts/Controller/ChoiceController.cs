@@ -17,13 +17,18 @@ public readonly struct ChoiceResult
 }
 
 /// <summary>
-/// 기어 입력을 지문의 선택 결과로 변환합니다.
+/// 선택지 인덱스를 검증하고 적용 가능한 선택 결과로 변환합니다.
+/// 기존 기어 번호 입력도 호환을 위해 유지합니다.
 /// </summary>
 public sealed class ChoiceController
 {
     public ChoiceResult Resolve(Dialogue dialogue, int gear)
     {
-        int optionIndex = GetOptionIndex(gear);
+        return ResolveOption(dialogue, GetOptionIndex(gear));
+    }
+
+    public ChoiceResult ResolveOption(Dialogue dialogue, int optionIndex)
+    {
         if (dialogue == null || !dialogue.IsChoice || optionIndex < 0)
             return default;
 

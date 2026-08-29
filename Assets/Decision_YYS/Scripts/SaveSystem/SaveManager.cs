@@ -13,7 +13,7 @@ public class SaveManager
     /// <summary>
     /// 현재 스토리 진행도를 저장합니다.
     /// </summary>
-    /// <param name="chapterIndex">챕터 인덱스. 예: Initial, Martial, Wisdom</param>
+    /// <param name="chapterIndex">챕터 인덱스. 예: Initial, Strength, Wisdom</param>
     /// <param name="episodeIndex">챕터 내부 에피소드 인덱스.</param>
     /// <param name="storyIndex">에피소드 내부 지문 인덱스.</param>
     public void SaveProgress(int chapterIndex, int episodeIndex, int storyIndex)

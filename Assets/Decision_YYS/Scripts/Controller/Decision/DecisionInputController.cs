@@ -1,7 +1,7 @@
 using System;
 
 /// <summary>
-/// JoystickLikeGear의 입력 이벤트와 수명주기를 Decision 흐름에 맞게 변환합니다.
+/// 기어에서 선택한 코인 종류만 베팅 시스템에 전달합니다.
 /// </summary>
 public sealed class DecisionInputController
 {
@@ -10,13 +10,11 @@ public sealed class DecisionInputController
     private bool isEnabled;
     private bool isBlocked;
 
-    public event Action<int> GearChanged;
-    public event Action<int> GearConfirmed;
-    public event Action ScreenClicked;
+    public event Action<int> CoinTypeChanged;
 
-    public int CurrentGear => gearController != null
-        ? gearController.GetCurrentGearDirectly()
-        : 0;
+    public int SelectedCoinIndex => gearController != null
+        ? gearController.SelectedCoinIndex
+        : -1;
 
     public DecisionInputController(JoystickLikeGear gearController, UiController uiController)
     {
@@ -29,9 +27,7 @@ public sealed class DecisionInputController
         if (isEnabled || gearController == null)
             return;
 
-        gearController.OnGearChanged += HandleGearChanged;
-        gearController.OnGearConfirmed += HandleGearConfirmed;
-        gearController.OnScreenClicked += HandleScreenClicked;
+        gearController.OnCoinTypeChanged += HandleCoinTypeChanged;
         if (uiController != null)
             uiController.OnPlayerViewChanged += HandlePlayerViewChanged;
         isEnabled = true;
@@ -42,28 +38,16 @@ public sealed class DecisionInputController
         if (!isEnabled || gearController == null)
             return;
 
-        gearController.OnGearChanged -= HandleGearChanged;
-        gearController.OnGearConfirmed -= HandleGearConfirmed;
-        gearController.OnScreenClicked -= HandleScreenClicked;
+        gearController.OnCoinTypeChanged -= HandleCoinTypeChanged;
         if (uiController != null)
             uiController.OnPlayerViewChanged -= HandlePlayerViewChanged;
         isBlocked = false;
         isEnabled = false;
     }
 
-    private void HandleGearChanged(int gear)
+    private void HandleCoinTypeChanged(int coinIndex)
     {
-        if (!isBlocked) GearChanged?.Invoke(gear);
-    }
-
-    private void HandleGearConfirmed(int gear)
-    {
-        if (!isBlocked) GearConfirmed?.Invoke(gear);
-    }
-
-    private void HandleScreenClicked()
-    {
-        if (!isBlocked) ScreenClicked?.Invoke();
+        if (!isBlocked) CoinTypeChanged?.Invoke(coinIndex);
     }
 
     private void HandlePlayerViewChanged(bool playerViewActive)

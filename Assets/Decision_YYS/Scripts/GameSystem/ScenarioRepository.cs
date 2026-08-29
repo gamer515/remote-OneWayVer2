@@ -29,18 +29,46 @@ public sealed class ScenarioRepository
     public ScenarioLoadResult Load(string folder, string file)
     {
         string originalPath = $"{folder}/{file}";
+        ScenarioData originalScenario = LoadOriginal(folder, file, out string mergeError);
+        if (!ScenarioValidator.TryValidate(originalScenario, out string validationError))
+        {
+            string error = string.IsNullOrEmpty(mergeError) ? validationError : mergeError;
+            return new ScenarioLoadResult(null, originalPath, false, error);
+        }
+
         string aiPath = "NewStory_" + originalPath.Replace("/", "_");
         ScenarioData aiScenario = SaveIOService.Instance.LoadData<ScenarioData>(aiPath);
 
-        if (ScenarioValidator.TryValidate(aiScenario, out _))
-            return new ScenarioLoadResult(aiScenario, originalPath, true);
+        // AI 저장본에서는 수정 대상인 text만 가져옵니다. destination 등 구조 정보는
+        // 최신 원본을 유지하므로 예전 NewStory 파일이 있어도 지형 연결이 어긋나지 않습니다.
+        if (ScenarioValidator.TryValidate(aiScenario, out _) &&
+            TryApplyAiText(originalScenario, aiScenario))
+            return new ScenarioLoadResult(originalScenario, originalPath, true);
 
-        ScenarioData originalScenario = LoadOriginal(folder, file, out string mergeError);
-        if (ScenarioValidator.TryValidate(originalScenario, out string validationError))
-            return new ScenarioLoadResult(originalScenario, originalPath, false);
+        return new ScenarioLoadResult(originalScenario, originalPath, false);
+    }
 
-        string error = string.IsNullOrEmpty(mergeError) ? validationError : mergeError;
-        return new ScenarioLoadResult(null, originalPath, false, error);
+    private static bool TryApplyAiText(ScenarioData original, ScenarioData aiRevision)
+    {
+        Dictionary<int, string> aiTextById = new Dictionary<int, string>();
+        foreach (Dialogue dialogue in aiRevision.MainStory)
+            aiTextById[dialogue.id] = dialogue.text;
+
+        if (original.MainStory.Count != aiTextById.Count)
+            return false;
+
+        foreach (Dialogue dialogue in original.MainStory)
+        {
+            if (!aiTextById.ContainsKey(dialogue.id))
+                return false;
+        }
+
+        foreach (Dialogue dialogue in original.MainStory)
+        {
+            dialogue.text = aiTextById[dialogue.id];
+        }
+
+        return true;
     }
 
     public ScenarioData LoadOriginalByPath(string originalPath, out string errorMessage)

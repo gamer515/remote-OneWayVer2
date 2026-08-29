@@ -16,7 +16,6 @@ public class DecisionManager : MonoBehaviour
     private DestinationController destinationController;
     private DecisionSaveService saveService;
     private ChapterFlowController chapterFlowController;
-    private DecisionInputController inputController;
     private DecisionPresentationController presentationController;
     private readonly ChoiceController choiceController = new ChoiceController();
     private readonly ScenarioRepository scenarioRepository = new ScenarioRepository();
@@ -50,6 +49,8 @@ public class DecisionManager : MonoBehaviour
     [SerializeField] private EnvController envController;
     [SerializeField] private GameObject playerViewUI;
     [SerializeField] private RoadViewCameraController roadViewCameraController;
+    [SerializeField] private BettingButtonController bettingButtonController;
+    [SerializeField] private CoinDropController coinDropController;
     [Header("Player Movement")]
     private DecisionPlayerController playerController;
 
@@ -57,8 +58,13 @@ public class DecisionManager : MonoBehaviour
 
     private void Awake()
     {
-        inputController = new DecisionInputController(gearController, uiController);
         presentationController = new DecisionPresentationController(uiController, playerViewUI);
+
+        // 프리팹에 포함된 버튼 입력기를 자동으로 연결하되 Inspector 지정도 허용합니다.
+        if (bettingButtonController == null)
+            bettingButtonController = FindFirstObjectByType<BettingButtonController>();
+        if (coinDropController == null)
+            coinDropController = FindFirstObjectByType<CoinDropController>();
     }
 
     private void OnEnable()
@@ -68,13 +74,11 @@ public class DecisionManager : MonoBehaviour
             statContainer.OnTargetStatReached += HandleTargetStatReached;
         }
 
-        if (inputController != null)
-        {
-            inputController.GearChanged += HandleGearChanged;
-            inputController.GearConfirmed += HandleChoiceConfirmed;
-            inputController.ScreenClicked += HandleScreenClicked;
-            inputController.Enable();
-        }
+        if (bettingButtonController != null)
+            bettingButtonController.YellowPressed += HandleScreenClicked;
+        if (coinDropController != null)
+            coinDropController.BettingCompleted += HandleBettingCompleted;
+
     }
 
     private void OnDisable()
@@ -84,13 +88,11 @@ public class DecisionManager : MonoBehaviour
             statContainer.OnTargetStatReached -= HandleTargetStatReached;
         }
 
-        if (inputController != null)
-        {
-            inputController.GearChanged -= HandleGearChanged;
-            inputController.GearConfirmed -= HandleChoiceConfirmed;
-            inputController.ScreenClicked -= HandleScreenClicked;
-            inputController.Disable();
-        }
+        if (bettingButtonController != null)
+            bettingButtonController.YellowPressed -= HandleScreenClicked;
+        if (coinDropController != null)
+            coinDropController.BettingCompleted -= HandleBettingCompleted;
+
     }
 
     private void Start()
@@ -164,6 +166,8 @@ public class DecisionManager : MonoBehaviour
         isValid &= ValidateReference(envController, nameof(envController));
         isValid &= ValidateReference(roadViewCameraController, nameof(roadViewCameraController));
         isValid &= ValidateReference(statContainer, nameof(statContainer));
+        isValid &= ValidateReference(bettingButtonController, nameof(bettingButtonController));
+        isValid &= ValidateReference(coinDropController, nameof(coinDropController));
 
         return isValid;
     }
@@ -244,6 +248,9 @@ public class DecisionManager : MonoBehaviour
             currentState = StoryState.Transitioning;
             return;
         }
+
+        // 스탯의 내부 인덱스는 유지하면서 현재 챕터의 네 덕목 이름만 UI에 반영합니다.
+        statContainer.SetChapterStatNames(mainStory.Chapter);
 
         // 새 지형은 기존 지형을 지우지 않고 마지막 전역 청크 뒤에 이어 붙입니다.
         if (!envController.RegisterTerrain(
@@ -333,6 +340,8 @@ public class DecisionManager : MonoBehaviour
         {
             currentState = StoryState.ShowingStory;
             presentationController.ExitChoice();
+            bettingButtonController?.SetYellowInteractable(true);
+            bettingButtonController?.SetBettingInteractable(false);
         }
 
         UpdatePlayerPosition();
@@ -350,11 +359,10 @@ public class DecisionManager : MonoBehaviour
     private void EnterChoiceState()
     {
         currentState = StoryState.WaitingForChoice;
-        int currentGear = inputController?.CurrentGear ?? 0;
-        string optionText = choiceController.GetOptionText(
-            storyProgressController.Current,
-            currentGear);
-        presentationController.EnterChoice(optionText);
+        // 기어는 이제 코인 종류만 선택하므로 이야기 선택지와 연결하지 않습니다.
+        presentationController.EnterChoice();
+        bettingButtonController?.SetYellowInteractable(false);
+        bettingButtonController?.SetBettingInteractable(true);
     }
 
     private void HandleScreenClicked()
@@ -377,36 +385,41 @@ public class DecisionManager : MonoBehaviour
         }
     }
 
-    private void HandleChoiceConfirmed(int gear)
+    private void HandleBettingCompleted(BettingResult result)
     {
-        if (currentState == StoryState.ShowingStory)
+        if (currentState != StoryState.WaitingForChoice ||
+            storyProgressController == null ||
+            !storyProgressController.HasCurrentDialogue ||
+            result == null)
         {
-            HandleScreenClicked();
             return;
         }
 
-        if (currentState != StoryState.WaitingForChoice || storyProgressController == null) return;
-        if (!storyProgressController.HasCurrentDialogue) return;
-
         Dialogue currentStory = storyProgressController.Current;
-        ChoiceResult choice = choiceController.Resolve(currentStory, gear);
+        ChoiceResult choice = choiceController.ResolveOption(
+            currentStory,
+            result.WinningCoinIndex);
 
-        if (choice.IsValid)
+        if (!choice.IsValid)
         {
-            // Initial 선택은 튜토리얼 성격이므로 실제 스탯에는 반영하지 않습니다.
-            if (chapterIndex > 0)
-            {
-                statContainer.AddStat(choice.OptionIndex, choice.StatChange);
-                saveService.SaveStats(statContainer.stats);
-            }
-
-            Debug.Log($"[{choice.OptionText}] 선택됨!");
+            Debug.LogError($"코인 종류 {result.WinningCoinIndex}에 해당하는 선택지를 찾지 못했습니다.", this);
+            bettingButtonController?.SetBettingInteractable(true);
+            return;
         }
+
+        // Initial은 선택 방식을 소개하는 구간이므로 실제 스탯에는 반영하지 않습니다.
+        if (chapterIndex > 0)
+        {
+            statContainer.AddStat(choice.OptionIndex, choice.StatChange);
+            saveService.SaveStats(statContainer.stats);
+        }
+
+        Debug.Log(
+            $"[{choice.OptionText}] 선택됨 - 코인 {result.TotalCoins}개, " +
+            $"우세 종류 {result.WinningCoinIndex}");
 
         if (currentState != StoryState.Transitioning)
-        {
             AdvanceStory();
-        }
     }
 
     private void AdvanceStory()
@@ -456,21 +469,13 @@ public class DecisionManager : MonoBehaviour
         {
             EnterChoiceState();
         }
-        else
-        {
-            currentState = StoryState.ShowingStory;
-            presentationController.ExitChoice();
-        }
+            else
+            {
+                currentState = StoryState.ShowingStory;
+                presentationController.ExitChoice();
+                bettingButtonController?.SetYellowInteractable(true);
+                bettingButtonController?.SetBettingInteractable(false);
+            }
     }
 
-    private void HandleGearChanged(int gear)
-    {
-        if (currentState != StoryState.WaitingForChoice) return;
-        if (storyProgressController == null || !storyProgressController.HasCurrentDialogue) return;
-        Dialogue currentStory = storyProgressController.Current;
-        if (!currentStory.IsChoice) return;
-
-        string optionText = choiceController.GetOptionText(currentStory, gear);
-        presentationController.ShowOption(optionText);
-    }
 }

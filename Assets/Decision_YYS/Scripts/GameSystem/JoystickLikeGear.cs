@@ -1,140 +1,80 @@
-﻿using System;
+using System;
 using UnityEngine;
-using UnityEngine.UI;
 
+/// <summary>
+/// 3D 기어 손잡이를 드래그하여 네 종류의 코인 중 하나를 선택합니다.
+/// 이야기 진행과 선택지 확정은 담당하지 않습니다.
+/// </summary>
 public class JoystickLikeGear : MonoBehaviour
 {
     [Header("UI References")]
     [SerializeField] private RectTransform joystick_Button;
     [SerializeField] private RectTransform pivot;
 
-    [Header("3D Object References")]
+    [Header("3D Gear References")]
     [SerializeField] private Transform gear3D;
-    [Tooltip("기어가 최대로 기울어질 각도 (단위: 도)")]
-    [SerializeField] private float maxTiltAngle = 30f;
+    [Tooltip("마우스로 눌러야 기어가 움직이는 가장 위쪽 Sphere의 Collider입니다.")]
+    [SerializeField] private Collider gearHandleCollider;
     [SerializeField] private Camera mainCamera;
+    [SerializeField] private float maxTiltAngle = 30f;
 
-    [Header("Interaction Area Settings (Screen)")]
-    [Tooltip("체크하면 아래 지정된 화면 영역을 기준으로 동작합니다.")]
+    [Header("Drag Mapping Area")]
     [SerializeField] private bool useScreenArea = true;
-    [Tooltip("기준 해상도(1920x1080) 기준 인식 영역의 좌하단 시작점 (1440, 0 권장)")]
-    [SerializeField] private Vector2 origin = new Vector2(1440f, 0f); 
-    [Tooltip("마우스 인식 영역 크기 (480, 270 권장)")]
+    [SerializeField] private Vector2 origin = new Vector2(1440f, 0f);
     [SerializeField] private Vector2 areaSize = new Vector2(480f, 270f);
-    [Tooltip("기준 해상도")]
     [SerializeField] private Vector2 referenceResolution = new Vector2(1920f, 1080f);
 
-    [Header("Debug")]
-    [Tooltip("체크하면 Scene 뷰와 Game 뷰에 마우스 인식 영역이 빨간색 선으로 표시됩니다.")]
-    [SerializeField] private bool showDebugArea = true;
-
-    [Header("Follow Settings")]
+    [Header("Gear Movement")]
     [SerializeField] private float horizontalRange = 200f;
     [SerializeField] private float verticalRange = 150f;
-    [SerializeField] private float slotWidth = 60f;
-    [SerializeField] private float smoothTime = 0.08f;     
+    [SerializeField] private float smoothTime = 0.08f;
 
-    public event Action<int> OnGearChanged;
-    public event Action<int> OnGearConfirmed;
-    public event Action OnScreenClicked;
-
+    [Header("Debug")]
+    [SerializeField] private bool showDebugArea = true;
     [SerializeField] private DynamicFaceController faceController;
+
+    /// <summary>0~3 범위의 코인 종류 인덱스를 전달합니다.</summary>
+    public event Action<int> OnCoinTypeChanged;
+
+    public int SelectedCoinIndex => currentGearSlot - 1;
 
     private Vector2 targetPosition;
     private Vector2 currentVelocity;
-    private int currentGearSlot = 0; 
-
-    // 3D 기어의 초기 회전값 저장
     private Quaternion gear3DOriginRot;
+    private int currentGearSlot;
+    private bool isDragging;
 
-    //public int CurrentGear => currentGearSlot;
+    private void Start()
+    {
+        if (mainCamera == null)
+            mainCamera = Camera.main;
+
+        if (gear3D != null)
+        {
+            gear3DOriginRot = gear3D.localRotation;
+            ResolveHandleCollider();
+        }
+    }
 
     private void Update()
     {
-        if (joystick_Button == null || pivot == null) return;
+        if (joystick_Button == null || pivot == null)
+            return;
 
-        HandleSelectionInput();
-        CheckGearState();
-        HandleMouseProximity();
-    }
-
-    private void LateUpdate()
-    {
-        if (gear3D != null)
-        {
-            // 매 프레임 UI 위치에 맞춰 3D 기어의 회전값을 업데이트합니다.
-            Update3DGearRotation();
-        }
+        HandleDragInput();
     }
 
     private void FixedUpdate()
     {
-        MoveGearSmoothly();
-    }
+        if (joystick_Button == null)
+            return;
 
-    public int GetCurrentGearDirectly()
-    {
-        int gear = 0;
-        Vector2 pos = joystick_Button.anchoredPosition;
-
-        float xThreshold = horizontalRange * 0.75f;
-        float yThreshold = verticalRange * 0.75f;
-
-        if (pos.x < -xThreshold && pos.y > yThreshold) gear = 1;
-        else if (pos.x < -xThreshold && pos.y < -yThreshold) gear = 2;
-        else if (pos.x > xThreshold && pos.y > yThreshold) gear = 3;
-        else if (pos.x > xThreshold && pos.y < -yThreshold) gear = 4;
-
-        return gear;
-    }
-
-    private void Start()
-    {
-        if (mainCamera == null) mainCamera = Camera.main;
-        if (gear3D != null)
-        {
-            // 시작할 때의 로컬 회전 상태를 저장해둡니다.
-            gear3DOriginRot = gear3D.localRotation;
-        }
-    }
-
-    private void OnDrawGizmos()
-    {
-        if (!useScreenArea || !showDebugArea) return;
-
-        Camera cam = mainCamera != null ? mainCamera : Camera.main;
-        if (cam == null) return;
-
-        Rect scaledRect = GetScaledInteractionRect();
-        float distance = 1f; 
-
-        Vector3 bottomLeft = cam.ScreenToWorldPoint(new Vector3(scaledRect.xMin, scaledRect.yMin, distance));
-        Vector3 topLeft = cam.ScreenToWorldPoint(new Vector3(scaledRect.xMin, scaledRect.yMax, distance));
-        Vector3 topRight = cam.ScreenToWorldPoint(new Vector3(scaledRect.xMax, scaledRect.yMax, distance));
-        Vector3 bottomRight = cam.ScreenToWorldPoint(new Vector3(scaledRect.xMax, scaledRect.yMin, distance));
-
-        Gizmos.color = new Color(1f, 0f, 0f, 0.8f);
-        Gizmos.DrawLine(bottomLeft, topLeft);
-        Gizmos.DrawLine(topLeft, topRight);
-        Gizmos.DrawLine(topRight, bottomRight);
-        Gizmos.DrawLine(bottomRight, bottomLeft);
-        
-        Gizmos.color = new Color(1f, 0f, 0f, 0.3f);
-        Gizmos.DrawLine(bottomLeft, topRight);
-        Gizmos.DrawLine(topLeft, bottomRight);
-    }
-
-    #region faceController 관련
-    private void MoveGearSmoothly()
-    {
         joystick_Button.anchoredPosition = Vector2.SmoothDamp(
-            joystick_Button.anchoredPosition, 
-            targetPosition, 
-            ref currentVelocity, 
-            smoothTime
-        );
+            joystick_Button.anchoredPosition,
+            targetPosition,
+            ref currentVelocity,
+            smoothTime);
 
-        // [추가] 얼굴 표정 컨트롤러에 현재 기어 위치 비율 전달
         if (faceController != null)
         {
             float xRatio = joystick_Button.anchoredPosition.x / horizontalRange;
@@ -142,131 +82,152 @@ public class JoystickLikeGear : MonoBehaviour
             faceController.SetGearRatio(xRatio, yRatio);
         }
     }
-    #endregion
 
-    #region 3D Gear Rotation
-    private void Update3DGearRotation()
+    private void LateUpdate()
     {
-        // UI 조이스틱 위치 비율(-1 ~ 1) 계산
+        if (gear3D == null || joystick_Button == null)
+            return;
+
         float xRatio = joystick_Button.anchoredPosition.x / horizontalRange;
         float yRatio = joystick_Button.anchoredPosition.y / verticalRange;
-
-        // [수정] 좌우 회전 방향 반전: 마우스 이동 방향과 기어 기울기 방향을 일치시킵니다.
-        float rotX = yRatio * maxTiltAngle; 
-        float rotZ = -xRatio * maxTiltAngle; 
-
-        // 초기 회전값에 계산된 회전 오프셋을 쿼터니언 곱셈으로 적용
-        gear3D.localRotation = gear3DOriginRot * Quaternion.Euler(rotX, 0, rotZ);
+        gear3D.localRotation = gear3DOriginRot * Quaternion.Euler(
+            yRatio * maxTiltAngle,
+            0f,
+            -xRatio * maxTiltAngle);
     }
-    #endregion
 
-    #region Gear State Checking
-    private void CheckGearState()
+    private void HandleDragInput()
     {
-        int gear = 0;
+        if (Input.GetMouseButtonDown(0) && IsHandleClicked())
+            isDragging = true;
 
-        // 추후 여러 형태의 기어 표지판일 경우에 맞는 로직을 짜야 할 듯.
-        Vector2 pos = joystick_Button.anchoredPosition;
+        // 손잡이에서 드래그를 시작했다면 인식 영역 밖으로 나가도 조작을 계속합니다.
+        if (isDragging && Input.GetMouseButton(0))
+            targetPosition = CalculateDragPosition(Input.mousePosition);
 
-        float xThreshold = horizontalRange * 0.75f;
-        float yThreshold = verticalRange * 0.75f;
-
-        if (pos.x < -xThreshold && pos.y > yThreshold) gear = 1;
-        else if (pos.x < -xThreshold && pos.y < -yThreshold) gear = 2;
-        else if (pos.x > xThreshold && pos.y > yThreshold) gear = 3;
-        else if (pos.x > xThreshold && pos.y < -yThreshold) gear = 4;
-
-        if (gear != currentGearSlot)
+        if (isDragging && Input.GetMouseButtonUp(0))
         {
-            currentGearSlot = gear;
-
-            OnGearChanged?.Invoke(currentGearSlot);
-        }
-    }
-    #endregion
-
-    #region Input Handling
-    private void HandleSelectionInput()
-    {
-        // [수정] 스페이스바 대신 마우스 왼쪽 클릭(0) 감지
-        // 마우스가 조이스틱 인식 영역 내에 있을 때만 동작하도록 제한
-        Rect scaledRect;
-        if (Input.GetMouseButtonDown(0) && IsMouseValid(out scaledRect))
-        {
-            if (currentGearSlot != 0)
-            {
-                // 이벤트로 해당 메서드 가져오기?
-                OnGearConfirmed?.Invoke(currentGearSlot);
-            }
-            else
-            {
-                OnScreenClicked?.Invoke();
-            }
+            isDragging = false;
+            SnapToNearestSlot();
         }
     }
 
-    private bool IsMouseValid(out Rect scaledRect)
+    private bool IsHandleClicked()
     {
-        scaledRect = GetScaledInteractionRect();
-        if (useScreenArea)
+        if (mainCamera == null || gearHandleCollider == null)
+            return false;
+
+        Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
+        RaycastHit[] hits = Physics.RaycastAll(ray, Mathf.Infinity);
+        for (int i = 0; i < hits.Length; i++)
         {
-           return scaledRect.Contains(Input.mousePosition);
+            if (hits[i].collider == gearHandleCollider)
+                return true;
         }
+
         return false;
     }
 
-    // 현재 화면 비율에 맞춰 조정된 실제 인식 영역(Rect)을 계산합니다.
+    private Vector2 CalculateDragPosition(Vector2 mousePosition)
+    {
+        Rect interactionRect = GetScaledInteractionRect();
+        Vector2 mouseDelta = mousePosition - interactionRect.center;
+
+        float uiScaleX = referenceResolution.x / Screen.width;
+        float uiScaleY = referenceResolution.y / Screen.height;
+        float x = Mathf.Clamp(mouseDelta.x * uiScaleX, -horizontalRange, horizontalRange);
+        float y = Mathf.Clamp(mouseDelta.y * uiScaleY, -verticalRange, verticalRange);
+
+        return new Vector2(x, y);
+    }
+
+    private void SnapToNearestSlot()
+    {
+        bool isRight = targetPosition.x > 0f;
+        bool isTop = targetPosition.y >= 0f;
+
+        if (!isRight && isTop)
+            SetSlot(1, new Vector2(-horizontalRange, verticalRange));
+        else if (!isRight)
+            SetSlot(2, new Vector2(-horizontalRange, -verticalRange));
+        else if (isTop)
+            SetSlot(3, new Vector2(horizontalRange, verticalRange));
+        else
+            SetSlot(4, new Vector2(horizontalRange, -verticalRange));
+    }
+
+    private void SetSlot(int slot, Vector2 snappedPosition)
+    {
+        targetPosition = snappedPosition;
+
+        if (currentGearSlot == slot)
+            return;
+
+        currentGearSlot = slot;
+        OnCoinTypeChanged?.Invoke(SelectedCoinIndex);
+    }
+
+    private void ResolveHandleCollider()
+    {
+        if (gearHandleCollider != null)
+            return;
+
+        // Inspector 연결이 없어도 기어 최상단의 자식 없는 Sphere를 손잡이로 자동 선택합니다.
+        SphereCollider[] candidates = gear3D.GetComponentsInChildren<SphereCollider>(true);
+        float farthestDistance = -1f;
+
+        for (int i = 0; i < candidates.Length; i++)
+        {
+            SphereCollider candidate = candidates[i];
+            if (candidate.transform.childCount != 0)
+                continue;
+
+            float distance = (candidate.transform.position - gear3D.position).sqrMagnitude;
+            if (distance <= farthestDistance)
+                continue;
+
+            farthestDistance = distance;
+            gearHandleCollider = candidate;
+        }
+
+        if (gearHandleCollider == null)
+            Debug.LogError("기어 손잡이 SphereCollider를 찾지 못했습니다.", this);
+    }
+
     private Rect GetScaledInteractionRect()
     {
+        if (!useScreenArea)
+            return new Rect(0f, 0f, Screen.width, Screen.height);
+
         float scaleX = (float)Screen.width / referenceResolution.x;
         float scaleY = (float)Screen.height / referenceResolution.y;
-
         return new Rect(
             origin.x * scaleX,
             origin.y * scaleY,
             areaSize.x * scaleX,
-            areaSize.y * scaleY
-        );
+            areaSize.y * scaleY);
     }
-    #endregion
 
-    private void HandleMouseProximity()
+    private void OnDrawGizmos()
     {
-        Rect scaledRect;
-        if (!IsMouseValid(out scaledRect))
-        {
-            targetPosition = Vector2.zero;
+        if (!useScreenArea || !showDebugArea)
             return;
-        }
 
-        // [핵심] 인식 영역의 중심으로부터 마우스가 얼마나 떨어져 있는지 계산 (상대 좌표 조작)
-        Vector2 areaCenterScreen = scaledRect.center;
-        Vector2 mouseDelta = (Vector2)Input.mousePosition - areaCenterScreen;
+        Camera cameraToUse = mainCamera != null ? mainCamera : Camera.main;
+        if (cameraToUse == null)
+            return;
 
-        // 화면 픽셀 단위를 UI 단위로 환산
-        float uiScaleX = referenceResolution.x / Screen.width;
-        float uiScaleY = referenceResolution.y / Screen.height;
-        Vector2 uiDelta = new Vector2(mouseDelta.x * uiScaleX, mouseDelta.y * uiScaleY);
+        Rect rect = GetScaledInteractionRect();
+        const float distance = 1f;
+        Vector3 bottomLeft = cameraToUse.ScreenToWorldPoint(new Vector3(rect.xMin, rect.yMin, distance));
+        Vector3 topLeft = cameraToUse.ScreenToWorldPoint(new Vector3(rect.xMin, rect.yMax, distance));
+        Vector3 topRight = cameraToUse.ScreenToWorldPoint(new Vector3(rect.xMax, rect.yMax, distance));
+        Vector3 bottomRight = cameraToUse.ScreenToWorldPoint(new Vector3(rect.xMax, rect.yMin, distance));
 
-        // 조이스틱 이동 한계치 내로 제한 및 기어 슬롯 로직 적용
-        float tx = Mathf.Clamp(uiDelta.x, -horizontalRange, horizontalRange);
-        float ty = 0;
-
-        float edgeThreshold = horizontalRange - slotWidth;
-        
-        if (Mathf.Abs(tx) > edgeThreshold)
-        {
-            ty = Mathf.Clamp(uiDelta.y, -verticalRange, verticalRange);
-            if (Mathf.Abs(ty) > verticalRange * 0.4f)
-            {
-                tx = (tx > 0) ? horizontalRange : -horizontalRange;
-            }
-        }
-        else
-        {
-            ty = 0;
-        }
-
-        targetPosition = new Vector2(tx, ty);
+        Gizmos.color = new Color(1f, 0f, 0f, 0.8f);
+        Gizmos.DrawLine(bottomLeft, topLeft);
+        Gizmos.DrawLine(topLeft, topRight);
+        Gizmos.DrawLine(topRight, bottomRight);
+        Gizmos.DrawLine(bottomRight, bottomLeft);
     }
 }

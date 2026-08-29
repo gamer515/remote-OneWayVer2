@@ -7,6 +7,12 @@ using UnityEngine;
 /// </summary>
 public sealed class TerrainRepository
 {
+    private const float LeftSlotX = -8f;
+    private const float RightSlotX = 8f;
+    private const int FirstSlotZ = 10;
+    private const int SlotSpacingZ = 20;
+    private const int SlotCountPerSide = 5;
+
     public TerrainData Load(string terrainFilePath)
     {
         TerrainDefinitionRoot definitionRoot =
@@ -37,6 +43,7 @@ public sealed class TerrainRepository
 
         PlaceData[] places = new PlaceData[definition.places.Length];
         HashSet<string> definitionIds = new HashSet<string>(StringComparer.Ordinal);
+        HashSet<string> occupiedSlots = new HashSet<string>(StringComparer.Ordinal);
 
         for (int i = 0; i < definition.places.Length; i++)
         {
@@ -61,11 +68,18 @@ public sealed class TerrainRepository
                 return null;
             }
 
-            // 폭 24, 중앙 보행로 폭 5인 현재 지형에서는 건물 중심의 X를 ±8 안으로 제한합니다.
-            if (Mathf.Abs(transformData.position.x) > 8f ||
-                transformData.position.z < 0f || transformData.position.z > 100f)
+            if (!TryGetSlotPosition(transformData, out Vector3 slotPosition))
             {
-                Debug.LogError($"placeId '{place.placeId}'의 청크 내부 위치가 허용 범위를 벗어났습니다.");
+                Debug.LogError(
+                    $"placeId '{place.placeId}'의 슬롯이 올바르지 않습니다. " +
+                    "side는 left/right, z는 10/30/50/70/90 중 하나여야 합니다.");
+                return null;
+            }
+
+            string slotKey = $"{place.chunkIndex}:{transformData.side}:{transformData.z}";
+            if (!occupiedSlots.Add(slotKey))
+            {
+                Debug.LogError($"같은 청크의 배치 슬롯이 중복되었습니다: {slotKey}");
                 return null;
             }
 
@@ -75,7 +89,7 @@ public sealed class TerrainRepository
                 chunkIndex = place.chunkIndex,
                 prefabId = place.prefabId,
                 destination = place.destination,
-                position = transformData.position,
+                position = slotPosition,
                 rotation = transformData.rotation
             };
         }
@@ -92,6 +106,32 @@ public sealed class TerrainRepository
             chunkCount = definition.chunkCount,
             places = places
         };
+    }
+
+    private static bool TryGetSlotPosition(
+        TerrainPlaceTransform transformData,
+        out Vector3 position)
+    {
+        position = default;
+        if (transformData == null) return false;
+
+        float x;
+        if (string.Equals(transformData.side, "left", StringComparison.OrdinalIgnoreCase))
+            x = LeftSlotX;
+        else if (string.Equals(transformData.side, "right", StringComparison.OrdinalIgnoreCase))
+            x = RightSlotX;
+        else
+            return false;
+
+        int zOffset = transformData.z - FirstSlotZ;
+        bool isValidZ = zOffset >= 0 &&
+                        zOffset < SlotSpacingZ * SlotCountPerSide &&
+                        zOffset % SlotSpacingZ == 0;
+        if (!isValidZ) return false;
+
+        // JSON은 배치 슬롯만 선택하고, 실제 청크 로컬 좌표는 이곳에서 일관되게 계산합니다.
+        position = new Vector3(x, transformData.y, transformData.z);
+        return true;
     }
 
     private static string CreateTransformPath(string terrainFilePath)
