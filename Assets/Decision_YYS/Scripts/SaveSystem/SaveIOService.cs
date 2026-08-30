@@ -24,17 +24,6 @@ public class SaveIOService
     private string BasePath => Path.Combine(Application.persistentDataPath, "Saves");
     private string ProfilePath => Path.Combine(BasePath, "Profile.json");
 
-    private int scenarioIndex = 0;
-
-    public int ScenarioIndex
-    {
-        get => scenarioIndex;
-        set 
-        {
-            ++scenarioIndex;
-        }
-    }
-
     private SaveIOService() 
     {
         if (!Directory.Exists(BasePath))
@@ -116,6 +105,167 @@ public class SaveIOService
         return runNumber == 1 && File.Exists(Path.Combine(BasePath, $"{fileName}.json"));
     }
 
+    /// <summary>
+    /// 빌드에 포함된 변경 불가능한 원본 JSON을 Resources에서 읽습니다.
+    /// </summary>
+    public T LoadResourceData<T>(string fileName, string resourcesSubFolder = "Story_Json_Data")
+    {
+        string resourcePath = string.IsNullOrEmpty(resourcesSubFolder)
+            ? fileName
+            : $"{resourcesSubFolder}/{fileName}";
+        TextAsset textAsset = Resources.Load<TextAsset>(resourcePath);
+        if (textAsset == null)
+        {
+            Debug.LogError($"[SaveIO] 원본 JSON을 찾을 수 없습니다: {resourcePath}");
+            return default;
+        }
+
+        return JsonUtility.FromJson<T>(textAsset.text);
+    }
+
+    /// <summary>
+    /// 특정 회차용 생성 콘텐츠를 읽습니다. 파일 부재와 파싱 실패는 호출자가 원본으로 대체할 수 있게 false를 반환합니다.
+    /// </summary>
+    public bool SaveGeneratedContent<T>(
+        int runNumber,
+        string contentType,
+        string relativePath,
+        T data)
+    {
+        if (ReferenceEquals(data, null) ||
+            !TryGetGeneratedContentPath(runNumber, contentType, relativePath, out string path))
+            return false;
+
+        try
+        {
+            WriteJsonAtomically(path, data);
+            Debug.Log($"[SaveIO] {runNumber}회차 생성 콘텐츠 저장 성공: {path}");
+            return true;
+        }
+        catch (System.Exception exception)
+        {
+            Debug.LogError($"[SaveIO] 생성 콘텐츠 저장 실패: {path}\n{exception.Message}");
+            return false;
+        }
+    }
+
+    public void UpdateGeneratedEpisodeStatus(
+        int sourceRun,
+        int targetRun,
+        string scenarioPath,
+        ContentGenerationStatus status,
+        string errorMessage = null)
+    {
+        if (sourceRun < 1 || targetRun <= sourceRun || string.IsNullOrWhiteSpace(scenarioPath))
+            return;
+
+        string manifestPath = Path.Combine(
+            BasePath,
+            "GeneratedContent",
+            $"For_Run_{targetRun:D4}",
+            "manifest.json");
+        try
+        {
+            GeneratedContentManifest manifest = File.Exists(manifestPath)
+                ? ReadJson<GeneratedContentManifest>(manifestPath)
+                : new GeneratedContentManifest();
+
+            if (manifest == null)
+                manifest = new GeneratedContentManifest();
+            manifest.sourceRun = sourceRun;
+            manifest.targetRun = targetRun;
+            if (manifest.episodes == null)
+                manifest.episodes = new System.Collections.Generic.List<GeneratedEpisodeStatus>();
+
+            GeneratedEpisodeStatus episode = manifest.episodes.Find(
+                item => item != null && item.scenarioPath == scenarioPath);
+            if (episode == null)
+            {
+                episode = new GeneratedEpisodeStatus { scenarioPath = scenarioPath };
+                manifest.episodes.Add(episode);
+            }
+
+            episode.status = status.ToString();
+            episode.errorMessage = errorMessage;
+            WriteJsonAtomically(manifestPath, manifest);
+        }
+        catch (System.Exception exception)
+        {
+            Debug.LogError($"[SaveIO] 생성 상태 저장 실패: {manifestPath}\n{exception.Message}");
+        }
+    }
+
+    public bool TryLoadGeneratedContent<T>(
+        int runNumber,
+        string contentType,
+        string relativePath,
+        out T data)
+    {
+        data = default;
+        if (!TryGetGeneratedContentPath(
+            runNumber,
+            contentType,
+            relativePath,
+            out string path))
+            return false;
+        if (!File.Exists(path))
+            return false;
+
+        try
+        {
+            data = ReadJson<T>(path);
+            return !ReferenceEquals(data, null);
+        }
+        catch (System.Exception exception)
+        {
+            Debug.LogWarning($"[SaveIO] 생성 콘텐츠를 읽지 못했습니다: {path}\n{exception.Message}");
+            data = default;
+            return false;
+        }
+    }
+
+    private bool TryGetGeneratedContentPath(
+        int runNumber,
+        string contentType,
+        string relativePath,
+        out string path)
+    {
+        path = null;
+        if (runNumber <= 1 || string.IsNullOrWhiteSpace(contentType) ||
+            string.IsNullOrWhiteSpace(relativePath))
+            return false;
+
+        string contentRoot = Path.GetFullPath(Path.Combine(
+            BasePath,
+            "GeneratedContent",
+            $"For_Run_{runNumber:D4}",
+            contentType));
+        string normalizedRelativePath = relativePath.Replace('/', Path.DirectorySeparatorChar);
+        string candidatePath = Path.GetFullPath(
+            Path.Combine(contentRoot, $"{normalizedRelativePath}.json"));
+
+        // 전달된 상대 경로가 생성 콘텐츠 폴더 밖으로 나가지 못하게 제한합니다.
+        string rootPrefix = contentRoot.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
+        if (!candidatePath.StartsWith(rootPrefix, System.StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        path = candidatePath;
+        return true;
+    }
+
+    private static void WriteJsonAtomically<T>(string path, T data)
+    {
+        string directoryPath = Path.GetDirectoryName(path);
+        Directory.CreateDirectory(directoryPath);
+        string temporaryPath = path + ".tmp";
+        File.WriteAllText(temporaryPath, JsonUtility.ToJson(data, true));
+
+        if (File.Exists(path))
+            File.Replace(temporaryPath, path, null);
+        else
+            File.Move(temporaryPath, path);
+    }
+
     private string GetRunDirectory(int runNumber)
     {
         int safeRunNumber = Mathf.Max(1, runNumber);
@@ -132,66 +282,6 @@ public class SaveIOService
         return JsonUtility.FromJson<T>(File.ReadAllText(path));
     }
 
-    public void Save<T>(string fileName, T data)
-    {
-        string subFolder = "";
-
-        if(data is ScenarioData scenarioData)
-        {
-            subFolder = "Scenario" + scenarioIndex;
-        }
-
-        string directoryPath = Path.Combine(BasePath, subFolder);
-
-        string path = Path.Combine(directoryPath, $"{fileName}.json");
-        if(!Directory.Exists(directoryPath))
-        {
-            Directory.CreateDirectory(directoryPath);
-        }
-
-        string json = JsonUtility.ToJson(data, true);
-
-        File.WriteAllText(path, json);
-
-        Debug.Log($"[SaveManager] 데이터 저장 성공: {path}");
-    }
-
-    public T Load<T>(string fileName) 
-    {
-        string subFolder = "";
-
-        if(typeof(T) == typeof(ScenarioData))
-        {
-            subFolder = "Scenario" + scenarioIndex;
-        }
-
-        string directoryPath = Path.Combine(BasePath, subFolder);
-        string path = Path.Combine(directoryPath, $"{fileName}.json");
-        if (!File.Exists(path)) return default;
-
-        string json = File.ReadAllText(path);
-
-        return JsonUtility.FromJson<T>(json);
-    }
-
-    public bool Exists(string category) 
-    {
-        return File.Exists(Path.Combine(BasePath, $"{category}.json"));
-    }
-
-    public string[] GetAllSaveFiles()
-    {
-        if (!Directory.Exists(BasePath)) return new string[0];
-
-        string[] files = Directory.GetFiles(BasePath, "*.json");
-        for (int i = 0; i < files.Length; i++)
-        {
-            files[i] = Path.GetFileNameWithoutExtension(files[i]);
-        }
-
-        return files;
-    }
-
     public void DeleteAllSaves()
     {
         if (Directory.Exists(BasePath))
@@ -201,44 +291,4 @@ public class SaveIOService
         }
     }
 
-    public T LoadData<T>(string fileName, string resourcesSubFolder = "Story_Json_Data")
-    {
-        // 1. 빌드 환경에서도 읽고 쓰기가 가능한 유저 데이터 폴더 경로
-        string saveFolder = "";
-
-        if(typeof(T) == typeof(ScenarioData))
-        {
-            saveFolder = "scenario" + scenarioIndex;
-        }
-
-        string savePath = Path.Combine(BasePath, saveFolder, $"{fileName}.json");
-
-        // 2. 만약 AI가 수정한 세이브 파일이 존재한다면, 그걸 우선적으로 읽습니다. (2회차 이상)
-        if (File.Exists(savePath))
-        {
-            string json = File.ReadAllText(savePath);
-            Debug.Log($"[JsonManager] 수정된 세이브 데이터를 불러옵니다: {fileName} (경로: {savePath})");
-
-            return JsonUtility.FromJson<T>(json);
-        }
-        else
-        {
-            // 3. 세이브 파일이 없다면(1회차), Resources 폴더에 있는 원본을 읽어옵니다.
-            // 파일이 Assets/Decision_YYS/Resources/Story_Json_Data/ 폴더 안에 있어야 합니다.
-            string resourcePathr = string.IsNullOrEmpty(resourcesSubFolder) ? fileName : $"{resourcesSubFolder}/{fileName}";
-
-            TextAsset textAsset = Resources.Load<TextAsset>(resourcePathr);
-
-            if (textAsset == null)
-            {
-                Debug.LogError($"[JsonManager] 원본 JSON 파일도 찾을 수 없습니다. 파일명: {resourcePathr}");
-
-                return default;
-            }
-
-            Debug.Log($"[JsonManager] 원본 리소스 데이터를 불러옵니다: {resourcePathr}");
-
-            return JsonUtility.FromJson<T>(textAsset.text);
-        }
-    }
 }

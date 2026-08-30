@@ -11,19 +11,29 @@ public sealed class DecisionSession
     public int ChapterIndex { get; set; }
     public int EpisodeIndex { get; set; }
     public int StoryIndex { get; set; }
+    public int RunNumber { get; }
     public string ScenarioPath { get; set; }
     public List<Dialogue> PlayedHistory { get; } = new List<Dialogue>();
+    public List<ChoiceSelectionRecord> SelectedChoices { get; } =
+        new List<ChoiceSelectionRecord>();
+    public List<CompletedEpisodeRecord> CompletedEpisodes { get; } =
+        new List<CompletedEpisodeRecord>();
 
     public DecisionSession(
         OmnibusData omnibus,
+        int runNumber,
         int chapterIndex,
         int episodeIndex,
-        int storyIndex)
+        int storyIndex,
+        List<CompletedEpisodeRecord> pendingEpisodes = null)
     {
         Omnibus = omnibus;
+        RunNumber = Mathf.Max(1, runNumber);
         ChapterIndex = chapterIndex;
         EpisodeIndex = episodeIndex;
         StoryIndex = storyIndex;
+        if (pendingEpisodes != null)
+            CompletedEpisodes.AddRange(pendingEpisodes);
     }
 }
 

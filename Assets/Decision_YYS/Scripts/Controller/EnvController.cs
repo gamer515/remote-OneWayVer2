@@ -25,7 +25,7 @@ public class EnvController : MonoBehaviour
     public float ChunkSize => chunkSize;
     public Vector3 TerrainOrigin => environment != null ? environment.transform.position : Vector3.zero;
 
-    private readonly TerrainRepository terrainRepository = new TerrainRepository();
+    private TerrainRepository terrainRepository = new TerrainRepository();
     private readonly TerrainBuilder terrainBuilder = new TerrainBuilder();
     private readonly Dictionary<string, RegisteredTerrain> registeredTerrains =
         new Dictionary<string, RegisteredTerrain>();
@@ -33,6 +33,7 @@ public class EnvController : MonoBehaviour
     private TerrainStreamingController terrainStreamingController;
     private Transform playerTransform;
     private int nextGlobalChunkIndex;
+    private int contentRun = 1;
 
     private void Awake()
     {
@@ -100,6 +101,22 @@ public class EnvController : MonoBehaviour
         return true;
     }
 
+    /// <summary>
+    /// 지형을 등록하기 전에 현재 회차를 지정하여 원본/생성 지형의 출처를 고정합니다.
+    /// </summary>
+    public void SetContentRun(int runNumber)
+    {
+        int safeRunNumber = Mathf.Max(1, runNumber);
+        if (registeredTerrains.Count > 0 && safeRunNumber != contentRun)
+        {
+            Debug.LogError("이미 지형을 등록한 뒤에는 콘텐츠 회차를 변경할 수 없습니다.", this);
+            return;
+        }
+
+        contentRun = safeRunNumber;
+        terrainRepository = new TerrainRepository(contentRun);
+    }
+
     private void Update()
     {
         if (playerTransform == null || terrainStreamingController == null) return;
@@ -123,12 +140,7 @@ public class EnvController : MonoBehaviour
         if (string.IsNullOrWhiteSpace(chapterName) || string.IsNullOrWhiteSpace(episodeTitle))
             return null;
 
-        int separatorIndex = episodeTitle.LastIndexOf('_');
-        string episodeNumber = separatorIndex >= 0
-            ? episodeTitle.Substring(separatorIndex + 1)
-            : "01";
-
-        return $"{chapterName}/Terrain/{chapterName}_Terrain_{episodeNumber}";
+        return $"{chapterName}/{episodeTitle}/Terrain";
     }
 
     private static int GetChunkCount(TerrainData terrainData)

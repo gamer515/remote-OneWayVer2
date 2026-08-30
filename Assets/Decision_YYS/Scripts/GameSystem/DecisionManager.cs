@@ -18,7 +18,7 @@ public class DecisionManager : MonoBehaviour
     private ChapterFlowController chapterFlowController;
     private DecisionPresentationController presentationController;
     private readonly ChoiceController choiceController = new ChoiceController();
-    private readonly ScenarioRepository scenarioRepository = new ScenarioRepository();
+    private ScenarioRepository scenarioRepository;
     private readonly SceneTransitionService sceneTransitionService = new SceneTransitionService();
     private OmnibusData currentOmnibus => session?.Omnibus;
     private int chapterIndex
@@ -113,7 +113,7 @@ public class DecisionManager : MonoBehaviour
 
         DecisionStartData startData = GameManager.Instance.StartGame();
 
-        if (startData?.Session?.Omnibus?.MainStories == null ||
+        if (startData?.Session?.Omnibus?.chapters == null ||
             startData.SaveManager == null || startData.Player == null)
         {
             Debug.LogError("DecisionScene 초기 데이터 또는 플레이어를 준비하지 못했습니다.");
@@ -122,6 +122,8 @@ public class DecisionManager : MonoBehaviour
         }
 
         session = startData.Session;
+        scenarioRepository = new ScenarioRepository(session.RunNumber);
+        envController.SetContentRun(session.RunNumber);
         playerController = new DecisionPlayerController(startData.Player);
         saveService = new DecisionSaveService(startData.SaveManager);
         storyProgressController = new StoryProgressController(session);
@@ -174,27 +176,27 @@ public class DecisionManager : MonoBehaviour
 
     private bool RegisterTerrainsThroughCurrentProgress()
     {
-        if (currentOmnibus?.MainStories == null) return false;
+        if (currentOmnibus?.chapters == null) return false;
 
-        int lastChapterIndex = Mathf.Min(chapterIndex, currentOmnibus.MainStories.Count - 1);
+        int lastChapterIndex = Mathf.Min(chapterIndex, currentOmnibus.chapters.Count - 1);
         for (int currentChapterIndex = 0;
              currentChapterIndex <= lastChapterIndex;
              currentChapterIndex++)
         {
-            var chapter = currentOmnibus.MainStories[currentChapterIndex];
-            if (chapter?.Title == null) return false;
+            var chapter = currentOmnibus.chapters[currentChapterIndex];
+            if (chapter?.episodeIds == null) return false;
 
             int episodeCount = currentChapterIndex < lastChapterIndex
-                ? chapter.Title.Count
-                : Mathf.Min(episodeIndex + 1, chapter.Title.Count);
+                ? chapter.episodeIds.Count
+                : Mathf.Min(episodeIndex + 1, chapter.episodeIds.Count);
 
             for (int currentEpisodeIndex = 0;
                  currentEpisodeIndex < episodeCount;
                  currentEpisodeIndex++)
             {
                 if (!envController.RegisterTerrain(
-                    chapter.Chapter,
-                    chapter.Title[currentEpisodeIndex]))
+                    chapter.chapterId,
+                    chapter.episodeIds[currentEpisodeIndex]))
                 {
                     return false;
                 }
@@ -215,19 +217,25 @@ public class DecisionManager : MonoBehaviour
 
     private void LoadCurrentEpisode()
     {
-        if (currentOmnibus?.MainStories == null ||
-            chapterIndex < 0 || chapterIndex >= currentOmnibus.MainStories.Count)
+        if (currentOmnibus?.chapters == null ||
+            chapterIndex < 0 || chapterIndex >= currentOmnibus.chapters.Count)
         {
-            Debug.Log("모든 메인 스토리가 종료되었습니다.");
             currentState = StoryState.Transitioning;
-            // 여기서는 완료만 기록합니다. 다음 회차 생성은 추후 엔딩 화면의 시작 버튼에서 호출합니다.
+
+            int completedRun = session?.RunNumber ?? 1;
             saveService?.CompleteCurrentRun();
+            int nextRun = GameManager.Instance.PrepareNextPlaythrough();
+
+            Debug.Log(
+                $"[DecisionManager] {completedRun}회차의 마지막 에피소드가 종료되었습니다. " +
+                $"{nextRun}회차를 Initial부터 시작하도록 준비하고 메인 메뉴로 이동합니다.");
+            sceneTransitionService.LoadMainMenuScene();
             return;
         }
 
-        var mainStory = currentOmnibus.MainStories[chapterIndex];
+        var mainStory = currentOmnibus.chapters[chapterIndex];
 
-        if (mainStory?.Title == null || mainStory.Title.Count == 0)
+        if (mainStory?.episodeIds == null || mainStory.episodeIds.Count == 0)
         {
             Debug.LogError($"챕터 {chapterIndex}에 에피소드가 없습니다.");
             currentState = StoryState.Transitioning;
@@ -237,14 +245,14 @@ public class DecisionManager : MonoBehaviour
         if (episodeIndex < 0)
             episodeIndex = 0;
 
-        if (episodeIndex >= mainStory.Title.Count)
+        if (episodeIndex >= mainStory.episodeIds.Count)
         {
             CompleteChapter();
             return;
         }
 
-        if (string.IsNullOrWhiteSpace(mainStory.Chapter) ||
-            string.IsNullOrWhiteSpace(mainStory.Title[episodeIndex]))
+        if (string.IsNullOrWhiteSpace(mainStory.chapterId) ||
+            string.IsNullOrWhiteSpace(mainStory.episodeIds[episodeIndex]))
         {
             Debug.LogError($"챕터 {chapterIndex}, 에피소드 {episodeIndex}의 경로가 비어 있습니다.");
             currentState = StoryState.Transitioning;
@@ -252,12 +260,12 @@ public class DecisionManager : MonoBehaviour
         }
 
         // 스탯의 내부 인덱스는 유지하면서 현재 챕터의 네 덕목 이름만 UI에 반영합니다.
-        statContainer.SetChapterStatNames(mainStory.Chapter);
+        statContainer.SetChapterStatNames(mainStory.chapterId);
 
         // 새 지형은 기존 지형을 지우지 않고 마지막 전역 청크 뒤에 이어 붙입니다.
         if (!envController.RegisterTerrain(
-            mainStory.Chapter,
-            mainStory.Title[episodeIndex]))
+            mainStory.chapterId,
+            mainStory.episodeIds[episodeIndex]))
         {
             currentState = StoryState.Transitioning;
             return;
@@ -269,8 +277,8 @@ public class DecisionManager : MonoBehaviour
             playerController.TargetPosition.z);
 
         ScenarioLoadResult loadResult = scenarioRepository.Load(
-            mainStory.Chapter,
-            mainStory.Title[episodeIndex]);
+            mainStory.chapterId,
+            mainStory.episodeIds[episodeIndex]);
         ScenarioData loadedScenario = loadResult.Scenario;
         currentScenarioPath = loadResult.SourcePath;
 
@@ -409,6 +417,14 @@ public class DecisionManager : MonoBehaviour
             return;
         }
 
+        session.SelectedChoices.Add(new ChoiceSelectionRecord
+        {
+            dialogueId = currentStory.id,
+            optionIndex = choice.OptionIndex,
+            optionText = choice.OptionText,
+            statChange = choice.StatChange
+        });
+
         // Initial은 선택 방식을 소개하는 구간이므로 실제 스탯에는 반영하지 않습니다.
         if (chapterIndex > 0)
         {
@@ -451,6 +467,7 @@ public class DecisionManager : MonoBehaviour
         }
         else if (result == StoryAdvanceResult.EpisodeCompleted)
         {
+            RelayCompletedEpisode();
             saveService.SaveProgress(session);
             LoadCurrentEpisode();
         }
@@ -459,6 +476,22 @@ public class DecisionManager : MonoBehaviour
             Debug.LogError("현재 스토리를 진행할 수 없습니다.");
             currentState = StoryState.Transitioning;
         }
+    }
+
+    private void RelayCompletedEpisode()
+    {
+        CompletedEpisodeRecord completedEpisode = new CompletedEpisodeRecord
+        {
+            scenarioPath = currentScenarioPath,
+            storyHistory = new List<Dialogue>(session.PlayedHistory),
+            selectedChoices = new List<ChoiceSelectionRecord>(session.SelectedChoices)
+        };
+        session.CompletedEpisodes.Add(completedEpisode);
+        saveService.SaveCompletedEpisode(completedEpisode);
+
+        // 최종 성향은 챕터 종료 시 확정하며, 여기서는 에피소드별 작은 기록만 보관합니다.
+        session.PlayedHistory.Clear();
+        session.SelectedChoices.Clear();
     }
 
     private void HandleStoryTransitionCompleted()

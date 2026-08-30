@@ -78,26 +78,44 @@ public class SaveManager
         cachedProgress.currentPosition = null;
     }
 
-    /// <summary>
-    /// 완료한 챕터의 대표 스탯 결과를 기록합니다.
-    /// </summary>
-    /// <param name="chapter">완료한 챕터 인덱스.</param>
-    /// <param name="bestIndex">대표 스탯 인덱스.</param>
-    /// <param name="value">대표 스탯 값.</param>
-    public void RecordChapterResult(int chapter, int bestIndex, int value)
+    public void RecordInfluenceProfile(StoryInfluenceProfile profile)
     {
-        if (cachedProgress.chapterHistory == null)
-            cachedProgress.chapterHistory = new System.Collections.Generic.List<ChapterResult>();
+        if (profile == null)
+            return;
 
-        cachedProgress.chapterHistory.Add(new ChapterResult
-        {
-            chapterIndex = chapter,
-            dominantStatIndex = bestIndex,
-            dominantStatValue = value
-        });
+        if (cachedProgress.influenceHistory == null)
+            cachedProgress.influenceHistory = new System.Collections.Generic.List<StoryInfluenceProfile>();
 
+        cachedProgress.influenceHistory.RemoveAll(
+            item => item != null && item.chapterIndex == profile.chapterIndex);
+        cachedProgress.influenceHistory.Add(profile);
         SaveIOService.Instance.SaveRunData(CurrentRun, "Progress", cachedProgress);
-        Debug.Log($"[Save] Chapter {chapter} Result Recorded: BestStat {bestIndex} ({value})");
+    }
+
+    public void SaveCompletedEpisode(CompletedEpisodeRecord episode)
+    {
+        if (episode == null || string.IsNullOrWhiteSpace(episode.scenarioPath))
+            return;
+
+        if (cachedProgress.pendingEpisodes == null)
+            cachedProgress.pendingEpisodes = new System.Collections.Generic.List<CompletedEpisodeRecord>();
+
+        cachedProgress.pendingEpisodes.RemoveAll(
+            item => item != null && item.scenarioPath == episode.scenarioPath);
+        cachedProgress.pendingEpisodes.Add(episode);
+        SaveIOService.Instance.SaveRunData(CurrentRun, "Progress", cachedProgress);
+    }
+
+    public System.Collections.Generic.List<CompletedEpisodeRecord> LoadPendingEpisodes()
+    {
+        return cachedProgress.pendingEpisodes ??
+            new System.Collections.Generic.List<CompletedEpisodeRecord>();
+    }
+
+    public void ClearPendingEpisodes()
+    {
+        cachedProgress.pendingEpisodes?.Clear();
+        SaveIOService.Instance.SaveRunData(CurrentRun, "Progress", cachedProgress);
     }
 
     public GameProgress LoadProgress()

@@ -6,9 +6,15 @@ using UnityEngine.SceneManagement;
 public sealed class SceneTransitionService
 {
     private const string BattleSceneName = "BattleScene";
+    private const string MainMenuSceneName = "MainMenuScene";
 
     public void LoadBattleScene()
     {
         SceneManager.LoadScene(BattleSceneName);
+    }
+
+    public void LoadMainMenuScene()
+    {
+        SceneManager.LoadScene(MainMenuSceneName);
     }
 }

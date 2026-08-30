@@ -4,6 +4,7 @@ using System;
 using System.Text;
 using System.Collections;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 
 public class AIAPIClient : MonoBehaviour
 {
@@ -32,6 +33,8 @@ public class AIAPIClient : MonoBehaviour
 
     // 문제 1(Race Condition) 방어용 플래그
     public bool isAiProcessing { get; private set; } = false;
+    private readonly Queue<StoryPacket> pendingPackets = new Queue<StoryPacket>();
+    private readonly HashSet<string> queuedPacketKeys = new HashSet<string>();
 
     #region JSON Serialization Classes for Gemini API
     [Serializable] private class GeminiRequest { public List<Content> contents; public GenConfig generationConfig; }
@@ -54,15 +57,39 @@ public class AIAPIClient : MonoBehaviour
 
     public void ProcessPacket(StoryPacket packet)
     {
-        Debug.Log("<color=#42f590><b>[AI SYSTEM - STARTING API CALL]</b></color>");
-        // 백그라운드 코루틴 시작 (메인 스레드를 멈추지 않고 씬 전환 가능)
-        StartCoroutine(CommunicateWithGeminiRoutine(packet));
+        if (packet == null || string.IsNullOrWhiteSpace(packet.fileName))
+            return;
+
+        string packetKey = CreatePacketKey(packet);
+        if (!queuedPacketKeys.Add(packetKey))
+        {
+            Debug.Log($"[AI SYSTEM] 이미 대기 또는 처리 중인 요청입니다: {packetKey}");
+            return;
+        }
+
+        pendingPackets.Enqueue(packet);
+        UpdateGenerationStatus(packet, ContentGenerationStatus.Pending);
+        if (!isAiProcessing)
+            StartCoroutine(ProcessPacketQueue());
+    }
+
+    private IEnumerator ProcessPacketQueue()
+    {
+        isAiProcessing = true;
+        while (pendingPackets.Count > 0)
+        {
+            StoryPacket packet = pendingPackets.Dequeue();
+            Debug.Log($"<color=#42f590><b>[AI SYSTEM - STARTING API CALL]</b> {packet.fileName}</color>");
+            UpdateGenerationStatus(packet, ContentGenerationStatus.Generating);
+            yield return CommunicateWithGeminiRoutine(packet);
+            queuedPacketKeys.Remove(CreatePacketKey(packet));
+        }
+
+        isAiProcessing = false;
     }
 
     private IEnumerator CommunicateWithGeminiRoutine(StoryPacket packet)
     {
-        isAiProcessing = true; // 처리 시작 상태 플래그 ON
-
         // 1. 요청 페이로드 세팅 (JSON 형태로 응답을 강제함)
         GeminiRequest requestData = new GeminiRequest
         {
@@ -86,8 +113,7 @@ public class AIAPIClient : MonoBehaviour
             if (request.result != UnityWebRequest.Result.Success)
             {
                 Debug.LogError($"[AI SYSTEM] API 통신 실패: {request.error}\n원본 스토리를 유지합니다.");
-                ApplyAndSave(packet, null);
-                isAiProcessing = false;
+                UpdateGenerationStatus(packet, ContentGenerationStatus.Failed, request.error);
                 yield break;
             }
 
@@ -101,21 +127,30 @@ public class AIAPIClient : MonoBehaviour
                 string wrappedJson = $"{{\"items\": {generatedJson}}}";
                 AIModifiedData[] modifiedItems = JsonHelper.FromJson<AIModifiedData>(wrappedJson);
 
-                ApplyAndSave(packet, modifiedItems);
+                if (!TryValidateModifiedItems(packet, modifiedItems, out string validationError))
+                {
+                    Debug.LogError($"[AI SYSTEM] 응답 검증 실패: {validationError}\n원본 스토리를 유지합니다.");
+                    UpdateGenerationStatus(packet, ContentGenerationStatus.Failed, validationError);
+                    yield break;
+                }
+
+                if (ApplyAndSave(packet, modifiedItems))
+                    UpdateGenerationStatus(packet, ContentGenerationStatus.Ready);
+                else
+                    UpdateGenerationStatus(packet, ContentGenerationStatus.Failed, "생성 이야기 저장 실패");
             }
             catch (Exception e)
             {
                 Debug.LogError($"[AI SYSTEM] JSON 파싱 에러: {e.Message}\n원본 스토리를 유지합니다.");
-                ApplyAndSave(packet, null);
+                UpdateGenerationStatus(packet, ContentGenerationStatus.Failed, e.Message);
             }
         }
-
-        isAiProcessing = false; // 처리 완료 상태 플래그 OFF
     }
 
-    private void ApplyAndSave(StoryPacket packet, AIModifiedData[] modifiedItems)
+    private bool ApplyAndSave(StoryPacket packet, AIModifiedData[] modifiedItems)
     {
-        if (string.IsNullOrEmpty(packet.fileName)) return;
+        if (string.IsNullOrEmpty(packet.fileName) || modifiedItems == null)
+            return false;
 
         // 원본은 이야기/선택지 파일로 분리되어 있으므로 Repository를 통해 병합해 불러옵니다.
         ScenarioData originalData = new ScenarioRepository().LoadOriginalByPath(
@@ -123,29 +158,125 @@ public class AIAPIClient : MonoBehaviour
             out string loadError);
         if (!string.IsNullOrEmpty(loadError))
             Debug.LogError($"[AI SYSTEM] 원본 시나리오 병합 실패: {loadError}");
-        if (originalData == null || originalData.MainStory == null) return;
+        if (originalData == null || originalData.MainStory == null) return false;
 
-        if(modifiedItems != null)
+        foreach (var item in modifiedItems)
         {
-            // 원본 데이터에 AI 수정 텍스트 덮어쓰기
-            foreach (var item in modifiedItems)
+            var targetDialogue = originalData.MainStory.Find(d => d.id == item.id);
+            if (targetDialogue != null)
             {
-                var targetDialogue = originalData.MainStory.Find(d => d.id == item.id);
-                if (targetDialogue != null)
-                {
-                    targetDialogue.text = item.text;
-                    Debug.Log($"<color=cyan>[AI System] ID {targetDialogue.id} 스토리 교체 완료</color>");
-                }
+                targetDialogue.text = item.text;
+                Debug.Log($"<color=cyan>[AI System] ID {targetDialogue.id} 스토리 교체 완료</color>");
             }
         }
-        else
+
+        bool saved = SaveIOService.Instance.SaveGeneratedContent(
+            packet.targetRun,
+            "Episodes",
+            $"{packet.fileName}/Story",
+            originalData);
+        if (saved)
         {
-            Debug.LogWarning("<color=yellow>[AI System] 수정된 데이터가 없습니다. 원본 스토리를 유지합니다.</color>");
+            Debug.Log(
+                $"<color=#f5e642><b>[AI SYSTEM] {packet.targetRun}회차 이야기 저장 완료: " +
+                $"{packet.fileName}</b></color>");
         }
 
-        string saveFileName = "NewStory_" + packet.fileName.Replace("/", "_");
-        SaveIOService.Instance.Save(saveFileName, originalData);
-        Debug.Log($"<color=#f5e642><b>[AI SYSTEM] 최종 스토리 저장 완료: {saveFileName}</b></color>");
+        return saved;
+    }
+
+    private static string CreatePacketKey(StoryPacket packet)
+    {
+        return $"{packet.targetRun}:{packet.fileName}";
+    }
+
+    private static void UpdateGenerationStatus(
+        StoryPacket packet,
+        ContentGenerationStatus status,
+        string errorMessage = null)
+    {
+        SaveIOService.Instance.UpdateGeneratedEpisodeStatus(
+            packet.sourceRun,
+            packet.targetRun,
+            packet.fileName,
+            status,
+            errorMessage);
+    }
+
+    private static bool TryValidateModifiedItems(
+        StoryPacket packet,
+        AIModifiedData[] modifiedItems,
+        out string errorMessage)
+    {
+        if (packet?.storyHistory == null || packet.storyHistory.Count == 0)
+        {
+            errorMessage = "요청에 변경 대상 지문이 없습니다.";
+            return false;
+        }
+
+        if (modifiedItems == null || modifiedItems.Length != packet.storyHistory.Count)
+        {
+            errorMessage = "응답 항목 수가 요청한 지문 수와 다릅니다.";
+            return false;
+        }
+
+        HashSet<int> expectedIds = new HashSet<int>();
+        Dictionary<int, Dialogue> originalsById = new Dictionary<int, Dialogue>();
+        foreach (Dialogue dialogue in packet.storyHistory)
+        {
+            if (dialogue == null || !expectedIds.Add(dialogue.id))
+            {
+                errorMessage = "요청 지문에 null 또는 중복 id가 있습니다.";
+                return false;
+            }
+
+            originalsById.Add(dialogue.id, dialogue);
+        }
+
+        HashSet<int> responseIds = new HashSet<int>();
+        foreach (AIModifiedData item in modifiedItems)
+        {
+            if (item == null || !responseIds.Add(item.id) || !expectedIds.Contains(item.id))
+            {
+                errorMessage = $"응답에 null, 중복 또는 요청하지 않은 id가 있습니다: {item?.id}";
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(item.text))
+            {
+                errorMessage = $"id {item.id}의 변경 문장이 비어 있습니다.";
+                return false;
+            }
+
+
+            if (!HasSameImmutableCores(originalsById[item.id].text, item.text))
+            {
+                errorMessage = $"id {item.id}의 {{ }} 핵심 문자열이 변경되었습니다.";
+                return false;
+            }
+        }
+
+        errorMessage = null;
+        return true;
+    }
+
+    private static bool HasSameImmutableCores(string originalText, string generatedText)
+    {
+        MatchCollection originalCores = Regex.Matches(originalText ?? string.Empty, @"\{[^{}]*\}");
+        MatchCollection generatedCores = Regex.Matches(generatedText ?? string.Empty, @"\{[^{}]*\}");
+        if (originalCores.Count != generatedCores.Count)
+            return false;
+
+        for (int i = 0; i < originalCores.Count; i++)
+        {
+            if (!string.Equals(
+                originalCores[i].Value,
+                generatedCores[i].Value,
+                StringComparison.Ordinal))
+                return false;
+        }
+
+        return true;
     }
 }
 

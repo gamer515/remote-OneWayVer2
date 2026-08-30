@@ -53,15 +53,19 @@ public sealed class DecisionSaveService
         saveManager.ClearPlayerPosition();
     }
 
-    public void SaveChapterResult(ChapterResult result)
+    public void SaveInfluenceProfile(StoryInfluenceProfile profile)
     {
-        if (result == null)
-            return;
+        saveManager.RecordInfluenceProfile(profile);
+    }
 
-        saveManager.RecordChapterResult(
-            result.chapterIndex,
-            result.dominantStatIndex,
-            result.dominantStatValue);
+    public void SaveCompletedEpisode(CompletedEpisodeRecord episode)
+    {
+        saveManager.SaveCompletedEpisode(episode);
+    }
+
+    public void ClearCompletedEpisodes()
+    {
+        saveManager.ClearPendingEpisodes();
     }
 
     public void CompleteCurrentRun()

@@ -4,14 +4,14 @@ using System.Collections.Generic;
 [Serializable]
 public class OmnibusData
 {
-    public List<MainStoryInfo> MainStories;
+    public List<ChapterInfo> chapters;
 }
 
 [Serializable]
-public class MainStoryInfo
+public class ChapterInfo
 {
-    public string Chapter;
-    public List<string> Title;
+    public string chapterId;
+    public List<string> episodeIds;
 }
 
 //[Serializable]

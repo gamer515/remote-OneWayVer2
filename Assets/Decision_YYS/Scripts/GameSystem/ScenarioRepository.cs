@@ -1,4 +1,5 @@
 ﻿using System;
+using UnityEngine;
 using System.Collections.Generic;
 
 public readonly struct ScenarioLoadResult
@@ -26,6 +27,13 @@ public readonly struct ScenarioLoadResult
 /// </summary>
 public sealed class ScenarioRepository
 {
+    private readonly int runNumber;
+
+    public ScenarioRepository(int runNumber = 1)
+    {
+        this.runNumber = Math.Max(1, runNumber);
+    }
+
     public ScenarioLoadResult Load(string folder, string file)
     {
         string originalPath = $"{folder}/{file}";
@@ -36,14 +44,26 @@ public sealed class ScenarioRepository
             return new ScenarioLoadResult(null, originalPath, false, error);
         }
 
-        string aiPath = "NewStory_" + originalPath.Replace("/", "_");
-        ScenarioData aiScenario = SaveIOService.Instance.LoadData<ScenarioData>(aiPath);
-
+        bool hasGeneratedScenario = SaveIOService.Instance.TryLoadGeneratedContent(
+            runNumber,
+            "Episodes",
+            $"{originalPath}/Story",
+            out ScenarioData aiScenario);
         // AI 저장본에서는 수정 대상인 text만 가져옵니다. destination 등 구조 정보는
         // 최신 원본을 유지하므로 예전 NewStory 파일이 있어도 지형 연결이 어긋나지 않습니다.
-        if (ScenarioValidator.TryValidate(aiScenario, out _) &&
-            TryApplyAiText(originalScenario, aiScenario))
-            return new ScenarioLoadResult(originalScenario, originalPath, true);
+        if (hasGeneratedScenario)
+        {
+            if (ScenarioValidator.TryValidate(aiScenario, out string generatedError) &&
+                TryApplyAiText(originalScenario, aiScenario))
+                return new ScenarioLoadResult(originalScenario, originalPath, true);
+
+            if (string.IsNullOrEmpty(generatedError))
+                generatedError = "원본과 생성 이야기의 id 구성이 다릅니다.";
+
+            Debug.LogWarning(
+                $"[ScenarioRepository] {runNumber}회차 생성 이야기가 올바르지 않아 원본을 사용합니다: " +
+                $"{originalPath} ({generatedError})");
+        }
 
         return new ScenarioLoadResult(originalScenario, originalPath, false);
     }
@@ -94,10 +114,10 @@ public sealed class ScenarioRepository
 
     private ScenarioData LoadOriginal(string folder, string file, out string errorMessage)
     {
-        StoryContentData contentData = SaveIOService.Instance.LoadData<StoryContentData>(
-            $"{folder}/{file}_Story");
-        StoryChoiceData choiceData = SaveIOService.Instance.LoadData<StoryChoiceData>(
-            $"{folder}/{file}_Choice");
+        StoryContentData contentData = SaveIOService.Instance.LoadResourceData<StoryContentData>(
+            $"{folder}/{file}/Story");
+        StoryChoiceData choiceData = SaveIOService.Instance.LoadResourceData<StoryChoiceData>(
+            $"{folder}/{file}/Choice");
 
         if (contentData?.MainStory == null || choiceData?.StoryChoices == null)
         {

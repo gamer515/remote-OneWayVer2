@@ -12,21 +12,71 @@ public sealed class TerrainRepository
     private const int FirstSlotZ = 10;
     private const int SlotSpacingZ = 20;
     private const int SlotCountPerSide = 5;
+    private readonly int runNumber;
+
+    public TerrainRepository(int runNumber = 1)
+    {
+        this.runNumber = Math.Max(1, runNumber);
+    }
 
     public TerrainData Load(string terrainFilePath)
     {
-        TerrainDefinitionRoot definitionRoot =
-            SaveIOService.Instance.LoadData<TerrainDefinitionRoot>(terrainFilePath);
         string transformPath = CreateTransformPath(terrainFilePath);
+
+        bool hasGeneratedDefinition = SaveIOService.Instance.TryLoadGeneratedContent(
+            runNumber,
+            "Episodes",
+            terrainFilePath,
+            out TerrainDefinitionRoot generatedDefinition);
+        bool hasGeneratedTransform = SaveIOService.Instance.TryLoadGeneratedContent(
+            runNumber,
+            "Episodes",
+            transformPath,
+            out TerrainTransformRoot generatedTransform);
+
+        if (hasGeneratedDefinition && hasGeneratedTransform)
+        {
+            if (TryBuildTerrain(generatedDefinition, generatedTransform, out TerrainData generated, out string error))
+            {
+                Debug.Log($"[TerrainRepository] {runNumber}회차 생성 지형을 사용합니다: {terrainFilePath}");
+                return generated;
+            }
+
+            Debug.LogWarning(
+                $"[TerrainRepository] 생성 지형 검증 실패로 원본을 사용합니다: {terrainFilePath} ({error})");
+        }
+        else if (hasGeneratedDefinition || hasGeneratedTransform)
+        {
+            Debug.LogWarning(
+                $"[TerrainRepository] 생성 지형의 Terrain/Transform 한쪽이 없어 원본을 사용합니다: {terrainFilePath}");
+        }
+
+        TerrainDefinitionRoot definitionRoot =
+            SaveIOService.Instance.LoadResourceData<TerrainDefinitionRoot>(terrainFilePath);
         TerrainTransformRoot transformRoot =
-            SaveIOService.Instance.LoadData<TerrainTransformRoot>(transformPath);
+            SaveIOService.Instance.LoadResourceData<TerrainTransformRoot>(transformPath);
+
+        if (TryBuildTerrain(definitionRoot, transformRoot, out TerrainData original, out string originalError))
+            return original;
+
+        Debug.LogError($"지형 분리 파일이 올바르지 않습니다: {terrainFilePath}, {transformPath} ({originalError})");
+        return null;
+    }
+
+    private static bool TryBuildTerrain(
+        TerrainDefinitionRoot definitionRoot,
+        TerrainTransformRoot transformRoot,
+        out TerrainData terrainData,
+        out string errorMessage)
+    {
+        terrainData = null;
 
         TerrainDefinition definition = definitionRoot?.TerrainInfo;
         TerrainPlaceTransform[] transforms = transformRoot?.TerrainTransforms?.places;
         if (definition?.places == null || transforms == null)
         {
-            Debug.LogError($"지형 분리 파일을 불러오지 못했습니다: {terrainFilePath}, {transformPath}");
-            return null;
+            errorMessage = "Terrain 또는 Transform의 places가 없습니다.";
+            return false;
         }
 
         Dictionary<string, TerrainPlaceTransform> transformsById =
@@ -36,8 +86,8 @@ public sealed class TerrainRepository
             if (transformData == null || string.IsNullOrWhiteSpace(transformData.placeId) ||
                 !transformsById.TryAdd(transformData.placeId, transformData))
             {
-                Debug.LogError($"Transform JSON에 비어 있거나 중복된 placeId가 있습니다: {transformData?.placeId}");
-                return null;
+                errorMessage = $"Transform JSON에 비어 있거나 중복된 placeId가 있습니다: {transformData?.placeId}";
+                return false;
             }
         }
 
@@ -51,36 +101,35 @@ public sealed class TerrainRepository
             if (place == null || string.IsNullOrWhiteSpace(place.placeId) ||
                 !definitionIds.Add(place.placeId))
             {
-                Debug.LogError($"지형 정의 JSON에 비어 있거나 중복된 placeId가 있습니다: {place?.placeId}");
-                return null;
+                errorMessage = $"지형 정의 JSON에 비어 있거나 중복된 placeId가 있습니다: {place?.placeId}";
+                return false;
             }
 
             if (!transformsById.TryGetValue(place.placeId, out TerrainPlaceTransform transformData))
             {
-                Debug.LogError($"placeId '{place.placeId}'의 Transform 정보가 없습니다.");
-                return null;
+                errorMessage = $"placeId '{place.placeId}'의 Transform 정보가 없습니다.";
+                return false;
             }
 
             if (definition.chunkCount > 0 &&
                 (place.chunkIndex < 0 || place.chunkIndex >= definition.chunkCount))
             {
-                Debug.LogError($"placeId '{place.placeId}'의 chunkIndex가 지형 범위를 벗어났습니다.");
-                return null;
+                errorMessage = $"placeId '{place.placeId}'의 chunkIndex가 지형 범위를 벗어났습니다.";
+                return false;
             }
 
             if (!TryGetSlotPosition(transformData, out Vector3 slotPosition))
             {
-                Debug.LogError(
-                    $"placeId '{place.placeId}'의 슬롯이 올바르지 않습니다. " +
-                    "side는 left/right, z는 10/30/50/70/90 중 하나여야 합니다.");
-                return null;
+                errorMessage = $"placeId '{place.placeId}'의 슬롯이 올바르지 않습니다. " +
+                    "side는 left/right, z는 10/30/50/70/90 중 하나여야 합니다.";
+                return false;
             }
 
             string slotKey = $"{place.chunkIndex}:{transformData.side}:{transformData.z}";
             if (!occupiedSlots.Add(slotKey))
             {
-                Debug.LogError($"같은 청크의 배치 슬롯이 중복되었습니다: {slotKey}");
-                return null;
+                errorMessage = $"같은 청크의 배치 슬롯이 중복되었습니다: {slotKey}";
+                return false;
             }
 
             places[i] = new PlaceData
@@ -96,16 +145,18 @@ public sealed class TerrainRepository
 
         if (definitionIds.Count != transformsById.Count)
         {
-            Debug.LogError("지형 정의 없이 Transform JSON에만 존재하는 placeId가 있습니다.");
-            return null;
+            errorMessage = "지형 정의 없이 Transform JSON에만 존재하는 placeId가 있습니다.";
+            return false;
         }
 
-        return new TerrainData
+        terrainData = new TerrainData
         {
             terrainName = definition.terrainName,
             chunkCount = definition.chunkCount,
             places = places
         };
+        errorMessage = null;
+        return true;
     }
 
     private static bool TryGetSlotPosition(
@@ -136,13 +187,14 @@ public sealed class TerrainRepository
 
     private static string CreateTransformPath(string terrainFilePath)
     {
-        const string terrainToken = "_Terrain_";
-        int tokenIndex = terrainFilePath.LastIndexOf(terrainToken, StringComparison.Ordinal);
-        if (tokenIndex < 0)
-            return terrainFilePath + "_Transform";
+        const string terrainFileName = "/Terrain";
+        if (terrainFilePath.EndsWith(terrainFileName, StringComparison.Ordinal))
+        {
+            return terrainFilePath.Substring(
+                0,
+                terrainFilePath.Length - terrainFileName.Length) + "/Transform";
+        }
 
-        return terrainFilePath.Substring(0, tokenIndex) +
-               "_Transform_" +
-               terrainFilePath.Substring(tokenIndex + terrainToken.Length);
+        return terrainFilePath + "/Transform";
     }
 }

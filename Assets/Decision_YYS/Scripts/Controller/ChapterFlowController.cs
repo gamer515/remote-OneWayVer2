@@ -46,10 +46,10 @@ public sealed class ChapterFlowController
 
     private bool CanCompleteCurrentChapter()
     {
-        return session?.Omnibus?.MainStories != null &&
+        return session?.Omnibus?.chapters != null &&
                statContainer != null &&
                session.ChapterIndex >= 0 &&
-               session.ChapterIndex < session.Omnibus.MainStories.Count;
+               session.ChapterIndex < session.Omnibus.chapters.Count;
     }
 
     private void CompleteCurrentChapter(
@@ -60,26 +60,55 @@ public sealed class ChapterFlowController
         // Relay에는 초기화 전 스탯과 완료된 챕터 번호가 전달되어야 하므로 먼저 스냅샷을 만듭니다.
         int completedChapterIndex = session.ChapterIndex;
         int[] statsSnapshot = statContainer.stats;
-        ChapterResult result = statContainer.CreateChapterResult(completedChapterIndex);
-
-        saveService.SaveChapterResult(result);
-
-        if (relayManager != null)
+        if (relayManager != null && completedChapterIndex != (int)Constants.Chapter.Initial)
         {
-            relayManager.Relay(
-                relayTrigger,
-                session.ScenarioPath,
-                session.PlayedHistory,
+            StoryInfluenceProfile influence = relayManager.CreateInfluenceProfile(
                 statsSnapshot,
-                completedChapterIndex);
+                completedChapterIndex,
+                session.RunNumber);
+            saveService.SaveInfluenceProfile(influence);
+
+            foreach (CompletedEpisodeRecord episode in session.CompletedEpisodes)
+            {
+                if (episode == null) continue;
+                relayManager.Relay(
+                    StoryRelayTrigger.EpisodeEnd,
+                    episode.scenarioPath,
+                    episode.storyHistory,
+                    episode.selectedChoices,
+                    statsSnapshot,
+                    completedChapterIndex,
+                    session.RunNumber,
+                    influence);
+            }
+
+            // 임계치 전투는 현재 에피소드가 정상 종료되지 않았으므로 별도 전환 요청으로 전달합니다.
+            if (relayTrigger == StoryRelayTrigger.MidTransition && session.PlayedHistory.Count > 0)
+            {
+                relayManager.Relay(
+                    StoryRelayTrigger.MidTransition,
+                    session.ScenarioPath,
+                    session.PlayedHistory,
+                    session.SelectedChoices,
+                    statsSnapshot,
+                    completedChapterIndex,
+                    session.RunNumber,
+                    influence);
+            }
         }
+
+        session.CompletedEpisodes.Clear();
+        saveService.ClearCompletedEpisodes();
 
         session.ChapterIndex++;
         session.EpisodeIndex = 0;
         session.StoryIndex = 0;
 
         if (clearHistory)
+        {
             session.PlayedHistory.Clear();
+            session.SelectedChoices.Clear();
+        }
 
         statContainer.ResetAllStats();
         // 다음 챕터가 이전 지형 위치에서 시작하지 않도록 진행도와 함께 위치를 초기화합니다.

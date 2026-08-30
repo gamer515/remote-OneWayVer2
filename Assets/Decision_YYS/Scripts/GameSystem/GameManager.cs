@@ -48,16 +48,21 @@ public class GameManager : MonoBehaviour
 
     public DecisionStartData StartGame()
     {
-        OmnibusData currentOmnibusData = SaveIOService.Instance.LoadData<OmnibusData>("Omnibus_01");
+        Debug.Log($"[GameManager] {saveManager.CurrentRun}회차 시작");
+
+        OmnibusData currentOmnibusData =
+            SaveIOService.Instance.LoadResourceData<OmnibusData>("Omnibus_01");
 
         var (chapterIndex, episodeIndex, storyIndex, playerStats) = LoadData();
         var player = ActivatePlayer();
         Vector3? savedPlayerPosition = saveManager.LoadPlayerPosition();
         var session = new DecisionSession(
             currentOmnibusData,
+            saveManager.CurrentRun,
             chapterIndex,
             episodeIndex,
-            storyIndex);
+            storyIndex,
+            saveManager.LoadPendingEpisodes());
 
         return new DecisionStartData(
             session,
@@ -96,7 +101,7 @@ public class GameManager : MonoBehaviour
 
     /// <summary>
     /// 다음 회차용 빈 저장 데이터를 만들고 활성 회차를 변경합니다.
-    /// 추후 엔딩 화면의 '다음 회차 시작' 버튼에서 호출할 진입점입니다.
+    /// 마지막 에피소드가 끝난 뒤 메인 메뉴로 돌아가기 전에 호출합니다.
     /// </summary>
     public int PrepareNextPlaythrough()
     {
