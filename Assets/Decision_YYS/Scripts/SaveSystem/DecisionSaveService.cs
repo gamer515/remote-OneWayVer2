@@ -63,4 +63,14 @@ public sealed class DecisionSaveService
             result.dominantStatIndex,
             result.dominantStatValue);
     }
+
+    public void CompleteCurrentRun()
+    {
+        saveManager.CompleteCurrentRun();
+    }
+
+    public int StartNextRun()
+    {
+        return saveManager.StartNextRun();
+    }
 }

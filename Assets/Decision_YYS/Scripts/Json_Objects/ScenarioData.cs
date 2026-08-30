@@ -26,7 +26,7 @@ public class StoryContentData
 public class StoryContent
 {
     public int id;
-    public string change;
+    public bool change;
     public string type;
     public bool isTransition;
     public string background;
@@ -55,7 +55,8 @@ public class StoryChoice
 public class Dialogue
 {
     public int id;
-    public string change; // 제거 or 수정
+    // AI 통합본과의 기존 호환을 위해 런타임 Dialogue에서는 문자열을 유지합니다.
+    public string change;
     public string type;
     public bool isTransition; // 제거 or 수정
     public string background; // 제거 or 수정

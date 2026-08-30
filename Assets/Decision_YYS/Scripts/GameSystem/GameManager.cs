@@ -93,4 +93,16 @@ public class GameManager : MonoBehaviour
 
         return playerInstance;
     }
+
+    /// <summary>
+    /// 다음 회차용 빈 저장 데이터를 만들고 활성 회차를 변경합니다.
+    /// 추후 엔딩 화면의 '다음 회차 시작' 버튼에서 호출할 진입점입니다.
+    /// </summary>
+    public int PrepareNextPlaythrough()
+    {
+        if (saveManager == null)
+            saveManager = new SaveManager();
+
+        return saveManager.StartNextRun();
+    }
 }

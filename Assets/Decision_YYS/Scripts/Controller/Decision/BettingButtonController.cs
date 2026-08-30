@@ -1,4 +1,6 @@
-using System;
+﻿using System;
+using System.Collections.Generic;
+using DG.Tweening;
 using UnityEngine;
 
 /// <summary>
@@ -13,12 +15,22 @@ public sealed class BettingButtonController : MonoBehaviour
     [SerializeField] private Collider yellowButton;
     [SerializeField] private Camera inputCamera;
 
+    [Header("Button Press Motion")]
+    [Tooltip("버튼이 로컬 Y축 아래로 눌리는 거리입니다.")]
+    [SerializeField] private float pressDistance = 0.12f;
+    [SerializeField] private float pressDuration = 0.06f;
+    [SerializeField] private float releaseDuration = 0.1f;
+    [SerializeField] private Ease pressEase = Ease.OutQuad;
+    [SerializeField] private Ease releaseEase = Ease.OutBack;
+
     public event Action BluePressed;
     public event Action RedPressed;
     public event Action YellowPressed;
 
     private bool yellowInteractable = true;
     private bool bettingInteractable;
+    private readonly Dictionary<Transform, Vector3> originalButtonPositions =
+        new Dictionary<Transform, Vector3>();
 
     private void Awake()
     {
@@ -26,6 +38,7 @@ public sealed class BettingButtonController : MonoBehaviour
             inputCamera = Camera.main;
 
         ResolveButtonColliders();
+        CacheOriginalButtonPositions();
     }
 
     private void Update()
@@ -34,19 +47,36 @@ public sealed class BettingButtonController : MonoBehaviour
             return;
 
         Collider clickedButton = FindClickedButton();
+        if (clickedButton == null)
+            return;
+
+        // 기능이 잠긴 버튼도 실제로 눌렀다는 시각적 반응은 항상 보여줍니다.
+        PlayPressMotion(clickedButton);
+
         if (clickedButton == blueButton && bettingInteractable)
         {
-            // 다음 단계에서 선택된 코인 한 개를 랜덤 출구로 생성합니다.
             BluePressed?.Invoke();
         }
         else if (clickedButton == redButton && bettingInteractable)
         {
-            // 베팅 결과 계산은 코인 이동 연출이 준비된 뒤 연결합니다.
             RedPressed?.Invoke();
         }
         else if (clickedButton == yellowButton && yellowInteractable)
         {
             YellowPressed?.Invoke();
+        }
+    }
+
+    private void OnDisable()
+    {
+        // 재활성화될 때 버튼이 눌린 위치에 남지 않도록 Tween과 위치를 함께 복원합니다.
+        foreach (KeyValuePair<Transform, Vector3> button in originalButtonPositions)
+        {
+            if (button.Key == null)
+                continue;
+
+            button.Key.DOKill();
+            button.Key.localPosition = button.Value;
         }
     }
 
@@ -58,6 +88,45 @@ public sealed class BettingButtonController : MonoBehaviour
     public void SetBettingInteractable(bool interactable)
     {
         bettingInteractable = interactable;
+    }
+
+    private void PlayPressMotion(Collider buttonCollider)
+    {
+        if (buttonCollider == null)
+            return;
+
+        Transform button = buttonCollider.transform;
+        if (!originalButtonPositions.TryGetValue(button, out Vector3 originalPosition))
+        {
+            originalPosition = button.localPosition;
+            originalButtonPositions[button] = originalPosition;
+        }
+
+        // 연속 클릭에도 기준 위치가 누적되지 않도록 기존 Tween을 끊고 원위치에서 재생합니다.
+        button.DOKill();
+        button.localPosition = originalPosition;
+
+        DOTween.Sequence()
+            .Append(button.DOLocalMoveY(
+                originalPosition.y - pressDistance,
+                pressDuration).SetEase(pressEase))
+            .Append(button.DOLocalMoveY(
+                originalPosition.y,
+                releaseDuration).SetEase(releaseEase))
+            .SetLink(button.gameObject, LinkBehaviour.KillOnDestroy);
+    }
+
+    private void CacheOriginalButtonPositions()
+    {
+        CacheButtonPosition(blueButton);
+        CacheButtonPosition(redButton);
+        CacheButtonPosition(yellowButton);
+    }
+
+    private void CacheButtonPosition(Collider buttonCollider)
+    {
+        if (buttonCollider != null)
+            originalButtonPositions[buttonCollider.transform] = buttonCollider.transform.localPosition;
     }
 
     private Collider FindClickedButton()

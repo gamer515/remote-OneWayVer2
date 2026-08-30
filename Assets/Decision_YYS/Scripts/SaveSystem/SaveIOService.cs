@@ -1,5 +1,4 @@
 ﻿using System.IO;
-using System.Runtime.CompilerServices;
 using UnityEngine;
 
 /// <summary>
@@ -23,7 +22,7 @@ public class SaveIOService
 
     // 저장 파일이 위치할 기본 경로
     private string BasePath => Path.Combine(Application.persistentDataPath, "Saves");
-    //private string ScenarioPath => Path.Combine(BasePath, "Scenario");
+    private string ProfilePath => Path.Combine(BasePath, "Profile.json");
 
     private int scenarioIndex = 0;
 
@@ -42,6 +41,95 @@ public class SaveIOService
         {
             Directory.CreateDirectory(BasePath);
         }
+    }
+
+    /// <summary>
+    /// 현재 회차를 담은 프로필을 불러오며, 없으면 1회차 프로필을 생성합니다.
+    /// </summary>
+    public ProfileData LoadOrCreateProfile()
+    {
+        if (File.Exists(ProfilePath))
+        {
+            ProfileData loadedProfile = ReadJson<ProfileData>(ProfilePath);
+            if (loadedProfile != null)
+            {
+                loadedProfile.currentRun = Mathf.Max(1, loadedProfile.currentRun);
+                return loadedProfile;
+            }
+        }
+
+        ProfileData newProfile = new ProfileData();
+        SaveProfile(newProfile);
+        return newProfile;
+    }
+
+    public void SaveProfile(ProfileData profile)
+    {
+        if (profile == null)
+            return;
+
+        profile.currentRun = Mathf.Max(1, profile.currentRun);
+        Directory.CreateDirectory(BasePath);
+        File.WriteAllText(ProfilePath, JsonUtility.ToJson(profile, true));
+        Debug.Log($"[SaveIO] 프로필 저장 성공: {ProfilePath}");
+    }
+
+    /// <summary>
+    /// 진행도와 능력치처럼 특정 회차에 속하는 데이터를 저장합니다.
+    /// </summary>
+    public void SaveRunData<T>(int runNumber, string fileName, T data)
+    {
+        string directoryPath = GetRunDirectory(runNumber);
+        Directory.CreateDirectory(directoryPath);
+
+        string path = Path.Combine(directoryPath, $"{fileName}.json");
+        File.WriteAllText(path, JsonUtility.ToJson(data, true));
+        Debug.Log($"[SaveIO] {Mathf.Max(1, runNumber)}회차 데이터 저장 성공: {path}");
+    }
+
+    /// <summary>
+    /// 회차 데이터를 불러옵니다. 기존 루트 세이브는 삭제하지 않고 1회차 폴더로 복사합니다.
+    /// </summary>
+    public T LoadRunData<T>(int runNumber, string fileName)
+    {
+        string path = GetRunDataPath(runNumber, fileName);
+        if (File.Exists(path))
+            return ReadJson<T>(path);
+
+        string legacyPath = Path.Combine(BasePath, $"{fileName}.json");
+        if (runNumber == 1 && File.Exists(legacyPath))
+        {
+            T legacyData = ReadJson<T>(legacyPath);
+            SaveRunData(runNumber, fileName, legacyData);
+            Debug.Log($"[SaveIO] 기존 {fileName} 세이브를 1회차 폴더로 복사했습니다.");
+            return legacyData;
+        }
+
+        return default;
+    }
+
+    public bool RunDataExists(int runNumber, string fileName)
+    {
+        if (File.Exists(GetRunDataPath(runNumber, fileName)))
+            return true;
+
+        return runNumber == 1 && File.Exists(Path.Combine(BasePath, $"{fileName}.json"));
+    }
+
+    private string GetRunDirectory(int runNumber)
+    {
+        int safeRunNumber = Mathf.Max(1, runNumber);
+        return Path.Combine(BasePath, "Runs", $"Run_{safeRunNumber:D4}");
+    }
+
+    private string GetRunDataPath(int runNumber, string fileName)
+    {
+        return Path.Combine(GetRunDirectory(runNumber), $"{fileName}.json");
+    }
+
+    private static T ReadJson<T>(string path)
+    {
+        return JsonUtility.FromJson<T>(File.ReadAllText(path));
     }
 
     public void Save<T>(string fileName, T data)

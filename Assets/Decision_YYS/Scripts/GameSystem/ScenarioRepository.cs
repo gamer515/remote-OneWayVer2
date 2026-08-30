@@ -126,32 +126,47 @@ public sealed class ScenarioRepository
                 return null;
             }
 
-            if (!choicesById.TryGetValue(content.id, out StoryChoice choice))
+            bool isChoice = string.Equals(
+                content.type,
+                DialogueType.Choice.ToString(),
+                StringComparison.OrdinalIgnoreCase);
+            choicesById.TryGetValue(content.id, out StoryChoice choice);
+
+            if (isChoice && choice == null)
             {
-                errorMessage = $"이야기 id {content.id}에 대응하는 선택지 정보가 없습니다.";
+                errorMessage = $"Choice 이야기 id {content.id}에 대응하는 선택지 정보가 없습니다.";
+                return null;
+            }
+
+            if (!isChoice && choice != null)
+            {
+                errorMessage = $"Choice가 아닌 이야기 id {content.id}에 불필요한 선택지 정보가 있습니다.";
                 return null;
             }
 
             scenario.MainStory.Add(new Dialogue
             {
                 id = content.id,
-                change = content.change,
+                change = content.change.ToString(),
                 type = content.type,
                 isTransition = content.isTransition,
                 background = content.background,
                 destination = content.destination,
                 character = content.character,
                 text = content.text,
-                option = choice.option,
-                figure = choice.figure,
-                npcEmotion = choice.npcEmotion
+                option = choice?.option,
+                figure = choice?.figure,
+                npcEmotion = choice?.npcEmotion
             });
         }
 
-        if (storyIds.Count != choicesById.Count)
+        foreach (int choiceId in choicesById.Keys)
         {
-            errorMessage = "이야기 없이 선택지 JSON에만 존재하는 id가 있습니다.";
-            return null;
+            if (!storyIds.Contains(choiceId))
+            {
+                errorMessage = $"이야기 없이 선택지 JSON에만 존재하는 id가 있습니다: {choiceId}";
+                return null;
+            }
         }
 
         errorMessage = null;

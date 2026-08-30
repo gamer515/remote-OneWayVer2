@@ -43,6 +43,7 @@ public sealed class CoinDropController : MonoBehaviour
     [SerializeField] private float intervalBetweenCoins = 0.08f;
 
     public event Action<BettingResult> BettingCompleted;
+    public event Action BettingCollectionStarted;
 
     private readonly List<BettingCoin> spawnedCoins = new List<BettingCoin>();
     private bool isCollecting;
@@ -148,6 +149,8 @@ public sealed class CoinDropController : MonoBehaviour
 
         isCollecting = true;
         buttonController?.SetBettingInteractable(false);
+        // 잡고 있는 코인이 있다면 물리 상태로 놓은 후 회수를 시작합니다.
+        BettingCollectionStarted?.Invoke();
         StartCoroutine(CollectCoins(result));
     }
 

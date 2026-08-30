@@ -8,17 +8,16 @@ public class StatContainer : MonoBehaviour
     private static readonly string[] InitialStatNames =
         { string.Empty, string.Empty, string.Empty, string.Empty };
 
-    private static readonly string[] StrengthStatNames =
-        { "Muscle", "Endurance", "Toughness", "Control" };
+    private static readonly string[] CombatStatNames =
+        { "Strength", "Technique", "Tactics", "Strategy" };
 
-    private static readonly string[] WisdomStatNames =
-        { "Knowledge", "Insight", "Judgment", "Foresight" };
+    private static readonly string[] KnowledgeStatNames =
+        { "Intuition", "Learning", "Magic", "Wisdom" };
 
     [Serializable]
     public class StatEntry
     {
-        public string statName; // 인스펙터 표시용 이름 (Wealth, Strength 등)
-        public Constants.StatType statType;
+        public string statName; // 현재 챕터의 같은 인덱스에 해당하는 표시 이름
         public int value;
         
         [Header("UI References")]
@@ -101,15 +100,15 @@ public class StatContainer : MonoBehaviour
     public void SetChapterStatNames(string chapterName)
     {
         string[] names;
-        if (string.Equals(chapterName, Constants.Chapter.Strength.ToString(),
+        if (string.Equals(chapterName, Constants.Chapter.Combat.ToString(),
                 StringComparison.OrdinalIgnoreCase))
         {
-            names = StrengthStatNames;
+            names = CombatStatNames;
         }
-        else if (string.Equals(chapterName, Constants.Chapter.Wisdom.ToString(),
+        else if (string.Equals(chapterName, Constants.Chapter.Knowledge.ToString(),
                      StringComparison.OrdinalIgnoreCase))
         {
-            names = WisdomStatNames;
+            names = KnowledgeStatNames;
         }
         else if (string.Equals(chapterName, Constants.Chapter.Initial.ToString(),
                      StringComparison.OrdinalIgnoreCase))

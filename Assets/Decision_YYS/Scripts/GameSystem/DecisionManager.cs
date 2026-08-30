@@ -220,6 +220,8 @@ public class DecisionManager : MonoBehaviour
         {
             Debug.Log("모든 메인 스토리가 종료되었습니다.");
             currentState = StoryState.Transitioning;
+            // 여기서는 완료만 기록합니다. 다음 회차 생성은 추후 엔딩 화면의 시작 버튼에서 호출합니다.
+            saveService?.CompleteCurrentRun();
             return;
         }
 

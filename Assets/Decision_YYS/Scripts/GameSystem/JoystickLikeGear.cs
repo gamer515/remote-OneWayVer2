@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using UnityEngine;
 
 /// <summary>
@@ -20,9 +20,11 @@ public class JoystickLikeGear : MonoBehaviour
 
     [Header("Drag Mapping Area")]
     [SerializeField] private bool useScreenArea = true;
-    [SerializeField] private Vector2 origin = new Vector2(1440f, 0f);
-    [SerializeField] private Vector2 areaSize = new Vector2(480f, 270f);
+    [SerializeField] private Vector2 origin = new Vector2(1440f, 165f);
+    [SerializeField] private Vector2 areaSize = new Vector2(480f, 330f);
     [SerializeField] private Vector2 referenceResolution = new Vector2(1920f, 1080f);
+    [Tooltip("기어 선택을 해제하고 중앙에 유지하는 영역의 전체 크기입니다.")]
+    [SerializeField] private Vector2 neutralAreaSize = new Vector2(160f, 100f);
 
     [Header("Gear Movement")]
     [SerializeField] private float horizontalRange = 200f;
@@ -130,6 +132,10 @@ public class JoystickLikeGear : MonoBehaviour
 
     private Vector2 CalculateDragPosition(Vector2 mousePosition)
     {
+        // 중앙 중립 영역에서는 기어를 가운데로 이동시키고 코인 선택을 준비하지 않습니다.
+        if (GetScaledNeutralRect().Contains(mousePosition))
+            return Vector2.zero;
+
         Rect interactionRect = GetScaledInteractionRect();
         Vector2 mouseDelta = mousePosition - interactionRect.center;
 
@@ -143,6 +149,12 @@ public class JoystickLikeGear : MonoBehaviour
 
     private void SnapToNearestSlot()
     {
+        if (GetScaledNeutralRect().Contains(Input.mousePosition))
+        {
+            SetNeutral();
+            return;
+        }
+
         bool isRight = targetPosition.x > 0f;
         bool isTop = targetPosition.y >= 0f;
 
@@ -164,6 +176,17 @@ public class JoystickLikeGear : MonoBehaviour
             return;
 
         currentGearSlot = slot;
+        OnCoinTypeChanged?.Invoke(SelectedCoinIndex);
+    }
+
+    private void SetNeutral()
+    {
+        targetPosition = Vector2.zero;
+
+        if (currentGearSlot == 0)
+            return;
+
+        currentGearSlot = 0;
         OnCoinTypeChanged?.Invoke(SelectedCoinIndex);
     }
 
@@ -208,6 +231,20 @@ public class JoystickLikeGear : MonoBehaviour
             areaSize.y * scaleY);
     }
 
+    private Rect GetScaledNeutralRect()
+    {
+        Rect interactionRect = GetScaledInteractionRect();
+        float scaleX = (float)Screen.width / referenceResolution.x;
+        float scaleY = (float)Screen.height / referenceResolution.y;
+        Vector2 scaledSize = new Vector2(
+            neutralAreaSize.x * scaleX,
+            neutralAreaSize.y * scaleY);
+
+        return new Rect(
+            interactionRect.center - scaledSize * 0.5f,
+            scaledSize);
+    }
+
     private void OnDrawGizmos()
     {
         if (!useScreenArea || !showDebugArea)
@@ -229,5 +266,22 @@ public class JoystickLikeGear : MonoBehaviour
         Gizmos.DrawLine(topLeft, topRight);
         Gizmos.DrawLine(topRight, bottomRight);
         Gizmos.DrawLine(bottomRight, bottomLeft);
+
+        Rect neutralRect = GetScaledNeutralRect();
+        Vector3 neutralBottomLeft = cameraToUse.ScreenToWorldPoint(
+            new Vector3(neutralRect.xMin, neutralRect.yMin, distance));
+        Vector3 neutralTopLeft = cameraToUse.ScreenToWorldPoint(
+            new Vector3(neutralRect.xMin, neutralRect.yMax, distance));
+        Vector3 neutralTopRight = cameraToUse.ScreenToWorldPoint(
+            new Vector3(neutralRect.xMax, neutralRect.yMax, distance));
+        Vector3 neutralBottomRight = cameraToUse.ScreenToWorldPoint(
+            new Vector3(neutralRect.xMax, neutralRect.yMin, distance));
+
+        // 노란 사각형이 선택되지 않는 중앙 중립 영역입니다.
+        Gizmos.color = new Color(1f, 0.85f, 0f, 0.9f);
+        Gizmos.DrawLine(neutralBottomLeft, neutralTopLeft);
+        Gizmos.DrawLine(neutralTopLeft, neutralTopRight);
+        Gizmos.DrawLine(neutralTopRight, neutralBottomRight);
+        Gizmos.DrawLine(neutralBottomRight, neutralBottomLeft);
     }
 }

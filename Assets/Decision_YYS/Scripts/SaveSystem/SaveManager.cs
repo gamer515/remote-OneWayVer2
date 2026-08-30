@@ -2,18 +2,23 @@
 
 public class SaveManager
 {
+    private readonly ProfileData profile;
     private GameProgress cachedProgress;
+
+    public int CurrentRun => profile.currentRun;
 
     public SaveManager()
     {
-        // 진행도와 챕터 기록이 서로 덮어쓰이지 않도록 동일 인스턴스를 캐시합니다.
-        cachedProgress = SaveIOService.Instance.Load<GameProgress>("Progress") ?? new GameProgress();
+        // 프로필의 현재 회차를 기준으로 진행도와 능력치의 저장 폴더를 고정합니다.
+        profile = SaveIOService.Instance.LoadOrCreateProfile();
+        cachedProgress = SaveIOService.Instance.LoadRunData<GameProgress>(CurrentRun, "Progress")
+            ?? new GameProgress();
     }
 
     /// <summary>
     /// 현재 스토리 진행도를 저장합니다.
     /// </summary>
-    /// <param name="chapterIndex">챕터 인덱스. 예: Initial, Strength, Wisdom</param>
+    /// <param name="chapterIndex">챕터 인덱스. 예: Initial, Combat, Knowledge</param>
     /// <param name="episodeIndex">챕터 내부 에피소드 인덱스.</param>
     /// <param name="storyIndex">에피소드 내부 지문 인덱스.</param>
     public void SaveProgress(int chapterIndex, int episodeIndex, int storyIndex)
@@ -22,7 +27,7 @@ public class SaveManager
         cachedProgress.episodeIndex = episodeIndex;
         cachedProgress.storyIndex = storyIndex;
 
-        SaveIOService.Instance.Save("Progress", cachedProgress);
+        SaveIOService.Instance.SaveRunData(CurrentRun, "Progress", cachedProgress);
         Debug.Log($"[Save] Progress Saved: Ch {chapterIndex}, Ep {episodeIndex}, St {storyIndex}");
     }
 
@@ -32,7 +37,7 @@ public class SaveManager
         {
             stats = statsArray
         };
-        SaveIOService.Instance.Save("Stats", stats);
+        SaveIOService.Instance.SaveRunData(CurrentRun, "Stats", stats);
     }
 
     public void SaveProgressAndPlayerPosition(
@@ -47,7 +52,7 @@ public class SaveManager
         cachedProgress.storyIndex = storyIndex;
         cachedProgress.currentPosition = new[] { position.x, position.y, position.z };
 
-        SaveIOService.Instance.Save("Progress", cachedProgress);
+        SaveIOService.Instance.SaveRunData(CurrentRun, "Progress", cachedProgress);
         Debug.Log(
             $"[Save] Checkpoint Saved: Ch {chapterIndex}, Ep {episodeIndex}, " +
             $"St {storyIndex}, Z {position.z}");
@@ -91,7 +96,7 @@ public class SaveManager
             dominantStatValue = value
         });
 
-        SaveIOService.Instance.Save("Progress", cachedProgress);
+        SaveIOService.Instance.SaveRunData(CurrentRun, "Progress", cachedProgress);
         Debug.Log($"[Save] Chapter {chapter} Result Recorded: BestStat {bestIndex} ({value})");
     }
 
@@ -102,15 +107,50 @@ public class SaveManager
 
     public PlayerStats LoadStats()
     {
-        if (SaveIOService.Instance.Exists("Stats"))
+        if (SaveIOService.Instance.RunDataExists(CurrentRun, "Stats"))
         {
-            return SaveIOService.Instance.Load<PlayerStats>("Stats");
+            return SaveIOService.Instance.LoadRunData<PlayerStats>(CurrentRun, "Stats");
         }
         return null;
     }
 
     public bool HasSaveData(string key)
     {
-        return SaveIOService.Instance.Exists(key);
+        return SaveIOService.Instance.RunDataExists(CurrentRun, key);
+    }
+
+    /// <summary>
+    /// 현재 회차를 완료 상태로 저장합니다. 여러 번 호출되어도 회차 번호는 증가하지 않습니다.
+    /// </summary>
+    public void CompleteCurrentRun()
+    {
+        if (cachedProgress.isCompleted)
+            return;
+
+        cachedProgress.isCompleted = true;
+        SaveIOService.Instance.SaveRunData(CurrentRun, "Progress", cachedProgress);
+        Debug.Log($"[Save] {CurrentRun}회차 완료 상태 저장");
+    }
+
+    /// <summary>
+    /// 기존 회차를 보존하고 다음 회차의 빈 진행도를 만든 뒤 활성 회차를 변경합니다.
+    /// 실제 씬 재시작은 이 메서드를 호출하는 화면 흐름에서 담당합니다.
+    /// </summary>
+    public int StartNextRun()
+    {
+        CompleteCurrentRun();
+
+        int nextRun = CurrentRun + 1;
+        GameProgress nextProgress = new GameProgress();
+
+        // 다음 회차 파일을 먼저 만든 뒤 Profile을 갱신하여 불완전한 회차를 가리키지 않게 합니다.
+        SaveIOService.Instance.SaveRunData(nextRun, "Progress", nextProgress);
+        SaveIOService.Instance.SaveRunData(nextRun, "Stats", new PlayerStats());
+        profile.currentRun = nextRun;
+        SaveIOService.Instance.SaveProfile(profile);
+        cachedProgress = nextProgress;
+
+        Debug.Log($"[Save] {nextRun}회차 저장 데이터 생성 및 활성화 완료");
+        return nextRun;
     }
 }
