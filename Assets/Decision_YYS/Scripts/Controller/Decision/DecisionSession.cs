@@ -14,8 +14,8 @@ public sealed class DecisionSession
     public int RunNumber { get; }
     public string ScenarioPath { get; set; }
     public List<Dialogue> PlayedHistory { get; } = new List<Dialogue>();
-    public List<ChoiceSelectionRecord> SelectedChoices { get; } =
-        new List<ChoiceSelectionRecord>();
+    public List<BettingDecisionRecord> BettingDecisions { get; } =
+        new List<BettingDecisionRecord>();
     public List<CompletedEpisodeRecord> CompletedEpisodes { get; } =
         new List<CompletedEpisodeRecord>();
 
@@ -47,18 +47,21 @@ public sealed class DecisionStartData
     public PlayerStats PlayerStats { get; }
     public SaveManager SaveManager { get; }
     public Vector3? SavedPlayerPosition { get; }
+    public int[] RemainingCoins { get; }
 
     public DecisionStartData(
         DecisionSession session,
         Player player,
         PlayerStats playerStats,
         SaveManager saveManager,
-        Vector3? savedPlayerPosition)
+        Vector3? savedPlayerPosition,
+        int[] remainingCoins)
     {
         Session = session;
         Player = player;
         PlayerStats = playerStats;
         SaveManager = saveManager;
         SavedPlayerPosition = savedPlayerPosition;
+        RemainingCoins = remainingCoins;
     }
 }

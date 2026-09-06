@@ -17,7 +17,8 @@ public class DecisionManager : MonoBehaviour
     private DecisionSaveService saveService;
     private ChapterFlowController chapterFlowController;
     private DecisionPresentationController presentationController;
-    private readonly ChoiceController choiceController = new ChoiceController();
+    private readonly BettingOutcomeCalculator bettingOutcomeCalculator =
+        new BettingOutcomeCalculator();
     private ScenarioRepository scenarioRepository;
     private readonly SceneTransitionService sceneTransitionService = new SceneTransitionService();
     private OmnibusData currentOmnibus => session?.Omnibus;
@@ -153,8 +154,12 @@ public class DecisionManager : MonoBehaviour
             startData.Player.transform,
             useInitialCameraPosition);
 
+        coinDropController.InitializeInventory(startData.RemainingCoins);
+
         if (startData.PlayerStats?.stats != null)
             statContainer.SetStats(startData.PlayerStats.stats);
+        else
+            statContainer.ResetForEpisode();
 
         LoadCurrentEpisode();
         presentationController.ShowPlayerViewControl();
@@ -261,6 +266,7 @@ public class DecisionManager : MonoBehaviour
 
         // 스탯의 내부 인덱스는 유지하면서 현재 챕터의 네 덕목 이름만 UI에 반영합니다.
         statContainer.SetChapterStatNames(mainStory.chapterId);
+        coinDropController.SetChapterMaterials(mainStory.chapterId);
 
         // 새 지형은 기존 지형을 지우지 않고 마지막 전역 청크 뒤에 이어 붙입니다.
         if (!envController.RegisterTerrain(
@@ -274,7 +280,8 @@ public class DecisionManager : MonoBehaviour
         // 챕터별 목적지는 해당 지형의 월드 시작점을 가진 Registry로 다시 계산합니다.
         destinationController = new DestinationController(
             envController.PlaceRegistry,
-            playerController.TargetPosition.z);
+            playerController.TargetPosition.z,
+            envController.CurrentTerrainEndZ);
 
         ScenarioLoadResult loadResult = scenarioRepository.Load(
             mainStory.chapterId,
@@ -290,7 +297,10 @@ public class DecisionManager : MonoBehaviour
         if (loadedScenario != null)
         {
             storyProgressController.SetScenario(loadedScenario);
-            destinationController.BeginScenario(loadedScenario, storyIndex);
+            destinationController.BeginScenario(
+                loadedScenario,
+                storyIndex,
+                playerController.TargetPosition.z);
             PresentCurrentStory();
         }
         else
@@ -303,20 +313,17 @@ public class DecisionManager : MonoBehaviour
 
     private void HandleTargetStatReached()
     {
-        if (currentState == StoryState.Transitioning || chapterFlowController == null)
+        if (currentState == StoryState.Transitioning || statContainer == null)
             return;
 
-        // Initial은 성향을 소개하는 구간이므로 스탯 임계치 전투를 발생시키지 않습니다.
+        // Initial은 성향을 소개하는 구간이므로 임계치 검사 결과를 남기지 않습니다.
         if (chapterIndex == 0) return;
 
-        Debug.Log("전투 발생! 현재 진행 상황을 저장하고 전투 씬으로 이동합니다.");
-
-        if (chapterFlowController.PrepareBattleTransition(
-            playerController.TargetPosition))
-        {
-            currentState = StoryState.Transitioning;
-            sceneTransitionService.LoadBattleScene();
-        }
+        // Decision 흐름을 먼저 완성하기 위해 전투 전환은 잠시 비활성화하고 로그만 남깁니다.
+        Debug.Log(
+            $"[DecisionManager] 능력치 임계치 도달. 전투 전환은 현재 비활성화 상태입니다. " +
+            $"현재 수치: [{string.Join(", ", statContainer.stats)}]",
+            this);
     }
 
     private void CompleteChapter()
@@ -329,7 +336,14 @@ public class DecisionManager : MonoBehaviour
     private void UpdatePlayerPosition()
     {
         if (playerController == null || !playerController.IsAvailable || destinationController == null) return;
-        
+
+        // 현재 지문에 배치된 인물이 있으면 이동을 멈추고 해당 인물을 바라봅니다.
+        if (destinationController.TryGetCharacterPosition(storyIndex, out Vector3 characterPosition))
+        {
+            playerController.StopAndLookAt(characterPosition);
+            return;
+        }
+
         float targetZ = destinationController.GetTargetZ(storyIndex);
         playerController.MoveToZ(targetZ);
     }
@@ -369,8 +383,8 @@ public class DecisionManager : MonoBehaviour
     private void EnterChoiceState()
     {
         currentState = StoryState.WaitingForChoice;
-        // 기어는 이제 코인 종류만 선택하므로 이야기 선택지와 연결하지 않습니다.
-        presentationController.EnterChoice();
+        // Choice 타입은 문장 선택이 아니라 네 종류의 코인으로 응답하는 베팅 지문입니다.
+        presentationController.ExitChoice();
         bettingButtonController?.SetYellowInteractable(false);
         bettingButtonController?.SetBettingInteractable(true);
     }
@@ -406,35 +420,40 @@ public class DecisionManager : MonoBehaviour
         }
 
         Dialogue currentStory = storyProgressController.Current;
-        ChoiceResult choice = choiceController.ResolveOption(
+        int[] statChanges = bettingOutcomeCalculator.CalculateStatChanges(
             currentStory,
-            result.WinningCoinIndex);
-
-        if (!choice.IsValid)
+            result.CoinCounts);
+        if (statChanges == null)
         {
-            Debug.LogError($"코인 종류 {result.WinningCoinIndex}에 해당하는 선택지를 찾지 못했습니다.", this);
+            Debug.LogError("코인 분포와 현재 지문의 가중치를 계산하지 못했습니다.", this);
             bettingButtonController?.SetBettingInteractable(true);
             return;
         }
 
-        session.SelectedChoices.Add(new ChoiceSelectionRecord
+        session.BettingDecisions.Add(new BettingDecisionRecord
         {
             dialogueId = currentStory.id,
-            optionIndex = choice.OptionIndex,
-            optionText = choice.OptionText,
-            statChange = choice.StatChange
+            dialogueText = currentStory.text,
+            coinCounts = (int[])result.CoinCounts.Clone(),
+            statWeights = (int[])currentStory.statWeights.Clone(),
+            statChanges = (int[])statChanges.Clone()
         });
 
         // Initial은 선택 방식을 소개하는 구간이므로 실제 스탯에는 반영하지 않습니다.
         if (chapterIndex > 0)
         {
-            statContainer.AddStat(choice.OptionIndex, choice.StatChange);
+            statContainer.AddStats(statChanges);
             saveService.SaveStats(statContainer.stats);
         }
+        saveService.SaveRemainingCoins(coinDropController.RemainingCoins);
 
         Debug.Log(
-            $"[{choice.OptionText}] 선택됨 - 코인 {result.TotalCoins}개, " +
-            $"우세 종류 {result.WinningCoinIndex}");
+            $"[베팅 확정] 코인 {result.TotalCoins}개, " +
+            $"분포 [{string.Join(", ", result.CoinCounts)}], " +
+            $"가중치 [{string.Join(", ", currentStory.statWeights)}], " +
+            $"변화량 [{string.Join(", ", statChanges)}]");
+
+        gearController?.ResetToNeutral();
 
         if (currentState != StoryState.Transitioning)
             AdvanceStory();
@@ -468,7 +487,12 @@ public class DecisionManager : MonoBehaviour
         else if (result == StoryAdvanceResult.EpisodeCompleted)
         {
             RelayCompletedEpisode();
-            saveService.SaveProgress(session);
+            ResetEpisodeResources();
+            saveService.SaveCheckpoint(
+                session,
+                statContainer.stats,
+                playerController.TargetPosition);
+            saveService.SaveRemainingCoins(coinDropController.RemainingCoins);
             LoadCurrentEpisode();
         }
         else
@@ -484,14 +508,28 @@ public class DecisionManager : MonoBehaviour
         {
             scenarioPath = currentScenarioPath,
             storyHistory = new List<Dialogue>(session.PlayedHistory),
-            selectedChoices = new List<ChoiceSelectionRecord>(session.SelectedChoices)
+            bettingDecisions = new List<BettingDecisionRecord>(session.BettingDecisions),
+            finalStats = statContainer.stats,
+            remainingCoins = coinDropController.RemainingCoins
         };
         session.CompletedEpisodes.Add(completedEpisode);
         saveService.SaveCompletedEpisode(completedEpisode);
 
         // 최종 성향은 챕터 종료 시 확정하며, 여기서는 에피소드별 작은 기록만 보관합니다.
         session.PlayedHistory.Clear();
-        session.SelectedChoices.Clear();
+        session.BettingDecisions.Clear();
+    }
+
+    private void ResetEpisodeResources()
+    {
+        statContainer.ResetForEpisode();
+        coinDropController.ResetInventory();
+        gearController?.ResetToNeutral();
+        Debug.Log(
+            $"[DecisionManager] 새 에피소드 자원 초기화 - " +
+            $"능력치 [{string.Join(", ", statContainer.stats)}], " +
+            $"코인 [{string.Join(", ", coinDropController.RemainingCoins)}]",
+            this);
     }
 
     private void HandleStoryTransitionCompleted()

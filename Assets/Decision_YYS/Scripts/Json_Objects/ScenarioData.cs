@@ -35,7 +35,7 @@ public class StoryContent
     public string text;
 }
 
-/// <summary>선택지, 수치와 NPC 감정에 필요한 원본 JSON 묶음입니다.</summary>
+/// <summary>코인 응답 지문의 능력치 가중치와 NPC 감정 데이터입니다.</summary>
 [Serializable]
 public class StoryChoiceData
 {
@@ -46,8 +46,8 @@ public class StoryChoiceData
 public class StoryChoice
 {
     public int id;
-    public string[] option;
-    public int[] figure;
+    // 배치한 네 종류의 코인 개수에 곱할 지문별 가중치입니다.
+    public int[] statWeights;
     public string npcEmotion;
 }
 
@@ -63,9 +63,8 @@ public class Dialogue
     public string destination;
     public string character; // 제거 or 수정
     public string text;
-    public string[] option;
     public string npcEmotion;
-    public int[] figure;
+    public int[] statWeights;
 
     public DialogueType Type
     {

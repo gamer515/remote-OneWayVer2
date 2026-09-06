@@ -20,6 +20,20 @@ public class Player : MonoBehaviour
         targetZ = z;
     }
 
+    public void StopAndLookAt(Vector3 worldPosition)
+    {
+        targetZ = transform.position.z;
+        Vector3 direction = worldPosition - transform.position;
+        direction.y = 0f;
+        if (direction.sqrMagnitude > 0.0001f)
+            transform.rotation = Quaternion.LookRotation(direction.normalized, Vector3.up);
+    }
+
+    public void FaceForward()
+    {
+        transform.rotation = Quaternion.LookRotation(Vector3.forward, Vector3.up);
+    }
+
     private void Update()
     {
         if (!isInitialized) return;

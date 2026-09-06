@@ -9,6 +9,7 @@ public sealed class DecisionPlayerController
 
     public Vector3 TargetPosition { get; private set; }
     public bool IsAvailable => player != null;
+    public Vector3 CurrentPosition => IsAvailable ? player.transform.position : TargetPosition;
 
     public DecisionPlayerController(Player player)
     {
@@ -34,6 +35,16 @@ public sealed class DecisionPlayerController
             TargetPosition.y,
             targetZ);
 
+        player.FaceForward();
         player.SetTargetZ(targetZ);
+    }
+
+    public void StopAndLookAt(Vector3 characterPosition)
+    {
+        if (!IsAvailable)
+            return;
+
+        TargetPosition = player.transform.position;
+        player.StopAndLookAt(characterPosition);
     }
 }

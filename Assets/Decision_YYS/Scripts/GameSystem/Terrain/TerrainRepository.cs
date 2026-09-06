@@ -125,7 +125,7 @@ public sealed class TerrainRepository
                 return false;
             }
 
-            string slotKey = $"{place.chunkIndex}:{transformData.side}:{transformData.z}";
+            string slotKey = $"{place.chunkIndex}:{slotPosition.x:F3}:{slotPosition.z:F3}";
             if (!occupiedSlots.Add(slotKey))
             {
                 errorMessage = $"같은 청크의 배치 슬롯이 중복되었습니다: {slotKey}";
@@ -138,6 +138,7 @@ public sealed class TerrainRepository
                 chunkIndex = place.chunkIndex,
                 prefabId = place.prefabId,
                 destination = place.destination,
+                characterId = place.characterId,
                 position = slotPosition,
                 rotation = transformData.rotation
             };
@@ -181,7 +182,7 @@ public sealed class TerrainRepository
         if (!isValidZ) return false;
 
         // JSON은 배치 슬롯만 선택하고, 실제 청크 로컬 좌표는 이곳에서 일관되게 계산합니다.
-        position = new Vector3(x, transformData.y, transformData.z);
+        position = new Vector3(x, transformData.y, transformData.z) + transformData.offset;
         return true;
     }
 

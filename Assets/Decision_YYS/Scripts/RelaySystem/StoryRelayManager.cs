@@ -20,7 +20,7 @@ public class StoryRelayManager : MonoBehaviour
         StoryRelayTrigger trigger,
         string currentFileName,
         List<Dialogue> history,
-        List<ChoiceSelectionRecord> selectedChoices,
+        List<BettingDecisionRecord> bettingDecisions,
         int[] stats,
         int chapter,
         int sourceRun,
@@ -50,13 +50,13 @@ public class StoryRelayManager : MonoBehaviour
             return;
         }
         
-        List<ChoiceSelectionRecord> choiceSnapshot = selectedChoices != null
-            ? new List<ChoiceSelectionRecord>(selectedChoices)
-            : new List<ChoiceSelectionRecord>();
+        List<BettingDecisionRecord> decisionSnapshot = bettingDecisions != null
+            ? new List<BettingDecisionRecord>(bettingDecisions)
+            : new List<BettingDecisionRecord>();
         int[] statsSnapshot = stats != null ? (int[])stats.Clone() : new int[0];
         StoryInfluenceProfile influence = fixedInfluence ??
             CreateInfluenceProfile(statsSnapshot, chapter, sourceRun);
-        string summary = BuildSummary(filtered, choiceSnapshot);
+        string summary = BuildSummary(filtered, decisionSnapshot);
         string atmosphere = DetermineAtmosphere(influence.intensity);
 
         string template = trigger == StoryRelayTrigger.EpisodeEnd
@@ -86,11 +86,14 @@ public class StoryRelayManager : MonoBehaviour
         int sourceRun)
     {
         int[] safeScores = new int[Mathf.Max(4, stats?.Length ?? 0)];
-        int total = 0;
+        int total = 0; //불필요 추후 변경.
+        int changeMagnitude = 0;
         for (int i = 0; i < safeScores.Length; i++)
         {
-            safeScores[i] = stats != null && i < stats.Length ? Mathf.Max(0, stats[i]) : 0;
+            // 음수 가중치로 내려간 능력치도 약점 강도에 그대로 반영합니다.
+            safeScores[i] = stats != null && i < stats.Length ? stats[i] : 0;
             total += safeScores[i];
+            changeMagnitude += Mathf.Abs(safeScores[i] - promptData.neutralStatValue);
         }
 
         List<int> ranking = new List<int>();
@@ -114,9 +117,9 @@ public class StoryRelayManager : MonoBehaviour
 
         int moderateMinimum = Mathf.Max(0, promptData.moderateChangeMinStat);
         int strongMinimum = Mathf.Max(moderateMinimum + 1, promptData.strongChangeMinStat);
-        StoryChangeIntensity intensity = total >= strongMinimum
+        StoryChangeIntensity intensity = changeMagnitude >= strongMinimum
             ? StoryChangeIntensity.Strong
-            : total >= moderateMinimum
+            : changeMagnitude >= moderateMinimum
                 ? StoryChangeIntensity.Moderate
                 : StoryChangeIntensity.Subtle;
 
@@ -133,6 +136,7 @@ public class StoryRelayManager : MonoBehaviour
             minorWeaknessName = GetStatName(chapter, minorWeaknessIndex),
             minorWeaknessValue = safeScores[minorWeaknessIndex],
             totalStatValue = total,
+            changeMagnitude = changeMagnitude,
             randomSeed = randomSeed
         };
     }
@@ -168,27 +172,28 @@ public class StoryRelayManager : MonoBehaviour
 
     private string BuildSummary(
         List<Dialogue> dialogs,
-        List<ChoiceSelectionRecord> selectedChoices)
+        List<BettingDecisionRecord> bettingDecisions)
     {
         if (dialogs == null || dialogs.Count == 0) return "(기록 없음)";
 
-        Dictionary<int, ChoiceSelectionRecord> choicesByDialogueId =
-            new Dictionary<int, ChoiceSelectionRecord>();
-        foreach (ChoiceSelectionRecord choice in selectedChoices)
+        Dictionary<int, BettingDecisionRecord> decisionsByDialogueId =
+            new Dictionary<int, BettingDecisionRecord>();
+        foreach (BettingDecisionRecord decision in bettingDecisions)
         {
-            if (choice != null)
-                choicesByDialogueId[choice.dialogueId] = choice;
+            if (decision != null)
+                decisionsByDialogueId[decision.dialogueId] = decision;
         }
         
         StringBuilder sb = new StringBuilder();
         foreach (var d in dialogs)
         {
             sb.AppendLine($"- [ID: {d.id}] [{d.character}] {d.text}");
-            if (choicesByDialogueId.TryGetValue(d.id, out ChoiceSelectionRecord choice))
+            if (decisionsByDialogueId.TryGetValue(d.id, out BettingDecisionRecord decision))
             {
                 sb.AppendLine(
-                    $"  선택 결과: {choice.optionText} " +
-                    $"(항목 {choice.optionIndex}, 수치 +{choice.statChange})");
+                    $"  코인 분포: [{string.Join(", ", decision.coinCounts ?? new int[0])}]\n" +
+                    $"  상황 가중치: [{string.Join(", ", decision.statWeights ?? new int[0])}]\n" +
+                    $"  실제 변화량: [{string.Join(", ", decision.statChanges ?? new int[0])}]");
             }
         }
         return sb.ToString();
@@ -210,12 +215,13 @@ public class StoryRelayManager : MonoBehaviour
             $"\n\n[플레이 결과]\n" +
             $"전체 수치: [{string.Join(", ", stats)}]\n" +
             $"전체 합계: {influence.totalStatValue}\n" +
+            $"중립값 대비 변화량: {influence.changeMagnitude}\n" +
             $"주요 약점: {influence.majorWeaknessName} ({influence.majorWeaknessValue})\n" +
             $"보조 약점: {influence.minorWeaknessName} ({influence.minorWeaknessValue})\n" +
             $"변경 강도: {influence.intensity}\n" +
             $"변경 지침: {instruction}\n" +
             "주요 약점은 갈등과 실수에 강하게, 보조 약점은 불안 요소에 약하게 반영하세요.\n" +
-            "id와 이야기 순서, 선택지, destination, character, type은 변경하지 마세요.\n" +
+            "id와 이야기 순서, destination, character, type은 변경하지 마세요.\n" +
             "원문에서 { }로 감싼 문자열은 괄호를 포함해 한 글자도 변경하지 마세요.";
     }
 

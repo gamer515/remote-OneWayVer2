@@ -4,10 +4,12 @@ using UnityEngine;
 public class PromptData : ScriptableObject
 {
     [Header("Story Change Intensity")]
-    [Tooltip("네 특성의 합계가 이 값 이상이면 Moderate입니다.")]
-    [Min(0)] public int moderateChangeMinStat = 10;
-    [Tooltip("네 특성의 합계가 이 값 이상이면 Strong입니다.")]
-    [Min(0)] public int strongChangeMinStat = 20;
+    [Tooltip("각 능력치가 시작하는 중립값입니다.")]
+    public int neutralStatValue = 5;
+    [Tooltip("중립값에서 벗어난 변화량 합계가 이 값 이상이면 Moderate입니다.")]
+    [Min(0)] public int moderateChangeMinStat = 4;
+    [Tooltip("중립값에서 벗어난 변화량 합계가 이 값 이상이면 Strong입니다.")]
+    [Min(0)] public int strongChangeMinStat = 8;
 
     [TextArea(2, 5)]
     public string subtleChangeInstruction =
@@ -50,5 +52,5 @@ public class PromptData : ScriptableObject
     [Header("Response Guidelines")]
     [TextArea(5, 10)]
     [Tooltip("AI에게 전달할 반환 형식 및 괄호 처리 지침")]
-    public string responseFormatTemplateV2 = "1. 모든 대사의 text는 새롭게 표현할 수 있습니다.\n2. 단, 원본 text의 { }와 그 내부 문자열은 핵심 설정이므로 순서와 내용을 한 글자도 변경하지 마세요.\n3. id, 이야기 순서, 선택지, destination, character, type은 변경하지 마세요.\n4. 응답은 반드시 아래 JSON 배열만 출력하세요.\n[ { \"id\": ID값, \"text\": \"{핵심 문자열}을 그대로 보존한 수정 문장\" } ]";
+    public string responseFormatTemplateV2 = "1. 모든 대사의 text는 새롭게 표현할 수 있습니다.\n2. 단, 원본 text의 { }와 그 내부 문자열은 핵심 설정이므로 순서와 내용을 한 글자도 변경하지 마세요.\n3. id, 이야기 순서, destination, character, type은 변경하지 마세요.\n4. 응답은 반드시 아래 JSON 배열만 출력하세요.\n[ { \"id\": ID값, \"text\": \"{핵심 문자열}을 그대로 보존한 수정 문장\" } ]";
 }

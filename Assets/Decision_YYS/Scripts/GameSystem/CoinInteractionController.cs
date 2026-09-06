@@ -206,6 +206,11 @@ public sealed class CoinInteractionController : MonoBehaviour
 
         for (int i = 0; i < hitCount; i++)
         {
+            // 코인이 밖으로 튀는 것을 막는 경계 벽은 충돌에는 사용하지만,
+            // 코인을 들어 올릴 표면 높이로는 사용하지 않습니다.
+            if (IsCoinBoundary(surfaceHits[i].collider))
+                continue;
+
             // 잡고 있는 코인 자체를 표면으로 인식하면 계속 위로 상승하므로 제외합니다.
             BettingCoin hitCoin = surfaceHits[i].collider.GetComponentInParent<BettingCoin>();
             if (hitCoin == grabbedCoin)
@@ -214,6 +219,26 @@ public sealed class CoinInteractionController : MonoBehaviour
             if (surfaceHits[i].point.y > highestSurface)
                 highestSurface = surfaceHits[i].point.y;
         }
+    }
+
+    private static bool IsCoinBoundary(Collider collider)
+    {
+        if (collider == null)
+            return false;
+
+        Transform current = collider.transform;
+        while (current != null)
+        {
+            if (current.name == "Coin_Collider_Boundary" ||
+                current.name.StartsWith("Coin_Boundary_", System.StringComparison.Ordinal))
+            {
+                return true;
+            }
+
+            current = current.parent;
+        }
+
+        return false;
     }
 
     private static float GetCoinHalfHeight(BettingCoin coin)

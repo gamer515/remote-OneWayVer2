@@ -11,6 +11,7 @@ public class EnvController : MonoBehaviour
     {
         public TerrainData Data;
         public TerrainPlaceRegistry Registry;
+        public float EndZ;
     }
 
     [FormerlySerializedAs("terrain")]
@@ -23,6 +24,7 @@ public class EnvController : MonoBehaviour
     public TerrainData TerrainData { get; private set; }
     public TerrainPlaceRegistry PlaceRegistry { get; private set; }
     public float ChunkSize => chunkSize;
+    public float CurrentTerrainEndZ { get; private set; }
     public Vector3 TerrainOrigin => environment != null ? environment.transform.position : Vector3.zero;
 
     private TerrainRepository terrainRepository = new TerrainRepository();
@@ -69,6 +71,7 @@ public class EnvController : MonoBehaviour
         {
             TerrainData = registered.Data;
             PlaceRegistry = registered.Registry;
+            CurrentTerrainEndZ = registered.EndZ;
             return true;
         }
 
@@ -89,15 +92,18 @@ public class EnvController : MonoBehaviour
         terrainBuilder.RegisterTerrain(terrainData, registry, groundPrefab,
             terrainPrefabCatalog, environment.transform, nextGlobalChunkIndex, chunkCount);
 
+        float segmentEndZ = segmentOrigin.z + chunkCount * chunkSize;
         registeredTerrains.Add(terrainPath, new RegisteredTerrain
         {
             Data = terrainData,
-            Registry = registry
+            Registry = registry,
+            EndZ = segmentEndZ
         });
 
         nextGlobalChunkIndex += chunkCount;
         TerrainData = terrainData;
         PlaceRegistry = registry;
+        CurrentTerrainEndZ = segmentEndZ;
         return true;
     }
 
@@ -178,7 +184,12 @@ public sealed class TerrainPrefabEntry
 [System.Serializable]
 public sealed class TerrainPrefabCatalog
 {
-    [SerializeField] private TerrainPrefabEntry[] entries;
+    [Header("Buildings")]
+    [FormerlySerializedAs("entries")]
+    [SerializeField] private TerrainPrefabEntry[] buildingEntries;
+
+    [Header("Characters")]
+    [SerializeField] private TerrainPrefabEntry[] characterEntries;
 
     private Dictionary<string, GameObject> prefabsById;
 
@@ -195,27 +206,18 @@ public sealed class TerrainPrefabCatalog
         prefabsById = null;
         BuildLookupIfNeeded();
 
-        if (entries == null || entries.Length == 0)
+        int entryCount = GetEntryCount(buildingEntries) + GetEntryCount(characterEntries);
+        if (entryCount == 0)
         {
             errorMessage = "지형 프리팹 카탈로그가 비어 있습니다.";
             return false;
         }
 
         HashSet<string> ids = new HashSet<string>(System.StringComparer.Ordinal);
-        foreach (TerrainPrefabEntry entry in entries)
-        {
-            if (entry == null || string.IsNullOrWhiteSpace(entry.prefabId) || entry.prefab == null)
-            {
-                errorMessage = "지형 프리팹 카탈로그에 ID 또는 프리팹이 비어 있는 항목이 있습니다.";
-                return false;
-            }
-
-            if (!ids.Add(entry.prefabId))
-            {
-                errorMessage = $"지형 프리팹 ID가 중복되었습니다: {entry.prefabId}";
-                return false;
-            }
-        }
+        if (!TryValidateEntries(buildingEntries, "건물", ids, out errorMessage))
+            return false;
+        if (!TryValidateEntries(characterEntries, "인물", ids, out errorMessage))
+            return false;
 
         errorMessage = null;
         return true;
@@ -226,6 +228,12 @@ public sealed class TerrainPrefabCatalog
         if (prefabsById != null) return;
 
         prefabsById = new Dictionary<string, GameObject>(System.StringComparer.Ordinal);
+        AddEntriesToLookup(buildingEntries);
+        AddEntriesToLookup(characterEntries);
+    }
+
+    private void AddEntriesToLookup(TerrainPrefabEntry[] entries)
+    {
         if (entries == null) return;
 
         foreach (TerrainPrefabEntry entry in entries)
@@ -233,5 +241,41 @@ public sealed class TerrainPrefabCatalog
             if (entry == null || string.IsNullOrWhiteSpace(entry.prefabId)) continue;
             prefabsById[entry.prefabId] = entry.prefab;
         }
+    }
+
+    private static bool TryValidateEntries(
+        TerrainPrefabEntry[] entries,
+        string categoryName,
+        HashSet<string> ids,
+        out string errorMessage)
+    {
+        if (entries == null)
+        {
+            errorMessage = null;
+            return true;
+        }
+
+        foreach (TerrainPrefabEntry entry in entries)
+        {
+            if (entry == null || string.IsNullOrWhiteSpace(entry.prefabId) || entry.prefab == null)
+            {
+                errorMessage = $"{categoryName} 프리팹 목록에 ID 또는 프리팹이 비어 있습니다.";
+                return false;
+            }
+
+            if (!ids.Add(entry.prefabId))
+            {
+                errorMessage = $"건물/인물 프리팹 ID가 중복되었습니다: {entry.prefabId}";
+                return false;
+            }
+        }
+
+        errorMessage = null;
+        return true;
+    }
+
+    private static int GetEntryCount(TerrainPrefabEntry[] entries)
+    {
+        return entries?.Length ?? 0;
     }
 }

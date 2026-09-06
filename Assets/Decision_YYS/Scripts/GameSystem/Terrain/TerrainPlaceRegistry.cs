@@ -9,6 +9,8 @@ public sealed class TerrainPlaceRegistry
 {
     private readonly Dictionary<string, PlaceData> places =
         new Dictionary<string, PlaceData>(StringComparer.Ordinal);
+    private readonly Dictionary<string, PlaceData> characters =
+        new Dictionary<string, PlaceData>(StringComparer.OrdinalIgnoreCase);
 
     private readonly Vector3 terrainOrigin;
     private readonly float chunkSize;
@@ -25,7 +27,20 @@ public sealed class TerrainPlaceRegistry
         {
             if (!string.IsNullOrEmpty(place.destination))
                 places[place.destination] = place;
+            if (!string.IsNullOrEmpty(place.characterId))
+                characters[place.characterId] = place;
         }
+    }
+
+    public bool TryGetCharacter(string characterId, out PlaceData place)
+    {
+        if (string.IsNullOrWhiteSpace(characterId))
+        {
+            place = null;
+            return false;
+        }
+
+        return characters.TryGetValue(characterId, out place);
     }
 
     public bool TryGetPlace(string destination, out PlaceData place)

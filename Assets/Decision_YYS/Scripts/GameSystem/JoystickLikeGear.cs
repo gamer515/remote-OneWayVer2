@@ -190,6 +190,17 @@ public class JoystickLikeGear : MonoBehaviour
         OnCoinTypeChanged?.Invoke(SelectedCoinIndex);
     }
 
+    /// <summary>
+    /// 베팅 확정 후 기어를 중앙으로 되돌리고 얼굴 입력도 중립으로 전환합니다.
+    /// </summary>
+    public void ResetToNeutral()
+    {
+        isDragging = false;
+        currentVelocity = Vector2.zero;
+        SetNeutral();
+        faceController?.SetGearRatio(0f, 0f);
+    }
+
     private void ResolveHandleCollider()
     {
         if (gearHandleCollider != null)

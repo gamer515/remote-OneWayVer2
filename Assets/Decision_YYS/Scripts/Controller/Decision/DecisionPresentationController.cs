@@ -6,8 +6,6 @@ using static Constants;
 /// </summary>
 public sealed class DecisionPresentationController
 {
-    private const string ChoicePrompt = "선택지를 선택하세요.";
-
     private readonly UiController uiController;
     private readonly GameObject playerViewUI;
 
@@ -32,28 +30,9 @@ public sealed class DecisionPresentationController
         uiController.ChangeBackground(dialogue.background);
     }
 
-    public void EnterChoice(string optionText = null)
-    {
-        if (uiController == null)
-            return;
-
-        uiController.ActiveOptionTextUi(true);
-        ShowOption(string.IsNullOrEmpty(optionText) ? ChoicePrompt : optionText);
-    }
-
     public void ExitChoice()
     {
         uiController?.ActiveOptionTextUi(false);
-    }
-
-    public void ShowOption(string optionText)
-    {
-        if (uiController == null)
-            return;
-
-        uiController.ChangeUiText(
-            TextTarget.Option,
-            text: string.IsNullOrEmpty(optionText) ? ChoicePrompt : optionText);
     }
 
     public void PlayStoryTransition(Dialogue dialogue, System.Action onCompleted)

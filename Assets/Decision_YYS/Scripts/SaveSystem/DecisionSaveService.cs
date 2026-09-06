@@ -53,6 +53,11 @@ public sealed class DecisionSaveService
         saveManager.ClearPlayerPosition();
     }
 
+    public void SaveRemainingCoins(int[] remainingCoins)
+    {
+        saveManager.SaveRemainingCoins(remainingCoins);
+    }
+
     public void SaveInfluenceProfile(StoryInfluenceProfile profile)
     {
         saveManager.RecordInfluenceProfile(profile);

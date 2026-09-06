@@ -78,6 +78,23 @@ public class SaveManager
         cachedProgress.currentPosition = null;
     }
 
+    public int[] LoadRemainingCoins()
+    {
+        if (cachedProgress.remainingCoins == null || cachedProgress.remainingCoins.Length != 4)
+            cachedProgress.remainingCoins = new[] { 5, 5, 5, 5 };
+
+        return (int[])cachedProgress.remainingCoins.Clone();
+    }
+
+    public void SaveRemainingCoins(int[] remainingCoins)
+    {
+        if (remainingCoins == null || remainingCoins.Length != 4)
+            return;
+
+        cachedProgress.remainingCoins = (int[])remainingCoins.Clone();
+        SaveIOService.Instance.SaveRunData(CurrentRun, "Progress", cachedProgress);
+    }
+
     public void RecordInfluenceProfile(StoryInfluenceProfile profile)
     {
         if (profile == null)

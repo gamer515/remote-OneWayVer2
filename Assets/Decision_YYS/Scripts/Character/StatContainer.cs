@@ -27,10 +27,16 @@ public class StatContainer : MonoBehaviour
 
     [Header("Stats Configuration")]
     [SerializeField] private List<StatEntry> statEntries = new List<StatEntry>();
+    [Tooltip("새 게임과 새 에피소드에서 시작할 네 능력치의 기본값입니다.")]
+    [SerializeField] private int episodeStartValue = 5;
 
     [Header("Transition Settings")]
     [SerializeField] private int targetStatThreshold = 10;
     public event Action OnTargetStatReached;
+
+    [Header("UI Display Settings")]
+    [Tooltip("실제 수치는 제한하지 않고, 이 값을 넘으면 UI에 최대값+로 표시합니다.")]
+    [SerializeField, Min(1)] private int displayStatMaximum = 10;
 
     private string[] initialStatNames;
 
@@ -82,6 +88,30 @@ public class StatContainer : MonoBehaviour
     }
 
     /// <summary>
+    /// 한 번의 선택에서 계산된 네 능력치 변화를 모두 적용합니다.
+    /// 음수 변화와 UI 표시 상한을 넘는 실제 값도 그대로 보존합니다.
+    /// </summary>
+    public void AddStats(int[] changes)
+    {
+        if (changes == null)
+            return;
+
+        int count = Mathf.Min(changes.Length, statEntries.Count);
+        bool reachedThreshold = false;
+        for (int i = 0; i < count; i++)
+        {
+            bool wasBelowThreshold = statEntries[i].value < targetStatThreshold;
+            statEntries[i].value += changes[i];
+            UpdateStatUI(i);
+            reachedThreshold |=
+                wasBelowThreshold && statEntries[i].value >= targetStatThreshold;
+        }
+
+        if (reachedThreshold)
+            OnTargetStatReached?.Invoke();
+    }
+
+    /// <summary>
     /// 모든 스탯을 새로운 배열 값으로 설정하고 UI를 갱신합니다. (로드 시 사용)
     /// </summary>
     public void SetStats(int[] newStats)
@@ -129,13 +159,13 @@ public class StatContainer : MonoBehaviour
     }
 
     /// <summary>
-    /// 모든 스탯을 0으로 초기화하고 UI를 갱신합니다.
+    /// 모든 스탯을 에피소드 시작값으로 초기화하고 UI를 갱신합니다.
     /// </summary>
-    public void ResetAllStats()
+    public void ResetForEpisode()
     {
         foreach (var entry in statEntries)
         {
-            entry.value = 0;
+            entry.value = episodeStartValue;
         }
         RefreshAllUI();
     }
@@ -149,7 +179,12 @@ public class StatContainer : MonoBehaviour
         {
             var entry = statEntries[index];
             if (entry.nameText != null) entry.nameText.text = entry.statName;
-            if (entry.valueText != null) entry.valueText.text = entry.value.ToString();
+            if (entry.valueText != null)
+            {
+                entry.valueText.text = entry.value > displayStatMaximum
+                    ? $"{displayStatMaximum}+"
+                    : entry.value.ToString();
+            }
         }
     }
 

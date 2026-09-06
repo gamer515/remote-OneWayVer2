@@ -2,34 +2,12 @@
   "StoryChoices": [
     {
       "id": 2,
-      "option": [
-        "정면 돌파",
-        "빈틈 노리기",
-        "방어 태세",
-        "도망치기"
-      ],
-      "figure": [
-        10,
-        5,
-        5,
-        0
-      ],
+      "statWeights": [1, 1, 2, 2],
       "npcEmotion": "Stern"
     },
     {
       "id": 4,
-      "option": [
-        "준비됐다",
-        "이미 강하다",
-        "무서워..",
-        "무시한다"
-      ],
-      "figure": [
-        10,
-        10,
-        2,
-        5
-      ],
+      "statWeights": [2, 1, -1, 1],
       "npcEmotion": "Aggressive"
     }
   ]

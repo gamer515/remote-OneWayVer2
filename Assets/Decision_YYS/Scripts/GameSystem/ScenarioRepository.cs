@@ -174,8 +174,7 @@ public sealed class ScenarioRepository
                 destination = content.destination,
                 character = content.character,
                 text = content.text,
-                option = choice?.option,
-                figure = choice?.figure,
+                statWeights = choice?.statWeights,
                 npcEmotion = choice?.npcEmotion
             });
         }
@@ -223,10 +222,9 @@ public static class ScenarioValidator
             if (!dialogue.IsChoice)
                 continue;
 
-            if (dialogue.option == null || dialogue.figure == null ||
-                dialogue.option.Length == 0 || dialogue.option.Length != dialogue.figure.Length)
+            if (dialogue.statWeights == null || dialogue.statWeights.Length != 4)
             {
-                errorMessage = $"MainStory[{i}]의 선택지와 수치 배열이 올바르지 않습니다.";
+                errorMessage = $"MainStory[{i}]의 능력치 가중치는 정확히 4개여야 합니다.";
                 return false;
             }
         }

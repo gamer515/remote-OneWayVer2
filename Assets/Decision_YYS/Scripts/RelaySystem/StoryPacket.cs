@@ -22,16 +22,18 @@ public class StoryInfluenceProfile
     public string minorWeaknessName;
     public int minorWeaknessValue;
     public int totalStatValue;
+    public int changeMagnitude;
     public int randomSeed;
 }
 
 [Serializable]
-public class ChoiceSelectionRecord
+public class BettingDecisionRecord
 {
     public int dialogueId;
-    public int optionIndex;
-    public string optionText;
-    public int statChange;
+    public string dialogueText;
+    public int[] coinCounts;
+    public int[] statWeights;
+    public int[] statChanges;
 }
 
 [Serializable]
@@ -39,7 +41,9 @@ public class CompletedEpisodeRecord
 {
     public string scenarioPath;
     public List<Dialogue> storyHistory = new List<Dialogue>();
-    public List<ChoiceSelectionRecord> selectedChoices = new List<ChoiceSelectionRecord>();
+    public List<BettingDecisionRecord> bettingDecisions = new List<BettingDecisionRecord>();
+    public int[] finalStats;
+    public int[] remainingCoins;
 }
 
 [Serializable]

@@ -15,6 +15,7 @@ public class PlaceData
     public int chunkIndex;
     public string prefabId;
     public string destination;
+    public string characterId;
     public Vector3 position;
     public Vector3 rotation;
 }
@@ -40,6 +41,7 @@ public class TerrainPlaceDefinition
     public int chunkIndex;
     public string prefabId;
     public string destination;
+    public string characterId;
 }
 
 [System.Serializable]
@@ -61,5 +63,6 @@ public class TerrainPlaceTransform
     public string side;
     public float y;
     public int z;
+    public Vector3 offset;
     public Vector3 rotation;
 }

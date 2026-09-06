@@ -69,7 +69,8 @@ public class GameManager : MonoBehaviour
             player,
             playerStats,
             saveManager,
-            savedPlayerPosition);
+            savedPlayerPosition,
+            saveManager.LoadRemainingCoins());
     }
 
     private (int, int, int, PlayerStats) LoadData()
