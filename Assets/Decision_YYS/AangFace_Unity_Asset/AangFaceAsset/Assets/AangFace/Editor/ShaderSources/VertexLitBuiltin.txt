@@ -1,0 +1,34 @@
+Shader "AangFace/VertexLit Builtin"
+{
+    Properties
+    {
+        _Color ("Tint", Color) = (1,1,1,1)
+        _Smoothness ("Smoothness", Range(0,1)) = 0.35
+        _Metallic ("Metallic", Range(0,1)) = 0
+    }
+    SubShader
+    {
+        Tags { "RenderType"="Opaque" }
+        LOD 200
+        CGPROGRAM
+        #pragma surface surf Standard fullforwardshadows
+        #pragma target 3.0
+        struct Input { float4 color : COLOR; };
+        fixed4 _Color;
+        half _Smoothness;
+        half _Metallic;
+        void surf(Input IN, inout SurfaceOutputStandard o)
+        {
+            half3 c = IN.color.rgb;
+            #ifndef UNITY_COLORSPACE_GAMMA
+            c = GammaToLinearSpace(c);
+            #endif
+            o.Albedo = c * _Color.rgb;
+            o.Metallic = _Metallic;
+            o.Smoothness = _Smoothness;
+            o.Alpha = 1;
+        }
+        ENDCG
+    }
+    FallBack "Diffuse"
+}

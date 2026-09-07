@@ -1,0 +1,55 @@
+{
+  "version": 2,
+  "vertices": 67765,
+  "triangles": 130151,
+  "materials": 11,
+  "blendShapes": [
+    "Smile",
+    "Angry",
+    "Sad",
+    "Surprised",
+    "BlinkLeft",
+    "BlinkRight",
+    "JawOpen",
+    "MouthWide",
+    "MouthPucker",
+    "BrowRaise"
+  ],
+  "heightMeters": 0.31265825033187866,
+  "boundsMeters": {
+    "min": [
+      -0.1208086609840393,
+      -0.16380000114440918,
+      -0.09299963712692261
+    ],
+    "max": [
+      0.1208086609840393,
+      0.1488582342863083,
+      0.0962558388710022
+    ]
+  },
+  "improvements": [
+    "Reshaped chin and cranial profile",
+    "Actual eye apertures with spherical eyeballs and covering lids",
+    "Sculpted lips, mouth cavity and individual teeth",
+    "Detailed irises and soft vertex color transitions",
+    "Recessed ear cartilage"
+  ],
+  "limitations": [
+    "Stylized hand-constructed approximation, not exact image reconstruction",
+    "Partial overlapping anatomy; no full production retopology",
+    "Unity Editor execution and C# compilation unavailable"
+  ],
+  "checks": {
+    "finite_vertex_color_normal_and_morph_arrays": "passed",
+    "unit_base_normals_and_color_range": "passed",
+    "topology_identical_for_ten_targets": "passed during generation",
+    "glb_headers_accessors_alignment_and_target_counts": "passed",
+    "glb_positions_normals_indices_colors_and_morphs_match_unity_source": "passed within JSON rounding tolerance",
+    "actual_geometry_render": "neutral, oblique, smile, angry, surprised, eyes closed; additional sad, jaw open, pucker and 50% blink",
+    "offline_viewer_javascript_syntax": "passed; browser execution unavailable",
+    "unitypackage_archive_paths_and_bytes": "passed",
+    "source_python_syntax": "passed",
+    "unity_editor_import_csharp_and_shader_compilation": "not run: Unity unavailable"
+  }
+}
