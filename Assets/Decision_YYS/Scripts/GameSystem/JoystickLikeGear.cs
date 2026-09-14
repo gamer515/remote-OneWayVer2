@@ -8,10 +8,6 @@ using UnityEngine;
 /// </summary>
 public class JoystickLikeGear : MonoBehaviour
 {
-    [Header("UI References")]
-    [SerializeField] private RectTransform joystick_Button;
-    [SerializeField] private RectTransform pivot;
-
     [Header("3D Gear References")]
     [SerializeField] private Transform gear3D;
     [Tooltip("마우스로 눌러야 기어가 움직이는 가장 위쪽 Sphere의 Collider입니다.")]
@@ -45,6 +41,8 @@ public class JoystickLikeGear : MonoBehaviour
     public int SelectedCoinIndex => currentGearSlot - 1;
 
     private Vector2 targetPosition;
+    // UI 기준점 없이 화면 영역에서 계산한 기어 위치를 보간합니다.
+    private Vector2 currentPosition;
     private Vector2 currentVelocity;
     private Quaternion gear3DOriginRot;
     private int currentGearSlot;
@@ -71,7 +69,7 @@ public class JoystickLikeGear : MonoBehaviour
 
     private void Update()
     {
-        if (joystick_Button == null || pivot == null)
+        if (gear3D == null)
             return;
 
         HandleDragInput();
@@ -79,30 +77,30 @@ public class JoystickLikeGear : MonoBehaviour
 
     private void FixedUpdate()
     {
-        if (joystick_Button == null)
+        if (gear3D == null)
             return;
 
-        joystick_Button.anchoredPosition = Vector2.SmoothDamp(
-            joystick_Button.anchoredPosition,
+        currentPosition = Vector2.SmoothDamp(
+            currentPosition,
             targetPosition,
             ref currentVelocity,
             smoothTime);
 
         if (faceController != null)
         {
-            float xRatio = joystick_Button.anchoredPosition.x / horizontalRange;
-            float yRatio = joystick_Button.anchoredPosition.y / verticalRange;
+            float xRatio = currentPosition.x / Mathf.Max(horizontalRange, 0.01f);
+            float yRatio = currentPosition.y / Mathf.Max(verticalRange, 0.01f);
             ApplyFaceExpression(xRatio, yRatio);
         }
     }
 
     private void LateUpdate()
     {
-        if (gear3D == null || joystick_Button == null)
+        if (gear3D == null)
             return;
 
-        float xRatio = joystick_Button.anchoredPosition.x / horizontalRange;
-        float yRatio = joystick_Button.anchoredPosition.y / verticalRange;
+        float xRatio = currentPosition.x / Mathf.Max(horizontalRange, 0.01f);
+        float yRatio = currentPosition.y / Mathf.Max(verticalRange, 0.01f);
         gear3D.localRotation = gear3DOriginRot * Quaternion.Euler(
             yRatio * maxTiltAngle,
             0f,

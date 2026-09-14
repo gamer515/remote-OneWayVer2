@@ -1,4 +1,3 @@
-using UnityEngine;
 using static Constants;
 
 /// <summary>
@@ -7,25 +6,27 @@ using static Constants;
 public sealed class DecisionPresentationController
 {
     private readonly UiController uiController;
-    private readonly GameObject playerViewUI;
 
-    public DecisionPresentationController(UiController uiController, GameObject playerViewUI)
+    public DecisionPresentationController(UiController uiController)
     {
         this.uiController = uiController;
-        this.playerViewUI = playerViewUI;
     }
 
     public void ShowPlayerViewControl()
     {
-        if (playerViewUI != null)
-            playerViewUI.SetActive(true);
+        // 현재 지문 기반 진행은 유지합니다. 이동 시작 연결은 조우 흐름 단계에서 수행합니다.
+        uiController?.ShowEventView();
     }
+
+    // 다음 단계의 이동 시작/이벤트 종료 시 사용할 표현 진입점입니다.
+    public void ShowWalkingView() => uiController?.ShowWalkingView();
 
     public void ShowDialogue(Dialogue dialogue)
     {
         if (uiController == null || dialogue == null)
             return;
 
+        uiController.ShowEventView();
         uiController.ChangeUiText(TextTarget.FrontDialogue, dialogue);
         uiController.ChangeBackground(dialogue.background);
     }

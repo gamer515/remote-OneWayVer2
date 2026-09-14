@@ -26,11 +26,6 @@ public sealed class DestinationController
         BuildStoryTargets(storyIndex, initialTargetZ);
     }
 
-    public void OnStoryAdvanced(int storyIndex)
-    {
-        // 목표 위치는 시나리오 시작 시 지문별로 계산되어 있으므로 다시 검색할 필요가 없습니다.
-    }
-
     public float GetTargetZ(int storyIndex)
     {
         if (targetZByStory == null || targetZByStory.Length == 0)

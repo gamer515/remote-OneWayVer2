@@ -11,6 +11,11 @@ public sealed class DecisionPlayerController
     public bool IsAvailable => player != null;
     public Vector3 CurrentPosition => IsAvailable ? player.transform.position : TargetPosition;
 
+    public bool HasReachedTarget(float tolerance = 0.01f)
+    {
+        return IsAvailable && Mathf.Abs(CurrentPosition.z - TargetPosition.z) <= tolerance;
+    }
+
     public DecisionPlayerController(Player player)
     {
         this.player = player;

@@ -52,7 +52,7 @@ public sealed class DecisionInputController
 
     private void HandlePlayerViewChanged(bool playerViewActive)
     {
-        // 3D 시점에서는 기어를 둘러보기 용도로만 사용하고 스토리 입력은 전달하지 않습니다.
+        // 이동 화면에서는 코인 선택 전달을 막고, 이벤트 화면으로 돌아오면 다시 허용합니다.
         isBlocked = playerViewActive;
     }
 }

@@ -5,15 +5,17 @@ using static Constants;
 
 public class MainStoryUi : ParentUi
 {
+    [Tooltip("대화 배경과 텍스트를 묶은 Event_View. 이동 화면에서는 이 영역만 숨깁니다.")]
+    [SerializeField] private GameObject eventViewRoot;
     [SerializeField] private RectTransform cardFront;
-    [SerializeField] private RectTransform cardBack;
 
     [SerializeField] private TextMeshProUGUI front_Dialogue_Text;
-    [SerializeField] private TextMeshProUGUI back_Dialogue_Text;
     [SerializeField] private TextMeshProUGUI option_Text;
     [SerializeField] private Animator shutterAnimator;
 
     private StoryShutterTransition shutterTransition;
+    private bool isStoryVisible = true;
+    private bool isOptionVisible;
 
     private void Awake()
     {
@@ -24,14 +26,18 @@ public class MainStoryUi : ParentUi
 
     public override void SetActivateUi(bool turn)
     {
-        cardFront.gameObject.SetActive(turn);
-        cardBack.gameObject.SetActive(turn);
+        // 이동 화면에서는 이야기 카드와 선택 안내만 숨깁니다. 부모와 UI 제어기는 유지합니다.
+        isStoryVisible = turn;
+        if (eventViewRoot != null) eventViewRoot.SetActive(turn);
+        if (cardFront != null) cardFront.gameObject.SetActive(turn);
+        if (option_Text != null) option_Text.gameObject.SetActive(turn && isOptionVisible);
     }
 
     public void SetActiveTextUi(bool isActive)
     {
+        isOptionVisible = isActive;
         if (option_Text != null)
-            option_Text.gameObject.SetActive(isActive);
+            option_Text.gameObject.SetActive(isStoryVisible && isActive);
     }
 
     public void WriteText(TextTarget target, string text)
@@ -99,8 +105,6 @@ public class MainStoryUi : ParentUi
         {
             case TextTarget.FrontDialogue:
                 return front_Dialogue_Text;
-            case TextTarget.BackDialogue:
-                return back_Dialogue_Text;
             case TextTarget.Option:
                 return option_Text;
             default:

@@ -20,6 +20,7 @@ public class DecisionManager : MonoBehaviour
     private readonly BettingOutcomeCalculator bettingOutcomeCalculator =
         new BettingOutcomeCalculator();
     private ScenarioRepository scenarioRepository;
+    private Vector3? pendingCharacterPosition;
     private readonly SceneTransitionService sceneTransitionService = new SceneTransitionService();
     private OmnibusData currentOmnibus => session?.Omnibus;
     private int chapterIndex
@@ -48,7 +49,6 @@ public class DecisionManager : MonoBehaviour
     [SerializeField] private UiController uiController;
     [SerializeField] private StoryRelayManager relayManager;
     [SerializeField] private EnvController envController;
-    [SerializeField] private GameObject playerViewUI;
     [SerializeField] private RoadViewCameraController roadViewCameraController;
     [SerializeField] private BettingButtonController bettingButtonController;
     [SerializeField] private CoinDropController coinDropController;
@@ -59,7 +59,7 @@ public class DecisionManager : MonoBehaviour
 
     private void Awake()
     {
-        presentationController = new DecisionPresentationController(uiController, playerViewUI);
+        presentationController = new DecisionPresentationController(uiController);
 
         // 프리팹에 포함된 버튼 입력기를 자동으로 연결하되 Inspector 지정도 허용합니다.
         if (bettingButtonController == null)
@@ -102,6 +102,17 @@ public class DecisionManager : MonoBehaviour
             return;
 
         Initialize();
+    }
+
+    private void Update()
+    {
+        // 이동 명령과 화면 표현은 분리하고, 실제 도착한 프레임에서 이야기 화면을 엽니다.
+        if (currentState == StoryState.MovingToEncounter &&
+            playerController != null &&
+            playerController.HasReachedTarget())
+        {
+            CompleteEncounterArrival();
+        }
     }
 
     private void Initialize()
@@ -333,19 +344,65 @@ public class DecisionManager : MonoBehaviour
             LoadCurrentEpisode();
     }
 
-    private void UpdatePlayerPosition()
+    private void BeginTravelToCurrentStory()
     {
-        if (playerController == null || !playerController.IsAvailable || destinationController == null) return;
-
-        // 현재 지문에 배치된 인물이 있으면 이동을 멈추고 해당 인물을 바라봅니다.
-        if (destinationController.TryGetCharacterPosition(storyIndex, out Vector3 characterPosition))
+        if (playerController == null || !playerController.IsAvailable ||
+            destinationController == null || storyProgressController == null ||
+            !storyProgressController.HasCurrentDialogue)
         {
-            playerController.StopAndLookAt(characterPosition);
             return;
         }
 
+        currentState = StoryState.MovingToEncounter;
+        pendingCharacterPosition = null;
+        bettingButtonController?.SetYellowInteractable(false);
+        bettingButtonController?.SetBettingInteractable(false);
+        presentationController.ShowWalkingView();
+
         float targetZ = destinationController.GetTargetZ(storyIndex);
-        playerController.MoveToZ(targetZ);
+
+        // 인물 지문은 해당 NPC의 Z 위치까지 이동합니다. 이미 지나온 NPC라면 역주행하지 않습니다.
+        if (destinationController.TryGetCharacterPosition(storyIndex, out Vector3 characterPosition))
+        {
+            pendingCharacterPosition = characterPosition;
+            targetZ = characterPosition.z;
+        }
+
+        playerController.MoveToZ(Mathf.Max(playerController.CurrentPosition.z, targetZ));
+
+        // 다음 지문 인덱스와 도착 좌표를 한 체크포인트로 저장합니다.
+        // 이동 도중 종료해도 이미 적용된 베팅 결과를 같은 지문에서 다시 계산하지 않습니다.
+        saveService.SaveProgress(session, playerController.TargetPosition);
+    }
+
+    private void CompleteEncounterArrival()
+    {
+        if (currentState != StoryState.MovingToEncounter ||
+            storyProgressController == null || !storyProgressController.HasCurrentDialogue)
+        {
+            return;
+        }
+
+        if (pendingCharacterPosition.HasValue)
+            playerController.StopAndLookAt(pendingCharacterPosition.Value);
+
+        pendingCharacterPosition = null;
+        Dialogue arrivedStory = storyProgressController.Current;
+
+        // 전환 지문은 도착한 뒤 셔터를 재생하고, 일반 지문은 곧바로 이벤트 화면을 표시합니다.
+        if (arrivedStory.isTransition)
+        {
+            currentState = StoryState.Transitioning;
+            RecordPlayedStory(arrivedStory);
+            presentationController.PlayStoryTransition(
+                arrivedStory,
+                HandleStoryTransitionCompleted);
+        }
+        else
+        {
+            PresentCurrentStory();
+        }
+
     }
 
     private void PresentCurrentStory()
@@ -368,7 +425,6 @@ public class DecisionManager : MonoBehaviour
             bettingButtonController?.SetBettingInteractable(false);
         }
 
-        UpdatePlayerPosition();
     }
 
     private void RecordPlayedStory(Dialogue dialogue)
@@ -464,25 +520,7 @@ public class DecisionManager : MonoBehaviour
         StoryAdvanceResult result = storyProgressController.Advance();
         if (result == StoryAdvanceResult.NextDialogue)
         {
-            destinationController.OnStoryAdvanced(storyIndex);
-
-            var nextStory = storyProgressController.Current;
-
-            if (nextStory.isTransition)
-            {
-                currentState = StoryState.Transitioning;
-                RecordPlayedStory(nextStory);
-                UpdatePlayerPosition();
-                presentationController.PlayStoryTransition(
-                    nextStory,
-                    HandleStoryTransitionCompleted);
-            }
-            else
-            {
-                PresentCurrentStory();
-            }
-
-            saveService.SaveProgress(session, playerController.TargetPosition);
+            BeginTravelToCurrentStory();
         }
         else if (result == StoryAdvanceResult.EpisodeCompleted)
         {
