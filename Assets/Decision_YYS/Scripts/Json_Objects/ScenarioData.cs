@@ -32,6 +32,7 @@ public class StoryContent
     public string background;
     public string destination;
     public string character;
+    public string eventId;
     public string text;
 }
 
@@ -46,6 +47,8 @@ public class StoryChoiceData
 public class StoryChoice
 {
     public int id;
+    // 기어의 좌상·좌하·우상·우하 네 방향에 표시할 카드 선택 문구입니다.
+    public string[] options;
     // 배치한 네 종류의 코인 개수에 곱할 지문별 가중치입니다.
     public int[] statWeights;
     public string npcEmotion;
@@ -62,9 +65,11 @@ public class Dialogue
     public string background; // 제거 or 수정
     public string destination;
     public string character; // 제거 or 수정
+    public string eventId;
     public string text;
     public string npcEmotion;
     public int[] statWeights;
+    public string[] options;
 
     public DialogueType Type
     {

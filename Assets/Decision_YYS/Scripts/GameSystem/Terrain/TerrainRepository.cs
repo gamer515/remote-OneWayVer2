@@ -139,6 +139,7 @@ public sealed class TerrainRepository
                 prefabId = place.prefabId,
                 destination = place.destination,
                 characterId = place.characterId,
+                connectStoryCards = place.connectStoryCards,
                 position = slotPosition,
                 rotation = transformData.rotation
             };

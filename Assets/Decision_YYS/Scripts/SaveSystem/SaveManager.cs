@@ -78,6 +78,26 @@ public class SaveManager
         cachedProgress.currentPosition = null;
     }
 
+    public void SaveEncounterProgress(
+        int chapterIndex,
+        int episodeIndex,
+        Vector3 playerPosition,
+        string phase,
+        string activePlaceId,
+        int activeCardIndex,
+        System.Collections.Generic.IEnumerable<string> resolvedPlaceIds)
+    {
+        // 실제 플레이어 좌표와 배치물 진행도를 한 번에 기록합니다.
+        cachedProgress.chapterIndex = chapterIndex;
+        cachedProgress.episodeIndex = episodeIndex;
+        cachedProgress.currentPosition = new[] { playerPosition.x, playerPosition.y, playerPosition.z };
+        cachedProgress.interactionPhase = phase;
+        cachedProgress.activePlaceId = activePlaceId;
+        cachedProgress.activeCardIndex = activeCardIndex;
+        cachedProgress.resolvedPlaceIds = new System.Collections.Generic.List<string>(resolvedPlaceIds);
+        SaveIOService.Instance.SaveRunData(CurrentRun, "Progress", cachedProgress);
+    }
+
     public int[] LoadRemainingCoins()
     {
         if (cachedProgress.remainingCoins == null || cachedProgress.remainingCoins.Length != 4)

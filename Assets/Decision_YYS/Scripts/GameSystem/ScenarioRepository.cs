@@ -173,8 +173,10 @@ public sealed class ScenarioRepository
                 background = content.background,
                 destination = content.destination,
                 character = content.character,
+                eventId = content.eventId,
                 text = content.text,
                 statWeights = choice?.statWeights,
+                options = choice?.options,
                 npcEmotion = choice?.npcEmotion
             });
         }

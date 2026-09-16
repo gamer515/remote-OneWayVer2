@@ -7,7 +7,7 @@ using static Constants;
 /// DecisionScene의 입력, 스토리, 이동, 저장 및 전환 흐름을 조율합니다.
 /// 세부 계산과 Unity 표현은 각 전용 컨트롤러에 위임합니다.
 /// </summary>
-public class DecisionManager : MonoBehaviour
+public partial class DecisionManager : MonoBehaviour
 {
     private StoryState currentState;
 
@@ -20,6 +20,7 @@ public class DecisionManager : MonoBehaviour
     private readonly BettingOutcomeCalculator bettingOutcomeCalculator =
         new BettingOutcomeCalculator();
     private ScenarioRepository scenarioRepository;
+    private GameProgress loadedProgress;
     private Vector3? pendingCharacterPosition;
     private readonly SceneTransitionService sceneTransitionService = new SceneTransitionService();
     private OmnibusData currentOmnibus => session?.Omnibus;
@@ -76,7 +77,11 @@ public class DecisionManager : MonoBehaviour
         }
 
         if (bettingButtonController != null)
+        {
             bettingButtonController.YellowPressed += HandleScreenClicked;
+        }
+        if (gearController != null)
+            gearController.OnCoinTypeChanged += HandleEncounterGearSelection;
         if (coinDropController != null)
             coinDropController.BettingCompleted += HandleBettingCompleted;
 
@@ -90,7 +95,11 @@ public class DecisionManager : MonoBehaviour
         }
 
         if (bettingButtonController != null)
+        {
             bettingButtonController.YellowPressed -= HandleScreenClicked;
+        }
+        if (gearController != null)
+            gearController.OnCoinTypeChanged -= HandleEncounterGearSelection;
         if (coinDropController != null)
             coinDropController.BettingCompleted -= HandleBettingCompleted;
 
@@ -107,7 +116,14 @@ public class DecisionManager : MonoBehaviour
     private void Update()
     {
         // 이동 명령과 화면 표현은 분리하고, 실제 도착한 프레임에서 이야기 화면을 엽니다.
-        if (currentState == StoryState.MovingToEncounter &&
+        if (encounterFlow != null && currentState == StoryState.MovingToEncounter &&
+            playerController != null && playerController.HasReachedTarget())
+        {
+            CompleteWalkStep();
+            return;
+        }
+
+        if (encounterFlow == null && currentState == StoryState.MovingToEncounter &&
             playerController != null &&
             playerController.HasReachedTarget())
         {
@@ -134,6 +150,7 @@ public class DecisionManager : MonoBehaviour
         }
 
         session = startData.Session;
+        loadedProgress = startData.SaveManager.LoadProgress();
         scenarioRepository = new ScenarioRepository(session.RunNumber);
         envController.SetContentRun(session.RunNumber);
         playerController = new DecisionPlayerController(startData.Player);
@@ -173,7 +190,6 @@ public class DecisionManager : MonoBehaviour
             statContainer.ResetForEpisode();
 
         LoadCurrentEpisode();
-        presentationController.ShowPlayerViewControl();
     }
 
     private bool ValidateDependencies()
@@ -294,6 +310,14 @@ public class DecisionManager : MonoBehaviour
             playerController.TargetPosition.z,
             envController.CurrentTerrainEndZ);
 
+        if (ShouldUseEncounterFlow())
+        {
+            currentScenarioPath = mainStory.chapterId + "/" + mainStory.episodeIds[episodeIndex];
+            StartEncounterEpisode();
+            return;
+        }
+
+        encounterFlow = null;
         ScenarioLoadResult loadResult = scenarioRepository.Load(
             mainStory.chapterId,
             mainStory.episodeIds[episodeIndex]);
@@ -447,6 +471,12 @@ public class DecisionManager : MonoBehaviour
 
     private void HandleScreenClicked()
     {
+        if (encounterFlow != null)
+        {
+            HandleEncounterYellowPressed();
+            return;
+        }
+
         if (currentState == StoryState.Transitioning || storyProgressController == null) return;
         if (!storyProgressController.HasCurrentDialogue) return;
 
@@ -524,14 +554,7 @@ public class DecisionManager : MonoBehaviour
         }
         else if (result == StoryAdvanceResult.EpisodeCompleted)
         {
-            RelayCompletedEpisode();
-            ResetEpisodeResources();
-            saveService.SaveCheckpoint(
-                session,
-                statContainer.stats,
-                playerController.TargetPosition);
-            saveService.SaveRemainingCoins(coinDropController.RemainingCoins);
-            LoadCurrentEpisode();
+            FinishCurrentEpisode();
         }
         else
         {
@@ -556,6 +579,15 @@ public class DecisionManager : MonoBehaviour
         // 최종 성향은 챕터 종료 시 확정하며, 여기서는 에피소드별 작은 기록만 보관합니다.
         session.PlayedHistory.Clear();
         session.BettingDecisions.Clear();
+    }
+
+    private void FinishCurrentEpisode()
+    {
+        RelayCompletedEpisode();
+        ResetEpisodeResources();
+        saveService.SaveCheckpoint(session, statContainer.stats, playerController.CurrentPosition);
+        saveService.SaveRemainingCoins(coinDropController.RemainingCoins);
+        LoadCurrentEpisode();
     }
 
     private void ResetEpisodeResources()

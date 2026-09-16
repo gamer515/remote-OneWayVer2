@@ -21,6 +21,27 @@ public sealed class DecisionPresentationController
     // 다음 단계의 이동 시작/이벤트 종료 시 사용할 표현 진입점입니다.
     public void ShowWalkingView() => uiController?.ShowWalkingView();
 
+    public void ShowEncounterPrompt(string prompt, string[] options, int selectedIndex)
+    {
+        if (uiController == null) return;
+        uiController.ShowEventView();
+        uiController.ChangeUiText(
+            TextTarget.FrontDialogue,
+            text: prompt);
+        ShowOptions(options, selectedIndex);
+    }
+
+    public void ShowOptions(string[] options, int selectedIndex)
+    {
+        if (uiController == null || options == null || options.Length != 4) return;
+        string[] directions = { "좌상", "좌하", "우상", "우하" };
+        string[] lines = new string[4];
+        for (int i = 0; i < 4; i++)
+            lines[i] = $"{(selectedIndex == i ? "▶ " : "  ")}{directions[i]}: {options[i]}";
+        uiController.ChangeUiText(TextTarget.Option, text: string.Join("\n", lines));
+        uiController.ActiveOptionTextUi(true);
+    }
+
     public void ShowDialogue(Dialogue dialogue)
     {
         if (uiController == null || dialogue == null)

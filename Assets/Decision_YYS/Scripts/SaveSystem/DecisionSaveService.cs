@@ -53,6 +53,24 @@ public sealed class DecisionSaveService
         saveManager.ClearPlayerPosition();
     }
 
+    public void SaveEncounterProgress(
+        DecisionSession session,
+        UnityEngine.Vector3 playerPosition,
+        string phase,
+        string activePlaceId,
+        int activeCardIndex,
+        System.Collections.Generic.IEnumerable<string> resolvedPlaceIds)
+    {
+        saveManager.SaveEncounterProgress(
+            session.ChapterIndex,
+            session.EpisodeIndex,
+            playerPosition,
+            phase,
+            activePlaceId,
+            activeCardIndex,
+            resolvedPlaceIds);
+    }
+
     public void SaveRemainingCoins(int[] remainingCoins)
     {
         saveManager.SaveRemainingCoins(remainingCoins);
