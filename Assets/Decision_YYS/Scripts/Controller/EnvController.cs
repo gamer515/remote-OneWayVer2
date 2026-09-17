@@ -104,6 +104,8 @@ public class EnvController : MonoBehaviour
         TerrainData = terrainData;
         PlaceRegistry = registry;
         CurrentTerrainEndZ = segmentEndZ;
+        if (playerTransform != null)
+            terrainStreamingController?.RefreshPlayerPosition(playerTransform.position.z);
         return true;
     }
 

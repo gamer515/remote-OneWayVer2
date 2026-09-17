@@ -106,8 +106,8 @@ public class UiController : MonoBehaviour
         }
         // 왼쪽 화면만 전환합니다. 맵, 코인, 얼굴, 아이템 보관 영역은 건드리지 않습니다.
         bool turn = mode == DisplayMode.Walking;
-        if (viewUi != null) viewUi.SetActivateUi(turn);
         if (mainStoryUi != null) mainStoryUi.SetActivateUi(!turn);
+        if (viewUi != null) viewUi.SetActivateUi(turn);
         bool changed = CurrentDisplayMode != mode;
         CurrentDisplayMode = mode;
         if (changed) OnPlayerViewChanged?.Invoke(turn);

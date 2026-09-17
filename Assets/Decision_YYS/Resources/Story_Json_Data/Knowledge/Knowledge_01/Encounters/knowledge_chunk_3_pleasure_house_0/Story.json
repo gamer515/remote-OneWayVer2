@@ -1,0 +1,29 @@
+{
+  "MainStory": [
+    {
+      "type": "Next",
+      "isTransition": false,
+      "background": "#42A5F5",
+      "text": "누군가 모르는 이야기를 들려 달라고 청합니다."
+    },
+    {
+      "type": "Choice",
+      "isTransition": false,
+      "background": "#42A5F5",
+      "text": "무엇을 나누겠습니까?",
+      "options": [
+        "느낌",
+        "배운 것",
+        "신비한 경험",
+        "깨달음"
+      ],
+      "statWeights": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "npcEmotion": "none"
+    }
+  ]
+}

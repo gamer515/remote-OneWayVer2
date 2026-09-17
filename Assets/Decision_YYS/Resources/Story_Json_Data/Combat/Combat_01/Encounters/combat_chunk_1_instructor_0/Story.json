@@ -1,0 +1,29 @@
+{
+  "MainStory": [
+    {
+      "type": "Next",
+      "isTransition": false,
+      "background": "#EF9A9A",
+      "text": "교관은 당신에게 실력을 보여 달라고 말합니다."
+    },
+    {
+      "type": "Choice",
+      "isTransition": false,
+      "background": "#EF9A9A",
+      "text": "어떻게 응하겠습니까?",
+      "options": [
+        "힘으로 겨룬다",
+        "기술을 보인다",
+        "전술을 제안한다",
+        "전략을 설명한다"
+      ],
+      "statWeights": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "npcEmotion": "none"
+    }
+  ]
+}

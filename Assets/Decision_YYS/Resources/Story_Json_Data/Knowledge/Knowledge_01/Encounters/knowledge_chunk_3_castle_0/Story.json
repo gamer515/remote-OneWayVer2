@@ -1,0 +1,29 @@
+{
+  "MainStory": [
+    {
+      "type": "Next",
+      "isTransition": false,
+      "background": "#2196F3",
+      "text": "수호자가 한 가지 기록만 열람할 수 있다고 합니다."
+    },
+    {
+      "type": "Choice",
+      "isTransition": false,
+      "background": "#2196F3",
+      "text": "어느 기록을 고르겠습니까?",
+      "options": [
+        "미래의 징조",
+        "과거의 연구",
+        "비밀 주문",
+        "오래된 지혜"
+      ],
+      "statWeights": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "npcEmotion": "none"
+    }
+  ]
+}

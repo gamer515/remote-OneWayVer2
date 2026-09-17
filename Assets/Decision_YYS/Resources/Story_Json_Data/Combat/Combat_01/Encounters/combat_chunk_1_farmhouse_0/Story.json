@@ -1,0 +1,29 @@
+{
+  "MainStory": [
+    {
+      "type": "Next",
+      "isTransition": false,
+      "background": "#E57373",
+      "text": "주인은 오래된 훈련법을 알고 있다고 말합니다."
+    },
+    {
+      "type": "Choice",
+      "isTransition": false,
+      "background": "#E57373",
+      "text": "무엇을 묻겠습니까?",
+      "options": [
+        "근력 훈련",
+        "기술 훈련",
+        "전술 훈련",
+        "전략 훈련"
+      ],
+      "statWeights": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "npcEmotion": "none"
+    }
+  ]
+}

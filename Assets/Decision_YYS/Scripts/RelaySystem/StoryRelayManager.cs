@@ -229,9 +229,9 @@ public class StoryRelayManager : MonoBehaviour
     {
         string[][] namesByChapter =
         {
-            new[] { "None", "None", "None", "None" },
-            new[] { "Strength", "Technique", "Tactics", "Strategy" },
-            new[] { "Intuition", "Learning", "Magic", "Wisdom" }
+            new[] { "Health", "Speed", "Intelligence", "Charm" },
+            new[] { "Health", "Speed", "Intelligence", "Charm" },
+            new[] { "Health", "Speed", "Intelligence", "Charm" }
         };
 
         if (chapter < 0 || chapter >= namesByChapter.Length ||

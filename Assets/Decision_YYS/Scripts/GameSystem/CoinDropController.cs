@@ -71,6 +71,18 @@ public sealed class CoinDropController : MonoBehaviour
 
     public int[] RemainingCoins => (int[])remainingCoins.Clone();
 
+    // 새 Journey 코인통도 같은 저장 재고를 사용합니다. 생성 위치와 물리는 Journey 쪽에서 담당합니다.
+    public bool TryConsumeCoin(int coinTypeIndex)
+    {
+        if (coinTypeIndex < 0 || coinTypeIndex >= remainingCoins.Length ||
+            remainingCoins[coinTypeIndex] <= 0)
+            return false;
+
+        remainingCoins[coinTypeIndex]--;
+        RefreshInventoryDisplay();
+        return true;
+    }
+
     public void InitializeInventory(int[] savedInventory)
     {
         if (savedInventory != null && savedInventory.Length == remainingCoins.Length)

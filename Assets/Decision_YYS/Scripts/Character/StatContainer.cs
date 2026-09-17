@@ -5,14 +5,9 @@ using System.Collections.Generic;
 
 public class StatContainer : MonoBehaviour
 {
-    private static readonly string[] InitialStatNames =
-        { string.Empty, string.Empty, string.Empty, string.Empty };
-
-    private static readonly string[] CombatStatNames =
-        { "Strength", "Technique", "Tactics", "Strategy" };
-
-    private static readonly string[] KnowledgeStatNames =
-        { "Intuition", "Learning", "Magic", "Wisdom" };
+    // 네 코인은 챕터와 무관하게 같은 능력치를 가리킵니다.
+    private static readonly string[] StatNames =
+        { "Health", "Speed", "Intelligence", "Charm" };
 
     [Serializable]
     public class StatEntry
@@ -37,16 +32,6 @@ public class StatContainer : MonoBehaviour
     [Header("UI Display Settings")]
     [Tooltip("실제 수치는 제한하지 않고, 이 값을 넘으면 UI에 최대값+로 표시합니다.")]
     [SerializeField, Min(1)] private int displayStatMaximum = 10;
-
-    private string[] initialStatNames;
-
-    private void Awake()
-    {
-        // Initial 챕터로 돌아오거나 새 게임을 시작할 때 사용할 기본 라벨을 보존합니다.
-        initialStatNames = new string[statEntries.Count];
-        for (int i = 0; i < statEntries.Count; i++)
-            initialStatNames[i] = statEntries[i].statName;
-    }
 
     /// <summary>
     /// 외부에서 읽기 전용으로 스탯 배열을 가져옵니다. (호환성 유지)
@@ -125,35 +110,13 @@ public class StatContainer : MonoBehaviour
     }
 
     /// <summary>
-    /// 스탯 값과 인덱스는 유지하고 현재 챕터에 맞는 화면 표시 이름만 변경합니다.
+    /// 저장된 스탯 인덱스는 유지하고 네 가지 고정 능력치 이름을 표시합니다.
     /// </summary>
     public void SetChapterStatNames(string chapterName)
     {
-        string[] names;
-        if (string.Equals(chapterName, Constants.Chapter.Combat.ToString(),
-                StringComparison.OrdinalIgnoreCase))
-        {
-            names = CombatStatNames;
-        }
-        else if (string.Equals(chapterName, Constants.Chapter.Knowledge.ToString(),
-                     StringComparison.OrdinalIgnoreCase))
-        {
-            names = KnowledgeStatNames;
-        }
-        else if (string.Equals(chapterName, Constants.Chapter.Initial.ToString(),
-                     StringComparison.OrdinalIgnoreCase))
-        {
-            names = InitialStatNames;
-        }
-        else
-        {
-            // 알 수 없는 챕터는 Inspector에 설정된 기존 네 이름을 사용합니다.
-            names = initialStatNames;
-        }
-
-        int count = Mathf.Min(statEntries.Count, names.Length);
+        int count = Mathf.Min(statEntries.Count, StatNames.Length);
         for (int i = 0; i < count; i++)
-            statEntries[i].statName = names[i];
+            statEntries[i].statName = StatNames[i];
 
         RefreshAllUI();
     }

@@ -33,12 +33,16 @@ public sealed class DecisionPresentationController
 
     public void ShowOptions(string[] options, int selectedIndex)
     {
-        if (uiController == null || options == null || options.Length != 4) return;
+        if (uiController == null) return;
+        // 중립에서는 문구를 숨기고, 기어가 한 방향에 놓였을 때 그 방향의 선택지만 보여줍니다.
+        if (options == null || options.Length != 4 || selectedIndex < 0 || selectedIndex >= 4)
+        {
+            uiController.ActiveOptionTextUi(false);
+            return;
+        }
         string[] directions = { "좌상", "좌하", "우상", "우하" };
-        string[] lines = new string[4];
-        for (int i = 0; i < 4; i++)
-            lines[i] = $"{(selectedIndex == i ? "▶ " : "  ")}{directions[i]}: {options[i]}";
-        uiController.ChangeUiText(TextTarget.Option, text: string.Join("\n", lines));
+        uiController.ChangeUiText(TextTarget.Option,
+            text: $"▶ {directions[selectedIndex]}: {options[selectedIndex]}");
         uiController.ActiveOptionTextUi(true);
     }
 

@@ -1,5 +1,9 @@
 ﻿using UnityEngine;
 
+#if ENABLE_INPUT_SYSTEM
+using UnityEngine.InputSystem;
+#endif
+
 /// <summary>
 /// 코인을 마우스로 누르는 동안 직접 옮기고, 버튼을 놓으면 다시 물리에 맡깁니다.
 /// </summary>
@@ -34,6 +38,7 @@ public sealed class CoinInteractionController : MonoBehaviour
     private float grabbedHalfHeight;
     private float fallbackHeight;
     private float manualHeightOffset;
+    private Collider[] grabbedColliders;
     private readonly RaycastHit[] surfaceHits = new RaycastHit[32];
 
     private void Awake()
@@ -60,13 +65,23 @@ public sealed class CoinInteractionController : MonoBehaviour
 
     private void Update()
     {
-        if (Input.GetMouseButtonDown(0))
+#if ENABLE_INPUT_SYSTEM
+        if (Mouse.current == null) return;
+        bool pressed = Mouse.current.leftButton.wasPressedThisFrame;
+        bool held = Mouse.current.leftButton.isPressed;
+        bool released = Mouse.current.leftButton.wasReleasedThisFrame;
+#else
+        bool pressed = Input.GetMouseButtonDown(0);
+        bool held = Input.GetMouseButton(0);
+        bool released = Input.GetMouseButtonUp(0);
+#endif
+        if (pressed)
             TryGrabCoin();
 
-        if (grabbedCoin != null && Input.GetMouseButton(0))
+        if (grabbedCoin != null && held)
             UpdateTargetPosition();
 
-        if (grabbedCoin != null && Input.GetMouseButtonUp(0))
+        if (grabbedCoin != null && released)
             ReleaseCoin();
     }
 
@@ -97,7 +112,7 @@ public sealed class CoinInteractionController : MonoBehaviour
         if (inputCamera == null || grabbedCoin != null)
             return;
 
-        Ray ray = inputCamera.ScreenPointToRay(Input.mousePosition);
+        Ray ray = inputCamera.ScreenPointToRay(GetPointerPosition());
         RaycastHit[] hits = Physics.RaycastAll(ray, maxRayDistance);
         BettingCoin nearestCoin = null;
         float nearestDistance = float.MaxValue;
@@ -142,11 +157,19 @@ public sealed class CoinInteractionController : MonoBehaviour
         grabbedBody.angularVelocity = Vector3.zero;
         grabbedBody.useGravity = false;
         grabbedBody.isKinematic = true;
+        // 드래그 중에는 잡은 코인의 충돌을 끄고, 놓을 때 안전한 높이에서 되살립니다.
+        grabbedColliders = grabbedCoin.GetComponentsInChildren<Collider>();
+        foreach (Collider collider in grabbedColliders)
+            collider.enabled = false;
     }
 
     private void UpdateTargetPosition()
     {
+#if ENABLE_INPUT_SYSTEM
+        float wheelInput = Mouse.current.scroll.ReadValue().y / 120f;
+#else
         float wheelInput = Input.mouseScrollDelta.y;
+#endif
         if (!Mathf.Approximately(wheelInput, 0f))
         {
             manualHeightOffset = Mathf.Clamp(
@@ -155,7 +178,7 @@ public sealed class CoinInteractionController : MonoBehaviour
                 maximumHeightOffset);
         }
 
-        Ray ray = inputCamera.ScreenPointToRay(Input.mousePosition);
+        Ray ray = inputCamera.ScreenPointToRay(GetPointerPosition());
         if (!dragPlane.Raycast(ray, out float enter))
             return;
 
@@ -259,6 +282,34 @@ public sealed class CoinInteractionController : MonoBehaviour
     {
         if (grabbedBody != null)
         {
+            // 동전과 겹친 상태에서 물리를 재개하면 접촉 해결 힘으로 튕겨 나갑니다.
+            Vector3 position = grabbedBody.position;
+            float highestCoinTop = float.NegativeInfinity;
+            foreach (BettingCoin other in FindObjectsByType<BettingCoin>(FindObjectsSortMode.None))
+            {
+                if (other == null || other == grabbedCoin) continue;
+                foreach (Collider collider in other.GetComponentsInChildren<Collider>())
+                {
+                    if (!collider.enabled) continue;
+                    Bounds bounds = collider.bounds;
+                    float distance = Vector2.Distance(
+                        new Vector2(position.x, position.z),
+                        new Vector2(bounds.center.x, bounds.center.z));
+                    if (distance < Mathf.Max(bounds.extents.x, bounds.extents.z) +
+                        surfaceDetectionRadius * 0.5f)
+                        highestCoinTop = Mathf.Max(highestCoinTop, bounds.max.y);
+                }
+            }
+            if (!float.IsNegativeInfinity(highestCoinTop))
+                grabbedBody.position = new Vector3(position.x,
+                    Mathf.Max(position.y, highestCoinTop + grabbedHalfHeight + 0.02f), position.z);
+
+            if (grabbedColliders != null)
+                foreach (Collider collider in grabbedColliders)
+                    if (collider != null) collider.enabled = true;
+            Physics.SyncTransforms();
+            grabbedBody.linearVelocity = Vector3.zero;
+            grabbedBody.angularVelocity = Vector3.zero;
             grabbedBody.isKinematic = false;
             grabbedBody.useGravity = true;
             grabbedBody.WakeUp();
@@ -266,7 +317,17 @@ public sealed class CoinInteractionController : MonoBehaviour
 
         grabbedCoin = null;
         grabbedBody = null;
+        grabbedColliders = null;
         hasTargetPosition = false;
         manualHeightOffset = 0f;
+    }
+
+    private static Vector2 GetPointerPosition()
+    {
+#if ENABLE_INPUT_SYSTEM
+        return Mouse.current.position.ReadValue();
+#else
+        return Input.mousePosition;
+#endif
     }
 }

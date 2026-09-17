@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
+using JourneyMapKit;
 using static Constants;
 
 /// <summary>
@@ -47,12 +48,16 @@ public partial class DecisionManager : MonoBehaviour
     private List<Dialogue> playedHistory => session.PlayedHistory;
     [Header("View & Control Settings")]
     [SerializeField] private JoystickLikeGear gearController;
+    [SerializeField] private JourneyBoardInput journeyBoardInput;
     [SerializeField] private UiController uiController;
     [SerializeField] private StoryRelayManager relayManager;
     [SerializeField] private EnvController envController;
     [SerializeField] private RoadViewCameraController roadViewCameraController;
     [SerializeField] private BettingButtonController bettingButtonController;
     [SerializeField] private CoinDropController coinDropController;
+    [Tooltip("코인통 왼쪽부터 Blue, Red, Yellow, Teal 순서의 Journey 코인 프리팹입니다.")]
+    [SerializeField] private GameObject[] journeyCoinPrefabs;
+    private JourneyCoinSupplyController journeyCoinSupply;
     [Header("Player Movement")]
     private DecisionPlayerController playerController;
 
@@ -65,6 +70,8 @@ public partial class DecisionManager : MonoBehaviour
         // 프리팹에 포함된 버튼 입력기를 자동으로 연결하되 Inspector 지정도 허용합니다.
         if (bettingButtonController == null)
             bettingButtonController = FindFirstObjectByType<BettingButtonController>();
+        if (journeyBoardInput == null)
+            journeyBoardInput = FindFirstObjectByType<JourneyBoardInput>();
         if (coinDropController == null)
             coinDropController = FindFirstObjectByType<CoinDropController>();
     }
@@ -76,11 +83,16 @@ public partial class DecisionManager : MonoBehaviour
             statContainer.OnTargetStatReached += HandleTargetStatReached;
         }
 
-        if (bettingButtonController != null)
+        if (journeyBoardInput != null)
+        {
+            journeyBoardInput.onYellowPressed.AddListener(HandleScreenClicked);
+            journeyBoardInput.onGearSelected.AddListener(HandleEncounterGearSelection);
+        }
+        else if (bettingButtonController != null)
         {
             bettingButtonController.YellowPressed += HandleScreenClicked;
         }
-        if (gearController != null)
+        if (journeyBoardInput == null && gearController != null)
             gearController.OnCoinTypeChanged += HandleEncounterGearSelection;
         if (coinDropController != null)
             coinDropController.BettingCompleted += HandleBettingCompleted;
@@ -94,11 +106,16 @@ public partial class DecisionManager : MonoBehaviour
             statContainer.OnTargetStatReached -= HandleTargetStatReached;
         }
 
-        if (bettingButtonController != null)
+        if (journeyBoardInput != null)
+        {
+            journeyBoardInput.onYellowPressed.RemoveListener(HandleScreenClicked);
+            journeyBoardInput.onGearSelected.RemoveListener(HandleEncounterGearSelection);
+        }
+        else if (bettingButtonController != null)
         {
             bettingButtonController.YellowPressed -= HandleScreenClicked;
         }
-        if (gearController != null)
+        if (journeyBoardInput == null && gearController != null)
             gearController.OnCoinTypeChanged -= HandleEncounterGearSelection;
         if (coinDropController != null)
             coinDropController.BettingCompleted -= HandleBettingCompleted;
@@ -115,6 +132,9 @@ public partial class DecisionManager : MonoBehaviour
 
     private void Update()
     {
+        if (currentState != StoryState.MovingToEncounter && currentState != StoryState.Transitioning)
+            journeyCoinSupply?.HandleInput();
+
         // 이동 명령과 화면 표현은 분리하고, 실제 도착한 프레임에서 이야기 화면을 엽니다.
         if (encounterFlow != null && currentState == StoryState.MovingToEncounter &&
             playerController != null && playerController.HasReachedTarget())
@@ -183,6 +203,15 @@ public partial class DecisionManager : MonoBehaviour
             useInitialCameraPosition);
 
         coinDropController.InitializeInventory(startData.RemainingCoins);
+        if (journeyBoardInput != null)
+        {
+            journeyCoinSupply = new JourneyCoinSupplyController(
+                journeyBoardInput, journeyCoinPrefabs, coinDropController,
+                saveService.SaveRemainingCoins);
+            if (!journeyCoinSupply.IsReady)
+                Debug.LogError("Journey 코인통·경사로·코인 프리팹 참조를 확인하세요.", this);
+            journeyCoinSupply.RefreshDisplay();
+        }
 
         if (startData.PlayerStats?.stats != null)
             statContainer.SetStats(startData.PlayerStats.stats);
@@ -195,15 +224,34 @@ public partial class DecisionManager : MonoBehaviour
     private bool ValidateDependencies()
     {
         bool isValid = true;
-        isValid &= ValidateReference(gearController, nameof(gearController));
+        if (journeyBoardInput == null)
+            isValid &= ValidateReference(gearController, nameof(gearController));
         isValid &= ValidateReference(uiController, nameof(uiController));
         isValid &= ValidateReference(envController, nameof(envController));
         isValid &= ValidateReference(roadViewCameraController, nameof(roadViewCameraController));
         isValid &= ValidateReference(statContainer, nameof(statContainer));
-        isValid &= ValidateReference(bettingButtonController, nameof(bettingButtonController));
+        if (journeyBoardInput == null)
+            isValid &= ValidateReference(bettingButtonController, nameof(bettingButtonController));
         isValid &= ValidateReference(coinDropController, nameof(coinDropController));
 
         return isValid;
+    }
+
+    // JourneyController가 배치된 씬에서는 새 조작판만 명령을 보내고, 예전 씬만 기존 입력을 사용합니다.
+    private void SetYellowInputInteractable(bool interactable)
+    {
+        if (journeyBoardInput != null)
+            journeyBoardInput.SetYellowInteractable(interactable);
+        else
+            bettingButtonController?.SetYellowInteractable(interactable);
+    }
+
+    private void ResetGearSelection()
+    {
+        if (journeyBoardInput != null)
+            journeyBoardInput.ResetSelection();
+        else
+            gearController?.ResetToNeutral();
     }
 
     private bool RegisterTerrainsThroughCurrentProgress()
@@ -379,7 +427,7 @@ public partial class DecisionManager : MonoBehaviour
 
         currentState = StoryState.MovingToEncounter;
         pendingCharacterPosition = null;
-        bettingButtonController?.SetYellowInteractable(false);
+        SetYellowInputInteractable(false);
         bettingButtonController?.SetBettingInteractable(false);
         presentationController.ShowWalkingView();
 
@@ -445,7 +493,7 @@ public partial class DecisionManager : MonoBehaviour
         {
             currentState = StoryState.ShowingStory;
             presentationController.ExitChoice();
-            bettingButtonController?.SetYellowInteractable(true);
+            SetYellowInputInteractable(true);
             bettingButtonController?.SetBettingInteractable(false);
         }
 
@@ -465,7 +513,7 @@ public partial class DecisionManager : MonoBehaviour
         currentState = StoryState.WaitingForChoice;
         // Choice 타입은 문장 선택이 아니라 네 종류의 코인으로 응답하는 베팅 지문입니다.
         presentationController.ExitChoice();
-        bettingButtonController?.SetYellowInteractable(false);
+        SetYellowInputInteractable(false);
         bettingButtonController?.SetBettingInteractable(true);
     }
 
@@ -539,7 +587,7 @@ public partial class DecisionManager : MonoBehaviour
             $"가중치 [{string.Join(", ", currentStory.statWeights)}], " +
             $"변화량 [{string.Join(", ", statChanges)}]");
 
-        gearController?.ResetToNeutral();
+        ResetGearSelection();
 
         if (currentState != StoryState.Transitioning)
             AdvanceStory();
@@ -594,7 +642,8 @@ public partial class DecisionManager : MonoBehaviour
     {
         statContainer.ResetForEpisode();
         coinDropController.ResetInventory();
-        gearController?.ResetToNeutral();
+        journeyCoinSupply?.ResetBoard();
+        ResetGearSelection();
         Debug.Log(
             $"[DecisionManager] 새 에피소드 자원 초기화 - " +
             $"능력치 [{string.Join(", ", statContainer.stats)}], " +
@@ -616,7 +665,7 @@ public partial class DecisionManager : MonoBehaviour
             {
                 currentState = StoryState.ShowingStory;
                 presentationController.ExitChoice();
-                bettingButtonController?.SetYellowInteractable(true);
+                SetYellowInputInteractable(true);
                 bettingButtonController?.SetBettingInteractable(false);
             }
     }

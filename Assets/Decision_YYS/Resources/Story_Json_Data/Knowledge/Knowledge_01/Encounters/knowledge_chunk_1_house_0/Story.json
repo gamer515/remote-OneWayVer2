@@ -1,0 +1,29 @@
+{
+  "MainStory": [
+    {
+      "type": "Next",
+      "isTransition": false,
+      "background": "#64B5F6",
+      "text": "학자는 책 한 권을 골라 보라고 권합니다."
+    },
+    {
+      "type": "Choice",
+      "isTransition": false,
+      "background": "#64B5F6",
+      "text": "어느 책을 읽겠습니까?",
+      "options": [
+        "예언서",
+        "연구 기록",
+        "마법서",
+        "철학서"
+      ],
+      "statWeights": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "npcEmotion": "none"
+    }
+  ]
+}

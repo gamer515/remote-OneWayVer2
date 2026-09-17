@@ -1,0 +1,29 @@
+{
+  "MainStory": [
+    {
+      "type": "Next",
+      "isTransition": false,
+      "background": "#FFCC80",
+      "text": "기념비에는 앞서 이 길을 걸은 사람들의 이름이 남아 있습니다."
+    },
+    {
+      "type": "Choice",
+      "isTransition": false,
+      "background": "#FFCC80",
+      "text": "당신은 어떤 흔적을 남기겠습니까?",
+      "options": [
+        "이름을 새긴다",
+        "글자를 읽는다",
+        "주변을 살핀다",
+        "조용히 지나간다"
+      ],
+      "statWeights": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "npcEmotion": "none"
+    }
+  ]
+}

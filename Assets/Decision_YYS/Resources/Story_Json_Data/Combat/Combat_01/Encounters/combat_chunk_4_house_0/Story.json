@@ -1,0 +1,29 @@
+{
+  "MainStory": [
+    {
+      "type": "Next",
+      "isTransition": false,
+      "background": "#F44336",
+      "text": "그는 자신의 경험을 들려주겠다고 합니다."
+    },
+    {
+      "type": "Choice",
+      "isTransition": false,
+      "background": "#F44336",
+      "text": "어떤 이야기를 듣겠습니까?",
+      "options": [
+        "강한 적",
+        "정교한 기술",
+        "전장의 판단",
+        "긴 계획"
+      ],
+      "statWeights": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "npcEmotion": "none"
+    }
+  ]
+}

@@ -22,13 +22,23 @@ public sealed class TerrainStreamingController
 
     public void UpdatePlayerPosition(float playerWorldZ)
     {
+        UpdatePlayerPosition(playerWorldZ, false);
+    }
+
+    // 이미 같은 청크에 서 있어도 새 지형이 등록되면 현재 로드 범위를 다시 검사합니다.
+    public void RefreshPlayerPosition(float playerWorldZ)
+    {
+        UpdatePlayerPosition(playerWorldZ, true);
+    }
+
+    private void UpdatePlayerPosition(float playerWorldZ, bool forceRefresh)
+    {
         // 월드 좌표가 아니라 지형 시작점을 기준으로 청크 번호를 계산합니다.
         float localZ = playerWorldZ - terrainOriginZ;
         int newChunkIndex = Mathf.Max(0, Mathf.FloorToInt(localZ / chunkSize));
-        if (currentChunkIndex == newChunkIndex) return;
+        if (!forceRefresh && currentChunkIndex == newChunkIndex) return;
 
         currentChunkIndex = newChunkIndex;
-        // 만약 처음 뒤에 있는 풍경은 어떻게 하지?
         int minimumChunkIndex = Mathf.Max(0, currentChunkIndex - loadRadius);
         int maximumChunkIndex = currentChunkIndex + loadRadius;
 

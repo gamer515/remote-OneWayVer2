@@ -1,0 +1,29 @@
+{
+  "MainStory": [
+    {
+      "type": "Next",
+      "isTransition": false,
+      "background": "#FFCDD2",
+      "text": "비석에는 오래전 전사들의 기록이 새겨져 있습니다."
+    },
+    {
+      "type": "Choice",
+      "isTransition": false,
+      "background": "#FFCDD2",
+      "text": "어느 기록에 주목하겠습니까?",
+      "options": [
+        "힘의 기록",
+        "기술의 기록",
+        "전술의 기록",
+        "전략의 기록"
+      ],
+      "statWeights": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "npcEmotion": "none"
+    }
+  ]
+}

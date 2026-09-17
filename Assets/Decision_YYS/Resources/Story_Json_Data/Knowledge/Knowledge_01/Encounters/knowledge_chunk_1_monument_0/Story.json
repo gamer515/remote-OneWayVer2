@@ -1,0 +1,29 @@
+{
+  "MainStory": [
+    {
+      "type": "Next",
+      "isTransition": false,
+      "background": "#BBDEFB",
+      "text": "새겨진 문자는 보는 사람마다 다르게 읽힌다고 합니다."
+    },
+    {
+      "type": "Choice",
+      "isTransition": false,
+      "background": "#BBDEFB",
+      "text": "무엇에 집중하겠습니까?",
+      "options": [
+        "직감",
+        "배움",
+        "마법",
+        "지혜"
+      ],
+      "statWeights": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "npcEmotion": "none"
+    }
+  ]
+}

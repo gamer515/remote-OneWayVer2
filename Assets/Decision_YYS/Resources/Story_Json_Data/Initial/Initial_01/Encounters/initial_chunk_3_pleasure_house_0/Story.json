@@ -1,0 +1,29 @@
+{
+  "MainStory": [
+    {
+      "type": "Next",
+      "isTransition": false,
+      "background": "#FFB74D",
+      "text": "안쪽에서는 길을 걷던 사람들이 잠시 쉬고 있습니다."
+    },
+    {
+      "type": "Choice",
+      "isTransition": false,
+      "background": "#FFB74D",
+      "text": "당신은 이곳에서 무엇을 하겠습니까?",
+      "options": [
+        "대화를 나눈다",
+        "잠시 쉰다",
+        "소문을 듣는다",
+        "곧바로 나온다"
+      ],
+      "statWeights": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "npcEmotion": "none"
+    }
+  ]
+}

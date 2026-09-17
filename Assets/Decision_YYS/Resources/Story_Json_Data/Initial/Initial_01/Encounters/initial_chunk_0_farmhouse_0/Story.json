@@ -1,0 +1,29 @@
+{
+  "MainStory": [
+    {
+      "type": "Next",
+      "isTransition": false,
+      "background": "#FFE0B2",
+      "text": "농가 안에는 낡은 지도와 작은 식량 주머니가 남아 있습니다."
+    },
+    {
+      "type": "Choice",
+      "isTransition": false,
+      "background": "#FFE0B2",
+      "text": "무엇을 가져갈지 결정해야 합니다.",
+      "options": [
+        "지도를 살핀다",
+        "식량을 챙긴다",
+        "아무것도 건드리지 않는다",
+        "문을 닫고 나온다"
+      ],
+      "statWeights": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "npcEmotion": "none"
+    }
+  ]
+}

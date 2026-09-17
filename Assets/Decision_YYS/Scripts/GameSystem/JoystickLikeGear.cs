@@ -114,7 +114,11 @@ public class JoystickLikeGear : MonoBehaviour
 
         // 손잡이에서 드래그를 시작했다면 인식 영역 밖으로 나가도 조작을 계속합니다.
         if (isDragging && Input.GetMouseButton(0))
+        {
             targetPosition = CalculateDragPosition(Input.mousePosition);
+            // 마우스를 놓기 전에도 방향 변화가 선택지 UI에 즉시 전달됩니다.
+            UpdateDragSelection();
+        }
 
         if (isDragging && Input.GetMouseButtonUp(0))
         {
@@ -196,6 +200,22 @@ public class JoystickLikeGear : MonoBehaviour
             return;
 
         currentGearSlot = 0;
+        OnCoinTypeChanged?.Invoke(SelectedCoinIndex);
+    }
+
+    private void UpdateDragSelection()
+    {
+        if (targetPosition == Vector2.zero)
+        {
+            SetNeutral();
+            return;
+        }
+
+        int slot = targetPosition.x <= 0f
+            ? (targetPosition.y >= 0f ? 1 : 2)
+            : (targetPosition.y >= 0f ? 3 : 4);
+        if (currentGearSlot == slot) return;
+        currentGearSlot = slot;
         OnCoinTypeChanged?.Invoke(SelectedCoinIndex);
     }
 

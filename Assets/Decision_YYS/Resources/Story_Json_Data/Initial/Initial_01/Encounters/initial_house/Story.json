@@ -1,24 +1,19 @@
 {
   "MainStory": [
     {
-      "id": 3,
-      "change": false,
       "type": "Next",
       "isTransition": false,
       "background": "#FFB74D",
-      "destination": null,
-      "character": "none",
       "text": "목소리는 낮게 읊조리며 사라집니다. 이제 당신은 첫 번째 나침반을 확인해야 합니다."
     },
     {
-      "id": 4,
-      "change": false,
       "type": "Choice",
       "isTransition": true,
       "background": "#FFA726",
-      "destination": null,
-      "character": "Compass",
-      "text": "나침반 바늘이 미친 듯이 회전하다가 한 곳을 가리킵니다. 당신의 의지는 어느 쪽을 향합니까?"
+      "text": "나침반 바늘이 미친 듯이 회전하다가 한 곳을 가리킵니다. 당신의 의지는 어느 쪽을 향합니까?",
+      "options": ["앞으로 향한다", "주변을 살핀다", "잠시 머문다", "다른 길을 찾는다"],
+      "statWeights": [1, 1, 1, 1],
+      "npcEmotion": "none"
     }
   ]
 }

@@ -6,8 +6,6 @@ using static Constants;
 /// <summary>Initial_01의 진행은 지문 순서가 아닌 배치된 오브젝트가 결정합니다.</summary>
 public partial class DecisionManager
 {
-    [Header("Initial Encounter Flow")]
-    [SerializeField, Min(1f)] private float walkingStepLength = 20f;
     private EncounterFlowController encounterFlow;
     private EncounterContentRepository encounterContent;
     private EncounterFlowController.Encounter? pendingEncounter;
@@ -29,7 +27,7 @@ public partial class DecisionManager
             currentState = StoryState.Transitioning;
             return;
         }
-        encounterContent = new EncounterContentRepository(scenarioRepository);
+        encounterContent = new EncounterContentRepository();
         resolvedPlaceIds.Clear();
         if (loadedProgress?.resolvedPlaceIds != null)
             foreach (string id in loadedProgress.resolvedPlaceIds)
@@ -69,9 +67,9 @@ public partial class DecisionManager
         activeCards = null;
         selectedGearIndex = -1;
         currentState = StoryState.Exploring;
-        gearController?.ResetToNeutral();
+        ResetGearSelection();
         bettingButtonController?.SetBettingInteractable(false);
-        bettingButtonController?.SetYellowInteractable(true);
+        SetYellowInputInteractable(true);
         presentationController.ExitChoice();
         presentationController.ShowWalkingView();
         SaveEncounterState("explore");
@@ -81,7 +79,8 @@ public partial class DecisionManager
     {
         float startZ = playerController.CurrentPosition.z;
         if (startZ >= encounterFlow.EpisodeEndZ - 0.01f) { CompleteEncounterEpisode(); return; }
-        float endZ = Mathf.Min(startZ + walkingStepLength, encounterFlow.EpisodeEndZ);
+        // 한 번 누르면 다음 이벤트 오브젝트까지 계속 걷습니다. 그 사이 청크는 EnvController가 스트리밍합니다.
+        float endZ = encounterFlow.EpisodeEndZ;
         pendingEncounter = null;
         if (encounterFlow.TryFindFirst(startZ, endZ, resolvedPlaceIds, out var first))
         {
@@ -89,7 +88,8 @@ public partial class DecisionManager
             endZ = first.WorldPosition.z;
         }
         currentState = StoryState.MovingToEncounter;
-        bettingButtonController?.SetYellowInteractable(false);
+        SetYellowInputInteractable(false);
+        presentationController.ShowWalkingView();
         playerController.MoveToZ(Mathf.Max(startZ, endZ));
         SaveEncounterState("walking");
     }
@@ -118,9 +118,9 @@ public partial class DecisionManager
         }
         currentState = StoryState.EncounterPrompt;
         selectedGearIndex = -1;
-        gearController?.ResetToNeutral();
+        ResetGearSelection();
         bettingButtonController?.SetBettingInteractable(false);
-        bettingButtonController?.SetYellowInteractable(true);
+        SetYellowInputInteractable(true);
         RenderEncounterOptions();
         SaveEncounterState("prompt");
         Debug.Log($"[조우] {encounter.PlaceId} ({encounter.ContentPath})", this);
@@ -153,9 +153,9 @@ public partial class DecisionManager
     {
         Dialogue card = activeCards.MainStory[activeCardIndex];
         selectedGearIndex = -1;
-        gearController?.ResetToNeutral();
+        ResetGearSelection();
         currentState = StoryState.Transitioning;
-        bettingButtonController?.SetYellowInteractable(false);
+        SetYellowInputInteractable(false);
         bettingButtonController?.SetBettingInteractable(false);
         RecordPlayedStory(card);
         SaveEncounterState("card");
@@ -180,7 +180,7 @@ public partial class DecisionManager
             currentState = StoryState.ShowingStory;
             presentationController.ExitChoice();
         }
-        bettingButtonController?.SetYellowInteractable(true);
+        SetYellowInputInteractable(true);
     }
 
     private void AdvanceEncounterCard()
