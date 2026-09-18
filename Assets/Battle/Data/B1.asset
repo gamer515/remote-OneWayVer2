@@ -1,0 +1,117 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9685256a0fa44f5aa97fd7a4753a3f71, type: 3}
+  m_Name: B1
+  m_EditorClassIdentifier: 
+  stageIndex: 1
+  flow:
+    steps:
+    - label: Opening dialogue (Space / Z)
+      kind: 0
+      text: "\uBC14\uB78C\uC774 \uAC70\uC138\uB2E4. \uB4A4\uB85C \uBC00\uB824\uB098\uBA74
+        \uC548 \uB420 \uAC83 \uAC19\uB2E4.  "
+      duration: 0.5
+      pattern:
+        kind: 0
+        legacyCase: 1
+        duration: 10
+        interval: 0.5
+        speed: 5
+        count: 8
+        angleStep: 17
+        b2PatternId: 1
+        formationSeconds: 1
+        orbitSecondsPerTurn: 3
+        orbitPauseSeconds: 1
+        orbitPadding: 0.5
+    - label: Open corridor
+      kind: 1
+      text: 
+      duration: 0.8
+      pattern:
+        kind: 0
+        legacyCase: 1
+        duration: 10
+        interval: 0.5
+        speed: 5
+        count: 8
+        angleStep: 17
+        b2PatternId: 1
+        formationSeconds: 1
+        orbitSecondsPerTurn: 3
+        orbitPauseSeconds: 1
+        orbitPadding: 0.5
+    - label: Mist and player entrance
+      kind: 2
+      text: 
+      duration: 1.2
+      pattern:
+        kind: 0
+        legacyCase: 1
+        duration: 10
+        interval: 0.5
+        speed: 5
+        count: 8
+        angleStep: 17
+        b2PatternId: 1
+        formationSeconds: 1
+        orbitSecondsPerTurn: 3
+        orbitPauseSeconds: 1
+        orbitPadding: 0.5
+    - label: Wind survival - 60 seconds
+      kind: 5
+      text: 
+      duration: 1
+      pattern:
+        kind: 1
+        legacyCase: 1
+        duration: 30
+        interval: 0.3
+        speed: 7
+        count: 1
+        angleStep: 17
+        b2PatternId: 1
+        formationSeconds: 1
+        orbitSecondsPerTurn: 3
+        orbitPauseSeconds: 1
+        orbitPadding: 0.5
+    - label: Mist fade and automatic exit
+      kind: 8
+      text: 
+      duration: 2
+      pattern:
+        kind: 0
+        legacyCase: 1
+        duration: 10
+        interval: 0.5
+        speed: 5
+        count: 8
+        angleStep: 17
+        b2PatternId: 1
+        formationSeconds: 1
+        orbitSecondsPerTurn: 3
+        orbitPauseSeconds: 1
+        orbitPadding: 0.5
+  forwardViewportY: 0.33333334
+  corridorWidth: 0.48
+  backwardSpeed: 0.65
+  clickAdvance: 0.3
+  mouseFollow: 5
+  recoverySeconds: 5
+  recoveryGrace: 1.5
+  slashTargetCount: 5
+  slashSpawnInterval: 1.8
+  slashStartZ: 22
+  slashSpeed: 8
+  slashWidthPixels: 14
+  slashDamage: 1
+  returnToDecision: 1

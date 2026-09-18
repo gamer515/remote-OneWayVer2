@@ -64,7 +64,7 @@ public class TypewriterEffect : MonoBehaviour
                 audioSource.PlayOneShot(typingSound, volume);
             }
 
-            yield return new WaitForSeconds(typingSpeed);
+            yield return new WaitForSecondsRealtime(typingSpeed);
         }
 
         isTyping = false;
@@ -105,5 +105,12 @@ public class TypewriterEffect : MonoBehaviour
         {
             textComponent.text = ""; // 남아있는 글자도 깔끔하게 지우기
         }
+    }
+
+    public void ShowImmediate(string text)
+    {
+        StopAndClear();
+        fullText = text;
+        textComponent.text = text;
     }
 }

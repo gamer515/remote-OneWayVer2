@@ -1,0 +1,91 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9685256a0fa44f5aa97fd7a4753a3f71, type: 3}
+  m_Name: B3
+  m_EditorClassIdentifier:
+  stageIndex: 3
+  flow:
+    steps:
+    - label: White screen fracture
+      kind: 7
+      text: ''
+      duration: 3
+      pattern:
+        kind: 0
+        legacyCase: 1
+        duration: 10
+        interval: 0.5
+        speed: 5
+        count: 8
+        angleStep: 17
+    - label: Rotating radial pattern
+      kind: 5
+      text: ''
+      duration: 1
+      pattern:
+        kind: 2
+        legacyCase: 1
+        duration: 12
+        interval: 0.8
+        speed: 4
+        count: 12
+        angleStep: 17
+    - label: Rain with safe gaps
+      kind: 5
+      text: ''
+      duration: 1
+      pattern:
+        kind: 3
+        legacyCase: 1
+        duration: 12
+        interval: 0.6
+        speed: 6
+        count: 14
+        angleStep: 17
+    - label: Aimed fan
+      kind: 5
+      text: ''
+      duration: 1
+      pattern:
+        kind: 4
+        legacyCase: 1
+        duration: 12
+        interval: 0.9
+        speed: 5
+        count: 5
+        angleStep: 17
+    - label: Complete B3
+      kind: 8
+      text: ''
+      duration: 1
+      pattern:
+        kind: 0
+        legacyCase: 1
+        duration: 10
+        interval: 0.5
+        speed: 5
+        count: 8
+        angleStep: 17
+  forwardViewportY: 0.33333334
+  corridorWidth: 0.48
+  backwardSpeed: 0.65
+  clickAdvance: 0.65
+  mouseFollow: 5
+  recoverySeconds: 5
+  recoveryGrace: 1.5
+  slashTargetCount: 5
+  slashSpawnInterval: 1.8
+  slashStartZ: 22
+  slashSpeed: 8
+  slashWidthPixels: 14
+  slashDamage: 1
+  returnToDecision: 1

@@ -3,34 +3,36 @@ using UnityEngine.SceneManagement;
 
 public class BattleDebugController : MonoBehaviour
 {
-    // ¹öÆ° 1À» ´©¸£¸é ½ÇÇàÇÒ ÇÔ¼ö (B1·Î °­Á¦ º¯°æ)
+    // ë²„íŠ¼ 1ì„ ëˆ„ë¥´ë©´ ì‹¤í–‰í•  í•¨ìˆ˜ (B1ë¡œ ê°•ì œ ë³€ê²½)
     public void SetBattleStage1()
     {
         BattleStateMachine.BattleIndex = 1;
-        Debug.LogWarning("[µğ¹ö±×] ÇöÀç ½ºÅ×ÀÌÁö¸¦ B1À¸·Î °­Á¦·Î º¯°æÇß½À´Ï´Ù. ¾ÀÀ» Àç½ÃÀÛÇÕ´Ï´Ù.");
+        Debug.LogWarning("[ë””ë²„ê·¸] í˜„ì¬ ìŠ¤í…Œì´ì§€ë¥¼ B1ìœ¼ë¡œ ê°•ì œë¡œ ë³€ê²½í–ˆìŠµë‹ˆë‹¤. ì”¬ì„ ì¬ì‹œì‘í•©ë‹ˆë‹¤.");
         ReloadCurrentScene();
     }
 
-    // ¹öÆ° 2¸¦ ´©¸£¸é ½ÇÇàÇÒ ÇÔ¼ö (B2·Î °­Á¦ º¯°æ)
+    // ë²„íŠ¼ 2ë¥¼ ëˆ„ë¥´ë©´ ì‹¤í–‰í•  í•¨ìˆ˜ (B2ë¡œ ê°•ì œ ë³€ê²½)
     public void SetBattleStage2()
     {
         BattleStateMachine.BattleIndex = 2;
-        Debug.LogWarning("[µğ¹ö±×] ÇöÀç ½ºÅ×ÀÌÁö¸¦ B2À¸·Î °­Á¦·Î º¯°æÇß½À´Ï´Ù. ¾ÀÀ» Àç½ÃÀÛÇÕ´Ï´Ù.");
+        Debug.LogWarning("[ë””ë²„ê·¸] í˜„ì¬ ìŠ¤í…Œì´ì§€ë¥¼ B2ìœ¼ë¡œ ê°•ì œë¡œ ë³€ê²½í–ˆìŠµë‹ˆë‹¤. ì”¬ì„ ì¬ì‹œì‘í•©ë‹ˆë‹¤.");
         ReloadCurrentScene();
     }
 
-    // ¹öÆ° 3¸¦ ´©¸£¸é ½ÇÇàÇÒ ÇÔ¼ö (B3·Î °­Á¦ º¯°æ)
+    // ë²„íŠ¼ 3ë¥¼ ëˆ„ë¥´ë©´ ì‹¤í–‰í•  í•¨ìˆ˜ (B3ë¡œ ê°•ì œ ë³€ê²½)
     public void SetBattleStage3()
     {
         BattleStateMachine.BattleIndex = 3;
-        Debug.LogWarning("[µğ¹ö±×] ÇöÀç ½ºÅ×ÀÌÁö¸¦ B3À¸·Î °­Á¦·Î º¯°æÇß½À´Ï´Ù. ¾ÀÀ» Àç½ÃÀÛÇÕ´Ï´Ù.");
+        Debug.LogWarning("[ë””ë²„ê·¸] í˜„ì¬ ìŠ¤í…Œì´ì§€ë¥¼ B3ìœ¼ë¡œ ê°•ì œë¡œ ë³€ê²½í–ˆìŠµë‹ˆë‹¤. ì”¬ì„ ì¬ì‹œì‘í•©ë‹ˆë‹¤.");
         ReloadCurrentScene();
     }
 
-    // ÇöÀç ÀüÅõ ¾ÀÀ» Ã³À½ºÎÅÍ ´Ù½Ã ±ò²ûÇÏ°Ô ºÒ·¯¿À´Â ÇÔ¼ö
+    // í˜„ì¬ ì „íˆ¬ ì”¬ì„ ì²˜ìŒë¶€í„° ë‹¤ì‹œ ê¹”ë”í•˜ê²Œ ë¶ˆëŸ¬ì˜¤ëŠ” í•¨ìˆ˜
     private void ReloadCurrentScene()
     {
-        // ÇöÀç È°¼ºÈ­µÈ ¾ÀÀÇ ÀÌ¸§À» °¡Á®¿Í¼­ ´Ù½Ã ·ÎµåÇÕ´Ï´Ù.
+        var controller = FindFirstObjectByType<BattleSceneController>();
+        if (controller != null) controller.CancelBattle();
+        // í˜„ì¬ í™œì„±í™”ëœ ì”¬ì˜ ì´ë¦„ì„ ê°€ì ¸ì™€ì„œ ë‹¤ì‹œ ë¡œë“œí•©ë‹ˆë‹¤.
         string currentSceneName = SceneManager.GetActiveScene().name;
         SceneManager.LoadScene(currentSceneName);
     }

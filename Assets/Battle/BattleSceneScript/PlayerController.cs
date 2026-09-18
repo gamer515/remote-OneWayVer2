@@ -1,146 +1,262 @@
+using System;
 using UnityEngine;
-using System.Collections;
 
 public class PlayerController : MonoBehaviour
 {
-
-    public enum MovementMode { Free, Gravity }
-
-    [Header("Status")]
-    public float maxHp = 3f; // 3ëŒ€ ë§ìœ¼ë©´ ì‚¬ë§
+    public enum MovementMode { Free, Gravity, External }
+    public float maxHp = 3f;
     public float currentHp;
-
-    [Header("Movement Settings")]
     public float moveSpeed = 5f;
     public float jumpForce = 12f;
-    public MovementMode currentMode = MovementMode.Free;
 
-    private Rigidbody2D rb;
-    private bool isGrounded;
-    private bool isInvincible = false; // ë¬´ì  ìƒíƒœ í™•ì¸
-    private SpriteRenderer spriteRenderer;
+    [Header("ÇÇ°İ ¹«Àû")]
+    [Min(0f)]
+    public float invincibilityDuration = 2f;
 
-    public bool isControlLocked = false;
+    [Min(0.02f)]
+    public float blinkInterval = 0.12f;
 
+    private float blinkElapsed;
 
-    private Color originalColor; // ì›ë˜ í•˜íŠ¸ ìƒ‰ìƒì„ ì €ì¥í•  ë³€ìˆ˜
+    [Header("B2 ¸¶¿ì½º ÀÌµ¿")]
+    [Min(0f)]
+    public float b2MouseMoveSpeed = 8f;
+
+    private bool IsB2 =>
+        context != null &&
+        context.Stage != null &&
+        context.Stage.stageIndex == 2;
+
+    public MovementMode currentMode;
+    public bool isControlLocked;
+    public event Action Died;
+    public Rigidbody2D Body { get; private set; }
+    public Vector2 HalfSize => spriteRenderer != null ? (Vector2)spriteRenderer.bounds.extents : Vector2.one * .25f;
+    public float HitRadius => Mathf.Min(HalfSize.x, HalfSize.y) * .8f;
+    SpriteRenderer spriteRenderer;
+    BattleContext context;
+    bool grounded, paused, visible = true;
+    float invincibleTime;
+    Color originalColor;
+    Vector2 savedVelocity;
+    bool savedSimulated;
+
     void Awake()
     {
-        rb = GetComponent<Rigidbody2D>();
+        Body = GetComponent<Rigidbody2D>();
         spriteRenderer = GetComponent<SpriteRenderer>();
-        currentHp = maxHp;
-
         originalColor = spriteRenderer.color;
+        currentHp = maxHp;
     }
-
-    void FixedUpdate()
+    public void Configure(BattleContext battle, Sprite heart)
     {
-        if (isControlLocked) return;
-
-        if (currentMode == MovementMode.Free) MoveFree();
-        else MoveGravity();
+        context = battle;
+        spriteRenderer.sprite = heart;
+        spriteRenderer.color = originalColor = Color.white;
+        spriteRenderer.sortingOrder = 10;
+        float scale = .8f / Mathf.Max(heart.bounds.size.x, heart.bounds.size.y);
+        transform.localScale = Vector3.one * scale;
+        var collider = GetComponent<CircleCollider2D>();
+        if (collider != null) { collider.offset = heart.bounds.center; collider.radius = Mathf.Min(heart.bounds.extents.x, heart.bounds.extents.y) * .8f; }
     }
-
     void Update()
     {
-        if (isControlLocked) return;
-
-        if (currentMode == MovementMode.Gravity && isGrounded)
+        float dt = context != null ? context.Clock.Delta : Time.deltaTime;
+        if (!paused && invincibleTime > 0f)
         {
-            if (Input.GetKeyDown(KeyCode.W) || Input.GetKeyDown(KeyCode.UpArrow))
-            {
-                rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpForce);
-                isGrounded = false;
-            }
+            invincibleTime = Mathf.Max(0f, invincibleTime - dt);
+            blinkElapsed += dt;
+        }
+
+        RefreshPlayerAppearance();
+
+        if (paused || isControlLocked || currentHp <= 0) return;
+        bool jumpPressed = IsB2 
+            ? Input.GetMouseButtonDown(0)
+            : Input.GetKeyDown(KeyCode.W) ||
+            Input.GetKeyDown(KeyCode.UpArrow);
+
+        if (currentMode == MovementMode.Gravity &&
+            grounded &&
+            jumpPressed)
+        {
+            Body.linearVelocity =
+                new Vector2(Body.linearVelocity.x, jumpForce);
+
+            grounded = false;
         }
     }
-
-    private void MoveFree()
+    void FixedUpdate()
     {
+        if (paused ||
+            isControlLocked ||
+            currentHp <= 0 ||
+            currentMode == MovementMode.External)
+            return;
+
+        if (IsB2)
+        {
+            MoveB2WithMouse();
+            return;
+        }
+
+        // ´Ù¸¥ ½ºÅ×ÀÌÁöÀÇ ±âÁ¸ ÀÌµ¿.
         float h = Input.GetAxisRaw("Horizontal");
-        float v = Input.GetAxisRaw("Vertical");
-        Vector2 inputDir = new Vector2(h, v);
 
-        rb.gravityScale = 0;
-        rb.linearVelocity = inputDir.normalized * moveSpeed;
-    }
-
-    private void MoveGravity()
-    {
-        float h = Input.GetAxisRaw("Horizontal");
-        rb.gravityScale = 3f;
-        rb.linearVelocity = new Vector2(h * moveSpeed, rb.linearVelocity.y);
-    }
-
-    public void SetMovementMode(MovementMode mode)
-    {
-        currentMode = mode;
-        if (mode == MovementMode.Free)
+        if (currentMode == MovementMode.Free)
         {
-            rb.linearVelocity = Vector2.zero;
-            rb.gravityScale = 0;
-        }
-    }
+            Body.gravityScale = 0;
 
-    // ì´ì•Œ(Trigger)ì— ë‹¿ì•˜ì„ ë•Œ í”¼ê²© ì²˜ë¦¬
-    private void OnTriggerEnter2D(Collider2D collision)
-    {
-        if (collision.CompareTag("Bullet"))
-        {
-            TakeDamage(1f); // ì´ì•Œì— ë‹¿ìœ¼ë©´ 1 ë°ë¯¸ì§€
-        }
-    }
-
-    public void TakeDamage(float amount)
-    {
-        if (isInvincible) return; // ë¬´ì  ìƒíƒœë©´ ë°ë¯¸ì§€ ë¬´ì‹œ
-
-        currentHp -= amount;
-        Debug.Log($"í”Œë ˆì´ì–´ í”¼ê²©! ë‚¨ì€ HP: {currentHp}");
-
-        if (currentHp <= 0)
-        {
-            Debug.Log("í”Œë ˆì´ì–´ ì‚¬ë§ (ê²Œì„ ì˜¤ë²„)");
-            gameObject.SetActive(false); // í”Œë ˆì´ì–´ í•˜íŠ¸ ìˆ¨ê¸°ê¸°
-            // í•„ìš”í•˜ë‹¤ë©´ ì—¬ê¸°ì„œ BattleStateMachineì˜ Game Over ìƒíƒœë¥¼ í˜¸ì¶œí•  ìˆ˜ ìˆìŠµë‹ˆë‹¤.
+            Body.linearVelocity = new Vector2(
+                h,
+                Input.GetAxisRaw("Vertical")).normalized * moveSpeed;
         }
         else
         {
-            StartCoroutine(InvincibilityRoutine());
+            Body.gravityScale = 3;
+
+            Body.linearVelocity = new Vector2(
+                h * moveSpeed,
+                Body.linearVelocity.y);
         }
     }
-
-    // 1ì´ˆ ë™ì•ˆ ë°˜íˆ¬ëª…í•´ì§€ë©° ë°ë¯¸ì§€ë¥¼ ì…ì§€ ì•ŠëŠ” ë¬´ì  ì½”ë£¨í‹´
-    private IEnumerator InvincibilityRoutine()
+    void LateUpdate()
     {
-        isInvincible = true;
-
-        // ì–¸ë”í…Œì¼ ëŠë‚Œì„ ì‚´ë ¤ì„œ ë¹¨ê°„ìƒ‰ ë°˜íˆ¬ëª…ìœ¼ë¡œ ë°”ê¿‰ë‹ˆë‹¤.
-        spriteRenderer.color = new Color(1f, 0f, 0f, 0.5f);
-
-        // 1ì´ˆ ë™ì•ˆ ë¬´ì  ìƒíƒœ ìœ ì§€
-        yield return new WaitForSeconds(1f);
-
-        // ìˆ˜ì •: ì €ì¥í•´ë‘” ì›ë˜ ìƒ‰ìƒìœ¼ë¡œ ì™„ë²½í•˜ê²Œ ë³µêµ¬í•©ë‹ˆë‹¤!
-        spriteRenderer.color = originalColor;
-        isInvincible = false; // ë¬´ì  ìƒíƒœ í•´ì œ
+        if (context == null || paused || isControlLocked) return;
+        Vector2 clamped = context.Arena.Clamp(transform.position, HalfSize);
+        if (currentMode == MovementMode.Gravity && context.Arena.Mode != BattleArena.Boundary.None)
+            grounded = transform.position.y <= context.Arena.Bounds.yMin + HalfSize.y + .03f && Body.linearVelocity.y <= .01f;
+        transform.position = new Vector3(clamped.x, clamped.y, 0);
     }
-
-    private void OnCollisionEnter2D(Collision2D collision)
+    public void SetMovementMode(MovementMode mode)
     {
-        if (collision.gameObject.CompareTag("BattleBox")) isGrounded = true;
+        currentMode = mode;
+        Body.linearVelocity = Vector2.zero;
+        Body.gravityScale = mode == MovementMode.Gravity ? 3 : 0;
+        grounded = false;
     }
-
-    //ëŒ€í™” ìƒíƒœì¼ ë•Œ í”Œë ˆì´ì–´ë¥¼ ìˆ¨ê¸°ê³ /ë³´ì´ê²Œ í•˜ëŠ” í•¨ìˆ˜
-    public void SetVisible(bool isVisible)
+    public void Lock(bool locked)
     {
-        // 1. ì´ë¯¸ì§€(ìŠ¤í”„ë¼ì´íŠ¸) ë„ê³  ì¼œê¸°
-        if (spriteRenderer != null)
-            spriteRenderer.enabled = isVisible;
+        isControlLocked = locked;
+        if (Body != null && locked) { Body.linearVelocity = Vector2.zero; Body.gravityScale = 0; }
+    }
+    public void SetPaused(bool value)
+    {
+        if (paused == value || Body == null) return;
+        paused = value;
+        if (value) { savedVelocity = Body.linearVelocity; savedSimulated = Body.simulated; Body.simulated = false; }
+        else { Body.simulated = savedSimulated; Body.linearVelocity = savedVelocity; }
+    }
+    public void TakeDamage(float amount) => ApplyDamage(amount, false);
+    // Each uncut target deals damage independently of bullet invulnerability.
+    public void TakeArrivalDamage(float amount) => ApplyDamage(amount, true);
+    void ApplyDamage(float amount, bool ignoreInvulnerability)
+    {
+        if (paused || !visible || currentHp <= 0 || amount <= 0 || (!ignoreInvulnerability && invincibleTime > 0)) return;
+        currentHp = Mathf.Max(0, currentHp - amount);
+        if (currentHp <= 0)
+        {
+            Lock(true);
+            SetVisible(false);
+            if (Died != null) Died.Invoke();
+            else gameObject.SetActive(false);
+        }
+        else
+        {
+            invincibleTime = Mathf.Max(0f, invincibilityDuration);
+            blinkElapsed = 0f;
+            RefreshPlayerAppearance();
+        }
+    }
+    void OnTriggerEnter2D(Collider2D other)
+    {
+        if (other.CompareTag("Bullet")) TakeDamage(1);
+    }
+    void OnCollisionStay2D(Collision2D collision)
+    {
+        if (!collision.gameObject.CompareTag("BattleBox")) return;
+        foreach (var contact in collision.contacts) if (contact.normal.y > .5f) grounded = true;
+    }
+    void OnCollisionExit2D(Collision2D collision) { if (collision.gameObject.CompareTag("BattleBox")) grounded = false; }
+    public void SetVisible(bool value)
+    {
+        visible = value;
 
-        // 2. ì¶©ëŒì²´(ì½œë¼ì´ë”) ë„ê³  ì¼œê¸° (ëŒ€í™” ì¤‘ì— íˆ¬ëª…í•œ ìƒíƒœë¡œ ë§ëŠ” ë²„ê·¸ ë°©ì§€!)
-        Collider2D col = GetComponent<Collider2D>();
+        RefreshPlayerAppearance();
+
+        var col = GetComponent<Collider2D>();
+
         if (col != null)
-            col.enabled = isVisible;
+            col.enabled = value;
+    }
+
+    private void RefreshPlayerAppearance()
+    {
+        if (spriteRenderer == null)
+            return;
+
+        bool blinkVisible = true;
+
+        if (invincibleTime > 0f)
+        {
+            float interval = Mathf.Max(0.02f, blinkInterval);
+            int phase = Mathf.FloorToInt(blinkElapsed / interval);
+
+            blinkVisible = phase % 2 == 0;
+        }
+
+        // ±âÁ¸ ¹İÅõ¸í È¿°ú Á¦°Å.
+        spriteRenderer.color = originalColor;
+
+        // »ç¸Á¡¤¿¬Ãâ·Î ¼û±ä »óÅÂ´Â ±ôºıÀÓÀÌ µ¤¾î¾²Áö ¾ÊÀ½.
+        spriteRenderer.enabled = visible && blinkVisible;
+    }
+
+    private void MoveB2WithMouse()
+    {
+        // ¸¶¿ì½º È­¸é ÁÂÇ¥¸¦ ÇÃ·¹ÀÌ¾î°¡ ÀÖ´Â Z Æò¸é¿¡ Åõ¿µ.
+        Ray ray = context.Camera.ScreenPointToRay(Input.mousePosition);
+
+        Plane playerPlane = new Plane(
+            Vector3.forward,
+            new Vector3(0f, 0f, transform.position.z));
+
+        if (!playerPlane.Raycast(ray, out float distance))
+            return;
+
+        Vector2 target = ray.GetPoint(distance);
+
+        // ¸¶¿ì½º°¡ »óÀÚ ¹Û¿¡ ÀÖ¾îµµ ÇÃ·¹ÀÌ¾î´Â »óÀÚ ¾È¿¡ ¸Ó¹².
+        target = context.Arena.Clamp(target, HalfSize);
+
+        Vector2 current = Body.position;
+        float dt = Time.fixedDeltaTime;
+        float maxDistance = Mathf.Max(0f, b2MouseMoveSpeed) * dt;
+
+        if (currentMode == MovementMode.Free)
+        {
+            Body.gravityScale = 0f;
+
+            Vector2 next = Vector2.MoveTowards(
+                current,
+                target,
+                maxDistance);
+
+            Body.linearVelocity = (next - current) / dt;
+        }
+        else if (currentMode == MovementMode.Gravity)
+        {
+            Body.gravityScale = 3f;
+
+            // Á¡ÇÁ ÆĞÅÏ¿¡¼­´Â ¸¶¿ì½º Y¸¦ µû¶ó°¡Áö ¾ÊÀ½.
+            float nextX = Mathf.MoveTowards(
+                current.x,
+                target.x,
+                maxDistance);
+
+            Body.linearVelocity = new Vector2(
+                (nextX - current.x) / dt,
+                Body.linearVelocity.y);
+        }
     }
 }
