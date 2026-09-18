@@ -4,6 +4,7 @@ using UnityEngine.SceneManagement;
 
 public class BattleStateMachine : MonoBehaviour
 {
+    public BattleSceneController sequenceController;
     public enum BattleState { Intro, EnemyTurn, PlayerTurn, MidDialogue, End }
     public BattleState currentState;
 
@@ -13,13 +14,13 @@ public class BattleStateMachine : MonoBehaviour
         set => PlayerPrefs.SetInt("CurrentBattleIndex", value);
     }
 
-    //  [Ãß°¡] ÀÎ½ºÆåÅÍ¿¡¼­ º¸±â ÁÁ°Ô ¹­¾îÁÙ '´ë»ç ¼¼Æ®' ±¸Á¶Ã¼ÀÔ´Ï´Ù.
+    //  [ì¶”ê°€] ì¸ìŠ¤í™í„°ì—ì„œ ë³´ê¸° ì¢‹ê²Œ ë¬¶ì–´ì¤„ 'ëŒ€ì‚¬ ì„¸íŠ¸' êµ¬ì¡°ì²´ì…ë‹ˆë‹¤.
     [System.Serializable]
     public struct BattleDialogueSet
     {
-        [TextArea(2, 3)] public string introText; // ½ÃÀÛ ´ë»ç
-        [TextArea(2, 3)] public string midText;   // Áß°£ ´ë»ç
-        [TextArea(2, 3)] public string endText;   // ³¡(¸¶¹«¸®) ´ë»ç
+        [TextArea(2, 3)] public string introText; // ì‹œì‘ ëŒ€ì‚¬
+        [TextArea(2, 3)] public string midText;   // ì¤‘ê°„ ëŒ€ì‚¬
+        [TextArea(2, 3)] public string endText;   // ë(ë§ˆë¬´ë¦¬) ëŒ€ì‚¬
     }
 
     [Header("References")]
@@ -29,9 +30,9 @@ public class BattleStateMachine : MonoBehaviour
     public TypewriterEffect typewriter;
     public AttackGaugeManager gaugeManager;
 
-    //  [»èÁ¦] ±âÁ¸¿¡ ÀÖ´ø introText, randomTexts, winText º¯¼ö 3°³´Â Áö¿öÁÖ¼¼¿ä!
+    //  [ì‚­ì œ] ê¸°ì¡´ì— ìˆë˜ introText, randomTexts, winText ë³€ìˆ˜ 3ê°œëŠ” ì§€ì›Œì£¼ì„¸ìš”!
 
-    //  [Ãß°¡] B1, B2, B3 ´ë»ç¸¦ ´ãÀ» 3Ä­Â¥¸® ¹è¿­À» ¸¸µì´Ï´Ù.
+    //  [ì¶”ê°€] B1, B2, B3 ëŒ€ì‚¬ë¥¼ ë‹´ì„ 3ì¹¸ì§œë¦¬ ë°°ì—´ì„ ë§Œë“­ë‹ˆë‹¤.
     [Header("Stage Dialogues")]
     public BattleDialogueSet[] stageDialogues = new BattleDialogueSet[3];
 
@@ -40,17 +41,19 @@ public class BattleStateMachine : MonoBehaviour
 
     private float inputTimer = 0f;
 
-    
+
 
     void Start()
     {
-        // [È®ÀÎ¿ë ·Î±×] ÁøÀÔ ½Ã ÇöÀç°¡ ¸î ¹øÂ° ÀüÅõ ¾ÀÀÎÁö ÄÜ¼Ö¿¡ Ãâ·ÂÇÕ´Ï´Ù.
-        Debug.Log($"[Battle System] ÇöÀç ÁøÀÔÇÑ ÀüÅõ ½ºÅ×ÀÌÁö: B{BattleIndex}");
+        if (sequenceController != null) return;
+        // [í™•ì¸ìš© ë¡œê·¸] ì§„ì… ì‹œ í˜„ì¬ê°€ ëª‡ ë²ˆì§¸ ì „íˆ¬ ì”¬ì¸ì§€ ì½˜ì†”ì— ì¶œë ¥í•©ë‹ˆë‹¤.
+        Debug.Log($"[Battle System] í˜„ì¬ ì§„ì…í•œ ì „íˆ¬ ìŠ¤í…Œì´ì§€: B{BattleIndex}");
         ChangeState(BattleState.Intro);
     }
 
     void Update()
     {
+        if (sequenceController != null) return;
         if (inputTimer > 0) inputTimer -= Time.deltaTime;
 
         if (IsDialogueState() && !typewriter.IsTyping && inputTimer <= 0)
@@ -66,27 +69,28 @@ public class BattleStateMachine : MonoBehaviour
 
     private BattleDialogueSet GetCurrentDialogue()
     {
-        // BattleIndex´Â 1ºÎÅÍ ½ÃÀÛÇÏ¹Ç·Î, ¹è¿­ ÀÎµ¦½º(0, 1, 2)¿¡ ¸ÂÃß±â À§ÇØ 1À» »©Áİ´Ï´Ù.
-        // Mathf.Clamp¸¦ ½á¼­ ½Ç¼ö·Î ÀÎµ¦½º°¡ ¹üÀ§¸¦ ¹ş¾î³ªµµ ¿¡·¯°¡ ³ªÁö ¾Ê°Ô ¹æ¾îÇÕ´Ï´Ù.
+        // BattleIndexëŠ” 1ë¶€í„° ì‹œì‘í•˜ë¯€ë¡œ, ë°°ì—´ ì¸ë±ìŠ¤(0, 1, 2)ì— ë§ì¶”ê¸° ìœ„í•´ 1ì„ ë¹¼ì¤ë‹ˆë‹¤.
+        // Mathf.Clampë¥¼ ì¨ì„œ ì‹¤ìˆ˜ë¡œ ì¸ë±ìŠ¤ê°€ ë²”ìœ„ë¥¼ ë²—ì–´ë‚˜ë„ ì—ëŸ¬ê°€ ë‚˜ì§€ ì•Šê²Œ ë°©ì–´í•©ë‹ˆë‹¤.
         int index = Mathf.Clamp(BattleIndex - 1, 0, stageDialogues.Length - 1);
         return stageDialogues[index];
     }
 
     public void ChangeState(BattleState newState)
     {
+        if (sequenceController != null) return;
         currentState = newState;
 
         if (IsDialogueState()) inputTimer = 1.0f;
         else inputTimer = 0.2f;
 
-        // ÇöÀç ¹èÆ² ½ºÅ×ÀÌÁö(B1, B2, B3)¿¡ ¸Â´Â ´ë»ç ²Ù·¯¹Ì¸¦ ºÒ·¯¿É´Ï´Ù.
+        // í˜„ì¬ ë°°í‹€ ìŠ¤í…Œì´ì§€(B1, B2, B3)ì— ë§ëŠ” ëŒ€ì‚¬ ê¾¸ëŸ¬ë¯¸ë¥¼ ë¶ˆëŸ¬ì˜µë‹ˆë‹¤.
         BattleDialogueSet currentDiag = GetCurrentDialogue();
 
         switch (currentState)
         {
             case BattleState.Intro:
                 player.SetVisible(false);
-                // ¼öÁ¤: ÇöÀç ½ºÅ×ÀÌÁöÀÇ ½ÃÀÛ ´ë»ç »ç¿ë
+                // ìˆ˜ì •: í˜„ì¬ ìŠ¤í…Œì´ì§€ì˜ ì‹œì‘ ëŒ€ì‚¬ ì‚¬ìš©
                 boxController.SetDialogueMode(0.5f, currentDiag.introText);
                 break;
 
@@ -105,13 +109,13 @@ public class BattleStateMachine : MonoBehaviour
 
             case BattleState.MidDialogue:
                 player.SetVisible(false);
-                // ¼öÁ¤: ·£´ı ´ë½Å ÇöÀç ½ºÅ×ÀÌÁöÀÇ Áß°£ ´ë»ç »ç¿ë
+                // ìˆ˜ì •: ëœë¤ ëŒ€ì‹  í˜„ì¬ ìŠ¤í…Œì´ì§€ì˜ ì¤‘ê°„ ëŒ€ì‚¬ ì‚¬ìš©
                 boxController.SetDialogueMode(0.3f, currentDiag.midText);
                 break;
 
             case BattleState.End:
                 player.SetVisible(false);
-                // ¼öÁ¤: ÇöÀç ½ºÅ×ÀÌÁöÀÇ ¸¶¹«¸® ´ë»ç »ç¿ë
+                // ìˆ˜ì •: í˜„ì¬ ìŠ¤í…Œì´ì§€ì˜ ë§ˆë¬´ë¦¬ ëŒ€ì‚¬ ì‚¬ìš©
                 boxController.SetDialogueMode(0.5f, currentDiag.endText);
                 break;
         }
@@ -125,30 +129,30 @@ public class BattleStateMachine : MonoBehaviour
         }
         else if (currentState == BattleState.End)
         {
-            // [¼öÁ¤] ¸¶¹«¸® ´ë»ç°¡ ³¡³ª¸é ÄÚ·çÆ¾À» ÅëÇØ ÀÌ¾ß±â ¾ÀÀ¸·Î º¹±ÍÇÕ´Ï´Ù.
+            // [ìˆ˜ì •] ë§ˆë¬´ë¦¬ ëŒ€ì‚¬ê°€ ëë‚˜ë©´ ì½”ë£¨í‹´ì„ í†µí•´ ì´ì•¼ê¸° ì”¬ìœ¼ë¡œ ë³µê·€í•©ë‹ˆë‹¤.
             StartCoroutine(ReturnToDecisionScene());
         }
     }
 
-    // [Ãß°¡] ÀüÅõ Á¾·á ÈÄ º¹±Í ¹× ½ºÅ×ÀÌÁö Ä«¿îÆ® Áõ°¡ ·ÎÁ÷
+    // [ì¶”ê°€] ì „íˆ¬ ì¢…ë£Œ í›„ ë³µê·€ ë° ìŠ¤í…Œì´ì§€ ì¹´ìš´íŠ¸ ì¦ê°€ ë¡œì§
     private IEnumerator ReturnToDecisionScene()
     {
-        Debug.Log("ÀüÅõ ½Â¸®! 1.5ÃÊ ÈÄ ÀÌ¾ß±â ¾ÀÀ¸·Î µ¹¾Æ°©´Ï´Ù.");
+        Debug.Log("ì „íˆ¬ ìŠ¹ë¦¬! 1.5ì´ˆ í›„ ì´ì•¼ê¸° ì”¬ìœ¼ë¡œ ëŒì•„ê°‘ë‹ˆë‹¤.");
         yield return new WaitForSeconds(1.5f);
 
-        // ÀÎµ¦½º¸¦ 1 Áõ°¡½ÃÅµ´Ï´Ù.
+        // ì¸ë±ìŠ¤ë¥¼ 1 ì¦ê°€ì‹œí‚µë‹ˆë‹¤.
         int nextIndex = BattleIndex + 1;
 
-        // ¸¸¾à ´ÙÀ½ ÀÎµ¦½º°¡ 3º¸´Ù Å©¸é(Áï, 4°¡ µÇ¸é) ´Ù½Ã 1·Î µÇµ¹¸³´Ï´Ù.
+        // ë§Œì•½ ë‹¤ìŒ ì¸ë±ìŠ¤ê°€ 3ë³´ë‹¤ í¬ë©´(ì¦‰, 4ê°€ ë˜ë©´) ë‹¤ì‹œ 1ë¡œ ë˜ëŒë¦½ë‹ˆë‹¤.
         if (nextIndex > 3)
         {
             nextIndex = 1;
         }
 
-        // ¼øÈ¯ Ã³¸®µÈ °ªÀ» BattleIndex¿¡ ÀúÀåÇÕ´Ï´Ù.
+        // ìˆœí™˜ ì²˜ë¦¬ëœ ê°’ì„ BattleIndexì— ì €ì¥í•©ë‹ˆë‹¤.
         BattleIndex = nextIndex;
 
-        // ÀÌ¾ß±â ¾À(ÆÀ¿øÀÇ DecisionScene)À¸·Î ÀüÈ¯ÇÕ´Ï´Ù.
+        // ì´ì•¼ê¸° ì”¬(íŒ€ì›ì˜ DecisionScene)ìœ¼ë¡œ ì „í™˜í•©ë‹ˆë‹¤.
         SceneManager.LoadScene("DecisionScene");
     }
 

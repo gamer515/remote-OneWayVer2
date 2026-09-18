@@ -9,16 +9,17 @@ public class AttackGaugeManager : MonoBehaviour
     public float limitX = 600f;
 
     [Header("Judgment Settings")]
-    public float perfectDistance = 5f;  // ±‚¡∏ 50f -> 20f (¥ı ¡º∞‘!)
-    public float goodDistance = 5f;     // ±‚¡∏ 200f -> 80f (¥ı ¡º∞‘!)
+    public float perfectDistance = 5f;  // Í∏∞Ï°¥ 50f -> 20f (Îçî Ï¢ÅÍ≤å!)
+    public float goodDistance = 5f;     // Í∏∞Ï°¥ 200f -> 80f (Îçî Ï¢ÅÍ≤å!)
 
 
     private bool isMoving = false;
+    public void CancelGauge() { isMoving = false; }
     private int direction = 1;
 
     public void StartGauge()
     {
-        // gameObject.SetActive(true); <-- ªË¡¶! (BattleManager¥¬ «◊ªÛ ƒ—¡Æ¿÷æÓæﬂ «‘)
+        // gameObject.SetActive(true); <-- ÏÇ≠Ï†ú! (BattleManagerÎäî Ìï≠ÏÉÅ ÏºúÏ†∏ÏûàÏñ¥Ïïº Ìï®)
         striker.anchoredPosition = new Vector2(-limitX, 0);
         isMoving = true;
     }
@@ -50,23 +51,23 @@ public class AttackGaugeManager : MonoBehaviour
 
         if (distance < perfectDistance)
         {
-            Debug.Log("∆«¡§: Perfect! 1 µ•πÃ¡ˆ");
+            Debug.Log("ÌåêÏ†ï: Perfect! 1 Îç∞ÎØ∏ÏßÄ");
             damage = 1f;
         }
         else if (distance < goodDistance)
         {
-            Debug.Log("∆«¡§: Good! 1 µ•πÃ¡ˆ");
+            Debug.Log("ÌåêÏ†ï: Good! 1 Îç∞ÎØ∏ÏßÄ");
             damage = 1f;
         }
         else
         {
-            Debug.Log("∆«¡§: Miss! µ•πÃ¡ˆ æ¯¿Ω");
+            Debug.Log("ÌåêÏ†ï: Miss! Îç∞ÎØ∏ÏßÄ ÏóÜÏùå");
             damage = 0f;
         }
 
-        // gameObject.SetActive(false); <-- ªË¡¶! (ø©±‚º≠ ≤Ù∏È ∞‘¿” ∏ÿ√„)
+        // gameObject.SetActive(false); <-- ÏÇ≠Ï†ú! (Ïó¨Í∏∞ÏÑú ÎÅÑÎ©¥ Í≤åÏûÑ Î©àÏ∂§)
 
-        // ∞·∞˙ ¿¸¥ﬁ
+        // Í≤∞Í≥º Ï†ÑÎã¨
         stateMachine.OnPlayerAttackComplete(damage);
     }
 }

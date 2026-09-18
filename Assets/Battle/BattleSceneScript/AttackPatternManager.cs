@@ -4,6 +4,18 @@ using System.Collections.Generic;
 
 public class AttackPatternManager : MonoBehaviour
 {
+    private Transform patternRoot;
+    public void SetPatternRoot(Transform root) { patternRoot = root; }
+    public void CancelSequence()
+    {
+        StopAllCoroutines();
+        activeWallSpikes.Clear();
+        patternRoot = null;
+    }
+    private GameObject SpawnOwned(GameObject prefab, Vector3 position, Quaternion rotation)
+    {
+        return Instantiate(prefab, position, rotation, patternRoot);
+    }
     public BattleStateMachine stateMachine;
     public BattleSceneBattleBoxController boxController;
     public PlayerController player;
@@ -27,9 +39,9 @@ public class AttackPatternManager : MonoBehaviour
         List<int> patternPool = new List<int>();
         int currentBattle = BattleStateMachine.BattleIndex;
 
-        if (currentBattle == 1) patternPool.AddRange(new int[] { 1, 2, 3 }); // Bullet A À§ÁÖ
-        else if (currentBattle == 2) patternPool.AddRange(new int[] { 4, 5, 6 }); // Bullet C À§ÁÖ
-        else patternPool.AddRange(new int[] { 7, 8, 9 }); // Bullet B À§ÁÖ
+        if (currentBattle == 1) patternPool.AddRange(new int[] { 1, 2, 3 }); // Bullet A ìœ„ì£¼
+        else if (currentBattle == 2) patternPool.AddRange(new int[] { 4, 5, 6 }); // Bullet C ìœ„ì£¼
+        else patternPool.AddRange(new int[] { 7, 8, 9 }); // Bullet B ìœ„ì£¼
 
         for (int i = 0; i < 3; i++)
         {
@@ -37,9 +49,9 @@ public class AttackPatternManager : MonoBehaviour
             int selectedPattern = patternPool[randIndex];
             patternPool.RemoveAt(randIndex);
 
-            // ¼öÁ¤: Ã¹ ¹øÂ° ÆĞÅÏÀÏ ¶§ °­Á¦·Î (0, -4) Áß¾ÓÀ¸·Î ¿Å±â´Â ·ÎÁ÷
-            // ´Ü, 4¹ø ÆĞÅÏ(°¡½Ã)Ã³·³ ¾Ë¾Æ¼­ ÇÃ·¹ÀÌ¾î À§Ä¡¸¦ ¿Å±â´Â ±â¹ÍÀÌ ÀÖ´Â ÆĞÅÏÀº Á¦¿ÜÇÕ´Ï´Ù.
-            // (¸¸¾à 5, 6¹øµµ Áß¾Ó ÀÌµ¿ÀÌ ÇÊ¿ä ¾ø´Ù¸é selectedPattern != 4 && selectedPattern != 5 ... ½ÄÀ¸·Î Ãß°¡ÇÏ¸é µË´Ï´Ù.)
+            // ìˆ˜ì •: ì²« ë²ˆì§¸ íŒ¨í„´ì¼ ë•Œ ê°•ì œë¡œ (0, -4) ì¤‘ì•™ìœ¼ë¡œ ì˜®ê¸°ëŠ” ë¡œì§
+            // ë‹¨, 4ë²ˆ íŒ¨í„´(ê°€ì‹œ)ì²˜ëŸ¼ ì•Œì•„ì„œ í”Œë ˆì´ì–´ ìœ„ì¹˜ë¥¼ ì˜®ê¸°ëŠ” ê¸°ë¯¹ì´ ìˆëŠ” íŒ¨í„´ì€ ì œì™¸í•©ë‹ˆë‹¤.
+            // (ë§Œì•½ 5, 6ë²ˆë„ ì¤‘ì•™ ì´ë™ì´ í•„ìš” ì—†ë‹¤ë©´ selectedPattern != 4 && selectedPattern != 5 ... ì‹ìœ¼ë¡œ ì¶”ê°€í•˜ë©´ ë©ë‹ˆë‹¤.)
             if (i == 0 && selectedPattern != 4)
             {
                 player.transform.position = new Vector2(0f, -4f);
@@ -49,101 +61,101 @@ public class AttackPatternManager : MonoBehaviour
 
             yield return StartCoroutine(ExecutePattern(selectedPattern));
 
-            // ÆĞÅÏ°ú ÆĞÅÏ »çÀÌÀÇ ÂªÀº ÈŞ½Ä ½Ã°£
+            // íŒ¨í„´ê³¼ íŒ¨í„´ ì‚¬ì´ì˜ ì§§ì€ íœ´ì‹ ì‹œê°„
             yield return new WaitForSeconds(1f);
         }
 
-        // 3¹øÀÇ ÆĞÅÏÀÌ ³¡³ª¸é ³» °ø°İ ÅÏÀ¸·Î ÀüÈ¯
+        // 3ë²ˆì˜ íŒ¨í„´ì´ ëë‚˜ë©´ ë‚´ ê³µê²© í„´ìœ¼ë¡œ ì „í™˜
         stateMachine.ChangeState(BattleStateMachine.BattleState.PlayerTurn);
     }
 
-    private IEnumerator ExecutePattern(int patternID)
+    public IEnumerator ExecutePattern(int patternID)
     {
-        Debug.Log($"[Pattern System] ÆĞÅÏ {patternID}¹ø ÀÛµ¿ ½ÃÀÛ!");
+        Debug.Log($"[Pattern System] íŒ¨í„´ {patternID}ë²ˆ ì‘ë™ ì‹œì‘!");
 
         switch (patternID)
         {
-            case 1: // 4¹æÇâ µ¿½Ã ¹ß»ç (»õ·Î¿î Áß½ÉÁ¡ ±âÁØ)
-                Vector2 boxCenter1 = new Vector2(0f, -3f); // ÇöÀç ¹Ú½ºÀÇ Áß½É
+            case 1: // 4ë°©í–¥ ë™ì‹œ ë°œì‚¬ (ìƒˆë¡œìš´ ì¤‘ì‹¬ì  ê¸°ì¤€)
+                Vector2 boxCenter1 = new Vector2(0f, -3f); // í˜„ì¬ ë°•ìŠ¤ì˜ ì¤‘ì‹¬
                 boxController.ChangeBox(new Vector2(8f, 8f), boxCenter1, 0.5f);
                 player.SetMovementMode(PlayerController.MovementMode.Free);
                 yield return new WaitForSeconds(0.5f);
 
                 float offset = 1.2f;
 
-                // 1. ¿ŞÂÊ¿¡¼­ »ı¼º (YÁÂÇ¥¸¦ boxCenter ±âÁØ º¸Á¤)
+                // 1. ì™¼ìª½ì—ì„œ ìƒì„± (Yì¢Œí‘œë¥¼ boxCenter ê¸°ì¤€ ë³´ì •)
                 for (int i = 0; i < 6; i++)
                 {
                     Vector2 pos = new Vector2(boxController.leftWall.position.x - 1f, boxCenter1.y + 3f - (offset * i));
-                    Instantiate(bulletA_Prefab, pos, Quaternion.identity);
+                    SpawnOwned(bulletA_Prefab, pos, Quaternion.identity);
                 }
                 yield return new WaitForSeconds(2f);
 
-                // 2. ¾Æ·¡¿¡¼­ »ı¼º (XÁÂÇ¥¸¦ boxCenter ±âÁØ º¸Á¤)
+                // 2. ì•„ë˜ì—ì„œ ìƒì„± (Xì¢Œí‘œë¥¼ boxCenter ê¸°ì¤€ ë³´ì •)
                 for (int i = 0; i < 6; i++)
                 {
                     Vector2 pos = new Vector2(boxCenter1.x - 3f + (offset * i), boxController.bottomWall.position.y - 1f);
-                    Instantiate(bulletA_Prefab, pos, Quaternion.identity);
+                    SpawnOwned(bulletA_Prefab, pos, Quaternion.identity);
                 }
                 yield return new WaitForSeconds(2f);
 
-                // 3. ¿À¸¥ÂÊ¿¡¼­ »ı¼º
+                // 3. ì˜¤ë¥¸ìª½ì—ì„œ ìƒì„±
                 for (int i = 0; i < 6; i++)
                 {
                     Vector2 pos = new Vector2(boxController.rightWall.position.x + 1f, boxCenter1.y + 3f - (offset * i));
-                    Instantiate(bulletA_Prefab, pos, Quaternion.identity);
+                    SpawnOwned(bulletA_Prefab, pos, Quaternion.identity);
                 }
                 yield return new WaitForSeconds(2f);
 
-                // 4. À§¿¡¼­ »ı¼º
+                // 4. ìœ„ì—ì„œ ìƒì„±
                 for (int i = 0; i < 6; i++)
                 {
                     Vector2 pos = new Vector2(boxCenter1.x - 3f + (offset * i), boxController.topWall.position.y + 1f);
-                    Instantiate(bulletA_Prefab, pos, Quaternion.identity);
+                    SpawnOwned(bulletA_Prefab, pos, Quaternion.identity);
                 }
                 yield return new WaitForSeconds(2f);
                 break;
 
-            case 2: // ¿ŞÂÊ¿¡¼­ ¿À¸¥ÂÊÀ¸·Î ¿À´Â Áö±×Àç±× ¿şÀÌºê (Áß°£ ÀÌ»¡ ºüÁü)
-                // 1. »óÀÚ Å©±â Á¶Àı (³ôÀÌ 8 ±âÁØ)
+            case 2: // ì™¼ìª½ì—ì„œ ì˜¤ë¥¸ìª½ìœ¼ë¡œ ì˜¤ëŠ” ì§€ê·¸ì¬ê·¸ ì›¨ì´ë¸Œ (ì¤‘ê°„ ì´ë¹¨ ë¹ ì§)
+                // 1. ìƒì í¬ê¸° ì¡°ì ˆ (ë†’ì´ 8 ê¸°ì¤€)
                 boxController.ChangeBox(new Vector2(8f, 8f), new Vector2(0f, -3f), 0.5f);
                 yield return new WaitForSeconds(0.5f);
 
-                int waveCount = 4; // ÃÑ 2¹ø ¿Õº¹ (¾à 6ÃÊ ¼Ò¿ä)
+                int waveCount = 4; // ì´ 2ë²ˆ ì™•ë³µ (ì•½ 6ì´ˆ ì†Œìš”)
                 float spawnInterval = 0.12f;
-                float startX = -15f; // ¿ŞÂÊ °íÁ¤ X ÁÂÇ¥
+                float startX = -15f; // ì™¼ìª½ ê³ ì • X ì¢Œí‘œ
 
-                // 2. 1¹ø(Top)ºÎÅÍ 6¹ø(Bottom)±îÁöÀÇ YÁÂÇ¥ 6°³ ¹Ì¸® °è»ê
-                // »óÀÚ Áß½ÉÀÌ (0, -4)ÀÌ°í ³ôÀÌ°¡ 8ÀÌ¹Ç·Î, ³»ºÎ YÁÂÇ¥´Â ´ë·« -0.5 ~ -7.5
+                // 2. 1ë²ˆ(Top)ë¶€í„° 6ë²ˆ(Bottom)ê¹Œì§€ì˜ Yì¢Œí‘œ 6ê°œ ë¯¸ë¦¬ ê³„ì‚°
+                // ìƒì ì¤‘ì‹¬ì´ (0, -4)ì´ê³  ë†’ì´ê°€ 8ì´ë¯€ë¡œ, ë‚´ë¶€ Yì¢Œí‘œëŠ” ëŒ€ëµ -0.5 ~ -7.5
                 float[] yPos = new float[6];
                 float topY = 0.5f;
                 float botY = -6.5f;
                 for (int i = 0; i < 6; i++)
                 {
-                    // i°¡ 0ÀÌ¸é 1¹ø(Top), i°¡ 5¸é 6¹ø(Bottom)
+                    // iê°€ 0ì´ë©´ 1ë²ˆ(Top), iê°€ 5ë©´ 6ë²ˆ(Bottom)
                     yPos[i] = Mathf.Lerp(topY, botY, i / 5f);
                 }
 
-                // 3. Áö±×Àç±× ÆĞÅÏ ½ÃÀÛ
+                // 3. ì§€ê·¸ì¬ê·¸ íŒ¨í„´ ì‹œì‘
                 for (int w = 0; w < waveCount; w++)
                 {
-                    // [1] 1¹ø(Top) ´ÜÀÏ »ı¼º
+                    // [1] 1ë²ˆ(Top) ë‹¨ì¼ ìƒì„±
                     SpawnWaveBullet(startX, yPos[0]);
                     yield return new WaitForSeconds(spawnInterval);
 
-                    // [2] 2~5¹ø ³»·Á°¡¸é¼­ »ı¼º (ÀÌ Áß 1°³´Â ·£´ıÀ¸·Î »ı¼º »ı·«)
-                    int skipDown = Random.Range(1, 5); // 1, 2, 3, 4 Áß ÇÏ³ª ·£´ı »Ì±â
+                    // [2] 2~5ë²ˆ ë‚´ë ¤ê°€ë©´ì„œ ìƒì„± (ì´ ì¤‘ 1ê°œëŠ” ëœë¤ìœ¼ë¡œ ìƒì„± ìƒëµ)
+                    int skipDown = Random.Range(1, 5); // 1, 2, 3, 4 ì¤‘ í•˜ë‚˜ ëœë¤ ë½‘ê¸°
                     for (int i = 1; i <= 4; i++)
                     {
                         if (i != skipDown) SpawnWaveBullet(startX, yPos[i]);
-                        yield return new WaitForSeconds(spawnInterval); // ½îµç ¾È ½îµç 0.3ÃÊ ´ë±â´Â µ¿ÀÏ
+                        yield return new WaitForSeconds(spawnInterval); // ì˜ë“  ì•ˆ ì˜ë“  0.3ì´ˆ ëŒ€ê¸°ëŠ” ë™ì¼
                     }
 
-                    // [3] 6¹ø(Bottom) ´ÜÀÏ »ı¼º
+                    // [3] 6ë²ˆ(Bottom) ë‹¨ì¼ ìƒì„±
                     SpawnWaveBullet(startX, yPos[5]);
                     yield return new WaitForSeconds(spawnInterval);
 
-                    // [4] 5~2¹ø ¿Ã¶ó°¡¸é¼­ »ı¼º (ÀÌ Áß 1°³´Â ·£´ıÀ¸·Î »ı¼º »ı·«)
+                    // [4] 5~2ë²ˆ ì˜¬ë¼ê°€ë©´ì„œ ìƒì„± (ì´ ì¤‘ 1ê°œëŠ” ëœë¤ìœ¼ë¡œ ìƒì„± ìƒëµ)
                     int skipUp = Random.Range(1, 5);
                     for (int i = 4; i >= 1; i--)
                     {
@@ -152,23 +164,23 @@ public class AttackPatternManager : MonoBehaviour
                     }
                 }
 
-                // ÆĞÅÏ Á¾·á ÈÄ ÃÑ¾ËÀÌ È­¸é ¹ÛÀ¸·Î ´Ù ³ª°¥ ¶§±îÁö ´ë±â
+                // íŒ¨í„´ ì¢…ë£Œ í›„ ì´ì•Œì´ í™”ë©´ ë°–ìœ¼ë¡œ ë‹¤ ë‚˜ê°ˆ ë•Œê¹Œì§€ ëŒ€ê¸°
                 yield return new WaitForSeconds(2.5f);
                 break;
 
-            case 3: // À§¿¡¼­ ¾Æ·¡·Î ³»·Á¿À´Â º® (2Ä­ ºó °ø°£ÀÌ ÁÂ¿ì·Î ÀÌµ¿)
-                // ½ÃÀÛ ½Ã Àû ¼û±â±â
+            case 3: // ìœ„ì—ì„œ ì•„ë˜ë¡œ ë‚´ë ¤ì˜¤ëŠ” ë²½ (2ì¹¸ ë¹ˆ ê³µê°„ì´ ì¢Œìš°ë¡œ ì´ë™)
+                // ì‹œì‘ ì‹œ ì  ìˆ¨ê¸°ê¸°
                 if (enemyObject != null) enemyObject.SetActive(false);
 
                 boxController.ChangeBox(new Vector2(8f, 8f), new Vector2(0f, -3f), 0.5f);
                 yield return new WaitForSeconds(0.5f);
 
-                int rowCount = 12; // ÃÑ 12¹ø(ÁÙ) ½î±â
-                float spawnDelay = 0.2f; // 0.3ÃÊ °£°İ
-                float startY = 8f; // À§ÂÊ °íÁ¤ Y ÁÂÇ¥
+                int rowCount = 12; // ì´ 12ë²ˆ(ì¤„) ì˜ê¸°
+                float spawnDelay = 0.2f; // 0.3ì´ˆ ê°„ê²©
+                float startY = 8f; // ìœ„ìª½ ê³ ì • Y ì¢Œí‘œ
 
-                // 1. 1¹ø(Left)ºÎÅÍ 6¹ø(Right)±îÁöÀÇ XÁÂÇ¥ 6°³ ¹Ì¸® °è»ê
-                // »óÀÚ Áß½ÉÀÌ 0ÀÌ°í ³Êºñ°¡ 8ÀÌ¹Ç·Î, ³»ºÎ XÁÂÇ¥´Â ¿©À¯ ÀÖ°Ô -3.5 ~ 3.5·Î Àâ½À´Ï´Ù.
+                // 1. 1ë²ˆ(Left)ë¶€í„° 6ë²ˆ(Right)ê¹Œì§€ì˜ Xì¢Œí‘œ 6ê°œ ë¯¸ë¦¬ ê³„ì‚°
+                // ìƒì ì¤‘ì‹¬ì´ 0ì´ê³  ë„ˆë¹„ê°€ 8ì´ë¯€ë¡œ, ë‚´ë¶€ Xì¢Œí‘œëŠ” ì—¬ìœ  ìˆê²Œ -3.5 ~ 3.5ë¡œ ì¡ìŠµë‹ˆë‹¤.
                 float[] xPos = new float[6];
                 float leftX = -3.5f;
                 float rightX = 3.5f;
@@ -177,77 +189,77 @@ public class AttackPatternManager : MonoBehaviour
                     xPos[i] = Mathf.Lerp(leftX, rightX, i / 5f);
                 }
 
-                // 2. ºüÁö´Â ¹øÈ£(±¸¸Û)ÀÇ ½ÃÀÛ ÀÎµ¦½º ¹è¿­ (0ºÎÅÍ ½ÃÀÛ)
-                // 1Àº (2,3¹ø ºüÁü), 2´Â (3,4¹ø ºüÁü), 3Àº (4,5¹ø ºüÁü)À» ÀÇ¹ÌÇÕ´Ï´Ù.
+                // 2. ë¹ ì§€ëŠ” ë²ˆí˜¸(êµ¬ë©)ì˜ ì‹œì‘ ì¸ë±ìŠ¤ ë°°ì—´ (0ë¶€í„° ì‹œì‘)
+                // 1ì€ (2,3ë²ˆ ë¹ ì§), 2ëŠ” (3,4ë²ˆ ë¹ ì§), 3ì€ (4,5ë²ˆ ë¹ ì§)ì„ ì˜ë¯¸í•©ë‹ˆë‹¤.
                 int[] holeSequence = { 1, 2, 3, 2 };
 
-                // 3. ÆĞÅÏ ½ÃÀÛ
+                // 3. íŒ¨í„´ ì‹œì‘
                 for (int r = 0; r < rowCount; r++)
                 {
-                    // ÀÌ¹ø ÁÙ¿¡¼­ ±¸¸ÛÀÌ ½ÃÀÛµÉ À§Ä¡¸¦ ¹è¿­¿¡¼­ ¼ø¼­´ë·Î °¡Á®¿É´Ï´Ù.
+                    // ì´ë²ˆ ì¤„ì—ì„œ êµ¬ë©ì´ ì‹œì‘ë  ìœ„ì¹˜ë¥¼ ë°°ì—´ì—ì„œ ìˆœì„œëŒ€ë¡œ ê°€ì ¸ì˜µë‹ˆë‹¤.
                     int currentHoleStart = holeSequence[r % holeSequence.Length];
 
                     for (int i = 0; i < 6; i++)
                     {
-                        // ÇöÀç ÀÚ¸®°¡ ±¸¸Û ½ÃÀÛÁ¡ÀÌ°Å³ª ±× ´ÙÀ½ Á¡(ÃÑ 2Ä­)ÀÌ¸é °Ç³Ê¶İ´Ï´Ù!
+                        // í˜„ì¬ ìë¦¬ê°€ êµ¬ë© ì‹œì‘ì ì´ê±°ë‚˜ ê·¸ ë‹¤ìŒ ì (ì´ 2ì¹¸)ì´ë©´ ê±´ë„ˆëœë‹ˆë‹¤!
                         if (i == currentHoleStart || i == currentHoleStart + 1)
                             continue;
 
-                        // ºó °ø°£ÀÌ ¾Æ´Ï¸é ÃÑ¾Ë »ı¼º
+                        // ë¹ˆ ê³µê°„ì´ ì•„ë‹ˆë©´ ì´ì•Œ ìƒì„±
                         SpawnVerticalBullet(xPos[i], startY);
                     }
 
-                    // ÇÑ ÁÙÀ» ´Ù ¸¸µé°í 0.3ÃÊ ´ë±â
+                    // í•œ ì¤„ì„ ë‹¤ ë§Œë“¤ê³  0.3ì´ˆ ëŒ€ê¸°
                     yield return new WaitForSeconds(spawnDelay);
                 }
 
-                // ÆĞÅÏ Á¾·á ÈÄ ÃÑ¾ËÀÌ È­¸é ¹ÛÀ¸·Î ´Ù ³ª°¥ ¶§±îÁö ´ë±â
+                // íŒ¨í„´ ì¢…ë£Œ í›„ ì´ì•Œì´ í™”ë©´ ë°–ìœ¼ë¡œ ë‹¤ ë‚˜ê°ˆ ë•Œê¹Œì§€ ëŒ€ê¸°
                 yield return new WaitForSeconds(2.5f);
 
-                // ÆĞÅÏ Á¾·á ÈÄ Àû ´Ù½Ã ³ªÅ¸³ª±â
+                // íŒ¨í„´ ì¢…ë£Œ í›„ ì  ë‹¤ì‹œ ë‚˜íƒ€ë‚˜ê¸°
                 if (enemyObject != null) enemyObject.SetActive(true);
-              
+
                 break;
 
-            case 4: // °¡·Î·Î ±ä »óÀÚ & ºÎµå·¯¿î ÀÏÁ÷¼± ÀÌµ¿ & 8°³ ¹­À½ °¡½Ã
-                // 1. »óÀÚ Å©±â Á¶Àı ½ÃÀÛ
+            case 4: // ê°€ë¡œë¡œ ê¸´ ìƒì & ë¶€ë“œëŸ¬ìš´ ì¼ì§ì„  ì´ë™ & 8ê°œ ë¬¶ìŒ ê°€ì‹œ
+                // 1. ìƒì í¬ê¸° ì¡°ì ˆ ì‹œì‘
                     boxController.ChangeBox(new Vector2(16f, 4f), new Vector2(0, -3f), 0.5f);
-                    yield return new WaitForSeconds(0.5f); // »óÀÚ°¡ ´Ù º¯ÇÒ ¶§±îÁö ´ë±â
+                    yield return new WaitForSeconds(0.5f); // ìƒìê°€ ë‹¤ ë³€í•  ë•Œê¹Œì§€ ëŒ€ê¸°
 
-                    // 2. ÇÃ·¹ÀÌ¾î °­Á¦ ÀÌµ¿ ½ÃÀÛ (Á¶ÀÛ Àá±İ)
-                    player.isControlLocked = true; // ÄÁÆ®·Ñ ²ô±â
+                    // 2. í”Œë ˆì´ì–´ ê°•ì œ ì´ë™ ì‹œì‘ (ì¡°ì‘ ì ê¸ˆ)
+                    player.isControlLocked = true; // ì»¨íŠ¸ë¡¤ ë„ê¸°
 
                     Rigidbody2D pRb = player.GetComponent<Rigidbody2D>();
-                    pRb.linearVelocity = Vector2.zero; // °¡´ø Èû ¾ø¾Ö±â
-                    pRb.gravityScale = 0f; // ÀÌµ¿ Áß¿¡ ¹Ù´ÚÀ¸·Î ¶³¾îÁöÁö ¾Ê°Ô Áß·Â Àá±ñ ¹«½Ã
+                    pRb.linearVelocity = Vector2.zero; // ê°€ë˜ í˜ ì—†ì• ê¸°
+                    pRb.gravityScale = 0f; // ì´ë™ ì¤‘ì— ë°”ë‹¥ìœ¼ë¡œ ë–¨ì–´ì§€ì§€ ì•Šê²Œ ì¤‘ë ¥ ì ê¹ ë¬´ì‹œ
 
-                    Vector2 startPos = player.transform.position; // ÇöÀç À§Ä¡
-                    Vector2 targetPos = new Vector2(boxController.leftWall.position.x + 1.5f, boxController.bottomWall.position.y + 0.8f); // ¸ñÇ¥ À§Ä¡ (¿ŞÂÊ ¾Æ·¡)
+                    Vector2 startPos = player.transform.position; // í˜„ì¬ ìœ„ì¹˜
+                    Vector2 targetPos = new Vector2(boxController.leftWall.position.x + 1.5f, boxController.bottomWall.position.y + 0.8f); // ëª©í‘œ ìœ„ì¹˜ (ì™¼ìª½ ì•„ë˜)
 
-                    float moveDuration = 0.4f; // 0.4ÃÊ µ¿¾È ½µ! ÇÏ°í ÀÌµ¿
+                    float moveDuration = 0.4f; // 0.4ì´ˆ ë™ì•ˆ ìŠ‰! í•˜ê³  ì´ë™
                     float elapsed = 0f;
 
-                    // ¸ñÇ¥ À§Ä¡·Î ºÎµå·´°Ô ´ç±â±â
+                    // ëª©í‘œ ìœ„ì¹˜ë¡œ ë¶€ë“œëŸ½ê²Œ ë‹¹ê¸°ê¸°
                     while (elapsed < moveDuration)
                     {
                         elapsed += Time.deltaTime;
-                        // Vector2.Lerp·Î ½ÃÀÛÁ¡°ú ³¡Á¡À» ½Ã°£¿¡ µû¶ó ºÎµå·´°Ô ÀÌ¾îÁİ´Ï´Ù.
+                        // Vector2.Lerpë¡œ ì‹œì‘ì ê³¼ ëì ì„ ì‹œê°„ì— ë”°ë¼ ë¶€ë“œëŸ½ê²Œ ì´ì–´ì¤ë‹ˆë‹¤.
                         player.transform.position = Vector2.Lerp(startPos, targetPos, elapsed / moveDuration);
-                        yield return null; // ´ÙÀ½ ÇÁ·¹ÀÓ±îÁö ´ë±â
+                        yield return null; // ë‹¤ìŒ í”„ë ˆì„ê¹Œì§€ ëŒ€ê¸°
                     }
 
-                    player.transform.position = targetPos; // ¿ÀÂ÷ ¾øÀÌ ÃÖÁ¾ À§Ä¡¿¡ µü ¸ÂÃã
+                    player.transform.position = targetPos; // ì˜¤ì°¨ ì—†ì´ ìµœì¢… ìœ„ì¹˜ì— ë”± ë§ì¶¤
 
-                    // 3. ÀÌµ¿ ¿Ï·á! ´Ù½Ã Áß·Â ¸ğµå ÄÑ°í Á¶ÀÛ Àá±İ ÇØÁ¦
+                    // 3. ì´ë™ ì™„ë£Œ! ë‹¤ì‹œ ì¤‘ë ¥ ëª¨ë“œ ì¼œê³  ì¡°ì‘ ì ê¸ˆ í•´ì œ
                     player.SetMovementMode(PlayerController.MovementMode.Gravity);
                     player.isControlLocked = false;
 
-                    yield return new WaitForSeconds(0.2f); // °¡½Ã ³ª¿À±â Àü Àá±ñÀÇ ´«Ä¡ °ÔÀÓ ½Ã°£
+                    yield return new WaitForSeconds(0.2f); // ê°€ì‹œ ë‚˜ì˜¤ê¸° ì „ ì ê¹ì˜ ëˆˆì¹˜ ê²Œì„ ì‹œê°„
 
-                    // 4. °¡½Ã ¼øÂ÷Àû ÃâÇö (¾÷µ¥ÀÌÆ®µÊ)
+                    // 4. ê°€ì‹œ ìˆœì°¨ì  ì¶œí˜„ (ì—…ë°ì´íŠ¸ë¨)
                     int spikeCount = 8;
 
-                    // ½ÃÀÛÁ¡: ¿À¸¥ÂÊ º® À§Ä¡·Î °íÁ¤
+                    // ì‹œì‘ì : ì˜¤ë¥¸ìª½ ë²½ ìœ„ì¹˜ë¡œ ê³ ì •
                     float case4StartX = boxController.rightWall.position.x;
                     float case4StartY = boxController.bottomWall.position.y + 0.5f;
 
@@ -255,18 +267,18 @@ public class AttackPatternManager : MonoBehaviour
 
                     for (int i = 0; i < spikeCount; i++)
                     {
-                        // XÁÂÇ¥ ÀÌµ¿ °è»ê »èÁ¦: Ç×»ó °°Àº ÀÚ¸®(startX)¿¡¼­ »ı¼ºµË´Ï´Ù.
+                        // Xì¢Œí‘œ ì´ë™ ê³„ì‚° ì‚­ì œ: í•­ìƒ ê°™ì€ ìë¦¬(startX)ì—ì„œ ìƒì„±ë©ë‹ˆë‹¤.
                         Vector2 spawnPos = new Vector2(case4StartX, case4StartY);
 
-                        // °¡½Ã »ı¼º ¹× ¸¶Áö¸· °¡½Ã °»½Å
-                        lastSpike = Instantiate(bulletC_Prefab, spawnPos, Quaternion.identity);
+                        // ê°€ì‹œ ìƒì„± ë° ë§ˆì§€ë§‰ ê°€ì‹œ ê°±ì‹ 
+                        lastSpike = SpawnOwned(bulletC_Prefab, spawnPos, Quaternion.identity);
 
-                        // 0.05ÃÊ °£°İÀ¸·Î ºü¸£°Ô ¿¬¼Ó »ı¼º
+                        // 0.05ì´ˆ ê°„ê²©ìœ¼ë¡œ ë¹ ë¥´ê²Œ ì—°ì† ìƒì„±
                         yield return new WaitForSeconds(0.05f);
                     }
 
-                    // 8°³°¡ ¸ğµÎ »ı¼ºµÈ ÀÌÈÄ, 
-                    // ¸¶Áö¸· °¡½Ã(lastSpike)°¡ ¿ŞÂÊ º®¿¡ ´ê¾Æ »ç¶óÁú ¶§±îÁö ¹«ÇÑ ´ë±â
+                    // 8ê°œê°€ ëª¨ë‘ ìƒì„±ëœ ì´í›„,
+                    // ë§ˆì§€ë§‰ ê°€ì‹œ(lastSpike)ê°€ ì™¼ìª½ ë²½ì— ë‹¿ì•„ ì‚¬ë¼ì§ˆ ë•Œê¹Œì§€ ë¬´í•œ ëŒ€ê¸°
                     while (lastSpike != null)
                     {
                         yield return null;
@@ -274,16 +286,16 @@ public class AttackPatternManager : MonoBehaviour
 
                     break;
 
-            case 5: // ³¡¾øÀÌ ¶³¾îÁö´Â ÇÔÁ¤ (¾çÂÊ º® °¡½Ã »ó½Â -> ÁöÁ¤ ¹üÀ§ ¹Ù´Ú °¡½Ã ¹èÄ¡)
+            case 5: // ëì—†ì´ ë–¨ì–´ì§€ëŠ” í•¨ì • (ì–‘ìª½ ë²½ ê°€ì‹œ ìƒìŠ¹ -> ì§€ì • ë²”ìœ„ ë°”ë‹¥ ê°€ì‹œ ë°°ì¹˜)
                 {
-                    //½ÃÀÛ ½Ã Àû ¼û±â±â
+                    //ì‹œì‘ ì‹œ ì  ìˆ¨ê¸°ê¸°
                     if (enemyObject != null) enemyObject.SetActive(false);
 
-                    // 1. [¼öÁ¤] »óÀÚ Å©±â Á¶Àı (³Êºñ 8, ³ôÀÌ 10, Áß½É 0, -2)
+                    // 1. [ìˆ˜ì •] ìƒì í¬ê¸° ì¡°ì ˆ (ë„ˆë¹„ 8, ë†’ì´ 10, ì¤‘ì‹¬ 0, -2)
                     boxController.ChangeBox(new Vector2(9f, 12f), new Vector2(0f, -1f), 0.5f);
                     yield return new WaitForSeconds(0.5f);
 
-                    // 2. ÇÃ·¹ÀÌ¾î¸¦ À§ÂÊ Çã°øÀ¸·Î ¼ø°£ ÀÌµ¿ (ÀÚÀ¯ Á¶ÀÛ ¹× ¹«Áß·Â)
+                    // 2. í”Œë ˆì´ì–´ë¥¼ ìœ„ìª½ í—ˆê³µìœ¼ë¡œ ìˆœê°„ ì´ë™ (ììœ  ì¡°ì‘ ë° ë¬´ì¤‘ë ¥)
                     player.transform.position = new Vector2(0f, 1f);
                     player.isControlLocked = false;
                     player.SetMovementMode(PlayerController.MovementMode.Free);
@@ -295,7 +307,7 @@ public class AttackPatternManager : MonoBehaviour
                         case5Rb.linearVelocity = Vector2.zero;
                     }
 
-                    // 3. 3ÃÊ µ¿¾È ¾çÂÊ º®¿¡¼­ °¡½Ã°¡ »ı¼ºµÇ¾î À§·Î ¿Ã¶ó°©´Ï´Ù.
+                    // 3. 3ì´ˆ ë™ì•ˆ ì–‘ìª½ ë²½ì—ì„œ ê°€ì‹œê°€ ìƒì„±ë˜ì–´ ìœ„ë¡œ ì˜¬ë¼ê°‘ë‹ˆë‹¤.
                     float fallDuration = 3.0f;
                     float wallSpawnDelay = 0.1f;
                     float elapsedFall = 0f;
@@ -303,11 +315,11 @@ public class AttackPatternManager : MonoBehaviour
 
                     while (elapsedFall < fallDuration)
                     {
-                        // ¿ŞÂÊ º® °¡½Ã
+                        // ì™¼ìª½ ë²½ ê°€ì‹œ
                         Vector2 case5LeftPos = new Vector2(boxController.leftWall.position.x + 0.5f, boxController.bottomWall.position.y - 0f);
                         SpawnMovingSpike(case5LeftPos, -90f, upVelocity);
 
-                        // ¿À¸¥ÂÊ º® °¡½Ã
+                        // ì˜¤ë¥¸ìª½ ë²½ ê°€ì‹œ
                         Vector2 case5RightPos = new Vector2(boxController.rightWall.position.x - 0.5f, boxController.bottomWall.position.y - 0f);
                         SpawnMovingSpike(case5RightPos, 90f, upVelocity);
 
@@ -315,7 +327,7 @@ public class AttackPatternManager : MonoBehaviour
                         yield return new WaitForSeconds(wallSpawnDelay);
                     }
 
-                    // 4. 3ÃÊ Á¾·á! º® °¡½ÃµéÀ» ¸ØÃß°í 4ÃÊ µÚ ÆÄ±« ¿¹¾à
+                    // 4. 3ì´ˆ ì¢…ë£Œ! ë²½ ê°€ì‹œë“¤ì„ ë©ˆì¶”ê³  4ì´ˆ ë’¤ íŒŒê´´ ì˜ˆì•½
                     foreach (GameObject spike in activeWallSpikes)
                     {
                         if (spike != null)
@@ -330,7 +342,7 @@ public class AttackPatternManager : MonoBehaviour
                     }
                     activeWallSpikes.Clear();
 
-                    // 5. Áß·Â ¸ğµå¸¦ ´Ù½Ã ÄÑ¼­ ¹Ù´ÚÀ¸·Î Ãß¶ô½ÃÅµ´Ï´Ù.
+                    // 5. ì¤‘ë ¥ ëª¨ë“œë¥¼ ë‹¤ì‹œ ì¼œì„œ ë°”ë‹¥ìœ¼ë¡œ ì¶”ë½ì‹œí‚µë‹ˆë‹¤.
                     if (case5Rb != null)
                     {
                         case5Rb.gravityScale = 1.5f;
@@ -338,151 +350,151 @@ public class AttackPatternManager : MonoBehaviour
                     player.SetMovementMode(PlayerController.MovementMode.Gravity);
                     player.isControlLocked = false;
 
-                    // 6. [¿äÃ» »çÇ× ¹İ¿µ] Á¦ÇÑµÈ 6f ±¸¿ª ³»¿¡ °¡½Ã 4°³¿Í ºó °ø°£ 1°³ ¹èÄ¡
-                    int totalSlots = 4; // °¡½Ã 4°³ + ºó °ø°£ 1°³ = ÃÑ 5Ä­
-                    int safeHoleIndex = Random.Range(0, totalSlots); // 0~4 Áß ·£´ıÀ¸·Î ¾ÈÀüÁö´ë ¼³Á¤
+                    // 6. [ìš”ì²­ ì‚¬í•­ ë°˜ì˜] ì œí•œëœ 6f êµ¬ì—­ ë‚´ì— ê°€ì‹œ 4ê°œì™€ ë¹ˆ ê³µê°„ 1ê°œ ë°°ì¹˜
+                    int totalSlots = 4; // ê°€ì‹œ 4ê°œ + ë¹ˆ ê³µê°„ 1ê°œ = ì´ 5ì¹¸
+                    int safeHoleIndex = Random.Range(0, totalSlots); // 0~4 ì¤‘ ëœë¤ìœ¼ë¡œ ì•ˆì „ì§€ëŒ€ ì„¤ì •
 
-                    float case5StartX = -3f; // ¾ç³¡ 1f¸¦ Á¦¿ÜÇÑ ³»ºÎ 6f ±¸¿ªÀÇ ½ÃÀÛ XÁÂÇ¥ (-4f + 1f)
-                    float spacing = 2f; // 6f ±¸¿ªÀ» 5°³ Ä­À¸·Î ³ª´©´Â Á¤¹Ğ °£°İ (6f / 4)
+                    float case5StartX = -3f; // ì–‘ë 1fë¥¼ ì œì™¸í•œ ë‚´ë¶€ 6f êµ¬ì—­ì˜ ì‹œì‘ Xì¢Œí‘œ (-4f + 1f)
+                    float spacing = 2f; // 6f êµ¬ì—­ì„ 5ê°œ ì¹¸ìœ¼ë¡œ ë‚˜ëˆ„ëŠ” ì •ë°€ ê°„ê²© (6f / 4)
 
                     for (int i = 0; i < totalSlots; i++)
                     {
-                        // ·£´ı ¼±ÅÃµÈ ÀÎµ¦½º´Â ºó °ø°£ÀÌ¹Ç·Î °¡½Ã¸¦ »ı¼ºÇÏÁö ¾Ê°í ÆĞ½º!
+                        // ëœë¤ ì„ íƒëœ ì¸ë±ìŠ¤ëŠ” ë¹ˆ ê³µê°„ì´ë¯€ë¡œ ê°€ì‹œë¥¼ ìƒì„±í•˜ì§€ ì•Šê³  íŒ¨ìŠ¤!
                         if (i == safeHoleIndex) continue;
 
-                        // ¹Ù´Ú¿¡ °íÁ¤µÈ °¡½Ã »ı¼º
+                        // ë°”ë‹¥ì— ê³ ì •ëœ ê°€ì‹œ ìƒì„±
                         Vector2 bottomPos = new Vector2(case5StartX + (i * spacing), boxController.bottomWall.position.y + 0.5f);
-                        GameObject staticSpike = Instantiate(bulletC_Static_Prefab, bottomPos, Quaternion.identity);
+                        GameObject staticSpike = SpawnOwned(bulletC_Static_Prefab, bottomPos, Quaternion.identity);
 
-                        // 4ÃÊ µÚ ÀÚµ¿ ÆÄ±«
+                        // 4ì´ˆ ë’¤ ìë™ íŒŒê´´
                         Destroy(staticSpike, 2.0f);
                     }
 
-                    // ´ÙÀ½ ÆĞÅÏ ÀüÈ¯ ´ë±â ½Ã°£
+                    // ë‹¤ìŒ íŒ¨í„´ ì „í™˜ ëŒ€ê¸° ì‹œê°„
                     yield return new WaitForSeconds(2.2f);
 
-                    //  ÆĞÅÏ Á¾·á ÈÄ Àû ´Ù½Ã ³ªÅ¸³ª±â
+                    //  íŒ¨í„´ ì¢…ë£Œ í›„ ì  ë‹¤ì‹œ ë‚˜íƒ€ë‚˜ê¸°
                     if (enemyObject != null) enemyObject.SetActive(true);
 
                     break;
                 }
 
-            case 6: // Áß·Â Á¶ÀÛ (¿¬¼Ó º®Äç ÆĞÅÏ)
+            case 6: // ì¤‘ë ¥ ì¡°ì‘ (ì—°ì† ë²½ì¾… íŒ¨í„´)
                 {
-                    // 1. »óÀÚ Å©±â Á¶Àı (³Êºñ 10, ³ôÀÌ 8)
+                    // 1. ìƒì í¬ê¸° ì¡°ì ˆ (ë„ˆë¹„ 10, ë†’ì´ 8)
                     boxController.ChangeBox(new Vector2(10f, 8f), new Vector2(0f, -3f), 0.5f);
                     yield return new WaitForSeconds(0.5f);
 
-                    //[¿äÃ» ¹İ¿µ] ÆĞÅÏ ½ÃÀÛ ½Ã ÀÚÀ¯ Á¶ÀÛ ¹× ¹«Áß·Â(Free) ¸ğµå·Î º¯È¯
+                    //[ìš”ì²­ ë°˜ì˜] íŒ¨í„´ ì‹œì‘ ì‹œ ììœ  ì¡°ì‘ ë° ë¬´ì¤‘ë ¥(Free) ëª¨ë“œë¡œ ë³€í™˜
                     player.isControlLocked = false;
                     player.SetMovementMode(PlayerController.MovementMode.Free);
 
                     Rigidbody2D case6Rb = player.GetComponent<Rigidbody2D>();
                     if (case6Rb != null)
                     {
-                        case6Rb.gravityScale = 0f; // Áß·Â ²ô±â
-                        case6Rb.linearVelocity = Vector2.zero; // ±âÁ¸ ¼Óµµ ÃÊ±âÈ­
+                        case6Rb.gravityScale = 0f; // ì¤‘ë ¥ ë„ê¸°
+                        case6Rb.linearVelocity = Vector2.zero; // ê¸°ì¡´ ì†ë„ ì´ˆê¸°í™”
                     }
 
-                    int dashCount = 3;           // ÃÑ 3¹ø ´øÁö±â
-                    float centerDashTime = 0.2f; // Ã¹ Áß¾Ó ÀÌµ¿ ½Ã°£
-                    float wallDashTime = 0.15f;  // º®À¸·Î ¹ĞÃÄÁö´Â ½Ã°£ (¸Å¿ì ºü¸§)
+                    int dashCount = 3;           // ì´ 3ë²ˆ ë˜ì§€ê¸°
+                    float centerDashTime = 0.2f; // ì²« ì¤‘ì•™ ì´ë™ ì‹œê°„
+                    float wallDashTime = 0.15f;  // ë²½ìœ¼ë¡œ ë°€ì³ì§€ëŠ” ì‹œê°„ (ë§¤ìš° ë¹ ë¦„)
 
                     for (int i = 0; i < dashCount; i++)
                     {
-                        // [¿äÃ» ¹İ¿µ] ¿ÀÁ÷ 'Ã¹ ¹øÂ°(i == 0)' ·çÇÁÀÏ ¶§¸¸ ÇÃ·¹ÀÌ¾î¸¦ Áß¾ÓÀ¸·Î ÀÌµ¿½ÃÅµ´Ï´Ù.
-                        // µÎ ¹øÂ°, ¼¼ ¹øÂ° ·çÇÁ¿¡¼­´Â ÀÌ ´Ü°è¸¦ °Ç³Ê¶Ù°í ¹Ù·Î ´ÙÀ½ º®À¸·Î ÀÌµ¿ÇÕ´Ï´Ù.
+                        // [ìš”ì²­ ë°˜ì˜] ì˜¤ì§ 'ì²« ë²ˆì§¸(i == 0)' ë£¨í”„ì¼ ë•Œë§Œ í”Œë ˆì´ì–´ë¥¼ ì¤‘ì•™ìœ¼ë¡œ ì´ë™ì‹œí‚µë‹ˆë‹¤.
+                        // ë‘ ë²ˆì§¸, ì„¸ ë²ˆì§¸ ë£¨í”„ì—ì„œëŠ” ì´ ë‹¨ê³„ë¥¼ ê±´ë„ˆë›°ê³  ë°”ë¡œ ë‹¤ìŒ ë²½ìœ¼ë¡œ ì´ë™í•©ë‹ˆë‹¤.
                         if (i == 0)
                         {
-                            player.isControlLocked = true; // ÀÌµ¿ Áß Á¶ÀÛ Àá±İ
+                            player.isControlLocked = true; // ì´ë™ ì¤‘ ì¡°ì‘ ì ê¸ˆ
                             yield return StartCoroutine(MovePlayerTo(new Vector2(0f, -4f), centerDashTime));
-                            yield return new WaitForSeconds(0.1f); // Æ¨±â±â Àü ÂªÀº Á¤Àû
+                            yield return new WaitForSeconds(0.1f); // íŠ•ê¸°ê¸° ì „ ì§§ì€ ì •ì 
                         }
 
-                        // 2. ·£´ı º® ¼±ÅÃ (0: Top, 1: Bottom, 2: Left, 3: Right)
+                        // 2. ëœë¤ ë²½ ì„ íƒ (0: Top, 1: Bottom, 2: Left, 3: Right)
                         int wallIndex = Random.Range(0, 4);
                         Vector2 case6TargetPos = Vector2.zero;
-                        float case6Offset = 0.8f; // º®À» ¶ÕÁö ¾Ê±â À§ÇÑ ¿©¹é
+                        float case6Offset = 0.8f; // ë²½ì„ ëš«ì§€ ì•Šê¸° ìœ„í•œ ì—¬ë°±
 
                         if (wallIndex == 0) case6TargetPos = new Vector2(player.transform.position.x, boxController.topWall.position.y - case6Offset);
                         else if (wallIndex == 1) case6TargetPos = new Vector2(player.transform.position.x, boxController.bottomWall.position.y + case6Offset);
                         else if (wallIndex == 2) case6TargetPos = new Vector2(boxController.leftWall.position.x + case6Offset, player.transform.position.y);
                         else if (wallIndex == 3) case6TargetPos = new Vector2(boxController.rightWall.position.x - case6Offset, player.transform.position.y);
 
-                        // 3. Äç! ÇöÀç À§Ä¡¿¡¼­ ÇØ´ç º® ¹æÇâÀ¸·Î °ğ¹Ù·Î ³»µ¿´óÀÌ
-                        player.isControlLocked = true; // ¹Ğ·Á³ª´Â µ¿¾È Á¶ÀÛ Àá±İ
+                        // 3. ì¾…! í˜„ì¬ ìœ„ì¹˜ì—ì„œ í•´ë‹¹ ë²½ ë°©í–¥ìœ¼ë¡œ ê³§ë°”ë¡œ ë‚´ë™ëŒ•ì´
+                        player.isControlLocked = true; // ë°€ë ¤ë‚˜ëŠ” ë™ì•ˆ ì¡°ì‘ ì ê¸ˆ
                         yield return StartCoroutine(MovePlayerTo(case6TargetPos, wallDashTime));
 
-                        // 4. º®¿¡ ´êÀÚ¸¶ÀÚ Áï½Ã Á¶ÀÛÀ» µ¹·ÁÁÜ (0.2ÃÊ µ¿¾È Å»ÃâÇØ¾ß ÇÔ!)
+                        // 4. ë²½ì— ë‹¿ìë§ˆì ì¦‰ì‹œ ì¡°ì‘ì„ ëŒë ¤ì¤Œ (0.2ì´ˆ ë™ì•ˆ íƒˆì¶œí•´ì•¼ í•¨!)
                         player.isControlLocked = false;
 
-                        // 5. ¾à¼ÓµÈ 0.2ÃÊÀÇ ¹İÀÀ(µµ¸Á) ½Ã°£
+                        // 5. ì•½ì†ëœ 0.2ì´ˆì˜ ë°˜ì‘(ë„ë§) ì‹œê°„
                         yield return new WaitForSeconds(0.5f);
 
-                        // 6. °¡¸¸È÷ ÀÖ´Â °¡½Ã(Static)µéÀÌ ÇØ´ç º®¿¡¼­ ÀÏÁ¦È÷ µ¹Ãâ
+                        // 6. ê°€ë§Œíˆ ìˆëŠ” ê°€ì‹œ(Static)ë“¤ì´ í•´ë‹¹ ë²½ì—ì„œ ì¼ì œíˆ ëŒì¶œ
                         List<GameObject> wallSpikes = new List<GameObject>();
-                        int spikeAmount = 7; // º® ÇÑ ¸é¿¡ »ı¼ºµÉ °¡½Ã °³¼ö
+                        int spikeAmount = 7; // ë²½ í•œ ë©´ì— ìƒì„±ë  ê°€ì‹œ ê°œìˆ˜
 
-                        if (wallIndex == 0) // À§ÂÊ º® (¾Æ·¡¸¦ ÇâÇØ Æ¦)
+                        if (wallIndex == 0) // ìœ„ìª½ ë²½ (ì•„ë˜ë¥¼ í–¥í•´ íŠ)
                         {
                             float case6StartX = boxController.leftWall.position.x + 0.5f;
                             float spacing = (boxController.rightWall.position.x - boxController.leftWall.position.x - 1f) / (spikeAmount - 1);
                             for (int j = 0; j < spikeAmount; j++)
                             {
                                 Vector2 pos = new Vector2(case6StartX + (j * spacing), boxController.topWall.position.y - 0.5f);
-                                wallSpikes.Add(Instantiate(bulletC_Static_Prefab, pos, Quaternion.Euler(0, 0, 180f)));
+                                wallSpikes.Add(SpawnOwned(bulletC_Static_Prefab, pos, Quaternion.Euler(0, 0, 180f)));
                             }
                         }
-                        else if (wallIndex == 1) // ¾Æ·¡ÂÊ º® (À§¸¦ ÇâÇØ Æ¦)
+                        else if (wallIndex == 1) // ì•„ë˜ìª½ ë²½ (ìœ„ë¥¼ í–¥í•´ íŠ)
                         {
                             float case6StartX = boxController.leftWall.position.x + 0.5f;
                             float spacing = (boxController.rightWall.position.x - boxController.leftWall.position.x - 1f) / (spikeAmount - 1);
                             for (int j = 0; j < spikeAmount; j++)
                             {
                                 Vector2 pos = new Vector2(case6StartX + (j * spacing), boxController.bottomWall.position.y + 0.5f);
-                                wallSpikes.Add(Instantiate(bulletC_Static_Prefab, pos, Quaternion.identity));
+                                wallSpikes.Add(SpawnOwned(bulletC_Static_Prefab, pos, Quaternion.identity));
                             }
                         }
-                        else if (wallIndex == 2) // ¿ŞÂÊ º® (¿À¸¥ÂÊÀ» ÇâÇØ Æ¦)
+                        else if (wallIndex == 2) // ì™¼ìª½ ë²½ (ì˜¤ë¥¸ìª½ì„ í–¥í•´ íŠ)
                         {
                             float case6StartY = boxController.bottomWall.position.y + 0.5f;
                             float spacing = (boxController.topWall.position.y - boxController.bottomWall.position.y - 1f) / (spikeAmount - 1);
                             for (int j = 0; j < spikeAmount; j++)
                             {
                                 Vector2 pos = new Vector2(boxController.leftWall.position.x + 0.5f, case6StartY + (j * spacing));
-                                wallSpikes.Add(Instantiate(bulletC_Static_Prefab, pos, Quaternion.Euler(0, 0, -90f)));
+                                wallSpikes.Add(SpawnOwned(bulletC_Static_Prefab, pos, Quaternion.Euler(0, 0, -90f)));
                             }
                         }
-                        else if (wallIndex == 3) // ¿À¸¥ÂÊ º® (¿ŞÂÊÀ» ÇâÇØ Æ¦)
+                        else if (wallIndex == 3) // ì˜¤ë¥¸ìª½ ë²½ (ì™¼ìª½ì„ í–¥í•´ íŠ)
                         {
                             float case6StartY = boxController.bottomWall.position.y + 0.5f;
                             float spacing = (boxController.topWall.position.y - boxController.bottomWall.position.y - 1f) / (spikeAmount - 1);
                             for (int j = 0; j < spikeAmount; j++)
                             {
                                 Vector2 pos = new Vector2(boxController.rightWall.position.x - 0.5f, case6StartY + (j * spacing));
-                                wallSpikes.Add(Instantiate(bulletC_Static_Prefab, pos, Quaternion.Euler(0, 0, 90f)));
+                                wallSpikes.Add(SpawnOwned(bulletC_Static_Prefab, pos, Quaternion.Euler(0, 0, 90f)));
                             }
                         }
 
-                        // 7. °¡½Ã°¡ À¯ÁöµÇ´Â ½Ã°£ (µµ¸ÁÃÄ¼­ ¹öÅß¾ß ÇÏ´Â ½Ã°£)
+                        // 7. ê°€ì‹œê°€ ìœ ì§€ë˜ëŠ” ì‹œê°„ (ë„ë§ì³ì„œ ë²„í…¨ì•¼ í•˜ëŠ” ì‹œê°„)
                         yield return new WaitForSeconds(0.6f);
 
-                        // 8. ±ò²ûÇÏ°Ô °¡½Ã È¸¼ö(»èÁ¦)
+                        // 8. ê¹”ë”í•˜ê²Œ ê°€ì‹œ íšŒìˆ˜(ì‚­ì œ)
                         foreach (GameObject spike in wallSpikes)
                         {
                             if (spike != null) Destroy(spike);
                         }
 
-                        // ´ÙÀ½ º®À¸·Î ÃÄ³»±â ÀüÀÇ ¾ÆÁÖ ÂªÀº ÈŞ½Ä ÅÛÆ÷
+                        // ë‹¤ìŒ ë²½ìœ¼ë¡œ ì³ë‚´ê¸° ì „ì˜ ì•„ì£¼ ì§§ì€ íœ´ì‹ í…œí¬
                         yield return new WaitForSeconds(0.2f);
                     }
 
-                    // ¸ğµç ¿¬¼Ó º®ÄçÀÌ ³¡³ª°í ´ÙÀ½ ÆĞÅÏÀ¸·Î ³Ñ¾î°¡±â Àü ¾ÈÀü ´ë±â ½Ã°£
+                    // ëª¨ë“  ì—°ì† ë²½ì¾…ì´ ëë‚˜ê³  ë‹¤ìŒ íŒ¨í„´ìœ¼ë¡œ ë„˜ì–´ê°€ê¸° ì „ ì•ˆì „ ëŒ€ê¸° ì‹œê°„
                     yield return new WaitForSeconds(1.5f);
                     break;
                 }
 
-            case 7: // ¹İ½Ã°è ·¹ÀÌÀú (»õ·Î¿î Áß½ÉÁ¡ Á¶ÁØ)
+            case 7: // ë°˜ì‹œê³„ ë ˆì´ì € (ìƒˆë¡œìš´ ì¤‘ì‹¬ì  ì¡°ì¤€)
                 Vector2 boxCenter2 = new Vector2(0f, -3f);
                 boxController.ChangeBox(new Vector2(8f, 8f), boxCenter2, 0.5f);
                 player.SetMovementMode(PlayerController.MovementMode.Free);
@@ -491,85 +503,85 @@ public class AttackPatternManager : MonoBehaviour
                 float angle = 60f;
                 for (int i = 0; i < 24; i++)
                 {
-                    // 1. Vector2.zero ´ë½Å boxCenter2¸¦ ±âÁØÀ¸·Î ¿øÇü ÁÂÇ¥ °è»ê
+                    // 1. Vector2.zero ëŒ€ì‹  boxCenter2ë¥¼ ê¸°ì¤€ìœ¼ë¡œ ì›í˜• ì¢Œí‘œ ê³„ì‚°
                     Vector2 spawnPos = GetPosOnCircle(boxCenter2, 6f, angle);
 
-                    // 2. Vector2.zero ´ë½Å boxCenter2¸¦ ¹Ù¶óº¸µµ·Ï ¹æÇâ º¤ÅÍ °è»ê
+                    // 2. Vector2.zero ëŒ€ì‹  boxCenter2ë¥¼ ë°”ë¼ë³´ë„ë¡ ë°©í–¥ ë²¡í„° ê³„ì‚°
                     Vector2 dirToCenter = boxCenter2 - spawnPos;
 
                     float rotZ = Mathf.Atan2(dirToCenter.y, dirToCenter.x) * Mathf.Rad2Deg;
-                    Instantiate(bulletB_Prefab, spawnPos, Quaternion.Euler(0, 0, rotZ));
+                    SpawnOwned(bulletB_Prefab, spawnPos, Quaternion.Euler(0, 0, rotZ));
 
                     angle += 15f;
                     yield return new WaitForSeconds(0.1f);
                 }
                 yield return new WaitForSeconds(3f);
                 break;
-            case 8: // ¾ç¹æÇâ µ¿½Ã ·¹ÀÌÀú (»õ·Î¿î Áß½ÉÁ¡ ±âÁØ)
+            case 8: // ì–‘ë°©í–¥ ë™ì‹œ ë ˆì´ì € (ìƒˆë¡œìš´ ì¤‘ì‹¬ì  ê¸°ì¤€)
                 Vector2 boxCenter3 = new Vector2(0f, -3f);
                 boxController.ChangeBox(new Vector2(8f, 8f), boxCenter3, 0.5f);
                 player.SetMovementMode(PlayerController.MovementMode.Free);
                 yield return new WaitForSeconds(0.5f);
 
-                // Áß½ÉÁ¡¿¡¼­ ÁÂÃø »ó´Ü/¿ìÃø »ó´ÜÀ¸·Î ¿ÀÇÁ¼ÂÀ» ´õÇØ À§Ä¡¸¦ Àâ½À´Ï´Ù.
+                // ì¤‘ì‹¬ì ì—ì„œ ì¢Œì¸¡ ìƒë‹¨/ìš°ì¸¡ ìƒë‹¨ìœ¼ë¡œ ì˜¤í”„ì…‹ì„ ë”í•´ ìœ„ì¹˜ë¥¼ ì¡ìŠµë‹ˆë‹¤.
                 Vector2 leftPos = boxCenter3 + new Vector2(-5f, 5f);
                 Vector2 rightPos = boxCenter3 + new Vector2(5f, 5f);
 
-                Instantiate(bulletB_Prefab, leftPos, Quaternion.Euler(0, 0, -45f));
-                Instantiate(bulletB_Prefab, rightPos, Quaternion.Euler(0, 0, -135f));
+                SpawnOwned(bulletB_Prefab, leftPos, Quaternion.Euler(0, 0, -45f));
+                SpawnOwned(bulletB_Prefab, rightPos, Quaternion.Euler(0, 0, -135f));
 
                 yield return new WaitForSeconds(2f);
                 break;
-            case 9: // °¡·Î ·¹ÀÌÀú(BulletB) 4¿¬»ç ÆĞÅÏ (ÀÚÀ¯ ¸ğµå)
+            case 9: // ê°€ë¡œ ë ˆì´ì €(BulletB) 4ì—°ì‚¬ íŒ¨í„´ (ììœ  ëª¨ë“œ)
                 {
-                    // 1. »óÀÚ Å©±â Á¶Àı (±âº» Å©±â: ³Êºñ 8, ³ôÀÌ 8)
+                    // 1. ìƒì í¬ê¸° ì¡°ì ˆ (ê¸°ë³¸ í¬ê¸°: ë„ˆë¹„ 8, ë†’ì´ 8)
                     boxController.ChangeBox(new Vector2(8f, 8f), new Vector2(0f, -3f), 0.5f);
                     yield return new WaitForSeconds(0.5f);
 
-                    // 2. ÇÃ·¹ÀÌ¾î¸¦ ÀÚÀ¯ Á¶ÀÛ(Free) ¹× ¹«Áß·Â »óÅÂ·Î º¯È¯
+                    // 2. í”Œë ˆì´ì–´ë¥¼ ììœ  ì¡°ì‘(Free) ë° ë¬´ì¤‘ë ¥ ìƒíƒœë¡œ ë³€í™˜
                     player.isControlLocked = false;
                     player.SetMovementMode(PlayerController.MovementMode.Free);
 
                     Rigidbody2D case9Rb = player.GetComponent<Rigidbody2D>();
                     if (case9Rb != null)
                     {
-                        case9Rb.gravityScale = 0f; // Áß·Â ²ô±â
-                        case9Rb.linearVelocity = Vector2.zero; // ±âÁ¸¿¡ ¹Ş´ø Èû ÃÊ±âÈ­
+                        case9Rb.gravityScale = 0f; // ì¤‘ë ¥ ë„ê¸°
+                        case9Rb.linearVelocity = Vector2.zero; // ê¸°ì¡´ì— ë°›ë˜ í˜ ì´ˆê¸°í™”
                     }
 
-                    // 3. ÆĞÅÏ ¼³Á¤°ª
-                    int repeatCount = 4; // ÃÑ 4¹ø »ı¼º
-                    float case9SpawnDelay = 0.6f; // »ı¼º °£°İ 0.6ÃÊ
-                    float spawnX = -17f; // XÁÂÇ¥´Â ¿ŞÂÊ ³¡À¸·Î °íÁ¤
+                    // 3. íŒ¨í„´ ì„¤ì •ê°’
+                    int repeatCount = 4; // ì´ 4ë²ˆ ìƒì„±
+                    float case9SpawnDelay = 0.6f; // ìƒì„± ê°„ê²© 0.6ì´ˆ
+                    float spawnX = -17f; // Xì¢Œí‘œëŠ” ì™¼ìª½ ëìœ¼ë¡œ ê³ ì •
 
-                    // 4°³ÀÇ ÁöÁ¤µÈ YÁÂÇ¥ ¹è¿­
+                    // 4ê°œì˜ ì§€ì •ëœ Yì¢Œí‘œ ë°°ì—´
                     float[] possibleYPos = { -2f, -3f, -4f, -5f, -6f, -7f };
 
-                    // 4. ·¹ÀÌÀú ¿¬¼Ó »ı¼º
+                    // 4. ë ˆì´ì € ì—°ì† ìƒì„±
                     for (int i = 0; i < repeatCount; i++)
                     {
-                        // ÁöÁ¤µÈ 4°³ÀÇ YÁÂÇ¥ Áß ÇÏ³ª¸¦ ·£´ıÀ¸·Î »Ì½À´Ï´Ù.
+                        // ì§€ì •ëœ 4ê°œì˜ Yì¢Œí‘œ ì¤‘ í•˜ë‚˜ë¥¼ ëœë¤ìœ¼ë¡œ ë½‘ìŠµë‹ˆë‹¤.
                         int randomIndex = Random.Range(0, possibleYPos.Length);
                         float spawnY = possibleYPos[randomIndex];
 
                         Vector2 spawnPos = new Vector2(spawnX, spawnY);
 
-                        // BulletB »ı¼º (¿À¸¥ÂÊÀ» ¹Ù¶óº¸µµ·Ï È¸Àü°ª 0µµÀÎ Quaternion.identity »ç¿ë)
-                        // ¸¸¾à ·¹ÀÌÀú°¡ À§¸¦ º¸°í ÀÖ´Ù¸é Quaternion.Euler(0, 0, -90f) ·Î ¼öÁ¤ÇØÁÖ¼¼¿ä!
-                        Instantiate(bulletB_Prefab, spawnPos, Quaternion.identity);
+                        // BulletB ìƒì„± (ì˜¤ë¥¸ìª½ì„ ë°”ë¼ë³´ë„ë¡ íšŒì „ê°’ 0ë„ì¸ Quaternion.identity ì‚¬ìš©)
+                        // ë§Œì•½ ë ˆì´ì €ê°€ ìœ„ë¥¼ ë³´ê³  ìˆë‹¤ë©´ Quaternion.Euler(0, 0, -90f) ë¡œ ìˆ˜ì •í•´ì£¼ì„¸ìš”!
+                        SpawnOwned(bulletB_Prefab, spawnPos, Quaternion.identity);
 
-                        // ´ÙÀ½ »ı¼º±îÁö 0.6ÃÊ ´ë±â
+                        // ë‹¤ìŒ ìƒì„±ê¹Œì§€ 0.6ì´ˆ ëŒ€ê¸°
                         yield return new WaitForSeconds(case9SpawnDelay);
                     }
 
-                    // ÆĞÅÏ Á¾·á ÈÄ ¸ğµç ·¹ÀÌÀú°¡ ³¡³¯ ¶§±îÁö ³Ë³ËÈ÷ ´ë±â
+                    // íŒ¨í„´ ì¢…ë£Œ í›„ ëª¨ë“  ë ˆì´ì €ê°€ ëë‚  ë•Œê¹Œì§€ ë„‰ë„‰íˆ ëŒ€ê¸°
                     yield return new WaitForSeconds(2.0f);
                     break;
                 }
         }
     }
 
-    // ¿øÇü ÁÂÇ¥ µµ¿ì¹Ì ÇÔ¼ö À¯Áö
+    // ì›í˜• ì¢Œí‘œ ë„ìš°ë¯¸ í•¨ìˆ˜ ìœ ì§€
     private Vector2 GetPosOnCircle(Vector2 center, float radius, float angleInDegrees)
     {
         float ptX = center.x + radius * Mathf.Cos(angleInDegrees * Mathf.Deg2Rad);
@@ -578,48 +590,48 @@ public class AttackPatternManager : MonoBehaviour
     }
 
 
-    // 2¹ø ÆĞÅÏ Àü¿ë ÃÑ¾Ë »ı¼º ÇÔ¼ö
+    // 2ë²ˆ íŒ¨í„´ ì „ìš© ì´ì•Œ ìƒì„± í•¨ìˆ˜
     private void SpawnWaveBullet(float x, float y)
     {
-        // ÁöÁ¤µÈ À§Ä¡¿¡ ÃÑ¾Ë »ı¼º
-        GameObject bullet = Instantiate(bulletA_Straight_Prefab, new Vector2(x, y), Quaternion.identity);
+        // ì§€ì •ëœ ìœ„ì¹˜ì— ì´ì•Œ ìƒì„±
+        GameObject bullet = SpawnOwned(bulletA_Straight_Prefab, new Vector2(x, y), Quaternion.identity);
 
-        // Áß¿ä: ¸¸¾à bulletA_Prefab ÀÚÃ¼¿¡ ÇÃ·¹ÀÌ¾î¸¦ µû¶ó°¡´Â(Homing) ½ºÅ©¸³Æ®°¡ ÄÑÁ®ÀÖ´Ù¸é, 
-        // ¿©±â¼­ ±× ½ºÅ©¸³Æ®¸¦ ²¨ÁÖ´Â ÄÚµå°¡ ÇÊ¿äÇÒ ¼ö ÀÖ½À´Ï´Ù. 
-        // ¿¹: bullet.GetComponent<HomingScript>().enabled = false;
+        // ì¤‘ìš”: ë§Œì•½ bulletA_Prefab ìì²´ì— í”Œë ˆì´ì–´ë¥¼ ë”°ë¼ê°€ëŠ”(Homing) ìŠ¤í¬ë¦½íŠ¸ê°€ ì¼œì ¸ìˆë‹¤ë©´,
+        // ì—¬ê¸°ì„œ ê·¸ ìŠ¤í¬ë¦½íŠ¸ë¥¼ êº¼ì£¼ëŠ” ì½”ë“œê°€ í•„ìš”í•  ìˆ˜ ìˆìŠµë‹ˆë‹¤.
+        // ì˜ˆ: bullet.GetComponent<HomingScript>().enabled = false;
 
-        // ¿ŞÂÊ¿¡¼­ ¿À¸¥ÂÊÀ¸·Î¸¸ Á÷ÁøÇÏµµ·Ï ¼Óµµ °­Á¦ ºÎ¿©
+        // ì™¼ìª½ì—ì„œ ì˜¤ë¥¸ìª½ìœ¼ë¡œë§Œ ì§ì§„í•˜ë„ë¡ ì†ë„ ê°•ì œ ë¶€ì—¬
         Rigidbody2D rb = bullet.GetComponent<Rigidbody2D>();
         if (rb != null)
         {
-            rb.linearVelocity = new Vector2(8f, 0f); // 8ÀÇ ¼Óµµ·Î ¿À¸¥ÂÊ ÀÌµ¿ (Å×½ºÆ® ÈÄ ÀÔ¸À¿¡ ¸Â°Ô Á¶ÀıÇÏ¼¼¿ä)
+            rb.linearVelocity = new Vector2(8f, 0f); // 8ì˜ ì†ë„ë¡œ ì˜¤ë¥¸ìª½ ì´ë™ (í…ŒìŠ¤íŠ¸ í›„ ì…ë§›ì— ë§ê²Œ ì¡°ì ˆí•˜ì„¸ìš”)
         }
     }
 
-    // 3¹ø ÆĞÅÏ Àü¿ë
+    // 3ë²ˆ íŒ¨í„´ ì „ìš©
     private void SpawnVerticalBullet(float x, float y)
     {
-        GameObject bullet = Instantiate(bulletA_Straight_Prefab, new Vector2(x, y), Quaternion.identity);
+        GameObject bullet = SpawnOwned(bulletA_Straight_Prefab, new Vector2(x, y), Quaternion.identity);
 
-        // ¿ŞÂÊ->¿À¸¥ÂÊ ¶§¿Í ¸¶Âù°¡Áö·Î Homing ½ºÅ©¸³Æ®°¡ ÀÖ´Ù¸é ºñÈ°¼ºÈ­ ÇØÁÖ¼¼¿ä.
-        // ¿¹: bullet.GetComponent<HomingScript>().enabled = false;
+        // ì™¼ìª½->ì˜¤ë¥¸ìª½ ë•Œì™€ ë§ˆì°¬ê°€ì§€ë¡œ Homing ìŠ¤í¬ë¦½íŠ¸ê°€ ìˆë‹¤ë©´ ë¹„í™œì„±í™” í•´ì£¼ì„¸ìš”.
+        // ì˜ˆ: bullet.GetComponent<HomingScript>().enabled = false;
 
         Rigidbody2D rb = bullet.GetComponent<Rigidbody2D>();
         if (rb != null)
         {
-            // XÃà ÀÌµ¿Àº ¾ø°í, YÃàÀ¸·Î -8fÀÇ ¼Óµµ·Î ¶³¾îÁö°Ô ÇÕ´Ï´Ù.
+            // Xì¶• ì´ë™ì€ ì—†ê³ , Yì¶•ìœ¼ë¡œ -8fì˜ ì†ë„ë¡œ ë–¨ì–´ì§€ê²Œ í•©ë‹ˆë‹¤.
             rb.linearVelocity = new Vector2(0f, -8f);
         }
     }
 
 
-    // 5¹ø ÆĞÅÏ Àü¿ë
-    //  [¼öÁ¤] ÇöÀç È­¸é¿¡ »ı¼ºµÇ¾î ³¯¾Æ°¡°í ÀÖ´Â º® °¡½ÃµéÀ» °ü¸®ÇÏ´Â ¸®½ºÆ®
+    // 5ë²ˆ íŒ¨í„´ ì „ìš©
+    //  [ìˆ˜ì •] í˜„ì¬ í™”ë©´ì— ìƒì„±ë˜ì–´ ë‚ ì•„ê°€ê³  ìˆëŠ” ë²½ ê°€ì‹œë“¤ì„ ê´€ë¦¬í•˜ëŠ” ë¦¬ìŠ¤íŠ¸
     private List<GameObject> activeWallSpikes = new List<GameObject>();
 
     private void SpawnMovingSpike(Vector2 pos, float rotZ, Vector2 velocity)
     {
-        GameObject spike = Instantiate(bulletC_Static_Prefab, pos, Quaternion.Euler(0, 0, rotZ));
+        GameObject spike = SpawnOwned(bulletC_Static_Prefab, pos, Quaternion.Euler(0, 0, rotZ));
 
         Rigidbody2D rb = spike.GetComponent<Rigidbody2D>();
         if (rb != null)
@@ -627,19 +639,19 @@ public class AttackPatternManager : MonoBehaviour
             rb.linearVelocity = velocity;
         }
 
-        //  »ı¼ºµÈ °¡½Ã¸¦ °ü¸® ¸®½ºÆ®¿¡ Ãß°¡ÇÕ´Ï´Ù.
+        //  ìƒì„±ëœ ê°€ì‹œë¥¼ ê´€ë¦¬ ë¦¬ìŠ¤íŠ¸ì— ì¶”ê°€í•©ë‹ˆë‹¤.
         activeWallSpikes.Add(spike);
 
         StartCoroutine(DestroySpikeAtTopWall(spike));
     }
-    //5¹ø ÆĞÅÏ Àü¿ë
+    //5ë²ˆ íŒ¨í„´ ì „ìš©
     private IEnumerator DestroySpikeAtTopWall(GameObject spike)
     {
         while (spike != null)
         {
             if (spike.transform.position.y >= boxController.topWall.position.y)
             {
-                //  ÆÄ±«µÇ±â Àü¿¡ ¸®½ºÆ®¿¡¼­ ¾ÈÀüÇÏ°Ô Á¦°ÅÇÕ´Ï´Ù.
+                //  íŒŒê´´ë˜ê¸° ì „ì— ë¦¬ìŠ¤íŠ¸ì—ì„œ ì•ˆì „í•˜ê²Œ ì œê±°í•©ë‹ˆë‹¤.
                 if (activeWallSpikes.Contains(spike))
                 {
                     activeWallSpikes.Remove(spike);
@@ -654,13 +666,13 @@ public class AttackPatternManager : MonoBehaviour
     }
 
 
-    // 6¹ø ÆĞÅÏ Àü¿ë: ÁöÁ¤µÈ ¸ñÇ¥ À§Ä¡±îÁö ºÎµå·´°Ô ²ø¾î´ç±â´Â ÇÔ¼ö
+    // 6ë²ˆ íŒ¨í„´ ì „ìš©: ì§€ì •ëœ ëª©í‘œ ìœ„ì¹˜ê¹Œì§€ ë¶€ë“œëŸ½ê²Œ ëŒì–´ë‹¹ê¸°ëŠ” í•¨ìˆ˜
     private IEnumerator MovePlayerTo(Vector2 targetPosition, float duration)
     {
         Vector2 startPosition = player.transform.position;
         float elapsed = 0f;
 
-        // ²ø·Á°¡´Â µ¿¾È¿¡´Â Áß·ÂÀÌ³ª ´Ù¸¥ Á¶ÀÛ ÈûÀÌ ¹æÇØÇÏÁö ¾Êµµ·Ï ¼Óµµ¸¦ 0À¸·Î ¹­½À´Ï´Ù.
+        // ëŒë ¤ê°€ëŠ” ë™ì•ˆì—ëŠ” ì¤‘ë ¥ì´ë‚˜ ë‹¤ë¥¸ ì¡°ì‘ í˜ì´ ë°©í•´í•˜ì§€ ì•Šë„ë¡ ì†ë„ë¥¼ 0ìœ¼ë¡œ ë¬¶ìŠµë‹ˆë‹¤.
         Rigidbody2D pRb = player.GetComponent<Rigidbody2D>();
         if (pRb != null)
         {
@@ -670,12 +682,12 @@ public class AttackPatternManager : MonoBehaviour
         while (elapsed < duration)
         {
             elapsed += Time.deltaTime;
-            // Vector2.Lerp¸¦ ÀÌ¿ëÇØ ½ÃÀÛÁ¡°ú ³¡Á¡ »çÀÌ¸¦ ¿¬¼ÓÀûÀ¸·Î °è»êÇÕ´Ï´Ù.
+            // Vector2.Lerpë¥¼ ì´ìš©í•´ ì‹œì‘ì ê³¼ ëì  ì‚¬ì´ë¥¼ ì—°ì†ì ìœ¼ë¡œ ê³„ì‚°í•©ë‹ˆë‹¤.
             player.transform.position = Vector2.Lerp(startPosition, targetPosition, elapsed / duration);
             yield return null;
         }
 
-        // ¸¶Áö¸·¿£ ¸ñÇ¥ À§Ä¡¿¡ ¿ÀÂ÷ ¾øÀÌ Á¤È®È÷ ¸ÂÃä´Ï´Ù.
+        // ë§ˆì§€ë§‰ì—” ëª©í‘œ ìœ„ì¹˜ì— ì˜¤ì°¨ ì—†ì´ ì •í™•íˆ ë§ì¶¥ë‹ˆë‹¤.
         player.transform.position = targetPosition;
     }
 }

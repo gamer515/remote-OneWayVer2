@@ -26,6 +26,8 @@ public partial class BattleSceneBattleBoxController : MonoBehaviour
     
     public void SetDialogueMode(float duration, string text) // text 파라미터 추가
     {
+        CancelAnimations();
+        SetWalls(true, false);
         textToSay = text;
         if (resizeCoroutine != null) StopCoroutine(resizeCoroutine);
 
@@ -118,13 +120,16 @@ public partial class BattleSceneBattleBoxController : MonoBehaviour
 
     public void ChangeBox(Vector2 targetSize, Vector2 targetCenter, float duration)
     {
+        CancelAnimations();
+        HideUI();
+        SetWalls(true, true);
         // 새로 추가: 상자 크기가 변하기 시작한다는 건 대화가 끝났다는 뜻이므로 글자를 날려버립니다.
         if (typewriter != null)
         {
             typewriter.StopAndClear();
         }
 
-        StartCoroutine(AnimateBox(targetSize, targetCenter, duration));
+        resizeCoroutine = StartCoroutine(AnimateBox(targetSize, targetCenter, duration));
     }
 
     [Header("Gauge Configurations")]
@@ -134,6 +139,8 @@ public partial class BattleSceneBattleBoxController : MonoBehaviour
 
     public void SetGaugeMode(float duration = 0.3f)
     {
+        CancelAnimations();
+        SetWalls(true, false);
         if (resizeCoroutine != null) StopCoroutine(resizeCoroutine);
 
         // 대화창 끄고 게이지 UI 켜기
@@ -141,5 +148,103 @@ public partial class BattleSceneBattleBoxController : MonoBehaviour
         if (gaugeUI != null) gaugeUI.SetActive(true); // 여기서 시각적 UI를 켭니다!
 
         resizeCoroutine = StartCoroutine(AnimateBox(gaugeSize, gaugePos, duration));
+    }
+
+    public Transform[] Walls => new[] { topWall, leftWall, bottomWall, rightWall };
+    public void CancelAnimations() { StopAllCoroutines(); resizeCoroutine = null; }
+    public void HideUI()
+    {
+        if (typewriter != null) typewriter.StopAndClear();
+        if (dialogueContent != null) dialogueContent.SetActive(false);
+        if (gaugeUI != null) gaugeUI.SetActive(false);
+    }
+    public void SetWalls(bool visible, bool collision)
+    {
+        foreach (var wall in Walls) SetWall(wall, visible, collision);
+    }
+    public void SetWall(Transform wall, bool visible, bool collision)
+    {
+        wall.gameObject.SetActive(true);
+        var renderer = wall.GetComponent<Renderer>();
+        if (renderer != null) renderer.enabled = visible;
+        var collider = wall.GetComponent<Collider2D>();
+        if (collider != null) collider.enabled = collision;
+    }
+    public sealed class Snapshot
+    {
+        public Vector3 center;
+        public Vector3[] positions = new Vector3[4], scales = new Vector3[4];
+        public bool[] visible = new bool[4], collision = new bool[4];
+    }
+    public Snapshot Capture()
+    {
+        var state = new Snapshot { center = transform.position };
+        var walls = Walls;
+        for (int i = 0; i < 4; i++)
+        {
+            state.positions[i] = walls[i].localPosition;
+            state.scales[i] = walls[i].localScale;
+            state.visible[i] = walls[i].GetComponent<Renderer>().enabled;
+            state.collision[i] = walls[i].GetComponent<Collider2D>().enabled;
+        }
+        return state;
+    }
+    public void Restore(Snapshot state)
+    {
+        CancelAnimations();
+        transform.position = state.center;
+        var walls = Walls;
+        for (int i = 0; i < 4; i++)
+        {
+            walls[i].localPosition = state.positions[i];
+            walls[i].localScale = state.scales[i];
+            SetWall(walls[i], state.visible[i], state.collision[i]);
+        }
+    }
+    public IEnumerator OpenCorridor(Rect bounds, float duration)
+    {
+        CancelAnimations(); HideUI(); SetWalls(true, false);
+        Vector3 a = topWall.localScale, b = bottomWall.localScale;
+        for (float t = 0; t < duration; t += Time.deltaTime)
+        {
+            float p = Mathf.SmoothStep(0, 1, t / duration);
+            topWall.localScale = new Vector3(Mathf.Lerp(a.x, 0, p), a.y, a.z);
+            bottomWall.localScale = new Vector3(Mathf.Lerp(b.x, 0, p), b.y, b.z);
+            yield return null;
+        }
+        SetWall(topWall, false, false); SetWall(bottomWall, false, false);
+        Vector3 left = leftWall.position, right = rightWall.position;
+        Vector3 leftScale = leftWall.localScale, rightScale = rightWall.localScale;
+        for (float t = 0; t < duration; t += Time.deltaTime)
+        {
+            float p = Mathf.SmoothStep(0, 1, t / duration);
+            leftWall.position = Vector3.Lerp(left, new Vector3(bounds.xMin, bounds.center.y, 0), p);
+            rightWall.position = Vector3.Lerp(right, new Vector3(bounds.xMax, bounds.center.y, 0), p);
+            leftWall.localScale = Vector3.Lerp(leftScale, new Vector3(wallThickness, bounds.height, 1), p);
+            rightWall.localScale = Vector3.Lerp(rightScale, new Vector3(wallThickness, bounds.height, 1), p);
+            yield return null;
+        }
+        leftWall.position = new Vector3(bounds.xMin, bounds.center.y, 0);
+        rightWall.position = new Vector3(bounds.xMax, bounds.center.y, 0);
+        leftWall.localScale = rightWall.localScale = new Vector3(wallThickness, bounds.height, 1);
+    }
+    public IEnumerator BuildSequential(Vector2 size, Vector2 center, float duration)
+    {
+        CancelAnimations(); HideUI();
+        transform.position = center; UpdateWalls(size); SetWalls(false, false);
+        foreach (var wall in Walls)
+        {
+            Vector3 target = wall.localScale;
+            bool horizontal = wall == topWall || wall == bottomWall;
+            Vector3 start = horizontal ? new Vector3(0, target.y, 1) : new Vector3(target.x, 0, 1);
+            wall.localScale = start; SetWall(wall, true, false);
+            for (float t = 0; t < duration; t += Time.deltaTime)
+            {
+                wall.localScale = Vector3.Lerp(start, target, Mathf.SmoothStep(0, 1, t / duration));
+                yield return null;
+            }
+            wall.localScale = target;
+        }
+        SetWalls(true, true);
     }
 }

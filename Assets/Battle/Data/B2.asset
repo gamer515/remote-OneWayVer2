@@ -1,0 +1,116 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9685256a0fa44f5aa97fd7a4753a3f71, type: 3}
+  m_Name: B2
+  m_EditorClassIdentifier: 
+  stageIndex: 2
+  flow:
+    steps:
+    - label: Enemy entrance and surround
+      kind: 3
+      text: 
+      duration: 1.5
+      pattern:
+        kind: 0
+        legacyCase: 1
+        duration: 10
+        interval: 0.5
+        speed: 5
+        count: 8
+        angleStep: 17
+        b2PatternId: 1
+        formationSeconds: 1
+        orbitSecondsPerTurn: 3
+        orbitPauseSeconds: 1
+        orbitPadding: 0.5
+    - label: Build top left bottom right
+      kind: 4
+      text: 
+      duration: 0.4
+      pattern:
+        kind: 0
+        legacyCase: 1
+        duration: 10
+        interval: 0.5
+        speed: 5
+        count: 8
+        angleStep: 17
+        b2PatternId: 1
+        formationSeconds: 1
+        orbitSecondsPerTurn: 3
+        orbitPauseSeconds: 1
+        orbitPadding: 0.5
+    - label: B2 Pattern 01 - circle and charge
+      kind: 5
+      text: 
+      duration: 1
+      pattern:
+        kind: 5
+        legacyCase: 1
+        duration: 10
+        interval: 0.3
+        speed: 30
+        count: 12
+        angleStep: 30
+        b2PatternId: 1
+        formationSeconds: 1
+        orbitSecondsPerTurn: 3
+        orbitPauseSeconds: 1
+        orbitPadding: 0.5
+    - label: 2-a - five 3D slash targets
+      kind: 6
+      text: 
+      duration: 1
+      pattern:
+        kind: 0
+        legacyCase: 1
+        duration: 10
+        interval: 0.5
+        speed: 5
+        count: 8
+        angleStep: 17
+        b2PatternId: 1
+        formationSeconds: 1
+        orbitSecondsPerTurn: 3
+        orbitPauseSeconds: 1
+        orbitPadding: 0.5
+    - label: Complete B2
+      kind: 8
+      text: 
+      duration: 1
+      pattern:
+        kind: 0
+        legacyCase: 1
+        duration: 10
+        interval: 0.5
+        speed: 5
+        count: 8
+        angleStep: 17
+        b2PatternId: 1
+        formationSeconds: 1
+        orbitSecondsPerTurn: 3
+        orbitPauseSeconds: 1
+        orbitPadding: 0.5
+  forwardViewportY: 0.33333334
+  corridorWidth: 0.48
+  backwardSpeed: 0.65
+  clickAdvance: 0.65
+  mouseFollow: 5
+  recoverySeconds: 5
+  recoveryGrace: 1.5
+  slashTargetCount: 5
+  slashSpawnInterval: 1.8
+  slashStartZ: 22
+  slashSpeed: 8
+  slashWidthPixels: 14
+  slashDamage: 1
+  returnToDecision: 1
