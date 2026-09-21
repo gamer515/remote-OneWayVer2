@@ -8,10 +8,15 @@ public class BattleStateMachine : MonoBehaviour
     public enum BattleState { Intro, EnemyTurn, PlayerTurn, MidDialogue, End }
     public BattleState currentState;
 
-    public static int BattleIndex
+    public BattleStartData StartData { get; private set; }
+    = BattleStartData.CreateDefault();
+
+    public int StageIndex => StartData.StageIndex;
+
+    public void Initialize(BattleStartData data)
     {
-        get => PlayerPrefs.GetInt("CurrentBattleIndex", 1);
-        set => PlayerPrefs.SetInt("CurrentBattleIndex", value);
+        StartData = data
+            ?? throw new System.ArgumentNullException(nameof(data));
     }
 
     //  [추가] 인스펙터에서 보기 좋게 묶어줄 '대사 세트' 구조체입니다.
@@ -45,9 +50,17 @@ public class BattleStateMachine : MonoBehaviour
 
     void Start()
     {
-        if (sequenceController != null) return;
-        // [확인용 로그] 진입 시 현재가 몇 번째 전투 씬인지 콘솔에 출력합니다.
-        Debug.Log($"[Battle System] 현재 진입한 전투 스테이지: B{BattleIndex}");
+        // 현재 BattleScene은 BattleSceneController가 초기화합니다.
+        if (sequenceController != null)
+            return;
+
+        // 이전 방식의 전투를 단독 실행하는 경우에는 기본값 사용.
+        if (attackManager != null)
+            attackManager.Initialize(StartData);
+
+        Debug.Log(
+            $"[Battle System] 현재 진입한 전투 스테이지: B{StageIndex}");
+
         ChangeState(BattleState.Intro);
     }
 
@@ -71,7 +84,7 @@ public class BattleStateMachine : MonoBehaviour
     {
         // BattleIndex는 1부터 시작하므로, 배열 인덱스(0, 1, 2)에 맞추기 위해 1을 빼줍니다.
         // Mathf.Clamp를 써서 실수로 인덱스가 범위를 벗어나도 에러가 나지 않게 방어합니다.
-        int index = Mathf.Clamp(BattleIndex - 1, 0, stageDialogues.Length - 1);
+        int index = Mathf.Clamp(StageIndex - 1, 0, stageDialogues.Length - 1);
         return stageDialogues[index];
     }
 
@@ -138,21 +151,9 @@ public class BattleStateMachine : MonoBehaviour
     private IEnumerator ReturnToDecisionScene()
     {
         Debug.Log("전투 승리! 1.5초 후 이야기 씬으로 돌아갑니다.");
+
         yield return new WaitForSeconds(1.5f);
 
-        // 인덱스를 1 증가시킵니다.
-        int nextIndex = BattleIndex + 1;
-
-        // 만약 다음 인덱스가 3보다 크면(즉, 4가 되면) 다시 1로 되돌립니다.
-        if (nextIndex > 3)
-        {
-            nextIndex = 1;
-        }
-
-        // 순환 처리된 값을 BattleIndex에 저장합니다.
-        BattleIndex = nextIndex;
-
-        // 이야기 씬(팀원의 DecisionScene)으로 전환합니다.
         SceneManager.LoadScene("DecisionScene");
     }
 

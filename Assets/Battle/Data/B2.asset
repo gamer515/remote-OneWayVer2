@@ -32,6 +32,14 @@ MonoBehaviour:
         orbitSecondsPerTurn: 3
         orbitPauseSeconds: 1
         orbitPadding: 0.5
+        swordSprite: {fileID: 0}
+        swordSize: {x: 0.35, y: 2.4}
+        swordFlightSeconds: 3
+        swordRotationSpeed: 360
+        swordPathWidth: 5
+        swordFlashSeconds: 0.08
+        wallSwordLength: 3
+        wallSwordThickness: 0.15
     - label: Build top left bottom right
       kind: 4
       text: 
@@ -49,6 +57,14 @@ MonoBehaviour:
         orbitSecondsPerTurn: 3
         orbitPauseSeconds: 1
         orbitPadding: 0.5
+        swordSprite: {fileID: 0}
+        swordSize: {x: 0.35, y: 2.4}
+        swordFlightSeconds: 3
+        swordRotationSpeed: 360
+        swordPathWidth: 5
+        swordFlashSeconds: 0.08
+        wallSwordLength: 3
+        wallSwordThickness: 0.15
     - label: B2 Pattern 01 - circle and charge
       kind: 5
       text: 
@@ -66,6 +82,64 @@ MonoBehaviour:
         orbitSecondsPerTurn: 3
         orbitPauseSeconds: 1
         orbitPadding: 0.5
+        swordSprite: {fileID: 0}
+        swordSize: {x: 0.35, y: 2.4}
+        swordFlightSeconds: 3
+        swordRotationSpeed: 360
+        swordPathWidth: 5
+        swordFlashSeconds: 0.08
+        wallSwordLength: 3
+        wallSwordThickness: 0.15
+    - label: B2 Pattern 02 - rotating swords
+      kind: 5
+      text: 
+      duration: 1
+      pattern:
+        kind: 5
+        legacyCase: 1
+        duration: 10
+        interval: 0.5
+        speed: 5
+        count: 8
+        angleStep: 17
+        b2PatternId: 2
+        formationSeconds: 1
+        orbitSecondsPerTurn: 3
+        orbitPauseSeconds: 1
+        orbitPadding: 0.5
+        swordSprite: {fileID: 0}
+        swordSize: {x: 0.35, y: 2.4}
+        swordFlightSeconds: 3
+        swordRotationSpeed: 360
+        swordPathWidth: 5
+        swordFlashSeconds: 0.08
+        wallSwordLength: 3
+        wallSwordThickness: 0.15
+    - label: B2 Pattern 03 - rising wall swords
+      kind: 5
+      text: 
+      duration: 1
+      pattern:
+        kind: 5
+        legacyCase: 1
+        duration: 10
+        interval: 1.5
+        speed: 1
+        count: 8
+        angleStep: 17
+        b2PatternId: 3
+        formationSeconds: 1
+        orbitSecondsPerTurn: 3
+        orbitPauseSeconds: 1
+        orbitPadding: 0.5
+        swordSprite: {fileID: 0}
+        swordSize: {x: 0.35, y: 2.4}
+        swordFlightSeconds: 3
+        swordRotationSpeed: 75
+        swordPathWidth: 5
+        swordFlashSeconds: 0.08
+        wallSwordLength: 6
+        wallSwordThickness: 0.15
     - label: 2-a - five 3D slash targets
       kind: 6
       text: 
@@ -83,6 +157,14 @@ MonoBehaviour:
         orbitSecondsPerTurn: 3
         orbitPauseSeconds: 1
         orbitPadding: 0.5
+        swordSprite: {fileID: 0}
+        swordSize: {x: 0.35, y: 2.4}
+        swordFlightSeconds: 3
+        swordRotationSpeed: 360
+        swordPathWidth: 5
+        swordFlashSeconds: 0.08
+        wallSwordLength: 3
+        wallSwordThickness: 0.15
     - label: Complete B2
       kind: 8
       text: 
@@ -100,6 +182,14 @@ MonoBehaviour:
         orbitSecondsPerTurn: 3
         orbitPauseSeconds: 1
         orbitPadding: 0.5
+        swordSprite: {fileID: 0}
+        swordSize: {x: 0.35, y: 2.4}
+        swordFlightSeconds: 3
+        swordRotationSpeed: 360
+        swordPathWidth: 5
+        swordFlashSeconds: 0.08
+        wallSwordLength: 3
+        wallSwordThickness: 0.15
   forwardViewportY: 0.33333334
   corridorWidth: 0.48
   backwardSpeed: 0.65

@@ -116,7 +116,7 @@ public static class BattleConfigurationValidator
     }
     static void PrepareSmokeScene()
     {
-        int stage = SessionState.GetInt("BattleSmokeStage", 1);
+        
         EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
         var controller = UnityEngine.Object.FindFirstObjectByType<BattleSceneController>();
         for (int i = 0; i < controller.stages.Length; i++)
@@ -129,7 +129,7 @@ public static class BattleConfigurationValidator
             controller.stages[i] = copy;
         }
         controller.player.maxHp = 1000;
-        BattleStateMachine.BattleIndex = stage;
+        
         EditorApplication.isPlaying = true;
     }
     static double smokeStart, warningStart;
@@ -184,12 +184,13 @@ public static class BattleConfigurationValidator
         if (!EditorApplication.isPlaying || EditorApplication.isCompiling) return;
         try
         {
+            int stage = SessionState.GetInt("BattleSmokeStage", 1);
             if (smokeStart == 0) { smokeStart = EditorApplication.timeSinceStartup; Time.timeScale = 3; }
             if (EditorApplication.timeSinceStartup - smokeStart > 120) throw new Exception("Smoke test timed out");
             var c = UnityEngine.Object.FindFirstObjectByType<BattleSceneController>();
             if (c == null || c.Context == null) return;
             if (c.Result == BattleResult.Failed) throw new Exception("Unexpected smoke player death");
-            int stage = SessionState.GetInt("BattleSmokeStage", 1);
+            
             if (stage == 1 && c.CurrentStep.Contains("Wind"))
             {
                 if (c.Context.Clock.Paused) Capture(c, "B1-warning");
@@ -308,6 +309,28 @@ public static class BattleConfigurationValidator
             SessionState.SetBool("OneWayBattleValidatedV1", true);
             try { Validate(); } catch (Exception exception) { Debug.LogException(exception); }
         };
+    }
+
+    [RuntimeInitializeOnLoadMethod(
+    RuntimeInitializeLoadType.BeforeSceneLoad)]
+    private static void SupplySmokeBattleData()
+    {
+        if (!SessionState.GetBool("BattleSmokeRunning", false))
+            return;
+
+        // 기존 검증 코드와 동일하게 임시 검증 프로젝트로 제한합니다.
+        string projectPath = Application.dataPath.Replace('\\', '/');
+
+        if (!projectPath.Contains(
+                "/OneWayBattleValidation/UnityProject/"))
+        {
+            return;
+        }
+
+        int stage = SessionState.GetInt("BattleSmokeStage", 1);
+
+        BattleEntry.SetNext(
+            new BattleStartData(stage, 1, 1, 1, 1));
     }
 }
 #endif

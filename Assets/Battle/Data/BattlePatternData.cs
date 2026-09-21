@@ -31,4 +31,16 @@ public class BattlePatternData
     [Min(0.1f)] public float orbitSecondsPerTurn = 3f;
     [Min(0f)] public float orbitPauseSeconds = 1f;
     [Min(0f)] public float orbitPadding = 0.5f;
+
+    [Header("B2 rotating swords")]
+    public Sprite swordSprite;
+    public Vector2 swordSize = new Vector2(0.35f, 2.4f);
+    [Min(0.1f)] public float swordFlightSeconds = 3f;
+    public float swordRotationSpeed = 360f;
+    [Min(0.1f)] public float swordPathWidth = 5f;
+    [Min(0.01f)] public float swordFlashSeconds = 0.08f;
+
+    [Header("B2 wall swords")]
+    [Min(0.1f)] public float wallSwordLength = 3f;
+    [Min(0.02f)] public float wallSwordThickness = 0.15f;
 }

@@ -10,8 +10,11 @@ public static class B2PatternFactory
                 return new B2Pattern01();
 
             // 두 번째 패턴을 만든 뒤 추가:
-            // case 2:
-            //     return new B2Pattern02();
+            case 2:
+                return new B2Pattern02();
+
+            case 3:
+                return new B2Pattern03();
 
             default:
                 throw new ArgumentOutOfRangeException(

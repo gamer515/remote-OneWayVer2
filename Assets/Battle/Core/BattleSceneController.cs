@@ -41,6 +41,7 @@ public sealed class BattleSceneController : MonoBehaviour
     public Material flatMaterial;
     public BattleStageData[] stages;
     public BattleStageData ActiveStage { get; private set; }
+    public BattleStartData StartData { get; private set; }
     public BattleResult Result { get; private set; } = BattleResult.Running;
     public string CurrentStep { get; set; }
     public BattleContext Context { get; private set; }
@@ -79,19 +80,52 @@ public sealed class BattleSceneController : MonoBehaviour
     }
     void Start()
     {
-        if (legacy == null || player == null || box == null || attacks == null ||
-            battleCamera == null || heart == null || mist == null || flatMaterial == null ||
+        if (legacy == null || player == null || box == null ||
+            attacks == null || battleCamera == null ||
+            heart == null || mist == null || flatMaterial == null ||
             stages == null || stages.Length != 3)
-        { Debug.LogError("BattleScene has missing stage references.", this); enabled = false; return; }
-        ActiveStage = stages[Mathf.Clamp(BattleStateMachine.BattleIndex - 1, 0, 2)];
-        if (ActiveStage == null) { enabled = false; return; }
-        if (attacks.enemyObject != null) attacks.enemyObject.SetActive(false);
+        {
+            Debug.LogError("BattleScene has missing stage references.", this);
+            enabled = false;
+            return;
+        }
+
+        // 전달값을 받는 곳은 여기 한 곳뿐입니다.
+        StartData = BattleEntry.TakeOrDefault();
+
+        ActiveStage = stages[StartData.StageIndex - 1];
+
+        if (ActiveStage == null ||
+            ActiveStage.stageIndex != StartData.StageIndex)
+        {
+            Debug.LogError(
+                $"B{StartData.StageIndex}의 스테이지 설정을 확인해주세요.",
+                this);
+            enabled = false;
+            return;
+        }
+
+        // 같은 데이터 객체를 다른 전투 클래스에도 전달합니다.
+        legacy.Initialize(StartData);
+        attacks.Initialize(StartData);
+
+        Debug.Log(
+            $"[Battle Start] B{StartData.StageIndex}, " +
+            $"Traits: {StartData.Trait1}, {StartData.Trait2}, " +
+            $"{StartData.Trait3}, {StartData.Trait4}",
+            this);
+
+        if (attacks.enemyObject != null)
+            attacks.enemyObject.SetActive(false);
+
         box.HideUI();
+
         Context = new BattleContext(this);
         player.Configure(Context, heart);
         player.Died += OnDeath;
         player.SetVisible(false);
         player.Lock(true);
+
         run = StartCoroutine(Execute());
     }
     IEnumerator Execute()
@@ -107,7 +141,7 @@ public sealed class BattleSceneController : MonoBehaviour
         if (ActiveStage.returnToDecision)
         {
             yield return new WaitForSecondsRealtime(1f);
-            BattleStateMachine.BattleIndex = ActiveStage.stageIndex % 3 + 1;
+            
             CancelBattle();
             SceneManager.LoadScene("DecisionScene");
         }

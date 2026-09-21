@@ -3,37 +3,45 @@ using UnityEngine.SceneManagement;
 
 public class BattleDebugController : MonoBehaviour
 {
-    // 버튼 1을 누르면 실행할 함수 (B1로 강제 변경)
-    public void SetBattleStage1()
-    {
-        BattleStateMachine.BattleIndex = 1;
-        Debug.LogWarning("[디버그] 현재 스테이지를 B1으로 강제로 변경했습니다. 씬을 재시작합니다.");
-        ReloadCurrentScene();
-    }
+    private bool isReloading;
 
-    // 버튼 2를 누르면 실행할 함수 (B2로 강제 변경)
-    public void SetBattleStage2()
-    {
-        BattleStateMachine.BattleIndex = 2;
-        Debug.LogWarning("[디버그] 현재 스테이지를 B2으로 강제로 변경했습니다. 씬을 재시작합니다.");
-        ReloadCurrentScene();
-    }
+    // 기존 이름을 유지하므로 Inspector 버튼 연결도 유지됩니다.
+    public void SetBattleStage1() => RestartWithStage(1);
+    public void SetBattleStage2() => RestartWithStage(2);
+    public void SetBattleStage3() => RestartWithStage(3);
 
-    // 버튼 3를 누르면 실행할 함수 (B3로 강제 변경)
-    public void SetBattleStage3()
+    private void RestartWithStage(int stageIndex)
     {
-        BattleStateMachine.BattleIndex = 3;
-        Debug.LogWarning("[디버그] 현재 스테이지를 B3으로 강제로 변경했습니다. 씬을 재시작합니다.");
-        ReloadCurrentScene();
-    }
+        if (isReloading)
+            return;
 
-    // 현재 전투 씬을 처음부터 다시 깔끔하게 불러오는 함수
-    private void ReloadCurrentScene()
-    {
-        var controller = FindFirstObjectByType<BattleSceneController>();
-        if (controller != null) controller.CancelBattle();
-        // 현재 활성화된 씬의 이름을 가져와서 다시 로드합니다.
-        string currentSceneName = SceneManager.GetActiveScene().name;
-        SceneManager.LoadScene(currentSceneName);
+        isReloading = true;
+
+        var controller =
+            FindFirstObjectByType<BattleSceneController>();
+
+        BattleStartData currentData =
+            controller != null && controller.StartData != null
+                ? controller.StartData
+                : BattleStartData.CreateDefault();
+
+        // 성향은 그대로 유지하고 전투 번호만 변경합니다.
+        BattleStartData nextData =
+            currentData.WithStage(stageIndex);
+
+        // 기존 코루틴, 탄막, 연출 등을 먼저 정리합니다.
+        if (controller != null)
+            controller.CancelBattle();
+
+        BattleEntry.SetNext(nextData);
+
+        Debug.Log(
+            $"[Battle Debug] B{stageIndex}로 재시작합니다. " +
+            $"Traits: {nextData.Trait1}, {nextData.Trait2}, " +
+            $"{nextData.Trait3}, {nextData.Trait4}",
+            this);
+
+        SceneManager.LoadScene(
+            SceneManager.GetActiveScene().name);
     }
 }

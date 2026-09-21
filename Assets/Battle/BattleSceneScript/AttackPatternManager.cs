@@ -37,7 +37,7 @@ public class AttackPatternManager : MonoBehaviour
     private IEnumerator RunThreePatternsSequence()
     {
         List<int> patternPool = new List<int>();
-        int currentBattle = BattleStateMachine.BattleIndex;
+        int currentBattle = StartData.StageIndex;
 
         if (currentBattle == 1) patternPool.AddRange(new int[] { 1, 2, 3 }); // Bullet A 위주
         else if (currentBattle == 2) patternPool.AddRange(new int[] { 4, 5, 6 }); // Bullet C 위주
@@ -689,5 +689,14 @@ public class AttackPatternManager : MonoBehaviour
 
         // 마지막엔 목표 위치에 오차 없이 정확히 맞춥니다.
         player.transform.position = targetPosition;
+    }
+
+    public BattleStartData StartData { get; private set; }
+    = BattleStartData.CreateDefault();
+
+    public void Initialize(BattleStartData data)
+    {
+        StartData = data
+            ?? throw new System.ArgumentNullException(nameof(data));
     }
 }
