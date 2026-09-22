@@ -13,17 +13,13 @@ public partial class DecisionManager : MonoBehaviour
     private StoryState currentState;
 
     private DecisionSession session;
-    private StoryProgressController storyProgressController;
-    private DestinationController destinationController;
     private DecisionSaveService saveService;
     private ChapterFlowController chapterFlowController;
     private DecisionPresentationController presentationController;
-    private readonly BettingOutcomeCalculator bettingOutcomeCalculator =
-        new BettingOutcomeCalculator();
-    private ScenarioRepository scenarioRepository;
     private GameProgress loadedProgress;
-    private Vector3? pendingCharacterPosition;
     private readonly SceneTransitionService sceneTransitionService = new SceneTransitionService();
+    private bool addedYellowInputFallback;
+    private bool addedGearInputFallback;
     private OmnibusData currentOmnibus => session?.Omnibus;
     private int chapterIndex
     {
@@ -47,7 +43,6 @@ public partial class DecisionManager : MonoBehaviour
     }
     private List<Dialogue> playedHistory => session.PlayedHistory;
     [Header("View & Control Settings")]
-    [SerializeField] private JoystickLikeGear gearController;
     [SerializeField] private JourneyBoardInput journeyBoardInput;
     [SerializeField] private UiController uiController;
     [SerializeField] private StoryRelayManager relayManager;
@@ -85,18 +80,12 @@ public partial class DecisionManager : MonoBehaviour
 
         if (journeyBoardInput != null)
         {
-            journeyBoardInput.onYellowPressed.AddListener(HandleScreenClicked);
-            journeyBoardInput.onGearSelected.AddListener(HandleEncounterGearSelection);
+            EnsureJourneyInputBindings();
         }
         else if (bettingButtonController != null)
         {
             bettingButtonController.YellowPressed += HandleScreenClicked;
         }
-        if (journeyBoardInput == null && gearController != null)
-            gearController.OnCoinTypeChanged += HandleEncounterGearSelection;
-        if (coinDropController != null)
-            coinDropController.BettingCompleted += HandleBettingCompleted;
-
     }
 
     private void OnDisable()
@@ -108,18 +97,17 @@ public partial class DecisionManager : MonoBehaviour
 
         if (journeyBoardInput != null)
         {
-            journeyBoardInput.onYellowPressed.RemoveListener(HandleScreenClicked);
-            journeyBoardInput.onGearSelected.RemoveListener(HandleEncounterGearSelection);
+            if (addedYellowInputFallback)
+                journeyBoardInput.onYellowPressed.RemoveListener(OnJourneyYellowPressed);
+            if (addedGearInputFallback)
+                journeyBoardInput.onGearSelected.RemoveListener(OnJourneyGearSelected);
+            addedYellowInputFallback = false;
+            addedGearInputFallback = false;
         }
         else if (bettingButtonController != null)
         {
             bettingButtonController.YellowPressed -= HandleScreenClicked;
         }
-        if (journeyBoardInput == null && gearController != null)
-            gearController.OnCoinTypeChanged -= HandleEncounterGearSelection;
-        if (coinDropController != null)
-            coinDropController.BettingCompleted -= HandleBettingCompleted;
-
     }
 
     private void Start()
@@ -143,12 +131,6 @@ public partial class DecisionManager : MonoBehaviour
             return;
         }
 
-        if (encounterFlow == null && currentState == StoryState.MovingToEncounter &&
-            playerController != null &&
-            playerController.HasReachedTarget())
-        {
-            CompleteEncounterArrival();
-        }
     }
 
     private void Initialize()
@@ -171,11 +153,9 @@ public partial class DecisionManager : MonoBehaviour
 
         session = startData.Session;
         loadedProgress = startData.SaveManager.LoadProgress();
-        scenarioRepository = new ScenarioRepository(session.RunNumber);
         envController.SetContentRun(session.RunNumber);
         playerController = new DecisionPlayerController(startData.Player);
         saveService = new DecisionSaveService(startData.SaveManager);
-        storyProgressController = new StoryProgressController(session);
         chapterFlowController = new ChapterFlowController(
             session,
             statContainer,
@@ -190,7 +170,7 @@ public partial class DecisionManager : MonoBehaviour
         }
 
         Vector3 startPosition = startData.SavedPlayerPosition ?? envController.TerrainOrigin + new Vector3(0, 1f, 10);
-        playerController.Initialize(startPosition);
+        playerController.Initialize(startPosition, startData.SavedPlayerRotation);
 
         // 실제 시작 위치가 적용된 후 스트리밍과 카메라에 Player를 연결합니다.
         envController.BindPlayer(startData.Player);
@@ -224,8 +204,7 @@ public partial class DecisionManager : MonoBehaviour
     private bool ValidateDependencies()
     {
         bool isValid = true;
-        if (journeyBoardInput == null)
-            isValid &= ValidateReference(gearController, nameof(gearController));
+        isValid &= ValidateReference(journeyBoardInput, nameof(journeyBoardInput));
         isValid &= ValidateReference(uiController, nameof(uiController));
         isValid &= ValidateReference(envController, nameof(envController));
         isValid &= ValidateReference(roadViewCameraController, nameof(roadViewCameraController));
@@ -237,8 +216,56 @@ public partial class DecisionManager : MonoBehaviour
         return isValid;
     }
 
-    // JourneyController가 배치된 씬에서는 새 조작판만 명령을 보내고, 예전 씬만 기존 입력을 사용합니다.
-    private void SetYellowInputInteractable(bool interactable)
+    public void OnJourneyYellowPressed()
+    {
+        HandleScreenClicked();
+    }
+
+    public void OnJourneyGearSelected(int selectedIndex)
+    {
+        HandleEncounterGearSelection(selectedIndex);
+    }
+
+    private void EnsureJourneyInputBindings()
+    {
+        if (!HasPersistentListener(
+                journeyBoardInput.onYellowPressed,
+                nameof(OnJourneyYellowPressed)))
+        {
+            journeyBoardInput.onYellowPressed.AddListener(OnJourneyYellowPressed);
+            addedYellowInputFallback = true;
+            Debug.LogWarning(
+                "JourneyBoardInput의 노란 버튼 Inspector 참조가 없어 런타임 방편책을 사용합니다.",
+                this);
+        }
+
+        if (!HasPersistentListener(
+                journeyBoardInput.onGearSelected,
+                nameof(OnJourneyGearSelected)))
+        {
+            journeyBoardInput.onGearSelected.AddListener(OnJourneyGearSelected);
+            addedGearInputFallback = true;
+            Debug.LogWarning(
+                "JourneyBoardInput의 기어 Inspector 참조가 없어 런타임 방편책을 사용합니다.",
+                this);
+        }
+    }
+
+    private bool HasPersistentListener(UnityEngine.Events.UnityEventBase unityEvent, string methodName)
+    {
+        for (int i = 0; i < unityEvent.GetPersistentEventCount(); i++)
+        {
+            if (unityEvent.GetPersistentTarget(i) == this &&
+                unityEvent.GetPersistentMethodName(i) == methodName &&
+                unityEvent.GetPersistentListenerState(i) !=
+                    UnityEngine.Events.UnityEventCallState.Off)
+                return true;
+        }
+
+        return false;
+    }
+
+private void SetYellowInputInteractable(bool interactable)
     {
         if (journeyBoardInput != null)
             journeyBoardInput.SetYellowInteractable(interactable);
@@ -248,10 +275,7 @@ public partial class DecisionManager : MonoBehaviour
 
     private void ResetGearSelection()
     {
-        if (journeyBoardInput != null)
-            journeyBoardInput.ResetSelection();
-        else
-            gearController?.ResetToNeutral();
+        journeyBoardInput?.ResetSelection();
     }
 
     private bool RegisterTerrainsThroughCurrentProgress()
@@ -352,46 +376,8 @@ public partial class DecisionManager : MonoBehaviour
             return;
         }
 
-        // 챕터별 목적지는 해당 지형의 월드 시작점을 가진 Registry로 다시 계산합니다.
-        destinationController = new DestinationController(
-            envController.PlaceRegistry,
-            playerController.TargetPosition.z,
-            envController.CurrentTerrainEndZ);
-
-        if (ShouldUseEncounterFlow())
-        {
-            currentScenarioPath = mainStory.chapterId + "/" + mainStory.episodeIds[episodeIndex];
-            StartEncounterEpisode();
-            return;
-        }
-
-        encounterFlow = null;
-        ScenarioLoadResult loadResult = scenarioRepository.Load(
-            mainStory.chapterId,
-            mainStory.episodeIds[episodeIndex]);
-        ScenarioData loadedScenario = loadResult.Scenario;
-        currentScenarioPath = loadResult.SourcePath;
-
-        if (loadResult.UsesAiRevision)
-        {
-            Debug.Log($"<color=yellow><b>[AI 적용 완료]</b> 수정된 시나리오 데이터를 사용합니다: {currentScenarioPath}</color>");
-        }
-        
-        if (loadedScenario != null)
-        {
-            storyProgressController.SetScenario(loadedScenario);
-            destinationController.BeginScenario(
-                loadedScenario,
-                storyIndex,
-                playerController.TargetPosition.z);
-            PresentCurrentStory();
-        }
-        else
-        {
-            Debug.LogError(
-                $"스토리를 불러올 수 없습니다: {currentScenarioPath}. " +
-                loadResult.ErrorMessage);
-        }
+        currentScenarioPath = mainStory.chapterId + "/" + mainStory.episodeIds[episodeIndex];
+        StartEncounterEpisode();
     }
 
     private void HandleTargetStatReached()
@@ -412,91 +398,9 @@ public partial class DecisionManager : MonoBehaviour
     private void CompleteChapter()
     {
         if (chapterFlowController.CompleteChapter(
-            playerController.TargetPosition))
+            playerController.TargetPosition,
+            playerController.CurrentRotation))
             LoadCurrentEpisode();
-    }
-
-    private void BeginTravelToCurrentStory()
-    {
-        if (playerController == null || !playerController.IsAvailable ||
-            destinationController == null || storyProgressController == null ||
-            !storyProgressController.HasCurrentDialogue)
-        {
-            return;
-        }
-
-        currentState = StoryState.MovingToEncounter;
-        pendingCharacterPosition = null;
-        SetYellowInputInteractable(false);
-        bettingButtonController?.SetBettingInteractable(false);
-        presentationController.ShowWalkingView();
-
-        float targetZ = destinationController.GetTargetZ(storyIndex);
-
-        // 인물 지문은 해당 NPC의 Z 위치까지 이동합니다. 이미 지나온 NPC라면 역주행하지 않습니다.
-        if (destinationController.TryGetCharacterPosition(storyIndex, out Vector3 characterPosition))
-        {
-            pendingCharacterPosition = characterPosition;
-            targetZ = characterPosition.z;
-        }
-
-        playerController.MoveToZ(Mathf.Max(playerController.CurrentPosition.z, targetZ));
-
-        // 다음 지문 인덱스와 도착 좌표를 한 체크포인트로 저장합니다.
-        // 이동 도중 종료해도 이미 적용된 베팅 결과를 같은 지문에서 다시 계산하지 않습니다.
-        saveService.SaveProgress(session, playerController.TargetPosition);
-    }
-
-    private void CompleteEncounterArrival()
-    {
-        if (currentState != StoryState.MovingToEncounter ||
-            storyProgressController == null || !storyProgressController.HasCurrentDialogue)
-        {
-            return;
-        }
-
-        if (pendingCharacterPosition.HasValue)
-            playerController.StopAndLookAt(pendingCharacterPosition.Value);
-
-        pendingCharacterPosition = null;
-        Dialogue arrivedStory = storyProgressController.Current;
-
-        // 전환 지문은 도착한 뒤 셔터를 재생하고, 일반 지문은 곧바로 이벤트 화면을 표시합니다.
-        if (arrivedStory.isTransition)
-        {
-            currentState = StoryState.Transitioning;
-            RecordPlayedStory(arrivedStory);
-            presentationController.PlayStoryTransition(
-                arrivedStory,
-                HandleStoryTransitionCompleted);
-        }
-        else
-        {
-            PresentCurrentStory();
-        }
-
-    }
-
-    private void PresentCurrentStory()
-    {
-        if (storyProgressController == null || !storyProgressController.HasCurrentDialogue) return;
-
-        Dialogue currentStory = storyProgressController.Current;
-        presentationController.ShowDialogue(currentStory);
-        RecordPlayedStory(currentStory);
-
-        if (currentStory.IsChoice)
-        {
-            EnterChoiceState();
-        }
-        else
-        {
-            currentState = StoryState.ShowingStory;
-            presentationController.ExitChoice();
-            SetYellowInputInteractable(true);
-            bettingButtonController?.SetBettingInteractable(false);
-        }
-
     }
 
     private void RecordPlayedStory(Dialogue dialogue)
@@ -508,107 +412,9 @@ public partial class DecisionManager : MonoBehaviour
             playedHistory.Add(dialogue);
     }
 
-    private void EnterChoiceState()
-    {
-        currentState = StoryState.WaitingForChoice;
-        // Choice 타입은 문장 선택이 아니라 네 종류의 코인으로 응답하는 베팅 지문입니다.
-        presentationController.ExitChoice();
-        SetYellowInputInteractable(false);
-        bettingButtonController?.SetBettingInteractable(true);
-    }
-
     private void HandleScreenClicked()
     {
-        if (encounterFlow != null)
-        {
-            HandleEncounterYellowPressed();
-            return;
-        }
-
-        if (currentState == StoryState.Transitioning || storyProgressController == null) return;
-        if (!storyProgressController.HasCurrentDialogue) return;
-
-        Dialogue currentStory = storyProgressController.Current;
-
-        if (currentState == StoryState.ShowingStory)
-        {
-            if (currentStory.IsChoice)
-            {
-                EnterChoiceState();
-            }
-            else
-            {
-                AdvanceStory();
-            }
-        }
-    }
-
-    private void HandleBettingCompleted(BettingResult result)
-    {
-        if (currentState != StoryState.WaitingForChoice ||
-            storyProgressController == null ||
-            !storyProgressController.HasCurrentDialogue ||
-            result == null)
-        {
-            return;
-        }
-
-        Dialogue currentStory = storyProgressController.Current;
-        int[] statChanges = bettingOutcomeCalculator.CalculateStatChanges(
-            currentStory,
-            result.CoinCounts);
-        if (statChanges == null)
-        {
-            Debug.LogError("코인 분포와 현재 지문의 가중치를 계산하지 못했습니다.", this);
-            bettingButtonController?.SetBettingInteractable(true);
-            return;
-        }
-
-        session.BettingDecisions.Add(new BettingDecisionRecord
-        {
-            dialogueId = currentStory.id,
-            dialogueText = currentStory.text,
-            coinCounts = (int[])result.CoinCounts.Clone(),
-            statWeights = (int[])currentStory.statWeights.Clone(),
-            statChanges = (int[])statChanges.Clone()
-        });
-
-        // Initial은 선택 방식을 소개하는 구간이므로 실제 스탯에는 반영하지 않습니다.
-        if (chapterIndex > 0)
-        {
-            statContainer.AddStats(statChanges);
-            saveService.SaveStats(statContainer.stats);
-        }
-        saveService.SaveRemainingCoins(coinDropController.RemainingCoins);
-
-        Debug.Log(
-            $"[베팅 확정] 코인 {result.TotalCoins}개, " +
-            $"분포 [{string.Join(", ", result.CoinCounts)}], " +
-            $"가중치 [{string.Join(", ", currentStory.statWeights)}], " +
-            $"변화량 [{string.Join(", ", statChanges)}]");
-
-        ResetGearSelection();
-
-        if (currentState != StoryState.Transitioning)
-            AdvanceStory();
-    }
-
-    private void AdvanceStory()
-    {
-        StoryAdvanceResult result = storyProgressController.Advance();
-        if (result == StoryAdvanceResult.NextDialogue)
-        {
-            BeginTravelToCurrentStory();
-        }
-        else if (result == StoryAdvanceResult.EpisodeCompleted)
-        {
-            FinishCurrentEpisode();
-        }
-        else
-        {
-            Debug.LogError("현재 스토리를 진행할 수 없습니다.");
-            currentState = StoryState.Transitioning;
-        }
+        HandleEncounterYellowPressed();
     }
 
     private void RelayCompletedEpisode()
@@ -633,7 +439,9 @@ public partial class DecisionManager : MonoBehaviour
     {
         RelayCompletedEpisode();
         ResetEpisodeResources();
-        saveService.SaveCheckpoint(session, statContainer.stats, playerController.CurrentPosition);
+        saveService.SaveCheckpoint(
+            session, statContainer.stats,
+            playerController.CurrentPosition, playerController.CurrentRotation);
         saveService.SaveRemainingCoins(coinDropController.RemainingCoins);
         LoadCurrentEpisode();
     }
@@ -649,25 +457,6 @@ public partial class DecisionManager : MonoBehaviour
             $"능력치 [{string.Join(", ", statContainer.stats)}], " +
             $"코인 [{string.Join(", ", coinDropController.RemainingCoins)}]",
             this);
-    }
-
-    private void HandleStoryTransitionCompleted()
-    {
-        // 카드 전환 중에는 Transitioning을 유지하고, 연출이 끝난 뒤에만 입력 가능한 상태로 복귀합니다.
-        if (storyProgressController == null || !storyProgressController.HasCurrentDialogue)
-            return;
-
-        if (storyProgressController.Current.IsChoice)
-        {
-            EnterChoiceState();
-        }
-            else
-            {
-                currentState = StoryState.ShowingStory;
-                presentationController.ExitChoice();
-                SetYellowInputInteractable(true);
-                bettingButtonController?.SetBettingInteractable(false);
-            }
     }
 
 }

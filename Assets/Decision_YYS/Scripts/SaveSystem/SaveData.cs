@@ -17,6 +17,8 @@ public class GameProgress
     public int episodeIndex;
     public int storyIndex;
     public float[] currentPosition;
+    // 플레이어가 마지막으로 바라보던 방향입니다. 기존 세이브에는 없을 수 있습니다.
+    public float[] currentRotation;
     // Initial 배치물 진행도. 기존 storyIndex와 독립적으로 복원합니다.
     public string interactionPhase;
     public string activePlaceId;

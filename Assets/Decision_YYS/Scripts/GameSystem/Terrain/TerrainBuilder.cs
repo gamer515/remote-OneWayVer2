@@ -106,7 +106,7 @@ public sealed class TerrainBuilder
                 continue;
             }
 
-            // destination이 없는 장식 건물도 생성하며, 위치는 청크 로컬 JSON 값을 사용합니다.
+            // 이벤트 여부와 무관하게 모든 배치물을 만들며, 위치는 청크 로컬 JSON 값을 사용합니다.
             GameObject instance = Object.Instantiate(placePrefab,
                 segment.Registry.GetWorldPosition(place), Quaternion.Euler(place.rotation), chunkParent);
             instance.name = $"Place_{place.placeId}_{place.prefabId}";

@@ -16,14 +16,12 @@ public partial class DecisionManager
     private int activeCardIndex;
     private int selectedGearIndex = -1;
 
-    private bool ShouldUseEncounterFlow() => chapterIndex == 0 && episodeIndex == 0;
-
     private void StartEncounterEpisode()
     {
         try { encounterFlow = new EncounterFlowController(envController.TerrainData, envController.PlaceRegistry, envController.CurrentTerrainEndZ); }
         catch (ArgumentException error)
         {
-            Debug.LogError($"Initial 조우 데이터 오류: {error.Message}", this);
+            Debug.LogError($"{currentScenarioPath} 조우 데이터 오류: {error.Message}", this);
             currentState = StoryState.Transitioning;
             return;
         }
@@ -224,6 +222,9 @@ public partial class DecisionManager
     }
 
     private void SaveEncounterState(string phase) =>
-        saveService?.SaveEncounterProgress(session, playerController.CurrentPosition,
+        saveService?.SaveEncounterProgress(
+            session,
+            playerController.CurrentPosition,
+            playerController.CurrentRotation,
             phase, activePlaceId, activeCardIndex, resolvedPlaceIds);
 }

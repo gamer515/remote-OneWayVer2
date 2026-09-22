@@ -83,6 +83,12 @@ public class EnvController : MonoBehaviour
             return false;
         }
 
+        if (!TryValidateTerrainReferences(terrainData, out string referenceError))
+        {
+            Debug.LogError($"지형 오브젝트 참조가 올바르지 않습니다: {terrainPath}\n{referenceError}", this);
+            return false;
+        }
+
         // 새 챕터의 로컬 청크 0은 이전 지형의 마지막 전역 청크 바로 뒤에서 시작합니다.
         Vector3 segmentOrigin = TerrainOrigin +
             Vector3.forward * (nextGlobalChunkIndex * chunkSize);
@@ -169,6 +175,66 @@ public class EnvController : MonoBehaviour
         }
 
         return maximumChunkIndex + 1;
+    }
+
+    private bool TryValidateTerrainReferences(TerrainData terrainData, out string errorMessage)
+    {
+        if (terrainPrefabCatalog == null)
+        {
+            errorMessage = "TerrainPrefabCatalog가 없습니다.";
+            return false;
+        }
+
+        EncounterContentRepository contentRepository = new EncounterContentRepository();
+        foreach (PlaceData place in terrainData.places)
+        {
+            if (place == null)
+            {
+                errorMessage = "places 배열에 null 항목이 있습니다.";
+                return false;
+            }
+
+            if (!terrainPrefabCatalog.TryGetPrefab(place.prefabId, out _))
+            {
+                errorMessage = $"placeId '{place.placeId}'의 prefabId '{place.prefabId}'가 " +
+                    "Inspector 카탈로그에 없습니다.";
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(place.connectStoryCards))
+            {
+                errorMessage = $"placeId '{place.placeId}'의 connectStoryCards가 비어 있습니다.";
+                return false;
+            }
+
+            string normalizedPath = place.connectStoryCards.Replace('\\', '/').TrimEnd('/');
+            int separatorIndex = normalizedPath.LastIndexOf('/');
+            string folderName = separatorIndex >= 0
+                ? normalizedPath.Substring(separatorIndex + 1)
+                : normalizedPath;
+            if (!string.Equals(folderName, place.placeId, System.StringComparison.Ordinal))
+            {
+                errorMessage = $"placeId '{place.placeId}'와 카드 폴더 '{folderName}'가 다릅니다.";
+                return false;
+            }
+
+            if (!contentRepository.TryLoadInteraction(
+                    place.connectStoryCards, out _, out string interactionError))
+            {
+                errorMessage = $"placeId '{place.placeId}': {interactionError}";
+                return false;
+            }
+
+            if (!contentRepository.TryLoadCards(
+                    place.connectStoryCards, out _, out string cardError))
+            {
+                errorMessage = $"placeId '{place.placeId}': {cardError}";
+                return false;
+            }
+        }
+
+        errorMessage = null;
+        return true;
     }
 }
 

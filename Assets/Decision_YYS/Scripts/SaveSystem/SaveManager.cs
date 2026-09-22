@@ -18,7 +18,7 @@ public class SaveManager
     /// <summary>
     /// 현재 스토리 진행도를 저장합니다.
     /// </summary>
-    /// <param name="chapterIndex">챕터 인덱스. 예: Initial, Combat, Knowledge</param>
+    /// <param name="chapterIndex">챕터 인덱스. 예: Initial, Chapter_1, Chapter_2</param>
     /// <param name="episodeIndex">챕터 내부 에피소드 인덱스.</param>
     /// <param name="storyIndex">에피소드 내부 지문 인덱스.</param>
     public void SaveProgress(int chapterIndex, int episodeIndex, int storyIndex)
@@ -44,13 +44,15 @@ public class SaveManager
         int chapterIndex,
         int episodeIndex,
         int storyIndex,
-        Vector3 position)
+        Vector3 position,
+        Quaternion rotation)
     {
         // 지문 인덱스와 목표 위치는 같은 체크포인트이므로 한 번의 파일 쓰기로 저장합니다.
         cachedProgress.chapterIndex = chapterIndex;
         cachedProgress.episodeIndex = episodeIndex;
         cachedProgress.storyIndex = storyIndex;
         cachedProgress.currentPosition = new[] { position.x, position.y, position.z };
+        cachedProgress.currentRotation = new[] { rotation.x, rotation.y, rotation.z, rotation.w };
 
         SaveIOService.Instance.SaveRunData(CurrentRun, "Progress", cachedProgress);
         Debug.Log(
@@ -73,15 +75,33 @@ public class SaveManager
         return new Vector3(position[0], position[1], position[2]);
     }
 
+    public Quaternion? LoadPlayerRotation()
+    {
+        float[] rotation = cachedProgress.currentRotation;
+        if (rotation == null || rotation.Length < 4)
+            return null;
+
+        for (int i = 0; i < 4; i++)
+        {
+            if (float.IsNaN(rotation[i]) || float.IsInfinity(rotation[i]))
+                return null;
+        }
+
+        Quaternion value = new Quaternion(rotation[0], rotation[1], rotation[2], rotation[3]);
+        return Quaternion.Dot(value, value) > 0.0001f ? Quaternion.Normalize(value) : null;
+    }
+
     public void ClearPlayerPosition()
     {
         cachedProgress.currentPosition = null;
+        cachedProgress.currentRotation = null;
     }
 
     public void SaveEncounterProgress(
         int chapterIndex,
         int episodeIndex,
         Vector3 playerPosition,
+        Quaternion playerRotation,
         string phase,
         string activePlaceId,
         int activeCardIndex,
@@ -91,6 +111,10 @@ public class SaveManager
         cachedProgress.chapterIndex = chapterIndex;
         cachedProgress.episodeIndex = episodeIndex;
         cachedProgress.currentPosition = new[] { playerPosition.x, playerPosition.y, playerPosition.z };
+        cachedProgress.currentRotation = new[]
+        {
+            playerRotation.x, playerRotation.y, playerRotation.z, playerRotation.w
+        };
         cachedProgress.interactionPhase = phase;
         cachedProgress.activePlaceId = activePlaceId;
         cachedProgress.activeCardIndex = activeCardIndex;

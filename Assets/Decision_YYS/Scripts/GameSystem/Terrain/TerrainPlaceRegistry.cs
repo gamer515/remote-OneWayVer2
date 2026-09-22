@@ -7,8 +7,6 @@ using UnityEngine;
 /// </summary>
 public sealed class TerrainPlaceRegistry
 {
-    private readonly Dictionary<string, PlaceData> places =
-        new Dictionary<string, PlaceData>(StringComparer.Ordinal);
     private readonly Dictionary<string, PlaceData> characters =
         new Dictionary<string, PlaceData>(StringComparer.OrdinalIgnoreCase);
 
@@ -25,8 +23,6 @@ public sealed class TerrainPlaceRegistry
 
         foreach (PlaceData place in terrainData.places)
         {
-            if (!string.IsNullOrEmpty(place.destination))
-                places[place.destination] = place;
             if (!string.IsNullOrEmpty(place.characterId))
                 characters[place.characterId] = place;
         }
@@ -41,17 +37,6 @@ public sealed class TerrainPlaceRegistry
         }
 
         return characters.TryGetValue(characterId, out place);
-    }
-
-    public bool TryGetPlace(string destination, out PlaceData place)
-    {
-        if (string.IsNullOrEmpty(destination))
-        {
-            place = null;
-            return false;
-        }
-
-        return places.TryGetValue(destination, out place);
     }
 
     public Vector3 GetWorldPosition(PlaceData place)

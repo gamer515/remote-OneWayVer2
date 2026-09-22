@@ -10,6 +10,7 @@ public sealed class DecisionPlayerController
     public Vector3 TargetPosition { get; private set; }
     public bool IsAvailable => player != null;
     public Vector3 CurrentPosition => IsAvailable ? player.transform.position : TargetPosition;
+    public Quaternion CurrentRotation => IsAvailable ? player.transform.rotation : Quaternion.identity;
 
     public bool HasReachedTarget(float tolerance = 0.01f)
     {
@@ -21,13 +22,15 @@ public sealed class DecisionPlayerController
         this.player = player;
     }
 
-    public void Initialize(Vector3 startPosition)
+    public void Initialize(Vector3 startPosition, Quaternion? savedRotation = null)
     {
         if (!IsAvailable)
             return;
 
         TargetPosition = startPosition;
         player.Initialize(startPosition);
+        if (savedRotation.HasValue)
+            player.transform.rotation = savedRotation.Value;
     }
 
     public void MoveToZ(float targetZ)

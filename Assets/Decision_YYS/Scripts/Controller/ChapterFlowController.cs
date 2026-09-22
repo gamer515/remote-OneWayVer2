@@ -20,7 +20,9 @@ public sealed class ChapterFlowController
         this.saveService = saveService;
     }
 
-    public bool PrepareBattleTransition(UnityEngine.Vector3 playerPosition)
+    public bool PrepareBattleTransition(
+        UnityEngine.Vector3 playerPosition,
+        UnityEngine.Quaternion playerRotation)
     {
         if (!CanCompleteCurrentChapter())
             return false;
@@ -28,11 +30,14 @@ public sealed class ChapterFlowController
         CompleteCurrentChapter(
             StoryRelayTrigger.MidTransition,
             clearHistory: false,
-            playerPosition);
+            playerPosition,
+            playerRotation);
         return true;
     }
 
-    public bool CompleteChapter(UnityEngine.Vector3 playerPosition)
+    public bool CompleteChapter(
+        UnityEngine.Vector3 playerPosition,
+        UnityEngine.Quaternion playerRotation)
     {
         if (!CanCompleteCurrentChapter())
             return false;
@@ -40,7 +45,8 @@ public sealed class ChapterFlowController
         CompleteCurrentChapter(
             StoryRelayTrigger.ChapterEnd,
             clearHistory: true,
-            playerPosition);
+            playerPosition,
+            playerRotation);
         return true;
     }
 
@@ -55,7 +61,8 @@ public sealed class ChapterFlowController
     private void CompleteCurrentChapter(
         StoryRelayTrigger relayTrigger,
         bool clearHistory,
-        UnityEngine.Vector3 playerPosition)
+        UnityEngine.Vector3 playerPosition,
+        UnityEngine.Quaternion playerRotation)
     {
         // Relay에는 초기화 전 스탯과 완료된 챕터 번호가 전달되어야 하므로 먼저 스냅샷을 만듭니다.
         int completedChapterIndex = session.ChapterIndex;
@@ -118,6 +125,7 @@ public sealed class ChapterFlowController
         // 다음 챕터가 이전 지형 위치에서 시작하지 않도록 진행도와 함께 위치를 초기화합니다.
         // 챕터 지형이 한 월드로 이어지므로 이전 챕터의 플레이어 위치를 그대로 보존합니다.
         // 증가된 다음 챕터 진행도와 현재 플레이어 위치를 하나의 체크포인트로 저장합니다.
-        saveService.SaveCheckpoint(session, statContainer.stats, playerPosition);
+        saveService.SaveCheckpoint(
+            session, statContainer.stats, playerPosition, playerRotation);
     }
 }

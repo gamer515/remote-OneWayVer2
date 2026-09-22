@@ -35,7 +35,7 @@ public class GameManager : MonoBehaviour
     [Header("Player")]
     [SerializeField] private GameObject playerPrefab;
     private Player playerInstance;
-    private bool isPlayerViewActive = false;
+    private bool isPlayerViewActive = true;
     private readonly PlayerFactory playerFactory = new PlayerFactory();
 
     private void Awake()
@@ -56,6 +56,7 @@ public class GameManager : MonoBehaviour
         var (chapterIndex, episodeIndex, storyIndex, playerStats) = LoadData();
         var player = ActivatePlayer();
         Vector3? savedPlayerPosition = saveManager.LoadPlayerPosition();
+        Quaternion? savedPlayerRotation = saveManager.LoadPlayerRotation();
         var session = new DecisionSession(
             currentOmnibusData,
             saveManager.CurrentRun,
@@ -70,6 +71,7 @@ public class GameManager : MonoBehaviour
             playerStats,
             saveManager,
             savedPlayerPosition,
+            savedPlayerRotation,
             saveManager.LoadRemainingCoins());
     }
 

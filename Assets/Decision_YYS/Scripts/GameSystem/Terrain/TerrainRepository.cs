@@ -7,8 +7,8 @@ using UnityEngine;
 /// </summary>
 public sealed class TerrainRepository
 {
-    private const float LeftSlotX = -8f;
-    private const float RightSlotX = 8f;
+    private const float LeftSlotX = -15f;
+    private const float RightSlotX = 15f;
     private const int FirstSlotZ = 10;
     private const int SlotSpacingZ = 20;
     private const int SlotCountPerSide = 5;
@@ -137,7 +137,6 @@ public sealed class TerrainRepository
                 placeId = place.placeId,
                 chunkIndex = place.chunkIndex,
                 prefabId = place.prefabId,
-                destination = place.destination,
                 characterId = place.characterId,
                 connectStoryCards = place.connectStoryCards,
                 position = slotPosition,

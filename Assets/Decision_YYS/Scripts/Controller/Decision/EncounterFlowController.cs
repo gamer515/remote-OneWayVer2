@@ -23,7 +23,7 @@ public sealed class EncounterFlowController
             ContentPath = place.connectStoryCards;
             DisplayName = !string.IsNullOrEmpty(place.characterId)
                 ? place.characterId
-                : !string.IsNullOrEmpty(place.destination) ? place.destination : place.prefabId;
+                : place.prefabId;
             WorldPosition = worldPosition;
         }
     }

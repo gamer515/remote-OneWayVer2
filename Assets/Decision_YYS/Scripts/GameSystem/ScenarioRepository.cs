@@ -49,7 +49,7 @@ public sealed class ScenarioRepository
             "Episodes",
             $"{originalPath}/Story",
             out ScenarioData aiScenario);
-        // AI 저장본에서는 수정 대상인 text만 가져옵니다. destination 등 구조 정보는
+        // AI 저장본에서는 수정 대상인 text만 가져옵니다. 구조 정보는
         // 최신 원본을 유지하므로 예전 NewStory 파일이 있어도 지형 연결이 어긋나지 않습니다.
         if (hasGeneratedScenario)
         {
@@ -171,7 +171,6 @@ public sealed class ScenarioRepository
                 type = content.type,
                 isTransition = content.isTransition,
                 background = content.background,
-                destination = content.destination,
                 character = content.character,
                 eventId = content.eventId,
                 text = content.text,

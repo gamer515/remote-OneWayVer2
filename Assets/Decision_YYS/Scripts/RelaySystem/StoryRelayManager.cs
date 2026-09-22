@@ -221,7 +221,7 @@ public class StoryRelayManager : MonoBehaviour
             $"변경 강도: {influence.intensity}\n" +
             $"변경 지침: {instruction}\n" +
             "주요 약점은 갈등과 실수에 강하게, 보조 약점은 불안 요소에 약하게 반영하세요.\n" +
-            "id와 이야기 순서, destination, character, type은 변경하지 마세요.\n" +
+            "id와 이야기 순서, character, type은 변경하지 마세요.\n" +
             "원문에서 { }로 감싼 문자열은 괄호를 포함해 한 글자도 변경하지 마세요.";
     }
 

@@ -14,7 +14,6 @@ public class PlaceData
     public string placeId;
     public int chunkIndex;
     public string prefabId;
-    public string destination;
     public string characterId;
     // 오브젝트 전용 카드 폴더의 Resources 경로입니다. 비어 있으면 장식입니다.
     public string connectStoryCards;
@@ -42,7 +41,6 @@ public class TerrainPlaceDefinition
     public string placeId;
     public int chunkIndex;
     public string prefabId;
-    public string destination;
     public string characterId;
     public string connectStoryCards;
 }

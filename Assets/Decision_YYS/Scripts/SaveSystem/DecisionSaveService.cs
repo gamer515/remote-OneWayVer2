@@ -21,7 +21,10 @@ public sealed class DecisionSaveService
             session.StoryIndex);
     }
 
-    public void SaveProgress(DecisionSession session, UnityEngine.Vector3 playerPosition)
+    public void SaveProgress(
+        DecisionSession session,
+        UnityEngine.Vector3 playerPosition,
+        UnityEngine.Quaternion playerRotation)
     {
         if (session == null)
             return;
@@ -30,7 +33,8 @@ public sealed class DecisionSaveService
             session.ChapterIndex,
             session.EpisodeIndex,
             session.StoryIndex,
-            playerPosition);
+            playerPosition,
+            playerRotation);
     }
 
     public void SaveStats(int[] stats)
@@ -41,10 +45,11 @@ public sealed class DecisionSaveService
     public void SaveCheckpoint(
         DecisionSession session,
         int[] stats,
-        UnityEngine.Vector3 playerPosition)
+        UnityEngine.Vector3 playerPosition,
+        UnityEngine.Quaternion playerRotation)
     {
         // 씬 전환 체크포인트는 진행도와 위치를 함께 저장해 서로 다른 시점의 값이 섞이지 않게 합니다.
-        SaveProgress(session, playerPosition);
+        SaveProgress(session, playerPosition, playerRotation);
         SaveStats(stats);
     }
 
@@ -56,6 +61,7 @@ public sealed class DecisionSaveService
     public void SaveEncounterProgress(
         DecisionSession session,
         UnityEngine.Vector3 playerPosition,
+        UnityEngine.Quaternion playerRotation,
         string phase,
         string activePlaceId,
         int activeCardIndex,
@@ -65,6 +71,7 @@ public sealed class DecisionSaveService
             session.ChapterIndex,
             session.EpisodeIndex,
             playerPosition,
+            playerRotation,
             phase,
             activePlaceId,
             activeCardIndex,
