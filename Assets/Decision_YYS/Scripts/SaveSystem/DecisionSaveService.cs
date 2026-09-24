@@ -83,6 +83,11 @@ public sealed class DecisionSaveService
         saveManager.SaveRemainingCoins(remainingCoins);
     }
 
+    public void SaveStoredItemIds(System.Collections.Generic.IReadOnlyList<string> itemIds)
+    {
+        saveManager.SaveStoredItemIds(itemIds);
+    }
+
     public void SaveInfluenceProfile(StoryInfluenceProfile profile)
     {
         saveManager.RecordInfluenceProfile(profile);

@@ -9,9 +9,9 @@ public sealed class TerrainRepository
 {
     private const float LeftSlotX = -15f;
     private const float RightSlotX = 15f;
-    private const int FirstSlotZ = 10;
-    private const int SlotSpacingZ = 20;
-    private const int SlotCountPerSide = 5;
+    private const int FirstSlotZ = 5;
+    private const int SlotSpacingZ = 10;
+    private const int SlotCountPerSide = 10;
     private readonly int runNumber;
 
     public TerrainRepository(int runNumber = 1)
@@ -121,7 +121,7 @@ public sealed class TerrainRepository
             if (!TryGetSlotPosition(transformData, out Vector3 slotPosition))
             {
                 errorMessage = $"placeId '{place.placeId}'의 슬롯이 올바르지 않습니다. " +
-                    "side는 left/right, z는 10/30/50/70/90 중 하나여야 합니다.";
+                    "side는 left/right, z는 5부터 95까지 10 간격 중 하나여야 합니다.";
                 return false;
             }
 

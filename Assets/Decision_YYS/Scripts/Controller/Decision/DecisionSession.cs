@@ -14,6 +14,8 @@ public sealed class DecisionSession
     public int RunNumber { get; }
     public string ScenarioPath { get; set; }
     public List<Dialogue> PlayedHistory { get; } = new List<Dialogue>();
+    public List<PlayedEncounterCardRecord> PlayedEncounterHistory { get; } =
+        new List<PlayedEncounterCardRecord>();
     public List<BettingDecisionRecord> BettingDecisions { get; } =
         new List<BettingDecisionRecord>();
     public List<CompletedEpisodeRecord> CompletedEpisodes { get; } =
@@ -49,6 +51,7 @@ public sealed class DecisionStartData
     public Vector3? SavedPlayerPosition { get; }
     public Quaternion? SavedPlayerRotation { get; }
     public int[] RemainingCoins { get; }
+    public IReadOnlyList<string> StoredItemIds { get; }
 
     public DecisionStartData(
         DecisionSession session,
@@ -57,7 +60,8 @@ public sealed class DecisionStartData
         SaveManager saveManager,
         Vector3? savedPlayerPosition,
         Quaternion? savedPlayerRotation,
-        int[] remainingCoins)
+        int[] remainingCoins,
+        IReadOnlyList<string> storedItemIds)
     {
         Session = session;
         Player = player;
@@ -66,5 +70,6 @@ public sealed class DecisionStartData
         SavedPlayerPosition = savedPlayerPosition;
         SavedPlayerRotation = savedPlayerRotation;
         RemainingCoins = remainingCoins;
+        StoredItemIds = storedItemIds;
     }
 }

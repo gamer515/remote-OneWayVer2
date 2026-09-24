@@ -82,6 +82,7 @@ public sealed class ChapterFlowController
                     StoryRelayTrigger.EpisodeEnd,
                     episode.scenarioPath,
                     episode.storyHistory,
+                    episode.encounterHistory,
                     episode.bettingDecisions,
                     episodeStats,
                     completedChapterIndex,
@@ -100,6 +101,7 @@ public sealed class ChapterFlowController
                     StoryRelayTrigger.MidTransition,
                     session.ScenarioPath,
                     session.PlayedHistory,
+                    session.PlayedEncounterHistory,
                     session.BettingDecisions,
                     statsSnapshot,
                     completedChapterIndex,
@@ -118,6 +120,7 @@ public sealed class ChapterFlowController
         if (clearHistory)
         {
             session.PlayedHistory.Clear();
+            session.PlayedEncounterHistory.Clear();
             session.BettingDecisions.Clear();
         }
 

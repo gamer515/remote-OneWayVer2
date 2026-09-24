@@ -11,6 +11,7 @@ public partial class DecisionManager
     private EncounterFlowController.Encounter? pendingEncounter;
     private readonly HashSet<string> resolvedPlaceIds = new HashSet<string>(StringComparer.Ordinal);
     private string activePlaceId;
+    private string activeEncounterPath;
     private EncounterInteractionData activeInteraction;
     private ScenarioData activeCards;
     private int activeCardIndex;
@@ -25,7 +26,7 @@ public partial class DecisionManager
             currentState = StoryState.Transitioning;
             return;
         }
-        encounterContent = new EncounterContentRepository();
+        encounterContent = new EncounterContentRepository(session.RunNumber);
         resolvedPlaceIds.Clear();
         if (loadedProgress?.resolvedPlaceIds != null)
             foreach (string id in loadedProgress.resolvedPlaceIds)
@@ -61,6 +62,7 @@ public partial class DecisionManager
     {
         pendingEncounter = null;
         activePlaceId = null;
+        activeEncounterPath = null;
         activeInteraction = null;
         activeCards = null;
         selectedGearIndex = -1;
@@ -108,6 +110,7 @@ public partial class DecisionManager
     private void ShowEncounterPrompt(EncounterFlowController.Encounter encounter)
     {
         activePlaceId = encounter.PlaceId;
+        activeEncounterPath = encounter.ContentPath;
         if (!encounterContent.TryLoadInteraction(encounter.ContentPath, out activeInteraction, out string error))
         {
             Debug.LogError($"[조우] {encounter.PlaceId}: {error}", this);
@@ -136,6 +139,7 @@ public partial class DecisionManager
     private void OpenEncounterCards(EncounterFlowController.Encounter encounter, int index)
     {
         activePlaceId = encounter.PlaceId;
+        activeEncounterPath = encounter.ContentPath;
         if (!encounterContent.TryLoadCards(encounter.ContentPath, out activeCards, out string error) ||
             activeCards.MainStory.Count == 0)
         {
@@ -155,7 +159,7 @@ public partial class DecisionManager
         currentState = StoryState.Transitioning;
         SetYellowInputInteractable(false);
         bettingButtonController?.SetBettingInteractable(false);
-        RecordPlayedStory(card);
+        RecordPlayedEncounterStory(card, activePlaceId, activeEncounterPath, activeCardIndex);
         SaveEncounterState("card");
         if (card.isTransition)
             presentationController.PlayStoryTransition(card, () => CompleteEncounterCardPresentation(card));

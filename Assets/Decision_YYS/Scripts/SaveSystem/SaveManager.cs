@@ -139,6 +139,21 @@ public class SaveManager
         SaveIOService.Instance.SaveRunData(CurrentRun, "Progress", cachedProgress);
     }
 
+    public System.Collections.Generic.List<string> LoadStoredItemIds()
+    {
+        if (cachedProgress.storedItemIds == null)
+            cachedProgress.storedItemIds = new System.Collections.Generic.List<string>();
+        return new System.Collections.Generic.List<string>(cachedProgress.storedItemIds);
+    }
+
+    public void SaveStoredItemIds(System.Collections.Generic.IReadOnlyList<string> itemIds)
+    {
+        cachedProgress.storedItemIds = itemIds == null
+            ? new System.Collections.Generic.List<string>()
+            : new System.Collections.Generic.List<string>(itemIds);
+        SaveIOService.Instance.SaveRunData(CurrentRun, "Progress", cachedProgress);
+    }
+
     public void RecordInfluenceProfile(StoryInfluenceProfile profile)
     {
         if (profile == null)

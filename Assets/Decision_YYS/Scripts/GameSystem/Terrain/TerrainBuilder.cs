@@ -91,6 +91,8 @@ public sealed class TerrainBuilder
         GameObject ground = Object.Instantiate(segment.GroundPrefab,
             segment.Registry.GetChunkWorldPosition(localChunkIndex), Quaternion.identity, chunkParent);
         ground.name = $"Ground_{localChunkIndex}";
+        ground.GetComponent<DungeonTileSurface>()?.ConfigureChunk(
+            segment.FirstGlobalChunkIndex + localChunkIndex);
     }
 
     private static void CreatePlaces(TerrainSegment segment, int localChunkIndex, Transform chunkParent)

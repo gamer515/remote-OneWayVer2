@@ -26,6 +26,8 @@ public class GameProgress
     public List<string> resolvedPlaceIds = new List<string>();
     // 현재 에피소드에서 각 능력치별로 남은 코인 재고입니다.
     public int[] remainingCoins = { 5, 5, 5, 5 };
+    // 가방에는 에셋 참조 대신 카탈로그의 itemId만 저장합니다.
+    public List<string> storedItemIds = new List<string>();
     // 마지막 챕터까지 끝낸 회차인지 기록해 중단 세이브와 완료 기록을 구분합니다.
     public bool isCompleted;
     public List<StoryInfluenceProfile> influenceHistory = new List<StoryInfluenceProfile>();

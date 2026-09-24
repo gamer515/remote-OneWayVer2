@@ -46,7 +46,13 @@ public class AIAPIClient : MonoBehaviour
     [Serializable] private class Candidate { public Content content; }
 
     // AI가 반환할 수정된 텍스트 구조체
-    [Serializable] public class AIModifiedData { public int id; public string text; }
+    [Serializable]
+    public class AIModifiedData
+    {
+        public string encounterPath;
+        public int cardIndex;
+        public string text;
+    }
     #endregion
 
     private void Awake()
@@ -149,40 +155,48 @@ public class AIAPIClient : MonoBehaviour
 
     private bool ApplyAndSave(StoryPacket packet, AIModifiedData[] modifiedItems)
     {
-        if (string.IsNullOrEmpty(packet.fileName) || modifiedItems == null)
+        if (packet?.encounterHistory == null || modifiedItems == null)
             return false;
 
-        // 원본은 이야기/선택지 파일로 분리되어 있으므로 Repository를 통해 병합해 불러옵니다.
-        ScenarioData originalData = new ScenarioRepository().LoadOriginalByPath(
-            packet.fileName,
-            out string loadError);
-        if (!string.IsNullOrEmpty(loadError))
-            Debug.LogError($"[AI SYSTEM] 원본 시나리오 병합 실패: {loadError}");
-        if (originalData == null || originalData.MainStory == null) return false;
-
-        foreach (var item in modifiedItems)
+        Dictionary<string, List<AIModifiedData>> itemsByEncounter =
+            new Dictionary<string, List<AIModifiedData>>(StringComparer.Ordinal);
+        foreach (AIModifiedData item in modifiedItems)
         {
-            var targetDialogue = originalData.MainStory.Find(d => d.id == item.id);
-            if (targetDialogue != null)
+            if (!itemsByEncounter.TryGetValue(item.encounterPath, out List<AIModifiedData> items))
             {
-                targetDialogue.text = item.text;
-                Debug.Log($"<color=cyan>[AI System] ID {targetDialogue.id} 스토리 교체 완료</color>");
+                items = new List<AIModifiedData>();
+                itemsByEncounter.Add(item.encounterPath, items);
             }
+            items.Add(item);
         }
 
-        bool saved = SaveIOService.Instance.SaveGeneratedContent(
-            packet.targetRun,
-            "Episodes",
-            $"{packet.fileName}/Story",
-            originalData);
-        if (saved)
+        foreach (KeyValuePair<string, List<AIModifiedData>> group in itemsByEncounter)
         {
+            EncounterCardRoot original = SaveIOService.Instance.LoadResourceData<EncounterCardRoot>(
+                group.Key + "/Story");
+            if (original?.MainStory == null)
+                return false;
+
+            foreach (AIModifiedData item in group.Value)
+            {
+                if (item.cardIndex < 0 || item.cardIndex >= original.MainStory.Count)
+                    return false;
+                original.MainStory[item.cardIndex].text = item.text;
+            }
+
+            if (!SaveIOService.Instance.SaveGeneratedContent(
+                    packet.targetRun,
+                    "Encounters",
+                    group.Key + "/Story",
+                    original))
+                return false;
+
             Debug.Log(
-                $"<color=#f5e642><b>[AI SYSTEM] {packet.targetRun}회차 이야기 저장 완료: " +
-                $"{packet.fileName}</b></color>");
+                $"<color=#f5e642><b>[AI SYSTEM] {packet.targetRun}회차 Encounter 저장 완료: " +
+                $"{group.Key}/Story</b></color>");
         }
 
-        return saved;
+        return itemsByEncounter.Count > 0;
     }
 
     private static string CreatePacketKey(StoryPacket packet)
@@ -208,56 +222,72 @@ public class AIAPIClient : MonoBehaviour
         AIModifiedData[] modifiedItems,
         out string errorMessage)
     {
-        if (packet?.storyHistory == null || packet.storyHistory.Count == 0)
+        if (packet?.encounterHistory == null || packet.encounterHistory.Count == 0)
         {
             errorMessage = "요청에 변경 대상 지문이 없습니다.";
             return false;
         }
 
-        if (modifiedItems == null || modifiedItems.Length != packet.storyHistory.Count)
+        if (modifiedItems == null || modifiedItems.Length != packet.encounterHistory.Count)
         {
             errorMessage = "응답 항목 수가 요청한 지문 수와 다릅니다.";
             return false;
         }
 
-        HashSet<int> expectedIds = new HashSet<int>();
-        Dictionary<int, Dialogue> originalsById = new Dictionary<int, Dialogue>();
-        foreach (Dialogue dialogue in packet.storyHistory)
+        Dictionary<string, PlayedEncounterCardRecord> originalsByKey =
+            new Dictionary<string, PlayedEncounterCardRecord>(StringComparer.Ordinal);
+        foreach (PlayedEncounterCardRecord record in packet.encounterHistory)
         {
-            if (dialogue == null || !expectedIds.Add(dialogue.id))
+            if (record?.card == null || string.IsNullOrWhiteSpace(record.encounterPath))
             {
-                errorMessage = "요청 지문에 null 또는 중복 id가 있습니다.";
+                errorMessage = "요청 Encounter 카드의 경로 또는 원문이 없습니다.";
                 return false;
             }
 
-            originalsById.Add(dialogue.id, dialogue);
+            string key = CreateEncounterCardKey(record.encounterPath, record.cardIndex);
+            if (record.cardIndex < 0 || originalsByKey.ContainsKey(key))
+            {
+                errorMessage = "요청 Encounter 카드의 순번이 잘못되었거나 중복되었습니다.";
+                return false;
+            }
+            originalsByKey.Add(key, record);
         }
 
-        HashSet<int> responseIds = new HashSet<int>();
+        HashSet<string> responseKeys = new HashSet<string>(StringComparer.Ordinal);
         foreach (AIModifiedData item in modifiedItems)
         {
-            if (item == null || !responseIds.Add(item.id) || !expectedIds.Contains(item.id))
+            string key = item == null
+                ? null
+                : CreateEncounterCardKey(item.encounterPath, item.cardIndex);
+            if (item == null || string.IsNullOrWhiteSpace(item.encounterPath) ||
+                !responseKeys.Add(key) || !originalsByKey.ContainsKey(key))
             {
-                errorMessage = $"응답에 null, 중복 또는 요청하지 않은 id가 있습니다: {item?.id}";
+                errorMessage = $"응답에 null, 중복 또는 요청하지 않은 Encounter 카드가 있습니다: " +
+                    $"{item?.encounterPath}#{item?.cardIndex}";
                 return false;
             }
 
             if (string.IsNullOrWhiteSpace(item.text))
             {
-                errorMessage = $"id {item.id}의 변경 문장이 비어 있습니다.";
+                errorMessage = $"{item.encounterPath}#{item.cardIndex}의 변경 문장이 비어 있습니다.";
                 return false;
             }
 
 
-            if (!HasSameImmutableCores(originalsById[item.id].text, item.text))
+            if (!HasSameImmutableCores(originalsByKey[key].card.text, item.text))
             {
-                errorMessage = $"id {item.id}의 {{ }} 핵심 문자열이 변경되었습니다.";
+                errorMessage = $"{item.encounterPath}#{item.cardIndex}의 {{ }} 핵심 문자열이 변경되었습니다.";
                 return false;
             }
         }
 
         errorMessage = null;
         return true;
+    }
+
+    private static string CreateEncounterCardKey(string encounterPath, int cardIndex)
+    {
+        return $"{encounterPath}\n{cardIndex}";
     }
 
     private static bool HasSameImmutableCores(string originalText, string generatedText)

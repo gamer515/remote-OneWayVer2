@@ -15,44 +15,6 @@ public class ScenarioData
     public List<Dialogue> MainStory;
 }
 
-/// <summary>이야기의 진행과 화면 표시에 필요한 원본 JSON 묶음입니다.</summary>
-[Serializable]
-public class StoryContentData
-{
-    public List<StoryContent> MainStory;
-}
-
-[Serializable]
-public class StoryContent
-{
-    public int id;
-    public bool change;
-    public string type;
-    public bool isTransition;
-    public string background;
-    public string character;
-    public string eventId;
-    public string text;
-}
-
-/// <summary>코인 응답 지문의 능력치 가중치와 NPC 감정 데이터입니다.</summary>
-[Serializable]
-public class StoryChoiceData
-{
-    public List<StoryChoice> StoryChoices;
-}
-
-[Serializable]
-public class StoryChoice
-{
-    public int id;
-    // 기어의 좌상·좌하·우상·우하 네 방향에 표시할 카드 선택 문구입니다.
-    public string[] options;
-    // 배치한 네 종류의 코인 개수에 곱할 지문별 가중치입니다.
-    public int[] statWeights;
-    public string npcEmotion;
-}
-
 [Serializable]
 public class Dialogue
 {

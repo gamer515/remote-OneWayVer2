@@ -2,9 +2,16 @@ using UnityEngine;
 
 public class Player : MonoBehaviour
 {
+    private static readonly int IsWalkingHash = Animator.StringToHash("IsWalking");
     private float targetZ;
     [SerializeField] private float moveSpeed = 3.0f; // 이동 속도 (원하는 느낌에 따라 조절 가능)
     private bool isInitialized = false;
+    private Animator animator;
+
+    private void Awake()
+    {
+        animator = GetComponentInChildren<Animator>();
+    }
 
     // 초기화 및 시작 위치 설정
     public void Initialize(Vector3 startPos)
@@ -12,6 +19,7 @@ public class Player : MonoBehaviour
         transform.position = startPos;
         targetZ = startPos.z;
         isInitialized = true;
+        SetWalking(false);
     }
 
     // 새로운 목표 Z축 지점 설정
@@ -23,6 +31,7 @@ public class Player : MonoBehaviour
     public void StopAndLookAt(Vector3 worldPosition)
     {
         targetZ = transform.position.z;
+        SetWalking(false);
         Vector3 direction = worldPosition - transform.position;
         direction.y = 0f;
         if (direction.sqrMagnitude > 0.0001f)
@@ -40,10 +49,18 @@ public class Player : MonoBehaviour
 
         // 현재 위치에서 목표 위치로 부드럽게 이동
         Vector3 currentPos = transform.position;
-        if (Mathf.Abs(currentPos.z - targetZ) > 0.001f)
+        bool isWalking = Mathf.Abs(currentPos.z - targetZ) > 0.001f;
+        SetWalking(isWalking);
+        if (isWalking)
         {
             float nextZ = Mathf.MoveTowards(currentPos.z, targetZ, moveSpeed * Time.deltaTime);
             transform.position = new Vector3(currentPos.x, currentPos.y, nextZ);
         }
+    }
+
+    private void SetWalking(bool walking)
+    {
+        if (animator != null)
+            animator.SetBool(IsWalkingHash, walking);
     }
 }

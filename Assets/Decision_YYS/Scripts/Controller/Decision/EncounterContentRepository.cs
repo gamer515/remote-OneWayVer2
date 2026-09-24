@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
+using UnityEngine;
 
 [Serializable]
 public sealed class EncounterInteractionData
@@ -38,6 +40,13 @@ public sealed class EncounterCard
 /// <summary>지형의 connectStoryCards 경로에서 해당 오브젝트의 데이터만 읽습니다.</summary>
 public sealed class EncounterContentRepository
 {
+    private readonly int runNumber;
+
+    public EncounterContentRepository(int runNumber = 1)
+    {
+        this.runNumber = Math.Max(1, runNumber);
+    }
+
     public bool TryLoadInteraction(string contentPath, out EncounterInteractionData data, out string error)
     {
         data = SaveIOService.Instance.LoadResourceData<EncounterInteractionData>(
@@ -66,12 +75,33 @@ public sealed class EncounterContentRepository
     public bool TryLoadCards(string contentPath, out ScenarioData cards, out string error)
     {
         cards = null;
-        EncounterCardRoot source = SaveIOService.Instance.LoadResourceData<EncounterCardRoot>(
+        EncounterCardRoot original = SaveIOService.Instance.LoadResourceData<EncounterCardRoot>(
             contentPath + "/Story");
-        if (source?.MainStory == null || source.MainStory.Count == 0)
+        if (original?.MainStory == null || original.MainStory.Count == 0)
         {
             error = $"{contentPath}/Story에 카드가 없습니다.";
             return false;
+        }
+
+        EncounterCardRoot source = original;
+        if (runNumber > 1 && SaveIOService.Instance.TryLoadGeneratedContent(
+                runNumber,
+                "Encounters",
+                contentPath + "/Story",
+                out EncounterCardRoot generated))
+        {
+            if (TryApplyGeneratedText(original, generated, out string generatedError))
+            {
+                Debug.Log(
+                    $"[EncounterContentRepository] {runNumber}회차 생성 이야기를 사용합니다: " +
+                    $"{contentPath}/Story");
+            }
+            else
+            {
+                Debug.LogWarning(
+                    $"[EncounterContentRepository] 생성 이야기 검증 실패로 원본을 사용합니다: " +
+                    $"{contentPath}/Story ({generatedError})");
+            }
         }
 
         cards = new ScenarioData { MainStory = new List<Dialogue>() };
@@ -108,6 +138,79 @@ public sealed class EncounterContentRepository
         }
 
         error = null;
+        return true;
+    }
+
+    private static bool TryApplyGeneratedText(
+        EncounterCardRoot original,
+        EncounterCardRoot generated,
+        out string error)
+    {
+        if (generated?.MainStory == null ||
+            generated.MainStory.Count != original.MainStory.Count)
+        {
+            error = "원본과 생성 이야기의 카드 수가 다릅니다.";
+            return false;
+        }
+
+        for (int index = 0; index < original.MainStory.Count; index++)
+        {
+            EncounterCard originalCard = original.MainStory[index];
+            EncounterCard generatedCard = generated.MainStory[index];
+            if (originalCard == null || generatedCard == null ||
+                string.IsNullOrWhiteSpace(generatedCard.text))
+            {
+                error = $"{index}번째 생성 카드 또는 text가 비어 있습니다.";
+                return false;
+            }
+
+            if (generatedCard.type != originalCard.type ||
+                generatedCard.isTransition != originalCard.isTransition ||
+                generatedCard.background != originalCard.background ||
+                generatedCard.npcEmotion != originalCard.npcEmotion ||
+                !ArrayEquals(generatedCard.options, originalCard.options) ||
+                !ArrayEquals(generatedCard.statWeights, originalCard.statWeights))
+            {
+                error = $"{index}번째 카드의 text 외 구조가 원본과 다릅니다.";
+                return false;
+            }
+
+            if (!HasSameImmutableCores(originalCard.text, generatedCard.text))
+            {
+                error = $"{index}번째 카드의 {{ }} 핵심 문자열이 변경되었습니다.";
+                return false;
+            }
+        }
+
+        for (int index = 0; index < original.MainStory.Count; index++)
+            original.MainStory[index].text = generated.MainStory[index].text;
+
+        error = null;
+        return true;
+    }
+
+    private static bool ArrayEquals<T>(T[] left, T[] right)
+    {
+        if (ReferenceEquals(left, right)) return true;
+        if (left == null || right == null || left.Length != right.Length) return false;
+        EqualityComparer<T> comparer = EqualityComparer<T>.Default;
+        for (int index = 0; index < left.Length; index++)
+            if (!comparer.Equals(left[index], right[index])) return false;
+        return true;
+    }
+
+    private static bool HasSameImmutableCores(string originalText, string generatedText)
+    {
+        MatchCollection originalCores = Regex.Matches(originalText ?? string.Empty, @"\{[^{}]*\}");
+        MatchCollection generatedCores = Regex.Matches(generatedText ?? string.Empty, @"\{[^{}]*\}");
+        if (originalCores.Count != generatedCores.Count) return false;
+
+        for (int index = 0; index < originalCores.Count; index++)
+            if (!string.Equals(
+                    originalCores[index].Value,
+                    generatedCores[index].Value,
+                    StringComparison.Ordinal))
+                return false;
         return true;
     }
 

@@ -20,6 +20,7 @@ public class StoryRelayManager : MonoBehaviour
         StoryRelayTrigger trigger,
         string currentFileName,
         List<Dialogue> history,
+        List<PlayedEncounterCardRecord> encounterHistory,
         List<BettingDecisionRecord> bettingDecisions,
         int[] stats,
         int chapter,
@@ -38,10 +39,13 @@ public class StoryRelayManager : MonoBehaviour
             return;
         }
 
-        // 에피소드 단위 요청이므로 모든 대사를 전달하고 text 전체를 변경할 수 있게 합니다.
-        List<Dialogue> filtered = history != null
-            ? history.FindAll(d => d != null)
-            : new List<Dialogue>();
+        // 실제로 플레이한 Encounter 카드만 경로 및 카드 순번과 함께 전달합니다.
+        List<PlayedEncounterCardRecord> filteredEncounters = encounterHistory != null
+            ? encounterHistory.FindAll(record =>
+                record != null && record.card != null &&
+                !string.IsNullOrWhiteSpace(record.encounterPath))
+            : new List<PlayedEncounterCardRecord>();
+        List<Dialogue> filtered = filteredEncounters.ConvertAll(record => record.card);
 
         // Initial처럼 변경 대상으로 표시된 지문이 없는 구간은 AI 요청을 만들지 않습니다.
         if (filtered.Count == 0)
@@ -56,7 +60,7 @@ public class StoryRelayManager : MonoBehaviour
         int[] statsSnapshot = stats != null ? (int[])stats.Clone() : new int[0];
         StoryInfluenceProfile influence = fixedInfluence ??
             CreateInfluenceProfile(statsSnapshot, chapter, sourceRun);
-        string summary = BuildSummary(filtered, decisionSnapshot);
+        string summary = BuildSummary(filteredEncounters, decisionSnapshot);
         string atmosphere = DetermineAtmosphere(influence.intensity);
 
         string template = trigger == StoryRelayTrigger.EpisodeEnd
@@ -76,6 +80,7 @@ public class StoryRelayManager : MonoBehaviour
             currentFileName,
             finalPrompt,
             filtered,
+            filteredEncounters,
             sourceRun);
         SendPacket(packet);
     }
@@ -171,10 +176,10 @@ public class StoryRelayManager : MonoBehaviour
     }
 
     private string BuildSummary(
-        List<Dialogue> dialogs,
+        List<PlayedEncounterCardRecord> encounterCards,
         List<BettingDecisionRecord> bettingDecisions)
     {
-        if (dialogs == null || dialogs.Count == 0) return "(기록 없음)";
+        if (encounterCards == null || encounterCards.Count == 0) return "(기록 없음)";
 
         Dictionary<int, BettingDecisionRecord> decisionsByDialogueId =
             new Dictionary<int, BettingDecisionRecord>();
@@ -185,9 +190,12 @@ public class StoryRelayManager : MonoBehaviour
         }
         
         StringBuilder sb = new StringBuilder();
-        foreach (var d in dialogs)
+        foreach (PlayedEncounterCardRecord record in encounterCards)
         {
-            sb.AppendLine($"- [ID: {d.id}] [{d.character}] {d.text}");
+            Dialogue d = record.card;
+            sb.AppendLine(
+                $"- [ID: {d.id}] [Encounter: {record.encounterPath}] [CardIndex: {record.cardIndex}] " +
+                $"[Place: {record.placeId}] {d.text}");
             if (decisionsByDialogueId.TryGetValue(d.id, out BettingDecisionRecord decision))
             {
                 sb.AppendLine(
@@ -221,7 +229,7 @@ public class StoryRelayManager : MonoBehaviour
             $"변경 강도: {influence.intensity}\n" +
             $"변경 지침: {instruction}\n" +
             "주요 약점은 갈등과 실수에 강하게, 보조 약점은 불안 요소에 약하게 반영하세요.\n" +
-            "id와 이야기 순서, character, type은 변경하지 마세요.\n" +
+            "encounterPath와 cardIndex, 이야기 순서는 변경하지 마세요.\n" +
             "원문에서 { }로 감싼 문자열은 괄호를 포함해 한 글자도 변경하지 마세요.";
     }
 

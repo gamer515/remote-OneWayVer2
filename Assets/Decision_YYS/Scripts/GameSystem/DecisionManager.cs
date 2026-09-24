@@ -52,6 +52,7 @@ public partial class DecisionManager : MonoBehaviour
     [SerializeField] private CoinDropController coinDropController;
     [Tooltip("코인통 왼쪽부터 Blue, Red, Yellow, Teal 순서의 Journey 코인 프리팹입니다.")]
     [SerializeField] private GameObject[] journeyCoinPrefabs;
+    [SerializeField] private BackpackInventoryController backpackInventory;
     private JourneyCoinSupplyController journeyCoinSupply;
     [Header("Player Movement")]
     private DecisionPlayerController playerController;
@@ -69,6 +70,8 @@ public partial class DecisionManager : MonoBehaviour
             journeyBoardInput = FindFirstObjectByType<JourneyBoardInput>();
         if (coinDropController == null)
             coinDropController = FindFirstObjectByType<CoinDropController>();
+        if (backpackInventory == null)
+            backpackInventory = FindFirstObjectByType<BackpackInventoryController>();
     }
 
     private void OnEnable()
@@ -169,7 +172,7 @@ public partial class DecisionManager : MonoBehaviour
             return;
         }
 
-        Vector3 startPosition = startData.SavedPlayerPosition ?? envController.TerrainOrigin + new Vector3(0, 1f, 10);
+        Vector3 startPosition = startData.SavedPlayerPosition ?? envController.TerrainOrigin + new Vector3(0, 0f, 10);
         playerController.Initialize(startPosition, startData.SavedPlayerRotation);
 
         // 실제 시작 위치가 적용된 후 스트리밍과 카메라에 Player를 연결합니다.
@@ -183,6 +186,9 @@ public partial class DecisionManager : MonoBehaviour
             useInitialCameraPosition);
 
         coinDropController.InitializeInventory(startData.RemainingCoins);
+        backpackInventory?.Initialize(
+            startData.StoredItemIds,
+            saveService.SaveStoredItemIds);
         if (journeyBoardInput != null)
         {
             journeyCoinSupply = new JourneyCoinSupplyController(
@@ -412,6 +418,33 @@ private void SetYellowInputInteractable(bool interactable)
             playedHistory.Add(dialogue);
     }
 
+    private void RecordPlayedEncounterStory(
+        Dialogue dialogue,
+        string placeId,
+        string encounterPath,
+        int cardIndex)
+    {
+        RecordPlayedStory(dialogue);
+        if (dialogue == null || string.IsNullOrWhiteSpace(encounterPath))
+            return;
+
+        List<PlayedEncounterCardRecord> history = session.PlayedEncounterHistory;
+        if (history.Count > 0)
+        {
+            PlayedEncounterCardRecord last = history[history.Count - 1];
+            if (last != null && last.encounterPath == encounterPath && last.cardIndex == cardIndex)
+                return;
+        }
+
+        history.Add(new PlayedEncounterCardRecord
+        {
+            placeId = placeId,
+            encounterPath = encounterPath,
+            cardIndex = cardIndex,
+            card = dialogue
+        });
+    }
+
     private void HandleScreenClicked()
     {
         HandleEncounterYellowPressed();
@@ -423,6 +456,7 @@ private void SetYellowInputInteractable(bool interactable)
         {
             scenarioPath = currentScenarioPath,
             storyHistory = new List<Dialogue>(session.PlayedHistory),
+            encounterHistory = new List<PlayedEncounterCardRecord>(session.PlayedEncounterHistory),
             bettingDecisions = new List<BettingDecisionRecord>(session.BettingDecisions),
             finalStats = statContainer.stats,
             remainingCoins = coinDropController.RemainingCoins
@@ -432,6 +466,7 @@ private void SetYellowInputInteractable(bool interactable)
 
         // 최종 성향은 챕터 종료 시 확정하며, 여기서는 에피소드별 작은 기록만 보관합니다.
         session.PlayedHistory.Clear();
+        session.PlayedEncounterHistory.Clear();
         session.BettingDecisions.Clear();
     }
 
