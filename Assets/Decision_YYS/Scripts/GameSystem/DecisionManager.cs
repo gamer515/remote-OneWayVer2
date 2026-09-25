@@ -53,6 +53,7 @@ public partial class DecisionManager : MonoBehaviour
     [Tooltip("코인통 왼쪽부터 Blue, Red, Yellow, Teal 순서의 Journey 코인 프리팹입니다.")]
     [SerializeField] private GameObject[] journeyCoinPrefabs;
     [SerializeField] private BackpackInventoryController backpackInventory;
+    [SerializeField] private TutorialMiniGameController tutorialMiniGames;
     private JourneyCoinSupplyController journeyCoinSupply;
     [Header("Player Movement")]
     private DecisionPlayerController playerController;
@@ -72,6 +73,8 @@ public partial class DecisionManager : MonoBehaviour
             coinDropController = FindFirstObjectByType<CoinDropController>();
         if (backpackInventory == null)
             backpackInventory = FindFirstObjectByType<BackpackInventoryController>();
+        if (tutorialMiniGames == null)
+            tutorialMiniGames = FindFirstObjectByType<TutorialMiniGameController>();
     }
 
     private void OnEnable()
@@ -156,7 +159,13 @@ public partial class DecisionManager : MonoBehaviour
 
         session = startData.Session;
         loadedProgress = startData.SaveManager.LoadProgress();
-        envController.SetContentRun(session.RunNumber);
+        envController.SetContentRun(session.RunNumber, session.RunSeed);
+        if (!envController.TryValidateAllContent(session.Omnibus, out string contentError))
+        {
+            Debug.LogError($"전체 콘텐츠 검증 실패: {contentError}", this);
+            enabled = false;
+            return;
+        }
         playerController = new DecisionPlayerController(startData.Player);
         saveService = new DecisionSaveService(startData.SaveManager);
         chapterFlowController = new ChapterFlowController(

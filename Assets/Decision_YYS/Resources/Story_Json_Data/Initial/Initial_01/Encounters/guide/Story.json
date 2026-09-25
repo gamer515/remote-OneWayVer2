@@ -1,0 +1,43 @@
+{
+  "MainStory": [
+    {
+      "type": "Next",
+      "isTransition": false,
+      "background": "#FFE0B2",
+      "text": "광부: 어이, 자네. 여기 있으면 안 돼."
+    },
+    {
+      "type": "Next",
+      "isTransition": false,
+      "background": "#FFE0B2",
+      "text": "광부: 여기는 안개 광산이라고. 길을 모르면 발을 잘못 디디기 딱 좋은 곳이지."
+    },
+    {
+      "type": "Next",
+      "isTransition": false,
+      "background": "#FFE0B2",
+      "text": "광부: 꼴을 보아하니 아무것도 모른 채 들어온 모양이구만."
+    },
+    {
+      "type": "Next",
+      "isTransition": false,
+      "background": "#FFE0B2",
+      "text": "광부: 내가 인생을 좀 알려줘야 하나? 잘 봐. 기어를 네 방향 중 하나로 기울이면 대답을 고를 수 있어."
+    },
+    {
+      "type": "Next",
+      "isTransition": false,
+      "background": "#FFE0B2",
+      "text": "광부: 고른 뒤에는 노란 버튼을 눌러. 이야기가 끝났을 때 한 번 더 누르면 다시 길을 걷게 될 거야."
+    },
+    {
+      "type": "Choice",
+      "isTransition": false,
+      "background": "#FFCC80",
+      "text": "광부: 자, 어디 제대로 들었나 보자고. 기어를 움직여 대답을 골라 봐.",
+      "options": ["이해했다", "버튼을 확인한다", "기어를 연습한다", "다시 설명해 달라"],
+      "statWeights": [0, 0, 0, 0],
+      "npcEmotion": "Curiosity"
+    }
+  ]
+}

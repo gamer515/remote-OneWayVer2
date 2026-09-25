@@ -13,6 +13,20 @@ public class SaveManager
         profile = SaveIOService.Instance.LoadOrCreateProfile();
         cachedProgress = SaveIOService.Instance.LoadRunData<GameProgress>(CurrentRun, "Progress")
             ?? new GameProgress();
+        EnsureRunSeed();
+    }
+
+    public int RunSeed => EnsureRunSeed();
+
+    private int EnsureRunSeed()
+    {
+        if (cachedProgress.runSeed != 0)
+            return cachedProgress.runSeed;
+
+        byte[] bytes = System.Guid.NewGuid().ToByteArray();
+        cachedProgress.runSeed = System.Math.Max(1, System.BitConverter.ToInt32(bytes, 0) & int.MaxValue);
+        SaveIOService.Instance.SaveRunData(CurrentRun, "Progress", cachedProgress);
+        return cachedProgress.runSeed;
     }
 
     /// <summary>
@@ -154,6 +168,67 @@ public class SaveManager
         SaveIOService.Instance.SaveRunData(CurrentRun, "Progress", cachedProgress);
     }
 
+    public bool HasUnlock(string unlockId)
+    {
+        return !string.IsNullOrWhiteSpace(unlockId) &&
+               cachedProgress.unlockedIds != null &&
+               cachedProgress.unlockedIds.Contains(unlockId);
+    }
+
+    public bool HasAllUnlocks(System.Collections.Generic.IEnumerable<string> unlockIds)
+    {
+        if (unlockIds == null) return true;
+        foreach (string unlockId in unlockIds)
+            if (!string.IsNullOrWhiteSpace(unlockId) && !HasUnlock(unlockId)) return false;
+        return true;
+    }
+
+    public void ApplyEncounterEffect(
+        string effectId,
+        System.Collections.Generic.IEnumerable<string> grantsUnlocks,
+        string relationshipId,
+        int relationshipDelta)
+    {
+        if (string.IsNullOrWhiteSpace(effectId)) return;
+        cachedProgress.appliedEffectIds ??= new System.Collections.Generic.List<string>();
+        if (cachedProgress.appliedEffectIds.Contains(effectId)) return;
+
+        cachedProgress.unlockedIds ??= new System.Collections.Generic.List<string>();
+        if (grantsUnlocks != null)
+        {
+            foreach (string unlockId in grantsUnlocks)
+                if (!string.IsNullOrWhiteSpace(unlockId) &&
+                    !cachedProgress.unlockedIds.Contains(unlockId))
+                    cachedProgress.unlockedIds.Add(unlockId);
+        }
+
+        if (!string.IsNullOrWhiteSpace(relationshipId) && relationshipDelta != 0)
+        {
+            cachedProgress.relationships ??= new System.Collections.Generic.List<RelationshipValue>();
+            RelationshipValue relationship = cachedProgress.relationships.Find(
+                value => value != null && value.id == relationshipId);
+            if (relationship == null)
+            {
+                relationship = new RelationshipValue { id = relationshipId };
+                cachedProgress.relationships.Add(relationship);
+            }
+            relationship.value += relationshipDelta;
+        }
+
+        cachedProgress.appliedEffectIds.Add(effectId);
+        SaveIOService.Instance.SaveRunData(CurrentRun, "Progress", cachedProgress);
+    }
+
+    public void MarkEncounterCompleted(string placeId)
+    {
+        if (string.IsNullOrWhiteSpace(placeId)) return;
+        ApplyEncounterEffect(
+            $"{placeId}:completed",
+            new[] { $"event:{placeId}" },
+            null,
+            0);
+    }
+
     public void RecordInfluenceProfile(StoryInfluenceProfile profile)
     {
         if (profile == null)
@@ -235,7 +310,12 @@ public class SaveManager
         CompleteCurrentRun();
 
         int nextRun = CurrentRun + 1;
-        GameProgress nextProgress = new GameProgress();
+        GameProgress nextProgress = new GameProgress
+        {
+            runSeed = System.Math.Max(
+                1,
+                System.BitConverter.ToInt32(System.Guid.NewGuid().ToByteArray(), 0) & int.MaxValue)
+        };
 
         // 다음 회차 파일을 먼저 만든 뒤 Profile을 갱신하여 불완전한 회차를 가리키지 않게 합니다.
         SaveIOService.Instance.SaveRunData(nextRun, "Progress", nextProgress);

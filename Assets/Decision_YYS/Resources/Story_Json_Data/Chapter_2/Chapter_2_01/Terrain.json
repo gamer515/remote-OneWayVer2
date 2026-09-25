@@ -1,38 +1,16 @@
 {
   "TerrainInfo": {
     "terrainName": "Chapter2Road",
-    "chunkCount": 5,
+    "groundId": "dungeon_01",
+    "groundIds": [ "dungeon_01", "dungeon_02" ],
+    "chunkCount": 2,
     "places": [
-      {
-        "placeId": "chapter_2_chunk_1_monument_0",
-        "chunkIndex": 1,
-        "prefabId": "monument",
-        "connectStoryCards": "Chapter_2/Chapter_2_01/Encounters/chapter_2_chunk_1_monument_0"
-      },
       {
         "placeId": "chapter_2_chunk_1_sage_0",
         "chunkIndex": 1,
         "prefabId": "normal_people_1",
         "connectStoryCards": "Chapter_2/Chapter_2_01/Encounters/chapter_2_chunk_1_sage_0",
         "characterId": "Sage"
-      },
-      {
-        "placeId": "chapter_2_chunk_1_house_0",
-        "chunkIndex": 1,
-        "prefabId": "house",
-        "connectStoryCards": "Chapter_2/Chapter_2_01/Encounters/chapter_2_chunk_1_house_0"
-      },
-      {
-        "placeId": "chapter_2_chunk_3_pleasure_house_0",
-        "chunkIndex": 3,
-        "prefabId": "pleasure_house",
-        "connectStoryCards": "Chapter_2/Chapter_2_01/Encounters/chapter_2_chunk_3_pleasure_house_0"
-      },
-      {
-        "placeId": "chapter_2_chunk_3_castle_0",
-        "chunkIndex": 3,
-        "prefabId": "castle",
-        "connectStoryCards": "Chapter_2/Chapter_2_01/Encounters/chapter_2_chunk_3_castle_0"
       }
     ]
   }

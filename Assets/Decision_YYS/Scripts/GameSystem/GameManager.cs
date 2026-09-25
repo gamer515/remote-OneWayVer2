@@ -60,6 +60,7 @@ public class GameManager : MonoBehaviour
         var session = new DecisionSession(
             currentOmnibusData,
             saveManager.CurrentRun,
+            saveManager.RunSeed,
             chapterIndex,
             episodeIndex,
             storyIndex,

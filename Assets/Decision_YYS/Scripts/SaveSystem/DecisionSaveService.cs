@@ -88,6 +88,26 @@ public sealed class DecisionSaveService
         saveManager.SaveStoredItemIds(itemIds);
     }
 
+    public bool HasAllUnlocks(System.Collections.Generic.IEnumerable<string> unlockIds)
+    {
+        return saveManager.HasAllUnlocks(unlockIds);
+    }
+
+    public void ApplyEncounterEffect(
+        string effectId,
+        System.Collections.Generic.IEnumerable<string> grantsUnlocks,
+        string relationshipId,
+        int relationshipDelta)
+    {
+        saveManager.ApplyEncounterEffect(
+            effectId, grantsUnlocks, relationshipId, relationshipDelta);
+    }
+
+    public void MarkEncounterCompleted(string placeId)
+    {
+        saveManager.MarkEncounterCompleted(placeId);
+    }
+
     public void SaveInfluenceProfile(StoryInfluenceProfile profile)
     {
         saveManager.RecordInfluenceProfile(profile);

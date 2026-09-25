@@ -10,19 +10,20 @@ public sealed class TerrainBuilder
     {
         public TerrainData Data;
         public TerrainPlaceRegistry Registry;
-        public GameObject GroundPrefab;
+        public GameObject[] GroundPrefabs;
         public TerrainPrefabCatalog PrefabCatalog;
         public Transform Parent;
         public int FirstGlobalChunkIndex;
         public int ChunkCount;
+        public int RunSeed;
     }
 
     private readonly List<TerrainSegment> segments = new List<TerrainSegment>();
     private readonly Dictionary<int, GameObject> chunkInstances = new Dictionary<int, GameObject>();
 
     public void RegisterTerrain(TerrainData terrainData, TerrainPlaceRegistry placeRegistry,
-        GameObject groundPrefab, TerrainPrefabCatalog prefabCatalog, Transform parent,
-        int firstGlobalChunkIndex, int chunkCount)
+        GameObject[] groundPrefabs, TerrainPrefabCatalog prefabCatalog, Transform parent,
+        int firstGlobalChunkIndex, int chunkCount, int runSeed)
     {
         if (terrainData?.places == null || placeRegistry == null || parent == null || chunkCount <= 0)
             return;
@@ -32,11 +33,12 @@ public sealed class TerrainBuilder
         {
             Data = terrainData,
             Registry = placeRegistry,
-            GroundPrefab = groundPrefab,
+            GroundPrefabs = groundPrefabs,
             PrefabCatalog = prefabCatalog,
             Parent = parent,
             FirstGlobalChunkIndex = firstGlobalChunkIndex,
-            ChunkCount = chunkCount
+            ChunkCount = chunkCount,
+            RunSeed = runSeed
         });
     }
 
@@ -57,8 +59,8 @@ public sealed class TerrainBuilder
         chunk.transform.SetParent(segment.Parent, false);
         chunk.transform.localPosition = Vector3.zero;
 
-        CreateGround(segment, localChunkIndex, chunk.transform);
-        CreatePlaces(segment, localChunkIndex, chunk.transform);
+        GameObject ground = CreateGround(segment, localChunkIndex, chunk.transform);
+        CreatePlaces(segment, localChunkIndex, chunk.transform, ground);
         chunkInstances.Add(globalChunkIndex, chunk);
         return true;
     }
@@ -84,18 +86,28 @@ public sealed class TerrainBuilder
         return null;
     }
 
-    private static void CreateGround(TerrainSegment segment, int localChunkIndex, Transform chunkParent)
+    private static GameObject CreateGround(
+        TerrainSegment segment,
+        int localChunkIndex,
+        Transform chunkParent)
     {
-        if (segment.GroundPrefab == null) return;
+        if (segment.GroundPrefabs == null || localChunkIndex < 0 ||
+            localChunkIndex >= segment.GroundPrefabs.Length) return null;
 
-        GameObject ground = Object.Instantiate(segment.GroundPrefab,
+        GameObject groundPrefab = segment.GroundPrefabs[localChunkIndex];
+        if (groundPrefab == null) return null;
+
+        GameObject ground = Object.Instantiate(groundPrefab,
             segment.Registry.GetChunkWorldPosition(localChunkIndex), Quaternion.identity, chunkParent);
-        ground.name = $"Ground_{localChunkIndex}";
-        ground.GetComponent<DungeonTileSurface>()?.ConfigureChunk(
-            segment.FirstGlobalChunkIndex + localChunkIndex);
+        ground.name = $"Ground_{localChunkIndex}_{groundPrefab.name}";
+        return ground;
     }
 
-    private static void CreatePlaces(TerrainSegment segment, int localChunkIndex, Transform chunkParent)
+    private static void CreatePlaces(
+        TerrainSegment segment,
+        int localChunkIndex,
+        Transform chunkParent,
+        GameObject ground)
     {
         foreach (PlaceData place in segment.Data.places)
         {
@@ -108,7 +120,21 @@ public sealed class TerrainBuilder
                 continue;
             }
 
-            // 이벤트 여부와 무관하게 모든 배치물을 만들며, 위치는 청크 로컬 JSON 값을 사용합니다.
+            // 저작된 Terrain 안에 같은 placeId의 오브젝트가 있으면 그 오브젝트를 재사용합니다.
+            // 이를 통해 눈으로 배치한 NPC와 JSON 생성 NPC가 겹치지 않습니다.
+            Transform authoredPlace = ground != null
+                ? ground.transform.Find($"Place_{place.placeId}")
+                : null;
+            if (authoredPlace != null)
+            {
+                authoredPlace.gameObject.SetActive(true);
+                authoredPlace.SetPositionAndRotation(
+                    segment.Registry.GetWorldPosition(place),
+                    Quaternion.Euler(place.rotation));
+                continue;
+            }
+
+            // Terrain에 미리 배치되지 않은 오브젝트만 카탈로그 프리팹으로 생성합니다.
             GameObject instance = Object.Instantiate(placePrefab,
                 segment.Registry.GetWorldPosition(place), Quaternion.Euler(place.rotation), chunkParent);
             instance.name = $"Place_{place.placeId}_{place.prefabId}";

@@ -1,38 +1,16 @@
 {
   "TerrainInfo": {
     "terrainName": "Chapter1Road",
-    "chunkCount": 5,
+    "groundId": "dungeon_01",
+    "groundIds": [ "dungeon_01", "dungeon_02" ],
+    "chunkCount": 2,
     "places": [
-      {
-        "placeId": "chapter_1_chunk_1_monument_0",
-        "chunkIndex": 1,
-        "prefabId": "monument",
-        "connectStoryCards": "Chapter_1/Chapter_1_01/Encounters/chapter_1_chunk_1_monument_0"
-      },
       {
         "placeId": "chapter_1_chunk_1_instructor_0",
         "chunkIndex": 1,
         "prefabId": "normal_people",
         "connectStoryCards": "Chapter_1/Chapter_1_01/Encounters/chapter_1_chunk_1_instructor_0",
         "characterId": "Instructor"
-      },
-      {
-        "placeId": "chapter_1_chunk_1_farmhouse_0",
-        "chunkIndex": 1,
-        "prefabId": "farmhouse",
-        "connectStoryCards": "Chapter_1/Chapter_1_01/Encounters/chapter_1_chunk_1_farmhouse_0"
-      },
-      {
-        "placeId": "chapter_1_chunk_3_castle_0",
-        "chunkIndex": 3,
-        "prefabId": "castle",
-        "connectStoryCards": "Chapter_1/Chapter_1_01/Encounters/chapter_1_chunk_3_castle_0"
-      },
-      {
-        "placeId": "chapter_1_chunk_4_house_0",
-        "chunkIndex": 4,
-        "prefabId": "house",
-        "connectStoryCards": "Chapter_1/Chapter_1_01/Encounters/chapter_1_chunk_4_house_0"
       }
     ]
   }

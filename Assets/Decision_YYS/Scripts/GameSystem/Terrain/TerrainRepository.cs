@@ -7,16 +7,19 @@ using UnityEngine;
 /// </summary>
 public sealed class TerrainRepository
 {
-    private const float LeftSlotX = -15f;
-    private const float RightSlotX = 15f;
+    private const float HorizontalScale = 0.5f;
+    private const float LeftSlotX = -7.5f;
+    private const float RightSlotX = 7.5f;
     private const int FirstSlotZ = 5;
     private const int SlotSpacingZ = 10;
     private const int SlotCountPerSide = 10;
     private readonly int runNumber;
+    private readonly int runSeed;
 
-    public TerrainRepository(int runNumber = 1)
+    public TerrainRepository(int runNumber = 1, int runSeed = 0)
     {
         this.runNumber = Math.Max(1, runNumber);
+        this.runSeed = runSeed;
     }
 
     public TerrainData Load(string terrainFilePath)
@@ -39,6 +42,7 @@ public sealed class TerrainRepository
             if (TryBuildTerrain(generatedDefinition, generatedTransform, out TerrainData generated, out string error))
             {
                 Debug.Log($"[TerrainRepository] {runNumber}회차 생성 지형을 사용합니다: {terrainFilePath}");
+                ApplySeededGroundOrder(generated, terrainFilePath);
                 return generated;
             }
 
@@ -57,10 +61,45 @@ public sealed class TerrainRepository
             SaveIOService.Instance.LoadResourceData<TerrainTransformRoot>(transformPath);
 
         if (TryBuildTerrain(definitionRoot, transformRoot, out TerrainData original, out string originalError))
+        {
+            ApplySeededGroundOrder(original, terrainFilePath);
             return original;
+        }
 
         Debug.LogError($"지형 분리 파일이 올바르지 않습니다: {terrainFilePath}, {transformPath} ({originalError})");
         return null;
+    }
+
+    private void ApplySeededGroundOrder(TerrainData terrain, string terrainFilePath)
+    {
+        if (terrain == null) return;
+        if (terrain.groundIds == null || terrain.groundIds.Length == 0)
+            terrain.groundIds = new[] { terrain.groundId };
+
+        terrain.chunkCount = terrain.groundIds.Length;
+        terrain.groundId = terrain.groundIds[0];
+
+        // 첫 Terrain은 항상 고정하고, 같은 회차에서는 같은 순서가 재현되도록 나머지만 섞습니다.
+        if (runSeed == 0 || terrain.groundIds.Length <= 2) return;
+
+        var random = new System.Random(CreateLayoutSeed(runSeed, terrainFilePath));
+        for (int index = terrain.groundIds.Length - 1; index > 1; index--)
+        {
+            int other = random.Next(1, index + 1);
+            (terrain.groundIds[index], terrain.groundIds[other]) =
+                (terrain.groundIds[other], terrain.groundIds[index]);
+        }
+    }
+
+    private static int CreateLayoutSeed(int seed, string path)
+    {
+        unchecked
+        {
+            int hash = seed;
+            foreach (char character in path)
+                hash = hash * 397 ^ character;
+            return hash;
+        }
     }
 
     private static bool TryBuildTerrain(
@@ -91,6 +130,9 @@ public sealed class TerrainRepository
             }
         }
 
+        int effectiveChunkCount = definition.groundIds != null && definition.groundIds.Length > 0
+            ? definition.groundIds.Length
+            : definition.chunkCount;
         PlaceData[] places = new PlaceData[definition.places.Length];
         HashSet<string> definitionIds = new HashSet<string>(StringComparer.Ordinal);
         HashSet<string> occupiedSlots = new HashSet<string>(StringComparer.Ordinal);
@@ -111,8 +153,8 @@ public sealed class TerrainRepository
                 return false;
             }
 
-            if (definition.chunkCount > 0 &&
-                (place.chunkIndex < 0 || place.chunkIndex >= definition.chunkCount))
+            if (effectiveChunkCount > 0 &&
+                (place.chunkIndex < 0 || place.chunkIndex >= effectiveChunkCount))
             {
                 errorMessage = $"placeId '{place.placeId}'의 chunkIndex가 지형 범위를 벗어났습니다.";
                 return false;
@@ -153,7 +195,9 @@ public sealed class TerrainRepository
         terrainData = new TerrainData
         {
             terrainName = definition.terrainName,
-            chunkCount = definition.chunkCount,
+            groundId = definition.groundId,
+            groundIds = definition.groundIds,
+            chunkCount = effectiveChunkCount,
             places = places
         };
         errorMessage = null;
@@ -166,6 +210,12 @@ public sealed class TerrainRepository
     {
         position = default;
         if (transformData == null) return false;
+
+        if (transformData.useExactPosition)
+        {
+            position = transformData.position;
+            return true;
+        }
 
         float x;
         if (string.Equals(transformData.side, "left", StringComparison.OrdinalIgnoreCase))
@@ -182,7 +232,13 @@ public sealed class TerrainRepository
         if (!isValidZ) return false;
 
         // JSON은 배치 슬롯만 선택하고, 실제 청크 로컬 좌표는 이곳에서 일관되게 계산합니다.
-        position = new Vector3(x, transformData.y, transformData.z) + transformData.offset;
+        position = new Vector3(
+            x,
+            transformData.y,
+            transformData.z * HorizontalScale) + new Vector3(
+            transformData.offset.x * HorizontalScale,
+            transformData.offset.y,
+            transformData.offset.z * HorizontalScale);
         return true;
     }
 

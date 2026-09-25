@@ -13,6 +13,8 @@ public class ProfileData
 [System.Serializable]
 public class GameProgress 
 {
+    // 같은 회차의 지형·오브젝트 랜덤 배치를 저장 복원할 때 재현하는 기준값입니다.
+    public int runSeed;
     public int chapterIndex;
     public int episodeIndex;
     public int storyIndex;
@@ -24,6 +26,11 @@ public class GameProgress
     public string activePlaceId;
     public int activeCardIndex;
     public List<string> resolvedPlaceIds = new List<string>();
+    // 이벤트 선택 결과로 열린 장소·아이템·이야기의 논리 ID입니다.
+    public List<string> unlockedIds = new List<string>();
+    public List<RelationshipValue> relationships = new List<RelationshipValue>();
+    // 체크포인트 재진입 시 같은 선택 효과가 중복 적용되는 것을 방지합니다.
+    public List<string> appliedEffectIds = new List<string>();
     // 현재 에피소드에서 각 능력치별로 남은 코인 재고입니다.
     public int[] remainingCoins = { 5, 5, 5, 5 };
     // 가방에는 에셋 참조 대신 카탈로그의 itemId만 저장합니다.
@@ -32,6 +39,13 @@ public class GameProgress
     public bool isCompleted;
     public List<StoryInfluenceProfile> influenceHistory = new List<StoryInfluenceProfile>();
     public List<CompletedEpisodeRecord> pendingEpisodes = new List<CompletedEpisodeRecord>();
+}
+
+[System.Serializable]
+public class RelationshipValue
+{
+    public string id;
+    public int value;
 }
 
 [System.Serializable]

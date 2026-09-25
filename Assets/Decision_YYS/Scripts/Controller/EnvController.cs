@@ -7,6 +7,13 @@ using UnityEngine.Serialization;
 /// </summary>
 public class EnvController : MonoBehaviour
 {
+    [System.Serializable]
+    private sealed class TerrainGroundEntry
+    {
+        public string groundId;
+        public GameObject prefab;
+    }
+
     private sealed class RegisteredTerrain
     {
         public TerrainData Data;
@@ -16,9 +23,11 @@ public class EnvController : MonoBehaviour
 
     [FormerlySerializedAs("terrain")]
     [SerializeField] private GameObject environment;
+    [Tooltip("이전 Scene 호환용 기본 바닥입니다. groundId가 비어 있거나 카탈로그에 없을 때 사용합니다.")]
     [SerializeField] private GameObject groundPrefab;
+    [SerializeField] private TerrainGroundEntry[] groundEntries;
     [SerializeField] private TerrainPrefabCatalog terrainPrefabCatalog;
-    [SerializeField, Min(0.01f)] private float chunkSize = 100f;
+    [SerializeField, Min(0.01f)] private float chunkSize = 50f;
     [SerializeField, Min(0)] private int loadRadius = 1;
 
     public TerrainData TerrainData { get; private set; }
@@ -36,6 +45,7 @@ public class EnvController : MonoBehaviour
     private Transform playerTransform;
     private int nextGlobalChunkIndex;
     private int contentRun = 1;
+    private int contentSeed;
 
     private void Awake()
     {
@@ -95,8 +105,16 @@ public class EnvController : MonoBehaviour
         TerrainPlaceRegistry registry = new TerrainPlaceRegistry(
             terrainData, segmentOrigin, chunkSize);
 
-        terrainBuilder.RegisterTerrain(terrainData, registry, groundPrefab,
-            terrainPrefabCatalog, environment.transform, nextGlobalChunkIndex, chunkCount);
+        if (!TryResolveGroundPrefabs(terrainData, out GameObject[] selectedGroundPrefabs,
+                out string groundError))
+        {
+            Debug.LogError($"{groundError}: {terrainPath}", this);
+            return false;
+        }
+
+        terrainBuilder.RegisterTerrain(terrainData, registry, selectedGroundPrefabs,
+            terrainPrefabCatalog, environment.transform, nextGlobalChunkIndex, chunkCount,
+            contentSeed);
 
         float segmentEndZ = segmentOrigin.z + chunkCount * chunkSize;
         registeredTerrains.Add(terrainPath, new RegisteredTerrain
@@ -118,7 +136,7 @@ public class EnvController : MonoBehaviour
     /// <summary>
     /// 지형을 등록하기 전에 현재 회차를 지정하여 원본/생성 지형의 출처를 고정합니다.
     /// </summary>
-    public void SetContentRun(int runNumber)
+    public void SetContentRun(int runNumber, int runSeed)
     {
         int safeRunNumber = Mathf.Max(1, runNumber);
         if (registeredTerrains.Count > 0 && safeRunNumber != contentRun)
@@ -128,7 +146,53 @@ public class EnvController : MonoBehaviour
         }
 
         contentRun = safeRunNumber;
-        terrainRepository = new TerrainRepository(contentRun);
+        contentSeed = runSeed;
+        terrainRepository = new TerrainRepository(contentRun, contentSeed);
+    }
+
+    public bool TryValidateAllContent(OmnibusData omnibus, out string errorMessage)
+    {
+        if (omnibus?.chapters == null)
+        {
+            errorMessage = "Omnibus의 chapters가 없습니다.";
+            return false;
+        }
+
+        foreach (ChapterInfo chapter in omnibus.chapters)
+        {
+            if (chapter == null || string.IsNullOrWhiteSpace(chapter.chapterId) ||
+                chapter.episodeIds == null)
+            {
+                errorMessage = "Omnibus에 비어 있는 chapterId 또는 episodeIds가 있습니다.";
+                return false;
+            }
+
+            foreach (string episodeId in chapter.episodeIds)
+            {
+                string terrainPath = CreateTerrainPath(chapter.chapterId, episodeId);
+                TerrainData terrainData = terrainRepository.Load(terrainPath);
+                if (terrainData == null)
+                {
+                    errorMessage = $"지형을 불러올 수 없습니다: {terrainPath}";
+                    return false;
+                }
+
+                if (!TryResolveGroundPrefabs(terrainData, out _, out string groundError))
+                {
+                    errorMessage = $"{groundError}: {terrainPath}";
+                    return false;
+                }
+
+                if (!TryValidateTerrainReferences(terrainData, out string referenceError))
+                {
+                    errorMessage = $"{terrainPath}: {referenceError}";
+                    return false;
+                }
+            }
+        }
+
+        errorMessage = null;
+        return true;
     }
 
     private void Update()
@@ -229,6 +293,72 @@ public class EnvController : MonoBehaviour
                     place.connectStoryCards, out _, out string cardError))
             {
                 errorMessage = $"placeId '{place.placeId}': {cardError}";
+                return false;
+            }
+        }
+
+        errorMessage = null;
+        return true;
+    }
+
+    private GameObject ResolveGroundPrefab(string groundId)
+    {
+        if (!string.IsNullOrWhiteSpace(groundId) && groundEntries != null)
+        {
+            foreach (TerrainGroundEntry entry in groundEntries)
+            {
+                if (entry != null && entry.prefab != null &&
+                    string.Equals(entry.groundId, groundId, System.StringComparison.Ordinal))
+                    return entry.prefab;
+            }
+
+            Debug.LogWarning(
+                $"groundId '{groundId}'가 Ground Entries에 없어 기본 Ground Prefab을 사용합니다.",
+                this);
+        }
+
+        return groundPrefab;
+    }
+
+    private bool TryResolveGroundPrefabExact(string groundId, out GameObject prefab)
+    {
+        prefab = null;
+        if (string.IsNullOrWhiteSpace(groundId) || groundEntries == null) return false;
+        foreach (TerrainGroundEntry entry in groundEntries)
+        {
+            if (entry != null && entry.prefab != null &&
+                string.Equals(entry.groundId, groundId, System.StringComparison.Ordinal))
+            {
+                prefab = entry.prefab;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private bool TryResolveGroundPrefabs(
+        TerrainData terrainData,
+        out GameObject[] prefabs,
+        out string errorMessage)
+    {
+        prefabs = null;
+        string[] groundIds = terrainData?.groundIds;
+        if (groundIds == null || groundIds.Length == 0)
+            groundIds = new[] { terrainData?.groundId };
+
+        if (groundIds.Length != GetChunkCount(terrainData))
+        {
+            errorMessage = "groundIds 개수와 chunkCount가 다릅니다";
+            return false;
+        }
+
+        prefabs = new GameObject[groundIds.Length];
+        for (int index = 0; index < groundIds.Length; index++)
+        {
+            if (!TryResolveGroundPrefabExact(groundIds[index], out prefabs[index]))
+            {
+                errorMessage = $"groundId '{groundIds[index]}'가 Ground Entries에 없습니다";
+                prefabs = null;
                 return false;
             }
         }

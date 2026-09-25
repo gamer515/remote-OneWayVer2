@@ -17,6 +17,10 @@ public sealed class EncounterInteractionOption
     public string text;
     // open: 이 오브젝트의 카드 표시, skip: 지나가기.
     public string action;
+    public string[] requiresUnlocks;
+    public string[] grantsUnlocks;
+    public string relationshipId;
+    public int relationshipDelta;
 }
 
 [Serializable]
@@ -61,9 +65,9 @@ public sealed class EncounterContentRepository
         foreach (EncounterInteractionOption option in data.options)
         {
             if (option == null || string.IsNullOrWhiteSpace(option.text) ||
-                (option.action != "open" && option.action != "skip"))
+                !IsSupportedAction(option.action))
             {
-                error = $"{contentPath}/Interaction의 text 또는 action(open/skip)이 올바르지 않습니다.";
+                error = $"{contentPath}/Interaction의 text 또는 action이 올바르지 않습니다.";
                 return false;
             }
         }
@@ -140,6 +144,10 @@ public sealed class EncounterContentRepository
         error = null;
         return true;
     }
+
+    private static bool IsSupportedAction(string action) =>
+        action == "open" || action == "skip" || action == "duel" ||
+        action == "coin_heads" || action == "coin_tails";
 
     private static bool TryApplyGeneratedText(
         EncounterCardRoot original,

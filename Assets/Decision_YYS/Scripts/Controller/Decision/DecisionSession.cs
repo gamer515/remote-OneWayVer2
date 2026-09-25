@@ -12,6 +12,7 @@ public sealed class DecisionSession
     public int EpisodeIndex { get; set; }
     public int StoryIndex { get; set; }
     public int RunNumber { get; }
+    public int RunSeed { get; }
     public string ScenarioPath { get; set; }
     public List<Dialogue> PlayedHistory { get; } = new List<Dialogue>();
     public List<PlayedEncounterCardRecord> PlayedEncounterHistory { get; } =
@@ -24,6 +25,7 @@ public sealed class DecisionSession
     public DecisionSession(
         OmnibusData omnibus,
         int runNumber,
+        int runSeed,
         int chapterIndex,
         int episodeIndex,
         int storyIndex,
@@ -31,6 +33,7 @@ public sealed class DecisionSession
     {
         Omnibus = omnibus;
         RunNumber = Mathf.Max(1, runNumber);
+        RunSeed = runSeed;
         ChapterIndex = chapterIndex;
         EpisodeIndex = episodeIndex;
         StoryIndex = storyIndex;

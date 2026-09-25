@@ -1,38 +1,30 @@
-{
+﻿{
   "TerrainInfo": {
-    "terrainName": "Plain",
-    "chunkCount": 5,
+    "terrainName": "Dungeon",
+    "groundId": "dungeon_01",
+    "groundIds": [ "dungeon_01", "dungeon_02" ],
+    "chunkCount": 2,
     "places": [
       {
-        "placeId": "initial_chunk_0_voice_0",
+        "placeId": "guide",
         "chunkIndex": 0,
         "prefabId": "normal_people",
-        "characterId": "Unknown Voice",
-        "connectStoryCards": "Initial/Initial_01/Encounters/initial_chunk_0_voice_0"
+        "characterId": "Guide",
+        "connectStoryCards": "Initial/Initial_01/Encounters/guide"
       },
       {
-        "placeId": "initial_chunk_0_farmhouse_0",
+        "placeId": "duelist",
         "chunkIndex": 0,
-        "prefabId": "farmhouse",
-        "connectStoryCards": "Initial/Initial_01/Encounters/initial_chunk_0_farmhouse_0"
+        "prefabId": "normal_people",
+        "characterId": "Duelist",
+        "connectStoryCards": "Initial/Initial_01/Encounters/duelist"
       },
       {
-        "placeId": "initial_chunk_1_house_0",
-        "chunkIndex": 1,
-        "prefabId": "house",
-        "connectStoryCards": "Initial/Initial_01/Encounters/initial_chunk_1_house_0"
-      },
-      {
-        "placeId": "initial_chunk_1_monument_0",
-        "chunkIndex": 1,
-        "prefabId": "monument",
-        "connectStoryCards": "Initial/Initial_01/Encounters/initial_chunk_1_monument_0"
-      },
-      {
-        "placeId": "initial_chunk_3_pleasure_house_0",
-        "chunkIndex": 3,
-        "prefabId": "pleasure_house",
-        "connectStoryCards": "Initial/Initial_01/Encounters/initial_chunk_3_pleasure_house_0"
+        "placeId": "gambler",
+        "chunkIndex": 0,
+        "prefabId": "normal_people",
+        "characterId": "Gambler",
+        "connectStoryCards": "Initial/Initial_01/Encounters/gambler"
       }
     ]
   }
