@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 962968051289232746}
   m_Layer: 0
   m_Name: Change_Player_View_Camera
-  m_TagString: Untagged
+  m_TagString: Camera
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -403,6 +403,10 @@ PrefabInstance:
     - target: {fileID: 919132149155446097, guid: 04de17e633772964486af00e9843c073, type: 3}
       propertyPath: m_Name
       value: KnightCharacter
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: 04de17e633772964486af00e9843c073, type: 3}
+      propertyPath: m_TagString
+      value: Player
       objectReference: {fileID: 0}
     - target: {fileID: 1921771625734807920, guid: 04de17e633772964486af00e9843c073, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x

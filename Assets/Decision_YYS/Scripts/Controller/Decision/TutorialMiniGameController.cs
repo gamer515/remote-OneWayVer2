@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using UnityEngine;
 
@@ -13,6 +13,7 @@ public sealed class TutorialMiniGameController : MonoBehaviour
     private Transform spawnedRoot;
     private Coroutine coinRoutine;
 
+    public GameObject CurrentKnightTarget { get; private set; }
     public bool IsReady => miniGameBoard != null && knightTargetPrefab != null &&
                            goldCoinPrefab != null;
 
@@ -27,9 +28,9 @@ public sealed class TutorialMiniGameController : MonoBehaviour
 
         EnsureRoot();
         Vector3 center = GetBoardCenter();
-        GameObject knightTarget = SpawnBoardPiece(
+        CurrentKnightTarget = SpawnBoardPiece(
             knightTargetPrefab, center, 0f, 1.65f);
-        PrepareKnightTarget(knightTarget);
+        PrepareKnightTarget(CurrentKnightTarget);
         completed?.Invoke(true);
     }
 
@@ -74,6 +75,7 @@ public sealed class TutorialMiniGameController : MonoBehaviour
         coinRoutine = null;
         if (spawnedRoot != null) Destroy(spawnedRoot.gameObject);
         spawnedRoot = null;
+        CurrentKnightTarget = null;
     }
 
     private IEnumerator WaitForCoin(
@@ -108,7 +110,7 @@ public sealed class TutorialMiniGameController : MonoBehaviour
     {
         Bounds bounds = GetBoardBounds();
         Vector3 center = bounds.center;
-        center.y = bounds.max.y + 0.08f;
+        center.y = bounds.max.y;
         return center;
     }
 

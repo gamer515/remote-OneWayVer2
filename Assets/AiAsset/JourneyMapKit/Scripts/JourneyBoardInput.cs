@@ -28,6 +28,7 @@ namespace JourneyMapKit
         public UnityEvent<int> onGearSelected = new UnityEvent<int>();
 
         public int SelectedIndex { get; private set; } = -1;
+        public bool InputEnabled { get; private set; } = true;
 
         private bool yellowInteractable = true;
         private bool dragging;
@@ -57,7 +58,7 @@ namespace JourneyMapKit
 
         private void Update()
         {
-            if (board == null || inputCamera == null)
+            if (!InputEnabled || board == null || inputCamera == null)
                 return;
 
             ReadPointer(out Vector2 pointerPosition, out bool down, out bool held, out bool up);
@@ -180,7 +181,7 @@ namespace JourneyMapKit
 
         public void PressYellow()
         {
-            if (!isActiveAndEnabled || board == null)
+            if (!InputEnabled || !isActiveAndEnabled || board == null)
                 return;
 
             if (pressRoutine != null)
@@ -194,6 +195,29 @@ namespace JourneyMapKit
         public void SetYellowInteractable(bool interactable)
         {
             yellowInteractable = interactable;
+        }
+
+        public void SetInputEnabled(bool enabled)
+        {
+            if (InputEnabled == enabled) return;
+            InputEnabled = enabled;
+            if (enabled) return;
+
+            dragging = false;
+            if (pressRoutine != null)
+                StopCoroutine(pressRoutine);
+            pressRoutine = null;
+
+            if (board != null)
+            {
+                if (board.yellowButton != null)
+                    board.yellowButton.transform.localPosition = restButtonPosition;
+                if (board.gear != null)
+                    board.gear.localRotation = restRotation;
+            }
+
+            SelectedIndex = -1;
+            ResetFaceExpression();
         }
 
         public void ResetSelection()

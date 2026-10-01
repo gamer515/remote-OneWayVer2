@@ -186,14 +186,14 @@ public partial class DecisionManager
             type = "Next",
             text = "보드 중앙에 연습용 기사 복제품을 준비합니다. 이후 대련 동작은 이 복제품을 기준으로 구성할 수 있습니다."
         });
-        if (tutorialMiniGames == null)
+        if (duelMiniGame == null)
         {
-            Debug.LogError("TutorialMiniGameController가 연결되지 않았습니다.", this);
-            ShowTutorialResult("손칼 대련을 시작할 수 없습니다. Inspector 참조를 확인하세요.");
+            Debug.LogError("DuelMiniGameBridge가 연결되지 않았습니다.", this);
+            ShowTutorialResult("대련을 시작할 수 없습니다. DuelMiniGameBridge 참조를 확인하세요.");
             return;
         }
-        tutorialMiniGames.StartDuel(created => ShowTutorialResult(
-            created ? "보드 중앙에 연습용 기사 복제품을 생성했습니다." : "연습용 기사 복제품을 생성하지 못했습니다."));
+        duelMiniGame.BeginDuel(won => ShowTutorialResult(
+            won ? "대련에서 이겼습니다." : "대련에서 졌습니다."));
     }
 
     private void StartCoinTutorial(bool choseHeads)
@@ -307,6 +307,7 @@ public partial class DecisionManager
 
     private void ResolveEncounter()
     {
+        duelMiniGame?.CleanupDuel();
         tutorialMiniGames?.Cleanup();
         if (!string.IsNullOrEmpty(activePlaceId))
         {

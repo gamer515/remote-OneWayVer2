@@ -54,6 +54,7 @@ public partial class DecisionManager : MonoBehaviour
     [SerializeField] private GameObject[] journeyCoinPrefabs;
     [SerializeField] private BackpackInventoryController backpackInventory;
     [SerializeField] private TutorialMiniGameController tutorialMiniGames;
+    [SerializeField] private DuelMiniGameBridge duelMiniGame;
     private JourneyCoinSupplyController journeyCoinSupply;
     [Header("Player Movement")]
     private DecisionPlayerController playerController;
@@ -75,6 +76,8 @@ public partial class DecisionManager : MonoBehaviour
             backpackInventory = FindFirstObjectByType<BackpackInventoryController>();
         if (tutorialMiniGames == null)
             tutorialMiniGames = FindFirstObjectByType<TutorialMiniGameController>();
+        if (duelMiniGame == null)
+            duelMiniGame = FindFirstObjectByType<DuelMiniGameBridge>();
     }
 
     private void OnEnable()
@@ -233,11 +236,13 @@ public partial class DecisionManager : MonoBehaviour
 
     public void OnJourneyYellowPressed()
     {
+        if (!isActiveAndEnabled) return;
         HandleScreenClicked();
     }
 
     public void OnJourneyGearSelected(int selectedIndex)
     {
+        if (!isActiveAndEnabled) return;
         HandleEncounterGearSelection(selectedIndex);
     }
 

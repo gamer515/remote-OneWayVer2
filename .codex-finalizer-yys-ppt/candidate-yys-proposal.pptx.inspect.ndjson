@@ -1,0 +1,158 @@
+{"kind":"deck","id":"pr/lpltya","name":"Deck"}
+{"kind":"layout","layoutId":"2f71496b-9275-4f39-9f6f-f849c0768494","name":"Master","type":"master"}
+{"kind":"layout","layoutId":"4cc9d2ac-c781-4fdf-ac20-cb876591b8d2","name":"Title Slide","type":"title"}
+{"kind":"slide","id":"sl/wfqcwq","slide":1,"title":"AIML 응용프로젝트 2","textShapes":7}
+{"kind":"shape","id":"sh/tkfe1836","slide":1,"bbox":[0,0,22,720]}
+{"kind":"textbox","id":"sh/6xov6t4v","slide":1,"text":"AIML 응용프로젝트 2","textPreview":"AIML 응용프로젝트 2","textChars":13,"textLines":1,"bbox":[82,72,420,38]}
+{"kind":"textbox","id":"sh/7yxwzylg","slide":1,"text":"LLM 기반의 동적 서사 생성\n로그라이크 게임","textPreview":"LLM 기반의 동적 서사 생성 | 로그라이크 게임","textChars":25,"textLines":2,"bbox":[80,150,820,180]}
+{"kind":"textbox","id":"sh/kv6d4jmp","slide":1,"text":"한국어 LLM을 게임 내부에 내장하고 플레이 기록에 따라\n다음 회차의 이야기와 콘텐츠를 변화시키는 시스템","textPreview":"한국어 LLM을 게임 내부에 내장하고 플레이 기록에 따라 | 다음 회차의 이야기와 콘텐츠를 변화시키는 시스템","textChars":58,"textLines":2,"bbox":[84,360,840,92]}
+{"kind":"shape","id":"sh/lwfexo3a","slide":1,"bbox":[82,520,1116,112]}
+{"kind":"textbox","id":"sh/yt4v294j","slide":1,"text":"발표자","textPreview":"발표자","textChars":3,"textLines":1,"bbox":[112,540,100,28]}
+{"kind":"textbox","id":"sh/juxwvel4","slide":1,"text":"C211201 유영선","textPreview":"C211201 유영선","textChars":11,"textLines":1,"bbox":[112,568,290,42]}
+{"kind":"textbox","id":"sh/4rqxgnmt","slide":1,"text":"핵심 범위","textPreview":"핵심 범위","textChars":5,"textLines":1,"bbox":[518,540,120,28]}
+{"kind":"textbox","id":"sh/5sze9s3e","slide":1,"text":"내장 LLM · Excel/JSON · terrain · 미니게임","textPreview":"내장 LLM · Excel/JSON · terrain · 미니게임","textChars":36,"textLines":1,"bbox":[518,568,610,42]}
+{"kind":"notes","id":"nt/wfqcwq","slide":1,"text":"발표에서는 프로젝트 전체 설명을 짧게 제시한 뒤, 제가 담당할 내장형 한국어 LLM과 콘텐츠 데이터 제작 과정을 중심으로 설명합니다.\n출처: C:/remote-OneWayVer2/outputs/제안서_유영선_존댓말본.docx"}
+{"kind":"slide","id":"sl/2c8yw8","slide":2,"title":"프로젝트 목표와 차별성","textShapes":15}
+{"kind":"textbox","id":"sh/bq5cbmp0","slide":2,"text":"프로젝트 목표와 차별성","textPreview":"프로젝트 목표와 차별성","textChars":12,"textLines":1,"bbox":[64,38,1040,56]}
+{"kind":"textbox","id":"sh/wredk7ql","slide":2,"text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[1160,42,54,38]}
+{"kind":"shape","id":"sh/xs7udc76","slide":2,"bbox":[64,108,1152,2]}
+{"kind":"textbox","id":"sh/m1wbex8j","slide":2,"text":"목표","textPreview":"목표","textChars":2,"textLines":1,"bbox":[70,138,130,34]}
+{"kind":"textbox","id":"sh/n25cn294","slide":2,"text":"플레이어의 선택과 이전 회차 기록을 사용해 다음 구간의 이야기 표현을 바꾸고,\nterrain 환경과 미니게임까지 하나의 반복 플레이 구조로 연결합니다.","textPreview":"플레이어의 선택과 이전 회차 기록을 사용해 다음 구간의 이야기 표현을 바꾸고, | terrain 환경과 미니게임까지 하나의 반복 플레이 구조로 연결합니다.","textChars":84,"textLines":2,"bbox":[70,176,1110,80]}
+{"kind":"shape","id":"sh/onedg7qp","slide":2,"bbox":[74,310,346,152]}
+{"kind":"textbox","id":"sh/9onu9c7u","slide":2,"text":"1","textPreview":"1","textChars":1,"textLines":1,"bbox":[92,328,38,38]}
+{"kind":"textbox","id":"sh/6xgvq18n","slide":2,"text":"기록","textPreview":"기록","textChars":2,"textLines":1,"bbox":[142,324,262,46]}
+{"kind":"textbox","id":"sh/7ipcj6p8","slide":2,"text":"선택, 방문 사건, 인물 관계, 아이템과 해금 상태를 저장합니다.","textPreview":"선택, 방문 사건, 인물 관계, 아이템과 해금 상태를 저장합니다.","textChars":36,"textLines":1,"bbox":[96,376,302,72]}
+{"kind":"shape","id":"sh/bqpovu5w","slide":2,"bbox":[467,310,346,152]}
+{"kind":"textbox","id":"sh/qpwn2p4b","slide":2,"text":"2","textPreview":"2","textChars":1,"textLines":1,"bbox":[485,328,38,38]}
+{"kind":"textbox","id":"sh/ds76xkn2","slide":2,"text":"이야기 변화","textPreview":"이야기 변화","textChars":6,"textLines":1,"bbox":[535,324,262,46]}
+{"kind":"textbox","id":"sh/cry54zmh","slide":2,"text":"내장형 한국어 LLM이 허용된 카드 문장과 세부 전개를 변경합니다.","textPreview":"내장형 한국어 LLM이 허용된 카드 문장과 세부 전개를 변경합니다.","textChars":37,"textLines":1,"bbox":[489,376,302,72]}
+{"kind":"shape","id":"sh/zupozu58","slide":2,"bbox":[860,310,346,152]}
+{"kind":"textbox","id":"sh/ytg76p4n","slide":2,"text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[878,328,38,38]}
+{"kind":"textbox","id":"sh/lw7614ny","slide":2,"text":"콘텐츠 연결","textPreview":"콘텐츠 연결","textChars":6,"textLines":1,"bbox":[928,324,262,46]}
+{"kind":"textbox","id":"sh/0vyp8zmd","slide":2,"text":"변경된 이야기를 terrain, Encounter와 미니게임 결과에 반영합니다.","textPreview":"변경된 이야기를 terrain, Encounter와 미니게임 결과에 반영합니다.","textChars":44,"textLines":1,"bbox":[882,376,302,72]}
+{"kind":"textbox","id":"sh/ny9o3e54","slide":2,"text":"차별성","textPreview":"차별성","textChars":3,"textLines":1,"bbox":[74,516,110,28]}
+{"kind":"textbox","id":"sh/mx07a94j","slide":2,"text":"외부 서버 없이도 한국어 이야기 변경 기능을 실행합니다.\n자유 생성 범위를 JSON 구조와 게임 상태 안으로 제한해 진행 안정성을 확보합니다.\n문장 변화에 그치지 않고 환경, 선택 조건과 미니게임의 연결까지 관리합니다.","textPreview":"외부 서버 없이도 한국어 이야기 변경 기능을 실행합니다. | 자유 생성 범위를 JSON 구조와 게임 상태 안으로 제한해 진행 안정성을 확보합니다. | 문장 변화에 그치지 않고 환경, 선택 조건과 미니게임의 연결까지 관리합니다.","textChars":122,"textLines":3,"bbox":[74,552,1120,124]}
+{"kind":"notes","id":"nt/2c8yw8","slide":2,"text":"평가 항목 중 설계목표의 명료성과 아이디어의 창의성에 해당하는 내용입니다. Reigns의 선택 방식과 생성형 서사의 장점을 참고하되, 구조화된 상태와 로컬 LLM을 결합하는 점을 차별점으로 설명합니다.\n출처: C:/Users/유영선/Downloads/프로젝트_평가표양식_2026.pdf; C:/remote-OneWayVer2/outputs/제안서_유영선_존댓말본.docx"}
+{"kind":"slide","id":"sl/21mgz4","slide":3,"title":"유영선 담당 범위","textShapes":16}
+{"kind":"textbox","id":"sh/3e9ovaxc","slide":3,"text":"유영선 담당 범위","textPreview":"유영선 담당 범위","textChars":9,"textLines":1,"bbox":[64,38,1040,56]}
+{"kind":"textbox","id":"sh/4fi5ofyh","slide":3,"text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[1160,42,54,38]}
+{"kind":"shape","id":"sh/pgr6xkf2","slide":3,"bbox":[64,108,1152,2]}
+{"kind":"textbox","id":"sh/up0ni5gf","slide":3,"text":"프로젝트에서 제가 직접 설계하고 구현할 네 가지 범위입니다.","textPreview":"프로젝트에서 제가 직접 설계하고 구현할 네 가지 범위입니다.","textChars":33,"textLines":1,"bbox":[70,130,900,40]}
+{"kind":"shape","id":"sh/fq9orax0","slide":3,"bbox":[72,204,540,152]}
+{"kind":"textbox","id":"sh/gri5kfyl","slide":3,"text":"1","textPreview":"1","textChars":1,"textLines":1,"bbox":[90,222,38,38]}
+{"kind":"textbox","id":"sh/hsr6tkf6","slide":3,"text":"한국어 LLM 내장","textPreview":"한국어 LLM 내장","textChars":10,"textLines":1,"bbox":[140,218,456,46]}
+{"kind":"textbox","id":"sh/elk7u9gz","slide":3,"text":"모델 선정, 파인튜닝, 경량화와 로컬 추론 환경을 구성합니다.","textPreview":"모델 선정, 파인튜닝, 경량화와 로컬 추론 환경을 구성합니다.","textChars":34,"textLines":1,"bbox":[94,270,496,72]}
+{"kind":"shape","id":"sh/zmto3uxk","slide":3,"bbox":[668,204,540,152]}
+{"kind":"textbox","id":"sh/je9o7it0","slide":3,"text":"2","textPreview":"2","textChars":1,"textLines":1,"bbox":[686,222,38,38]}
+{"kind":"textbox","id":"sh/yd0nydcf","slide":3,"text":"이야기 데이터 검증","textPreview":"이야기 데이터 검증","textChars":10,"textLines":1,"bbox":[736,218,456,46]}
+{"kind":"textbox","id":"sh/lgb69sb6","slide":3,"text":"입력·출력 JSON을 정의하고 문맥, 식별자와 변경 범위를 검사합니다.","textPreview":"입력·출력 JSON을 정의하고 문맥, 식별자와 변경 범위를 검사합니다.","textChars":39,"textLines":1,"bbox":[690,270,496,72]}
+{"kind":"shape","id":"sh/kfi50nul","slide":3,"bbox":[72,396,540,152]}
+{"kind":"textbox","id":"sh/72tob2tc","slide":3,"text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[90,414,38,38]}
+{"kind":"textbox","id":"sh/6hkn2xcr","slide":3,"text":"terrain 콘텐츠 관리","textPreview":"terrain 콘텐츠 관리","textChars":14,"textLines":1,"bbox":[140,410,456,46]}
+{"kind":"textbox","id":"sh/t4b6dsb2","slide":3,"text":"Excel 원본과 JSON 실행 데이터를 연결해 환경과 사건을 구성합니다.","textPreview":"Excel 원본과 JSON 실행 데이터를 연결해 환경과 사건을 구성합니다.","textChars":41,"textLines":1,"bbox":[94,462,496,72]}
+{"kind":"shape","id":"sh/832547uh","slide":3,"bbox":[668,396,540,152]}
+{"kind":"textbox","id":"sh/v6tof2t8","slide":3,"text":"4","textPreview":"4","textChars":1,"textLines":1,"bbox":[686,414,38,38]}
+{"kind":"textbox","id":"sh/u5kn6xsn","slide":3,"text":"미니게임과 진행 연결","textPreview":"미니게임과 진행 연결","textChars":11,"textLines":1,"bbox":[736,410,456,46]}
+{"kind":"textbox","id":"sh/q1ory1wv","slide":3,"text":"코인, 튜토리얼과 후속 미니게임의 결과를 보상과 이야기로 반영합니다.","textPreview":"코인, 튜토리얼과 후속 미니게임의 결과를 보상과 이야기로 반영합니다.","textChars":38,"textLines":1,"bbox":[690,462,496,72]}
+{"kind":"textbox","id":"sh/r2x876dg","slide":3,"text":"기존 선택형 스토리 UI, 세이브 데이터와 인벤토리 구조를 발전시키며 새로운 콘텐츠를 추가합니다.","textPreview":"기존 선택형 스토리 UI, 세이브 데이터와 인벤토리 구조를 발전시키며 새로운 콘텐츠를 추가합니다.","textChars":54,"textLines":1,"bbox":[74,614,1130,42]}
+{"kind":"notes","id":"nt/21mgz4","slide":3,"text":"공통 개발 내용보다 제가 맡은 구현 범위를 중심으로 설명합니다. 역할 분담의 적합성과 실제 수행 가능성을 보여 주는 슬라이드입니다.\n출처: C:/remote-OneWayVer2/outputs/제안서_유영선_존댓말본.docx"}
+{"kind":"slide","id":"sl/3jq9u9","slide":4,"title":"내장형 한국어 LLM 설계","textShapes":19}
+{"kind":"textbox","id":"sh/dc761s7q","slide":4,"text":"내장형 한국어 LLM 설계","textPreview":"내장형 한국어 LLM 설계","textChars":14,"textLines":1,"bbox":[64,38,1040,56]}
+{"kind":"textbox","id":"sh/q9g76x8f","slide":4,"text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[1160,42,54,38]}
+{"kind":"shape","id":"sh/bapoz2p0","slide":4,"bbox":[64,108,1152,2]}
+{"kind":"textbox","id":"sh/o7ep4nq9","slide":4,"text":"게임 내부 추론 흐름","textPreview":"게임 내부 추론 흐름","textChars":11,"textLines":1,"bbox":[72,132,420,34]}
+{"kind":"shape","id":"sh/p8n6xs7u","slide":4,"bbox":[74,182,586,88]}
+{"kind":"textbox","id":"sh/2lw72d83","slide":4,"text":"1","textPreview":"1","textChars":1,"textLines":1,"bbox":[92,204,38,38]}
+{"kind":"textbox","id":"sh/3m5ovipo","slide":4,"text":"플레이 기록","textPreview":"플레이 기록","textChars":6,"textLines":1,"bbox":[150,192,185,32]}
+{"kind":"textbox","id":"sh/gjep03qd","slide":4,"text":"선택·사건·관계·현재 terrain","textPreview":"선택·사건·관계·현재 terrain","textChars":19,"textLines":1,"bbox":[150,224,474,30]}
+{"kind":"shape","id":"sh/1kn6t87y","slide":4,"bbox":[74,294,586,88]}
+{"kind":"textbox","id":"sh/hovip8ve","slide":4,"text":"2","textPreview":"2","textChars":1,"textLines":1,"bbox":[92,316,38,38]}
+{"kind":"textbox","id":"sh/gnm1w3et","slide":4,"text":"입력 JSON","textPreview":"입력 JSON","textChars":7,"textLines":1,"bbox":[150,304,185,32]}
+{"kind":"textbox","id":"sh/vmd0nyd8","slide":4,"text":"변경 대상 카드와 허용 범위","textPreview":"변경 대상 카드와 허용 범위","textChars":15,"textLines":1,"bbox":[150,336,474,30]}
+{"kind":"shape","id":"sh/ul4jutw3","slide":4,"bbox":[74,406,586,88]}
+{"kind":"textbox","id":"sh/tkvilovi","slide":4,"text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[92,428,38,38]}
+{"kind":"textbox","id":"sh/8jm1sjex","slide":4,"text":"로컬 LLM","textPreview":"로컬 LLM","textChars":6,"textLines":1,"bbox":[150,416,185,32]}
+{"kind":"textbox","id":"sh/7id0jydc","slide":4,"text":"한국어 이야기 변경안 생성","textPreview":"한국어 이야기 변경안 생성","textChars":14,"textLines":1,"bbox":[150,448,474,30]}
+{"kind":"shape","id":"sh/6h4jqtwr","slide":4,"bbox":[74,518,586,88]}
+{"kind":"textbox","id":"sh/lgbihov6","slide":4,"text":"4","textPreview":"4","textChars":1,"textLines":1,"bbox":[92,540,38,38]}
+{"kind":"textbox","id":"sh/kf21ojel","slide":4,"text":"검증과 저장","textPreview":"검증과 저장","textChars":6,"textLines":1,"bbox":[150,528,185,32]}
+{"kind":"textbox","id":"sh/cz614jmh","slide":4,"text":"문맥·형식·식별자 검사","textPreview":"문맥·형식·식별자 검사","textChars":12,"textLines":1,"bbox":[150,560,474,30]}
+{"kind":"textbox","id":"sh/x0fixo32","slide":4,"text":"검증 기준","textPreview":"검증 기준","textChars":5,"textLines":1,"bbox":[728,132,220,34]}
+{"kind":"textbox","id":"sh/axoj294r","slide":4,"text":"인터넷 연결 없이 모델이 정상적으로 로드되는지 확인합니다.\n한국어 문장의 자연스러움과 인물·장소의 일관성을 비교합니다.\n요청한 JSON 필드와 카드 순서를 유지하는지 검사합니다.\n메모리 사용량, 초기 로딩과 추론 시간을 측정합니다.","textPreview":"인터넷 연결 없이 모델이 정상적으로 로드되는지 확인합니다. | 한국어 문장의 자연스러움과 인물·장소의 일관성을 비교합니다. | 요청한 JSON 필드와 카드 순서를 유지하는지 검사합니다. | 메모리 사용량, 초기 로딩과 추론 시간을 측정합니다.","textChars":129,"textLines":4,"bbox":[716,182,494,300]}
+{"kind":"shape","id":"sh/byx0velw","slide":4,"bbox":[716,510,492,112]}
+{"kind":"textbox","id":"sh/ov610jml","slide":4,"text":"파인튜닝 목표","textPreview":"파인튜닝 목표","textChars":7,"textLines":1,"bbox":[742,526,180,30]}
+{"kind":"textbox","id":"sh/pwfit436","slide":4,"text":"핵심 사건은 유지하면서 허용된 문장과 세부 전개만 변경하는 한국어 모델","textPreview":"핵심 사건은 유지하면서 허용된 문장과 세부 전개만 변경하는 한국어 모델","textChars":39,"textLines":1,"bbox":[742,562,434,48]}
+{"kind":"notes","id":"nt/3jq9u9","slide":4,"text":"외부 API가 아니라 게임 내부에서 동작하는 한국어 LLM을 담당합니다. 모델 크기와 성능을 비교하고, 파인튜닝으로 허용된 부분만 변경하도록 학습시킬 계획입니다.\n출처: C:/remote-OneWayVer2/outputs/제안서_유영선_존댓말본.docx"}
+{"kind":"slide","id":"sl/498bdr","slide":5,"title":"Excel·JSON 콘텐츠 제작","textShapes":18}
+{"kind":"textbox","id":"sh/nqhcfixs","slide":5,"text":"Excel·JSON 콘텐츠 제작","textPreview":"Excel·JSON 콘텐츠 제작","textChars":17,"textLines":1,"bbox":[64,38,1040,56]}
+{"kind":"textbox","id":"sh/orqd8nyd","slide":5,"text":"05","textPreview":"05","textChars":2,"textLines":1,"bbox":[1160,42,54,38]}
+{"kind":"shape","id":"sh/pszehsfy","slide":5,"bbox":[64,108,1152,2]}
+{"kind":"textbox","id":"sh/e18v2dgb","slide":5,"text":"기획자가 전체 관계를 확인하고 Unity가 검증된 데이터만 읽도록 제작 절차를 분리합니다.","textPreview":"기획자가 전체 관계를 확인하고 Unity가 검증된 데이터만 읽도록 제작 절차를 분리합니다.","textChars":50,"textLines":1,"bbox":[72,132,1120,42]}
+{"kind":"shape","id":"sh/f2hcbyxw","slide":5,"bbox":[60,224,272,176]}
+{"kind":"textbox","id":"sh/03qd43yh","slide":5,"text":"Excel 콘텐츠 맵","textPreview":"Excel 콘텐츠 맵","textChars":11,"textLines":1,"bbox":[78,244,236,40]}
+{"kind":"textbox","id":"sh/14zud8fm","slide":5,"text":"terrain, 인물, Story, Interaction,\n아이템과 미니게임 관계","textPreview":"terrain, 인물, Story, Interaction, | 아이템과 미니게임 관계","textChars":45,"textLines":2,"bbox":[80,298,232,80]}
+{"kind":"shape","id":"sh/qxovytgz","slide":5,"bbox":[364,224,272,176]}
+{"kind":"textbox","id":"sh/ryxc7yxk","slide":5,"text":"변환·참조 검사","textPreview":"변환·참조 검사","textChars":8,"textLines":1,"bbox":[382,244,236,40]}
+{"kind":"textbox","id":"sh/vepw7elg","slide":5,"text":"placeId, prefabId, 이야기 경로,\n해금 키의 누락과 중복 확인","textPreview":"placeId, prefabId, 이야기 경로, | 해금 키의 누락과 중복 확인","textChars":42,"textLines":2,"bbox":[384,298,232,80]}
+{"kind":"shape","id":"sh/udgfy94v","slide":5,"bbox":[668,224,272,176]}
+{"kind":"textbox","id":"sh/hgre9o3m","slide":5,"text":"JSON 실행 데이터","textPreview":"JSON 실행 데이터","textChars":11,"textLines":1,"bbox":[686,244,236,40]}
+{"kind":"textbox","id":"sh/wfyx0jm1","slide":5,"text":"검증된 배치, 조건, 보상과\n후속 이야기 연결 정보","textPreview":"검증된 배치, 조건, 보상과 | 후속 이야기 연결 정보","textChars":28,"textLines":2,"bbox":[688,298,232,80]}
+{"kind":"shape","id":"sh/j29wbels","slide":5,"bbox":[972,224,272,176]}
+{"kind":"textbox","id":"sh/ih0f2t47","slide":5,"text":"Unity 콘텐츠","textPreview":"Unity 콘텐츠","textChars":9,"textLines":1,"bbox":[990,244,236,40]}
+{"kind":"textbox","id":"sh/54redo3i","slide":5,"text":"terrain prefab, NPC, Encounter와\n미니게임을 실행 시점에 구성","textPreview":"terrain prefab, NPC, Encounter와 | 미니게임을 실행 시점에 구성","textChars":47,"textLines":2,"bbox":[992,298,232,80]}
+{"kind":"textbox","id":"sh/43ix4jmd","slide":5,"text":"콘텐츠 단위","textPreview":"콘텐츠 단위","textChars":6,"textLines":1,"bbox":[72,464,180,34]}
+{"kind":"shape","id":"sh/z65wzul8","slide":5,"bbox":[72,520,202,72]}
+{"kind":"textbox","id":"sh/ylwvqp4n","slide":5,"text":"환경 prefab","textPreview":"환경 prefab","textChars":9,"textLines":1,"bbox":[84,536,178,40]}
+{"kind":"shape","id":"sh/214zyxob","slide":5,"bbox":[300,520,202,72]}
+{"kind":"textbox","id":"sh/32d0725w","slide":5,"text":"등장 인물·사건","textPreview":"등장 인물·사건","textChars":8,"textLines":1,"bbox":[312,536,178,40]}
+{"kind":"shape","id":"sh/o3mh076h","slide":5,"bbox":[528,520,202,72]}
+{"kind":"textbox","id":"sh/p4vi9cn2","slide":5,"text":"선택·해금 조건","textPreview":"선택·해금 조건","textChars":8,"textLines":1,"bbox":[540,536,178,40]}
+{"kind":"shape","id":"sh/exkzadof","slide":5,"bbox":[756,520,202,72]}
+{"kind":"textbox","id":"sh/fytg3i50","slide":5,"text":"미니게임 결과","textPreview":"미니게임 결과","textChars":7,"textLines":1,"bbox":[768,536,178,40]}
+{"kind":"shape","id":"sh/gzmhcn6l","slide":5,"bbox":[984,520,202,72]}
+{"kind":"textbox","id":"sh/10vi5snq","slide":5,"text":"후속 이야기","textPreview":"후속 이야기","textChars":6,"textLines":1,"bbox":[996,536,178,40]}
+{"kind":"textbox","id":"sh/69kz6do3","slide":5,"text":"새로운 terrain과 미니게임을 기존 코드를 크게 바꾸지 않고 데이터와 모듈 추가 방식으로 확장합니다.","textPreview":"새로운 terrain과 미니게임을 기존 코드를 크게 바꾸지 않고 데이터와 모듈 추가 방식으로 확장합니다.","textChars":58,"textLines":1,"bbox":[72,624,1136,38]}
+{"kind":"notes","id":"nt/498bdr","slide":5,"text":"Excel은 기획 검토용 원본, JSON은 Unity 실행 데이터로 사용합니다. 참조 오류를 먼저 검사해 terrain, 사건과 미니게임을 반복해서 추가할 수 있는 구조를 만들 계획입니다.\n출처: C:/remote-OneWayVer2/outputs/제안서_유영선_존댓말본.docx"}
+{"kind":"slide","id":"sl/ukzv8s","slide":6,"title":"개발 환경과 검증 계획","textShapes":23}
+{"kind":"textbox","id":"sh/9cvix4ja","slide":6,"text":"개발 환경과 검증 계획","textPreview":"개발 환경과 검증 계획","textChars":12,"textLines":1,"bbox":[64,38,1040,56]}
+{"kind":"textbox","id":"sh/m94z2p0j","slide":6,"text":"06","textPreview":"06","textChars":2,"textLines":1,"bbox":[1160,42,54,38]}
+{"kind":"shape","id":"sh/nad0vu14","slide":6,"bbox":[64,108,1152,2]}
+{"kind":"textbox","id":"sh/wfm18ji1","slide":6,"text":"개발 환경","textPreview":"개발 환경","textChars":5,"textLines":1,"bbox":[72,136,180,34]}
+{"kind":"shape","id":"sh/xgfi14jm","slide":6,"bbox":[72,184,512,410]}
+{"kind":"textbox","id":"sh/ad4j690v","slide":6,"text":"게임","textPreview":"게임","textChars":2,"textLines":1,"bbox":[96,210,92,32]}
+{"kind":"textbox","id":"sh/ved0ze1g","slide":6,"text":"Unity 6.3 LTS · C# · Visual Studio 2022","textPreview":"Unity 6.3 LTS · C# · Visual Studio 2022","textChars":39,"textLines":1,"bbox":[194,210,360,42]}
+{"kind":"shape","id":"sh/cj2hwfih","slide":6,"bbox":[96,262,440,1]}
+{"kind":"textbox","id":"sh/dkbipkj2","slide":6,"text":"데이터","textPreview":"데이터","textChars":3,"textLines":1,"bbox":[96,280,92,32]}
+{"kind":"textbox","id":"sh/58v2d8ri","slide":6,"text":"Excel 콘텐츠 맵 · JSON · ScriptableObject · prefab","textPreview":"Excel 콘텐츠 맵 · JSON · ScriptableObject · prefab","textChars":46,"textLines":1,"bbox":[194,280,360,42]}
+{"kind":"shape","id":"sh/47m14nqx","slide":6,"bbox":[96,332,440,1]}
+{"kind":"textbox","id":"sh/36d0bi9c","slide":6,"text":"AI","textPreview":"AI","textChars":2,"textLines":1,"bbox":[96,350,92,32]}
+{"kind":"textbox","id":"sh/i54j2d8r","slide":6,"text":"한국어 LLM 파인튜닝 · 경량화 · 로컬 추론","textPreview":"한국어 LLM 파인튜닝 · 경량화 · 로컬 추론","textChars":26,"textLines":1,"bbox":[194,350,360,42]}
+{"kind":"shape","id":"sh/dcf2hsre","slide":6,"bbox":[96,402,440,1]}
+{"kind":"textbox","id":"sh/sb618nq9","slide":6,"text":"자동화","textPreview":"자동화","textChars":3,"textLines":1,"bbox":[96,420,92,32]}
+{"kind":"textbox","id":"sh/radkfi9o","slide":6,"text":"Codex · CLI · MCP · 플러그인 · skill","textPreview":"Codex · CLI · MCP · 플러그인 · skill","textChars":32,"textLines":1,"bbox":[194,420,360,42]}
+{"kind":"shape","id":"sh/q94j6d83","slide":6,"bbox":[96,472,440,1]}
+{"kind":"textbox","id":"sh/10f2lc7q","slide":6,"text":"협업","textPreview":"협업","textChars":2,"textLines":1,"bbox":[96,490,92,32]}
+{"kind":"textbox","id":"sh/0z61c7q5","slide":6,"text":"Git · GitHub Desktop","textPreview":"Git · GitHub Desktop","textChars":20,"textLines":1,"bbox":[194,490,360,42]}
+{"kind":"textbox","id":"sh/kvyd4v2d","slide":6,"text":"검증 계획","textPreview":"검증 계획","textChars":5,"textLines":1,"bbox":[642,136,180,34]}
+{"kind":"shape","id":"sh/lw7ux0jy","slide":6,"bbox":[642,184,566,84]}
+{"kind":"textbox","id":"sh/ytgv25kn","slide":6,"text":"내장 모델","textPreview":"내장 모델","textChars":5,"textLines":1,"bbox":[664,198,142,32]}
+{"kind":"textbox","id":"sh/jupcva18","slide":6,"text":"오프라인 로드, 메모리와 추론 시간","textPreview":"오프라인 로드, 메모리와 추론 시간","textChars":19,"textLines":1,"bbox":[808,198,374,50]}
+{"kind":"shape","id":"sh/8jyd8f2p","slide":6,"bbox":[642,286,566,84]}
+{"kind":"textbox","id":"sh/tkru1kja","slide":6,"text":"이야기 품질","textPreview":"이야기 품질","textChars":6,"textLines":1,"bbox":[664,300,142,32]}
+{"kind":"textbox","id":"sh/6hgv65kj","slide":6,"text":"한국어 자연스러움, 사건과 인물의 일관성","textPreview":"한국어 자연스러움, 사건과 인물의 일관성","textChars":22,"textLines":1,"bbox":[808,300,374,50]}
+{"kind":"shape","id":"sh/7ipcza14","slide":6,"bbox":[642,388,566,84]}
+{"kind":"textbox","id":"sh/onetwb2l","slide":6,"text":"데이터","textPreview":"데이터","textChars":3,"textLines":1,"bbox":[664,402,142,32]}
+{"kind":"textbox","id":"sh/9onupgjq","slide":6,"text":"Excel·JSON 대응, 식별자와 경로 참조","textPreview":"Excel·JSON 대응, 식별자와 경로 참조","textChars":25,"textLines":1,"bbox":[808,402,374,50]}
+{"kind":"shape","id":"sh/ritgvylo","slide":6,"bbox":[642,490,566,84]}
+{"kind":"textbox","id":"sh/qhkf2t43","slide":6,"text":"플레이","textPreview":"플레이","textChars":3,"textLines":1,"bbox":[664,504,142,32]}
+{"kind":"textbox","id":"sh/dkvyxo3e","slide":6,"text":"terrain 배치, 저장 복원과 미니게임 결과 반영","textPreview":"terrain 배치, 저장 복원과 미니게임 결과 반영","textChars":29,"textLines":1,"bbox":[808,504,374,50]}
+{"kind":"textbox","id":"sh/sjmx4jmt","slide":6,"text":"생성 결과는 실행과 렌더링 결과로 확인하고, 실패 시 검증된 기본 데이터로 복구합니다.","textPreview":"생성 결과는 실행과 렌더링 결과로 확인하고, 실패 시 검증된 기본 데이터로 복구합니다.","textChars":48,"textLines":1,"bbox":[642,616,566,42]}
+{"kind":"notes","id":"nt/ukzv8s","slide":6,"text":"도구를 단순 코드 생성에만 쓰지 않고 프로젝트 탐색, Unity 조작, 문서화와 반복 테스트에 활용합니다. 평가 기준의 기술 활용성과 계획의 실현 가능성을 설명합니다.\n출처: C:/remote-OneWayVer2/outputs/제안서_유영선_존댓말본.docx; C:/Users/유영선/Downloads/프로젝트_평가표양식_2026.pdf"}
+{"kind":"slide","id":"sl/ddccn3","slide":7,"title":"유영선 수행 계획","textShapes":4}
+{"kind":"textbox","id":"sh/dwnid0vm","slide":7,"text":"유영선 수행 계획","textPreview":"유영선 수행 계획","textChars":9,"textLines":1,"bbox":[64,38,1040,56]}
+{"kind":"textbox","id":"sh/q9wz2lwb","slide":7,"text":"07","textPreview":"07","textChars":2,"textLines":1,"bbox":[1160,42,54,38]}
+{"kind":"shape","id":"sh/ru50bqdw","slide":7,"bbox":[64,108,1152,2]}
+{"kind":"textbox","id":"sh/47uh0be5","slide":7,"text":"D 진행·완료   P 계획","textPreview":"D 진행·완료   P 계획","textChars":14,"textLines":1,"bbox":[930,126,278,28]}
+{"kind":"textbox","id":"sh/i5czy1wz","slide":7,"text":"전반부에는 기존 구조와 데이터 흐름을 정비하고, 후반부에는 한국어 LLM과 콘텐츠 통합 검증에 집중합니다.","textPreview":"전반부에는 기존 구조와 데이터 흐름을 정비하고, 후반부에는 한국어 LLM과 콘텐츠 통합 검증에 집중합니다.","textChars":59,"textLines":1,"bbox":[66,636,1148,34]}
+{"kind":"table","id":"tb/0nmdovul","slide":7,"name":"","rows":10,"cols":16,"preview":"설계요소 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15","bbox":[54,162,1172,450]}
+{"kind":"notes","id":"nt/ddccn3","slide":7,"text":"Word 제안서에서 확정한 유영선 개인 계획만 반영한 표입니다. 기존 구조 분석과 구현을 먼저 진행한 뒤 콘텐츠 확장, LLM 파인튜닝과 통합 테스트로 이어집니다.\n출처: C:/remote-OneWayVer2/outputs/제안서_유영선_존댓말본.docx"}
