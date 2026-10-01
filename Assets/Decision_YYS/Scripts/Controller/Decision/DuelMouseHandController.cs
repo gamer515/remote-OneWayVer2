@@ -25,6 +25,8 @@ public sealed class DuelMouseHandController : MonoBehaviour
     public bool IsActive => controlledHand != null;
     public bool IsCaptured { get; private set; }
     public Transform ControlledHand => controlledHand;
+    public Vector2 PointerScreenPosition => virtualScreenPosition;
+    public int CaptureFrame { get; private set; } = -1;
 
     public void Begin(DuelAuthoringReferences references)
     {
@@ -117,6 +119,7 @@ public sealed class DuelMouseHandController : MonoBehaviour
         previousCursorVisible = Cursor.visible;
         previousCursorLockMode = Cursor.lockState;
         IsCaptured = true;
+        CaptureFrame = Time.frameCount;
         Cursor.visible = false;
         Cursor.lockState = CursorLockMode.Locked;
     }

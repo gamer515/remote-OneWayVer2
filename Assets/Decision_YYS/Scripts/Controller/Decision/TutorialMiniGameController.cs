@@ -14,6 +14,8 @@ public sealed class TutorialMiniGameController : MonoBehaviour
     private Coroutine coinRoutine;
 
     public GameObject CurrentKnightTarget { get; private set; }
+    // 복제본의 생성과 초기 설정이 완료되었을 때 전달합니다.
+    public event Action<GameObject> KnightSpawned;
     public bool IsReady => miniGameBoard != null && knightTargetPrefab != null &&
                            goldCoinPrefab != null;
 
@@ -31,6 +33,7 @@ public sealed class TutorialMiniGameController : MonoBehaviour
         CurrentKnightTarget = SpawnBoardPiece(
             knightTargetPrefab, center, 0f, 1.65f);
         PrepareKnightTarget(CurrentKnightTarget);
+        KnightSpawned?.Invoke(CurrentKnightTarget);
         completed?.Invoke(true);
     }
 

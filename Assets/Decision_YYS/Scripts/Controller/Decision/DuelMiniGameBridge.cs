@@ -29,6 +29,7 @@ public sealed class DuelMiniGameBridge : MonoBehaviour
     private bool boardInputWasEnabled;
 
     public bool IsRunning { get; private set; }
+    public bool IsTestRunning => IsRunning && testInputMode;
     public GameObject CurrentKnightTarget => setupController != null
         ? setupController.CurrentKnightTarget
         : null;
