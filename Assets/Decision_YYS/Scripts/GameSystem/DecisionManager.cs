@@ -129,7 +129,8 @@ public partial class DecisionManager : MonoBehaviour
 
     private void Update()
     {
-        if (currentState != StoryState.MovingToEncounter && currentState != StoryState.Transitioning)
+        if (currentState != StoryState.MovingToEncounter && currentState != StoryState.Transitioning &&
+            currentState != StoryState.Duel)
             journeyCoinSupply?.HandleInput();
 
         // 이동 명령과 화면 표현은 분리하고, 실제 도착한 프레임에서 이야기 화면을 엽니다.
@@ -402,7 +403,7 @@ private void SetYellowInputInteractable(bool interactable)
 
     private void HandleTargetStatReached()
     {
-        if (currentState == StoryState.Transitioning || statContainer == null)
+        if (currentState == StoryState.Transitioning || currentState == StoryState.Duel || statContainer == null)
             return;
 
         // Initial은 성향을 소개하는 구간이므로 임계치 검사 결과를 남기지 않습니다.

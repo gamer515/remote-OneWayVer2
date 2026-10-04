@@ -19,16 +19,6 @@ public sealed class DecisionPresentationController
 
     public void ShowWalkingView() => uiController?.ShowWalkingView();
 
-    public void ShowEncounterPrompt(string prompt, string[] options, int selectedIndex)
-    {
-        if (uiController == null)
-            return;
-
-        uiController.ShowEventView();
-        uiController.ChangeUiText(TextTarget.FrontDialogue, text: prompt);
-        ShowOptions(options, selectedIndex);
-    }
-
     public void ShowOptions(string[] options, int selectedIndex)
     {
         if (uiController == null)

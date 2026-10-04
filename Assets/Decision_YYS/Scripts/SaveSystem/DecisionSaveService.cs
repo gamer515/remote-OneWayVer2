@@ -65,7 +65,8 @@ public sealed class DecisionSaveService
         string phase,
         string activePlaceId,
         int activeCardIndex,
-        System.Collections.Generic.IEnumerable<string> resolvedPlaceIds)
+        System.Collections.Generic.IEnumerable<string> resolvedPlaceIds,
+        string activeStoryPath = null)
     {
         saveManager.SaveEncounterProgress(
             session.ChapterIndex,
@@ -75,7 +76,8 @@ public sealed class DecisionSaveService
             phase,
             activePlaceId,
             activeCardIndex,
-            resolvedPlaceIds);
+            resolvedPlaceIds,
+            activeStoryPath);
     }
 
     public void SaveRemainingCoins(int[] remainingCoins)

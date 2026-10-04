@@ -13,7 +13,6 @@ public partial class DecisionManager
     private readonly HashSet<string> resolvedPlaceIds = new HashSet<string>(StringComparer.Ordinal);
     private string activePlaceId;
     private string activeEncounterPath;
-    private EncounterInteractionData activeInteraction;
     private ScenarioData activeCards;
     private int activeCardIndex;
     private int selectedGearIndex = -1;
@@ -37,11 +36,16 @@ public partial class DecisionManager
         activePlaceId = loadedProgress?.activePlaceId;
         activeCardIndex = loadedProgress?.activeCardIndex ?? 0;
         string phase = loadedProgress?.interactionPhase;
-        if ((phase == "prompt" || phase == "card") && encounterFlow.TryGetEncounter(activePlaceId, out var encounter))
+        if ((phase == "prompt" || phase == "card" || phase == "tutorial_result") && encounterFlow.TryGetEncounter(activePlaceId, out var encounter))
         {
             pendingEncounter = encounter;
-            if (phase == "prompt") ShowEncounterPrompt(encounter);
-            else OpenEncounterCards(encounter, activeCardIndex);
+            if (phase != "card") BeginEncounter(encounter); // 이전 Interaction 체크포인트 호환
+            else
+            {
+                playerController.StopAndLookAt(encounter.WorldPosition);
+                FaceNpcTowardPlayer(encounter.PlaceId);
+                OpenEncounterCards(encounter, activeCardIndex, loadedProgress?.activeStoryPath);
+            }
         }
         else BeginExploration();
     }
@@ -51,12 +55,10 @@ public partial class DecisionManager
         switch (currentState)
         {
             case StoryState.Exploring: BeginWalkStep(); break;
-            case StoryState.EncounterPrompt: ConfirmEncounterOption(); break;
             case StoryState.ShowingStory: AdvanceEncounterCard(); break;
             case StoryState.WaitingForChoice:
                 if (selectedGearIndex >= 0) AdvanceEncounterCard();
                 break;
-            case StoryState.TutorialResult: ResolveEncounter(); break;
         }
     }
 
@@ -65,7 +67,6 @@ public partial class DecisionManager
         pendingEncounter = null;
         activePlaceId = null;
         activeEncounterPath = null;
-        activeInteraction = null;
         activeCards = null;
         selectedGearIndex = -1;
         currentState = StoryState.Exploring;
@@ -101,34 +102,18 @@ public partial class DecisionManager
         if (pendingEncounter.HasValue)
         {
             var encounter = pendingEncounter.Value;
-            playerController.StopAndLookAt(encounter.WorldPosition);
-            FaceNpcTowardPlayer(encounter.PlaceId);
-            ShowEncounterPrompt(encounter);
+            BeginEncounter(encounter);
         }
         else if (playerController.CurrentPosition.z >= encounterFlow.EpisodeEndZ - 0.01f)
             CompleteEncounterEpisode();
         else BeginExploration();
     }
 
-    private void ShowEncounterPrompt(EncounterFlowController.Encounter encounter)
+    private void BeginEncounter(EncounterFlowController.Encounter encounter)
     {
         playerController.StopAndLookAt(encounter.WorldPosition);
         FaceNpcTowardPlayer(encounter.PlaceId);
-        activePlaceId = encounter.PlaceId;
-        activeEncounterPath = encounter.ContentPath;
-        if (!encounterContent.TryLoadInteraction(encounter.ContentPath, out activeInteraction, out string error))
-        {
-            Debug.LogError($"[조우] {encounter.PlaceId}: {error}", this);
-            ResolveEncounter();
-            return;
-        }
-        currentState = StoryState.EncounterPrompt;
-        selectedGearIndex = -1;
-        ResetGearSelection();
-        bettingButtonController?.SetBettingInteractable(false);
-        SetYellowInputInteractable(true);
-        RenderEncounterOptions();
-        SaveEncounterState("prompt");
+        OpenEncounterCards(encounter, 0);
         Debug.Log($"[조우] {encounter.PlaceId} ({encounter.ContentPath})", this);
     }
 
@@ -150,85 +135,76 @@ public partial class DecisionManager
         }
     }
 
-    private void ConfirmEncounterOption()
+    private bool ExecuteStoryChoice(Dialogue card)
     {
-        if (!pendingEncounter.HasValue || activeInteraction == null || selectedGearIndex < 0) return;
-        EncounterInteractionOption option = activeInteraction.options[selectedGearIndex];
-        if (!saveService.HasAllUnlocks(option.requiresUnlocks))
+        if (card.choiceActions == null || card.choiceActions.Length == 0) return false;
+        StoryChoiceAction choice = card.choiceActions[selectedGearIndex];
+        if (!saveService.HasAllUnlocks(choice.requiresUnlocks))
         {
             RenderEncounterOptions();
-            return;
+            return true;
         }
-
         saveService.ApplyEncounterEffect(
-            $"{activePlaceId}:interaction:{selectedGearIndex}",
-            option.grantsUnlocks,
-            option.relationshipId,
-            option.relationshipDelta);
-        Debug.Log($"[조우 선택] {activePlaceId}: {option.text}", this);
-        switch (option.action)
+            $"{activePlaceId}:{activeEncounterPath}:{activeCardIndex}:choice:{selectedGearIndex}",
+            choice.grantsUnlocks, choice.relationshipId, choice.relationshipDelta);
+        switch (choice.action)
         {
-            case "skip": ResolveEncounter(); break;
-            case "duel": StartDuelTutorial(); break;
-            case "coin_heads": StartCoinTutorial(true); break;
-            case "coin_tails": StartCoinTutorial(false); break;
-            default: OpenEncounterCards(pendingEncounter.Value, 0); break;
+            case "skip": ResolveEncounter(); return true;
+            case "story": OpenStoryBranch(choice.storyPath); return true;
+            default: return false;
         }
     }
 
-    private void StartDuelTutorial()
+    private void StartDuelTutorial(Dialogue card)
     {
-        currentState = StoryState.Transitioning;
-        SetYellowInputInteractable(true);
+        currentState = StoryState.Duel;
+        SetYellowInputInteractable(false);
         presentationController.ExitChoice();
-        presentationController.ShowDialogue(new Dialogue
-        {
-            type = "Next",
-            text = "보드 중앙에 연습용 기사 복제품을 준비합니다. 이후 대련 동작은 이 복제품을 기준으로 구성할 수 있습니다."
-        });
         if (duelMiniGame == null)
         {
             Debug.LogError("DuelMiniGameBridge가 연결되지 않았습니다.", this);
-            ShowTutorialResult("대련을 시작할 수 없습니다. DuelMiniGameBridge 참조를 확인하세요.");
+            OpenStoryBranch(card.errorStoryPath);
             return;
         }
-        duelMiniGame.BeginDuel(won => ShowTutorialResult(
-            won ? "대련에서 이겼습니다." : "대련에서 졌습니다."));
+        duelMiniGame.BeginDuel(
+            won => OpenStoryBranch(won ? card.winStoryPath : card.loseStoryPath),
+            card.duelHitTarget > 0 ? card.duelHitTarget : 3,
+            coinDropController.RemainingCoins[0], ConsumeDuelHealthCoin);
     }
 
-    private void StartCoinTutorial(bool choseHeads)
+    private int ConsumeDuelHealthCoin()
+    {
+        coinDropController.TryConsumeCoin(0); // Health 재고이며 StatContainer의 별도 능력치 값은 변경하지 않습니다.
+        journeyCoinSupply?.RefreshDisplay();
+        saveService.SaveRemainingCoins(coinDropController.RemainingCoins);
+        return coinDropController.RemainingCoins[0];
+    }
+
+    private void StartCoinTutorial(bool choseHeads, Dialogue card)
     {
         currentState = StoryState.Transitioning;
         SetYellowInputInteractable(false);
         presentationController.ExitChoice();
-        presentationController.ShowDialogue(new Dialogue
-        {
-            type = "Next",
-            text = $"{(choseHeads ? "앞면" : "뒷면")}을 선택했습니다. 금화가 멈출 때까지 기다리세요."
-        });
         if (tutorialMiniGames == null)
         {
             Debug.LogError("TutorialMiniGameController가 연결되지 않았습니다.", this);
-            ShowTutorialResult("금화 도박을 시작할 수 없습니다. Inspector 참조를 확인하세요.");
+            OpenStoryBranch(card.errorStoryPath);
             return;
         }
-        tutorialMiniGames.StartCoinToss(choseHeads, (won, heads) => ShowTutorialResult(
-            $"금화는 {(heads ? "앞면" : "뒷면")}입니다. {(won ? "선택이 맞았습니다!" : "선택이 빗나갔습니다.")}"));
+        tutorialMiniGames.StartCoinToss(choseHeads, (won, heads) =>
+            OpenStoryBranch(won ? card.winStoryPath : card.loseStoryPath));
     }
 
-    private void ShowTutorialResult(string message)
+    private void OpenStoryBranch(string storyPath)
     {
-        currentState = StoryState.TutorialResult;
-        presentationController.ShowDialogue(new Dialogue { type = "End", text = message });
-        SetYellowInputInteractable(true);
-        SaveEncounterState("tutorial_result");
+        if (pendingEncounter.HasValue) OpenEncounterCards(pendingEncounter.Value, 0, storyPath);
     }
 
-    private void OpenEncounterCards(EncounterFlowController.Encounter encounter, int index)
+    private void OpenEncounterCards(EncounterFlowController.Encounter encounter, int index, string storyPath = null)
     {
         activePlaceId = encounter.PlaceId;
-        activeEncounterPath = encounter.ContentPath;
-        if (!encounterContent.TryLoadCards(encounter.ContentPath, out activeCards, out string error) ||
+        activeEncounterPath = string.IsNullOrWhiteSpace(storyPath) ? encounter.ContentPath : storyPath;
+        if (!encounterContent.TryLoadCards(activeEncounterPath, out activeCards, out string error) ||
             activeCards.MainStory.Count == 0)
         {
             Debug.LogError($"[조우 카드] {encounter.PlaceId}: {error}", this);
@@ -242,10 +218,11 @@ public partial class DecisionManager
     private void PresentEncounterCard()
     {
         Dialogue card = activeCards.MainStory[activeCardIndex];
-        selectedGearIndex = -1;
-        ResetGearSelection();
+        // ResetSelection은 기어 선택 이벤트를 즉시 호출하므로 이전 Choice 상태부터 해제합니다.
         currentState = StoryState.Transitioning;
         SetYellowInputInteractable(false);
+        selectedGearIndex = -1;
+        ResetGearSelection();
         bettingButtonController?.SetBettingInteractable(false);
         RecordPlayedEncounterStory(card, activePlaceId, activeEncounterPath, activeCardIndex);
         SaveEncounterState("card");
@@ -260,6 +237,16 @@ public partial class DecisionManager
 
     private void CompleteEncounterCardPresentation(Dialogue card)
     {
+        if (!string.IsNullOrWhiteSpace(card.startAction))
+        {
+            switch (card.startAction)
+            {
+                case "duel": StartDuelTutorial(card); break;
+                case "coin_heads": StartCoinTutorial(true, card); break;
+                case "coin_tails": StartCoinTutorial(false, card); break;
+            }
+            return;
+        }
         if (card.IsChoice)
         {
             currentState = StoryState.WaitingForChoice;
@@ -276,7 +263,11 @@ public partial class DecisionManager
     private void AdvanceEncounterCard()
     {
         if (currentState == StoryState.WaitingForChoice)
-            Debug.Log($"[카드 선택] {activePlaceId}: {activeCards.MainStory[activeCardIndex].options[selectedGearIndex]}", this);
+        {
+            Dialogue card = activeCards.MainStory[activeCardIndex];
+            Debug.Log($"[카드 선택] {activePlaceId}: {card.options[selectedGearIndex]}", this);
+            if (ExecuteStoryChoice(card)) return;
+        }
         activeCardIndex++;
         if (activeCardIndex >= activeCards.MainStory.Count) ResolveEncounter();
         else PresentEncounterCard();
@@ -284,25 +275,23 @@ public partial class DecisionManager
 
     private void HandleEncounterGearSelection(int index)
     {
-        if (encounterFlow == null ||
-            (currentState != StoryState.EncounterPrompt && currentState != StoryState.WaitingForChoice)) return;
+        if (encounterFlow == null || currentState != StoryState.WaitingForChoice) return;
         selectedGearIndex = index >= 0 && index < 4 ? index : -1;
         RenderEncounterOptions();
     }
 
     private void RenderEncounterOptions()
     {
-        if (currentState == StoryState.EncounterPrompt && activeInteraction != null)
-            presentationController.ShowEncounterPrompt(
-                activeInteraction.prompt,
-                Array.ConvertAll(
-                    activeInteraction.options,
-                    option => saveService.HasAllUnlocks(option.requiresUnlocks)
-                        ? option.text
-                        : option.text + " (잠김)"),
-                selectedGearIndex);
-        else if (currentState == StoryState.WaitingForChoice && activeCards != null)
-            presentationController.ShowOptions(activeCards.MainStory[activeCardIndex].options, selectedGearIndex);
+        if (currentState != StoryState.WaitingForChoice || activeCards?.MainStory == null ||
+            activeCardIndex < 0 || activeCardIndex >= activeCards.MainStory.Count) return;
+        Dialogue card = activeCards.MainStory[activeCardIndex];
+        if (card == null || !card.IsChoice || card.options == null || card.options.Length != 4) return;
+        string[] options = (string[])card.options.Clone();
+        if (card.choiceActions != null && card.choiceActions.Length == 4)
+            for (int index = 0; index < 4; index++)
+                if (!saveService.HasAllUnlocks(card.choiceActions[index].requiresUnlocks))
+                    options[index] += " (잠김)";
+        presentationController.ShowOptions(options, selectedGearIndex);
     }
 
     private void ResolveEncounter()
@@ -330,5 +319,5 @@ public partial class DecisionManager
             session,
             playerController.CurrentPosition,
             playerController.CurrentRotation,
-            phase, activePlaceId, activeCardIndex, resolvedPlaceIds);
+            phase, activePlaceId, activeCardIndex, resolvedPlaceIds, activeEncounterPath);
 }

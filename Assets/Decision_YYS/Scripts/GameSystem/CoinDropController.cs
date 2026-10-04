@@ -45,7 +45,7 @@ public sealed class CoinDropController : MonoBehaviour
     [Tooltip("한 번의 선택에서 Betting Board에 놓을 수 있는 전체 코인 수입니다.")]
     [SerializeField, Min(1)] private int maxBettingCoins = 5;
     [Tooltip("새 에피소드에서 능력치 종류별로 지급할 코인 수입니다.")]
-    [SerializeField, Min(1)] private int coinsPerType = 5;
+    [SerializeField, Min(1)] private int coinsPerType = Constants.StartingCoinsPerType;
 
     [Header("Inventory Display (Coin_01~04)")]
     [SerializeField] private TextMeshProUGUI[] inventoryCountTexts;

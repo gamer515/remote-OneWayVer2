@@ -282,13 +282,6 @@ public class EnvController : MonoBehaviour
                 return false;
             }
 
-            if (!contentRepository.TryLoadInteraction(
-                    place.connectStoryCards, out _, out string interactionError))
-            {
-                errorMessage = $"placeId '{place.placeId}': {interactionError}";
-                return false;
-            }
-
             if (!contentRepository.TryLoadCards(
                     place.connectStoryCards, out _, out string cardError))
             {

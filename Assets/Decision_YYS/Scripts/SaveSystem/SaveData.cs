@@ -23,6 +23,8 @@ public class GameProgress
     public float[] currentRotation;
     // Initial 배치물 진행도. 기존 storyIndex와 독립적으로 복원합니다.
     public string interactionPhase;
+    // 분기 Story의 폴더. 비어 있으면 배치물의 기본 Story를 복원합니다.
+    public string activeStoryPath;
     public string activePlaceId;
     public int activeCardIndex;
     public List<string> resolvedPlaceIds = new List<string>();
@@ -32,7 +34,11 @@ public class GameProgress
     // 체크포인트 재진입 시 같은 선택 효과가 중복 적용되는 것을 방지합니다.
     public List<string> appliedEffectIds = new List<string>();
     // 현재 에피소드에서 각 능력치별로 남은 코인 재고입니다.
-    public int[] remainingCoins = { 5, 5, 5, 5 };
+    public int[] remainingCoins =
+    {
+        Constants.StartingCoinsPerType, Constants.StartingCoinsPerType,
+        Constants.StartingCoinsPerType, Constants.StartingCoinsPerType
+    };
     // 가방에는 에셋 참조 대신 카탈로그의 itemId만 저장합니다.
     public List<string> storedItemIds = new List<string>();
     // 마지막 챕터까지 끝낸 회차인지 기록해 중단 세이브와 완료 기록을 구분합니다.

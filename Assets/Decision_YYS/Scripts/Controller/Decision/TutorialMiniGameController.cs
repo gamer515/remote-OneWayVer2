@@ -33,6 +33,8 @@ public sealed class TutorialMiniGameController : MonoBehaviour
     }
 
     public GameObject CurrentKnightTarget { get; private set; }
+    /// <summary>복제 기사가 없어도 제작용 기즈모가 참조할 고정 생성 배치입니다.</summary>
+    public Transform KnightSpawnPose => knightSpawnPose;
     /// <summary>손 생성 전 측정한 보드 윗면 높이. 대련 중 손/기사 Renderer 때문에 높이가 바뀌지 않습니다.</summary>
     public float BoardSurfaceY => miniGameBoard == null ? float.NegativeInfinity : CurrentKnightTarget != null ? duelBoardSurfaceY : GetBoardCenter().y;
     // 복제본의 생성과 초기 설정이 완료되었을 때 전달합니다.

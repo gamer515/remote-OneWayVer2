@@ -119,7 +119,8 @@ public class SaveManager
         string phase,
         string activePlaceId,
         int activeCardIndex,
-        System.Collections.Generic.IEnumerable<string> resolvedPlaceIds)
+        System.Collections.Generic.IEnumerable<string> resolvedPlaceIds,
+        string activeStoryPath = null)
     {
         // 실제 플레이어 좌표와 배치물 진행도를 한 번에 기록합니다.
         cachedProgress.chapterIndex = chapterIndex;
@@ -132,6 +133,7 @@ public class SaveManager
         cachedProgress.interactionPhase = phase;
         cachedProgress.activePlaceId = activePlaceId;
         cachedProgress.activeCardIndex = activeCardIndex;
+        cachedProgress.activeStoryPath = activeStoryPath;
         cachedProgress.resolvedPlaceIds = new System.Collections.Generic.List<string>(resolvedPlaceIds);
         SaveIOService.Instance.SaveRunData(CurrentRun, "Progress", cachedProgress);
     }
@@ -139,7 +141,11 @@ public class SaveManager
     public int[] LoadRemainingCoins()
     {
         if (cachedProgress.remainingCoins == null || cachedProgress.remainingCoins.Length != 4)
-            cachedProgress.remainingCoins = new[] { 5, 5, 5, 5 };
+            cachedProgress.remainingCoins = new[]
+            {
+                Constants.StartingCoinsPerType, Constants.StartingCoinsPerType,
+                Constants.StartingCoinsPerType, Constants.StartingCoinsPerType
+            };
 
         return (int[])cachedProgress.remainingCoins.Clone();
     }

@@ -30,6 +30,12 @@ public class Dialogue
     public string npcEmotion;
     public int[] statWeights;
     public string[] options;
+    public StoryChoiceAction[] choiceActions;
+    public string startAction;
+    public int duelHitTarget;
+    public string winStoryPath;
+    public string loseStoryPath;
+    public string errorStoryPath;
 
     public DialogueType Type
     {
@@ -46,4 +52,16 @@ public class Dialogue
     public bool ShouldRelay => bool.TryParse(change, out bool result) && result;
     public bool IsChoice => Type == DialogueType.Choice;
     public bool IsEnd => Type == DialogueType.End;
+}
+
+[Serializable]
+public sealed class StoryChoiceAction
+{
+    // continue: 다음 카드, story: 별도 Story 폴더로 분기, skip: 조우 종료.
+    public string action;
+    public string storyPath;
+    public string[] requiresUnlocks;
+    public string[] grantsUnlocks;
+    public string relationshipId;
+    public int relationshipDelta;
 }

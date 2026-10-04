@@ -4,6 +4,47 @@ using UnityEngine.UI;
 public class ViewUi : ParentUi
 {
     [SerializeField] private RectTransform view;
+    private UnityEngine.UI.Image hitFlash;
+    private float hitFlashRemaining;
+    private const float HitFlashSeconds = 0.2f;
+
+    public void FlashPlayerHit()
+    {
+        if (view == null) return;
+        if (hitFlash == null)
+        {
+            var overlay = new GameObject("DuelHitFlash", typeof(RectTransform), typeof(UnityEngine.UI.Image));
+            var rect = overlay.GetComponent<RectTransform>();
+            rect.SetParent(view, false);
+            rect.anchorMin = Vector2.zero;
+            rect.anchorMax = Vector2.one;
+            rect.offsetMin = rect.offsetMax = Vector2.zero;
+            hitFlash = overlay.GetComponent<UnityEngine.UI.Image>();
+            hitFlash.raycastTarget = false;
+        }
+        hitFlash.rectTransform.SetAsLastSibling();
+        hitFlashRemaining = HitFlashSeconds;
+        hitFlash.enabled = true;
+        hitFlash.color = new Color(1f, 0.04f, 0.02f, 0.28f);
+    }
+
+    public void ClearPlayerHitFlash()
+    {
+        hitFlashRemaining = 0f;
+        if (hitFlash != null) hitFlash.enabled = false;
+    }
+
+    private void Update()
+    {
+        if (hitFlash == null || hitFlashRemaining <= 0f) return;
+        hitFlashRemaining = Mathf.Max(0f, hitFlashRemaining - Time.unscaledDeltaTime);
+        var color = hitFlash.color;
+        color.a = 0.28f * hitFlashRemaining / HitFlashSeconds;
+        hitFlash.color = color;
+        if (hitFlashRemaining == 0f) hitFlash.enabled = false;
+    }
+
+    private void OnDisable() => ClearPlayerHitFlash();
 
     public override void SetActivateUi(bool isActive)
     {

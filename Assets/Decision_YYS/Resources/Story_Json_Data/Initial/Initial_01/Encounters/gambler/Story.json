@@ -13,10 +13,39 @@
       "text": "동전은 보드 위를 돌다가 바닥에 닿아 멈춘다. 위를 향한 면이 결과가 되지."
     },
     {
-      "type": "End",
+      "type": "Choice",
       "isTransition": false,
       "background": "#FFE9A8",
-      "text": "설명을 확인했다면 다시 말을 걸어 앞면 또는 뒷면을 선택하세요."
+      "text": "설명을 확인했다면 다시 말을 걸어 앞면 또는 뒷면을 선택하세요.",
+      "options": [
+        "앞면을 고른다",
+        "뒷면을 고른다",
+        "규칙을 듣는다",
+        "도박을 하지 않는다"
+      ],
+      "statWeights": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "choiceActions": [
+        {
+          "action": "story",
+          "storyPath": "Initial/Initial_01/Encounters/gambler/Coin/Heads"
+        },
+        {
+          "action": "story",
+          "storyPath": "Initial/Initial_01/Encounters/gambler/Coin/Tails"
+        },
+        {
+          "action": "story",
+          "storyPath": "Initial/Initial_01/Encounters/gambler"
+        },
+        {
+          "action": "skip"
+        }
+      ]
     }
   ]
 }

@@ -4,11 +4,11 @@ using UnityEngine.InputSystem;
 #endif
 
 /// <summary>
-/// 테스트 대련에서 생성된 3D 손을 클릭해 마우스로 직접 움직입니다.
+/// 본 게임/테스트 공용 대련에서 생성된 3D 손을 클릭해 마우스로 직접 움직입니다.
 /// 손을 잡는 동안 커서를 잠그고 숨기며, 대련 종료 또는 Escape에서 복원합니다.
 /// [참조] DuelAuthoringReferences.SpawnedPlayerHand의 부모를 이동하며 자식 Animator 자세와 분리합니다.
 /// 손을 클릭하는 BoxCollider는 선택용입니다. 칼날 접촉 판정은 Sword의 DuelBladeHitbox가 담당합니다.
-/// [수정] 손 부모는 월드 X/Y 평면에서 움직이며 Z는 생성 위치에 고정합니다. 감도/범위는 Mouse Control 설정입니다.
+/// [수정] 최초 생성 배치는 유지하고, 잡은 뒤에는 월드 Z=-2.5의 X/Y 평면에서 움직입니다.
 /// </summary>
 public sealed class DuelMouseHandController : MonoBehaviour
 {
@@ -27,6 +27,8 @@ public sealed class DuelMouseHandController : MonoBehaviour
     private Vector3 appliedRecoil, recoilDirection;
     private float recoilStarted, recoilDuration, recoilDistance;
     private bool readyPoseApplied;
+    public float MovementSpeedMultiplier { get; private set; } = 1f;
+    public void SetMovementSpeedMultiplier(float value) => MovementSpeedMultiplier = Mathf.Clamp01(value);
 
     /// <summary>마우스로 조작할 손 Transform이 연결되어 있는지 여부입니다.</summary>
     public bool IsActive => controlledHand != null;
@@ -49,7 +51,7 @@ public sealed class DuelMouseHandController : MonoBehaviour
         if (handObject == null)
         {
             Debug.LogWarning(
-                "DuelMouseHandController: 테스트용 플레이어 손 프리팹이 생성되지 않았습니다.",
+                "DuelMouseHandController: 플레이어 손 프리팹이 생성되지 않았습니다.",
                 this);
             return;
         }
@@ -79,6 +81,7 @@ public sealed class DuelMouseHandController : MonoBehaviour
     public void StopControl()
     {
         ReleaseHand();
+        MovementSpeedMultiplier = 1f;
         controlledHand = null;
         authoringReferences = null;
     }
@@ -121,7 +124,7 @@ public sealed class DuelMouseHandController : MonoBehaviour
             return;
         }
 
-        Vector2 delta = ReadPointerDelta() * mouseSensitivity;
+        Vector2 delta = ReadPointerDelta() * mouseSensitivity * MovementSpeedMultiplier;
         if (delta.sqrMagnitude <= 0f) return;
 
         virtualScreenPosition += delta;
@@ -157,6 +160,7 @@ public sealed class DuelMouseHandController : MonoBehaviour
         if (!readyPoseApplied)
         {
             authoringReferences?.ApplyPlayerReadyPose();
+            PlaceHeldHandOnCombatPlane();
             RestRotation = controlledHand.rotation;
             readyPoseApplied = true;
         }
@@ -169,6 +173,18 @@ public sealed class DuelMouseHandController : MonoBehaviour
         CaptureFrame = Time.frameCount;
         Cursor.visible = false;
         Cursor.lockState = CursorLockMode.Locked;
+    }
+
+    private void PlaceHeldHandOnCombatPlane()
+    {
+        if (inputCamera == null) return;
+        // 최초 생성은 그대로 두고, 처음 잡은 뒤에만 요청한 월드 깊이를 적용합니다.
+        const float heldZ = -2.5f;
+        Vector2 screen = inputCamera.WorldToScreenPoint(controlledHand.position);
+        Ray ray = inputCamera.ScreenPointToRay(screen);
+        var heldPlane = new Plane(Vector3.forward, new Vector3(0f, 0f, heldZ));
+        // 카메라가 기울어져 있어도 화면 X/Y는 유지하고 깊이만 새 평면에 맞춥니다.
+        if (heldPlane.Raycast(ray, out float distance)) controlledHand.position = ray.GetPoint(distance);
     }
 
     private bool IsPointerOverControlledHand(Vector2 screenPosition)
@@ -217,6 +233,8 @@ public sealed class DuelMouseHandController : MonoBehaviour
         {
             // 잔상/이펙트의 빈 Bounds가 손 클릭 박스를 원점까지 늘리지 않도록 제외합니다.
             if (!(renderer is MeshRenderer) && !(renderer is SkinnedMeshRenderer)) continue;
+            if (renderer is MeshRenderer && renderer.TryGetComponent<MeshFilter>(out var meshFilter) &&
+                (meshFilter.sharedMesh == null || meshFilter.sharedMesh.vertexCount == 0)) continue;
             if (!hasMesh) { worldBounds = renderer.bounds; hasMesh = true; }
             else worldBounds.Encapsulate(renderer.bounds);
         }

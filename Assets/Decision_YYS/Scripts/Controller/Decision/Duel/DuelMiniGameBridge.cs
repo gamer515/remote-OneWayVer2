@@ -4,11 +4,10 @@ using UnityEngine;
 using UnityEngine.Events;
 
 /// <summary>
-/// 대련의 생성/종료 흐름과 보드 입력을 사용자가 작성할 실제 대련 코드에 전달합니다.
-/// Inspector의 UnityEvent에 사용자 스크립트 함수를 직접 연결하면 됩니다.
-/// [흐름] BeginTestDuel → 기사/손 생성 → 마우스·플레이어 방어·NPC 궤적 초기화 → OnDuelSetupReady 사용자 확장.
-/// [역할] 수명과 입력 연결만 관리합니다. 판정/애니메이션/승패 규칙은 각각의 대련 스크립트가 담당합니다.
-/// 사용자 승패 처리는 CompleteDuel(bool), 결과 없이 종료는 CleanupDuel을 연결합니다.
+/// 본 게임/테스트 공통 대련 수명과 피격 횟수, Health 코인 및 승패를 관리합니다.
+/// 목표 횟수는 Story에서 전달하며, 본 게임의 코인 차감/저장은 주입된 콜백에 맡깁니다.
+/// 마지막 피격 모션이 끝나면 생성물/입력을 정리하고 결과 Story 콜백을 한 번 호출합니다.
+/// 사용자 확장 이벤트와 CompleteDuel(bool), 결과 없는 CleanupDuel 진입점도 유지합니다.
 /// </summary>
 public sealed class DuelMiniGameBridge : MonoBehaviour
 {
@@ -29,11 +28,22 @@ public sealed class DuelMiniGameBridge : MonoBehaviour
 
     private Action<bool> completed;
     private bool inputBound;
-    private bool testInputMode;
+    private bool testSession;
+    private bool boardInputLocked;
     private bool boardInputWasEnabled;
+    private Func<int> consumeHealthCoin;
+    private UiController feedbackUi;
+    private float finishAt;
+    private bool finishWon;
+
+    public int HitTarget { get; private set; } = 3;
+    public int NpcHits { get; private set; }
+    public int PlayerHits { get; private set; }
+    public int HealthCoins { get; private set; }
+    public bool IsEnding { get; private set; }
 
     public bool IsRunning { get; private set; }
-    public bool IsTestRunning => IsRunning && testInputMode;
+    public bool IsTestRunning => IsRunning && testSession;
     public GameObject CurrentKnightTarget => setupController != null
         ? setupController.CurrentKnightTarget
         : null;
@@ -41,16 +51,29 @@ public sealed class DuelMiniGameBridge : MonoBehaviour
     /// <summary>대련 생성 담당자가 손/기사 생성 전에 측정한 보드 표면 높이입니다.</summary>
     public float BoardSurfaceY => setupController != null ? setupController.BoardSurfaceY : float.NegativeInfinity;
 
-    public void BeginDuel(Action<bool> completion = null)
+    public void BeginDuel(Action<bool> completion = null, int hitTarget = 3,
+        int healthCoins = Constants.StartingCoinsPerType, Func<int> consumeHealth = null)
     {
-        BeginDuelInternal(completion, false);
+        BeginDuelInternal(completion, false, hitTarget, healthCoins, consumeHealth);
     }
 
-    private void BeginDuelInternal(Action<bool> completion, bool useTestMouseInput)
+    private void BeginDuelInternal(Action<bool> completion, bool isTestSession, int hitTarget,
+        int healthCoins, Func<int> consumeHealth)
     {
         CleanupInternal(false);
         completed = completion;
-        testInputMode = useTestMouseInput;
+        testSession = isTestSession;
+        HitTarget = Mathf.Max(1, hitTarget);
+        NpcHits = PlayerHits = 0;
+        HealthCoins = Mathf.Max(0, healthCoins);
+        consumeHealthCoin = consumeHealth;
+        feedbackUi = FindFirstObjectByType<UiController>();
+        if (HealthCoins == 0)
+        {
+            Debug.Log("[Duel] Health 코인 0개 — 패배", this);
+            Finish(false);
+            return;
+        }
 
         if (setupController == null)
         {
@@ -69,34 +92,84 @@ public sealed class DuelMiniGameBridge : MonoBehaviour
             }
 
             IsRunning = true;
+            Debug.Log($"[Duel] 시작 — 목표 {HitTarget}회, Health {HealthCoins}개", this);
             authoringReferences?.Prepare(setupController.CurrentKnightTarget);
             if (npcStateMachine == null) npcStateMachine = GetComponent<NpcDuelStateMachine>();
-            if (testInputMode)
-            {
-                boardInputWasEnabled = boardInput == null || boardInput.InputEnabled;
-                boardInput?.SetInputEnabled(false);
-                mouseHandController?.Begin(authoringReferences);
-                // 기본 기능은 여기서 한 번 시작합니다. UnityEvent는 사용자 확장 코드용입니다.
-                GetComponent<PlayerDuelAction>()?.BeginDefense(authoringReferences);
-                npcStateMachine?.Begin(authoringReferences);
-            }
-            else
-            {
-                BindInput();
-            }
+            // 본 게임과 테스트는 같은 대련을 실행합니다. 테스트 여부는 결과 콜백/UI 구분에만 사용합니다.
+            boardInputWasEnabled = boardInput == null || boardInput.InputEnabled;
+            boardInputLocked = boardInput != null;
+            boardInput?.SetInputEnabled(false);
+            mouseHandController?.Begin(authoringReferences);
+            GetComponent<PlayerDuelAction>()?.BeginDefense(authoringReferences);
+            npcStateMachine?.Begin(authoringReferences);
+            if (!testSession) BindInput();
             onDuelStarted.Invoke(setupController.CurrentKnightTarget);
             if (authoringReferences != null) onDuelSetupReady.Invoke(authoringReferences);
         });
     }
 
-    /// <summary>Decision 씬의 테스트 버튼에서 결과 콜백 없이 대련만 시작합니다.</summary>
-    public void BeginTestDuel() => BeginDuelInternal(null, true);
+    /// <summary>Decision 씬의 테스트 버튼에서 같은 규칙의 대련을 실행하되 실제 저장은 변경하지 않습니다.</summary>
+    public void BeginTestDuel(Action<bool> completion = null)
+    {
+        // 독립 테스트도 같은 규칙을 쓰되 실제 저장에는 쓰지 않습니다.
+        var inventory = FindFirstObjectByType<CoinDropController>();
+        if (inventory != null) inventory.InitializeInventory(new GameProgress().remainingCoins);
+        RefreshTestHealthStack(Constants.StartingCoinsPerType);
+        BeginDuelInternal(completion, true, 3, Constants.StartingCoinsPerType, inventory == null ? null :
+            () =>
+            {
+                inventory.TryConsumeCoin(0);
+                int remaining = inventory.RemainingCoins[0];
+                RefreshTestHealthStack(remaining);
+                return remaining;
+            });
+    }
+
+    private static void RefreshTestHealthStack(int count)
+    {
+        foreach (JourneyCoinStack stack in FindObjectsByType<JourneyCoinStack>(FindObjectsSortMode.None))
+            if (stack.name == "Supply_1") stack.SetCount(count);
+    }
 
     /// <summary>사용자 대련 코드가 승패를 판정한 뒤 호출합니다.</summary>
     public void CompleteDuel(bool won) => Finish(won);
     public void CompleteWin() => CompleteDuel(true);
     public void CompleteLoss() => CompleteDuel(false);
-    public void NotifyNpcHit() => CompleteWin();
+    public void NotifyNpcHit()
+    {
+        if (!IsRunning || IsEnding) return;
+        NpcHits++;
+        Debug.Log($"[Duel] NPC 피격 {NpcHits}/{HitTarget}", this);
+        if (NpcHits >= HitTarget) QueueFinish(true);
+    }
+
+    public void NotifyPlayerHit()
+    {
+        if (!IsRunning || IsEnding) return;
+        PlayerHits++;
+        HealthCoins = Mathf.Max(0, consumeHealthCoin != null ? consumeHealthCoin() : HealthCoins - 1);
+        feedbackUi?.FlashPlayerHit();
+        Debug.Log($"[Duel] 플레이어 피격 {PlayerHits}/{HitTarget} — Health {HealthCoins}개", this);
+        if (PlayerHits >= HitTarget || HealthCoins == 0) QueueFinish(false);
+    }
+
+    private void QueueFinish(bool won)
+    {
+        IsEnding = true;
+        finishWon = won;
+        finishAt = Time.time + 0.25f;
+        npcStateMachine?.SuspendForRoundEnd();
+        GetComponent<PlayerDuelAction>()?.ReleaseDefense();
+        mouseHandController?.SetMovementSpeedMultiplier(0f);
+        Debug.Log($"[Duel] 종료 확정 — {(won ? "승리" : "패배")}", this);
+    }
+
+    private void Update()
+    {
+        if (IsEnding && Time.time >= finishAt &&
+            (GetComponent<PlayerDuelAction>() == null || !GetComponent<PlayerDuelAction>().IsAttacking) &&
+            (npcStateMachine == null || !npcStateMachine.IsKnightReacting)) Finish(finishWon);
+    }
 
     /// <summary>결과 처리 없이 생성물과 입력 연결만 정리합니다.</summary>
     public void CleanupDuel() => CleanupInternal(true);
@@ -137,16 +210,19 @@ public sealed class DuelMiniGameBridge : MonoBehaviour
     private void CleanupInternal(bool notifyUserCode)
     {
         bool wasRunning = IsRunning;
+        IsRunning = IsEnding = false;
+        consumeHealthCoin = null;
+        feedbackUi?.ClearPlayerHitFlash();
         npcStateMachine?.StopDuel();
         GetComponent<PlayerDuelAction>()?.StopDefense();
         UnbindInput();
         mouseHandController?.StopControl();
-        if (testInputMode && boardInput != null)
+        if (boardInputLocked && boardInput != null)
             boardInput.SetInputEnabled(boardInputWasEnabled);
+        boardInputLocked = false;
         authoringReferences?.CleanupDuelObjects();
         setupController?.Cleanup();
-        IsRunning = false;
-        testInputMode = false;
+        testSession = false;
         completed = null;
         if (notifyUserCode && wasRunning) onDuelCleanup.Invoke();
     }

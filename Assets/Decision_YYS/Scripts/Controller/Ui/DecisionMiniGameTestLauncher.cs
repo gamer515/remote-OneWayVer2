@@ -48,7 +48,11 @@ public sealed class DecisionMiniGameTestLauncher : MonoBehaviour
         if (!directSceneTest) return;
         StopTest();
         CurrentMode = TestMode.Duel;
-        if (duelBridge != null) duelBridge.BeginTestDuel();
+        if (duelBridge != null) duelBridge.BeginTestDuel(won =>
+        {
+            CurrentMode = TestMode.None;
+            Debug.Log($"[Duel Test] {(won ? "승리" : "패배")} — 테스트 종료", this);
+        });
     }
     public void StartGamble()
     {

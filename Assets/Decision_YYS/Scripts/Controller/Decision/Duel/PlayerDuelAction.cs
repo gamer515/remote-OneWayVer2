@@ -54,11 +54,19 @@ public class PlayerDuelAction : MonoBehaviour
 
     private void Update()
     {
+        UpdateAttackMotion();
+        if (duelBridge != null && duelBridge.IsEnding)
+        {
+            tracking = false;
+            ReleaseDefense();
+            return;
+        }
+        AdvanceDefenseFatigue(Time.deltaTime);
         UpdateDefense();
         // 실행 중 스크립트 재컴파일 후에도 비어 있는 참조를 복구합니다.
         ResolveReferences();
         if (gizmoAreas == null || !gizmoAreas.isActiveAndEnabled ||
-            duelBridge == null || !duelBridge.IsTestRunning ||
+            duelBridge == null || !duelBridge.IsRunning ||
             mouseHandController == null || !mouseHandController.isActiveAndEnabled || !mouseHandController.IsCaptured)
         {
             tracking = false;
@@ -105,12 +113,14 @@ public class PlayerDuelAction : MonoBehaviour
             onGuardGesture.Invoke(-1); // -1은 영역 지정 없는 오른클릭 방어입니다.
         }
         // 양 버튼을 동시에 누르면 방어를 우선합니다. 왼버튼을 놓아도 오른버튼 방어는 유지됩니다.
-        if (defenseHeld)
+        if (defenseHeld && guardHeld)
         {
             tracking = false;
             npcStateMachine?.SetPlayerAttackTrail(false);
             return;
         }
+        // 재생 중에는 중복 베기 입력을 받지 않습니다. 오른클릭 방어는 위에서 공격을 중단할 수 있습니다.
+        if (IsAttacking) return;
         if (pressed)
         {
             if (Time.time < nextAttackTime) { tracking = false; return; }
@@ -127,13 +137,23 @@ public class PlayerDuelAction : MonoBehaviour
         tracking = false;
         npcStateMachine?.SetPlayerAttackTrail(false);
         int endArea = FindArea(mousePosition);
-        bool slash = largestDistance >= minimumSlashDistance;
+        // 명시적인 세로 구역 입력은 이동 거리와 무관하게 베기입니다.
+        // 경계 가까이 2→3/1→4를 입력해도 짧은 클릭(찌르기)으로 분류하지 않습니다.
+        // NPC 배열은 우상/좌상/우하/좌하 순서이므로 사용자 번호 2→3=1→3, 1→4=0→2입니다.
+        bool verticalSlash = (startArea == 1 && endArea == 3) || (startArea == 0 && endArea == 2);
+        bool slash = verticalSlash || largestDistance >= minimumSlashDistance;
         bool thrust = largestDistance <= clickTolerance &&
             Time.time - startedAt <= maximumClickSeconds;
         if (!slash && !thrust) return;
         nextAttackTime = Time.time + attackCooldown;
         // 영역 밖도 사용자 공격 모션 이벤트는 호출합니다(-1 인덱스).
         // NPC 피해 결과는 ReceivePlayerAttack에서 기존 유효 영역 제스처로 제한합니다.
+        if (verticalSlash)
+        {
+            PlaySlashAttack();
+            if (IsAttacking)
+                Debug.Log($"[Duel] 플레이어 세로 베기 {(startArea == 1 ? "2→3" : "1→4")} — {SlashAttackState} 재생", this);
+        }
         if (slash) onSlash.Invoke(startArea, endArea); else onThrust.Invoke(endArea);
         npcStateMachine?.ReceivePlayerAttack(slash ? NpcDuelStateMachine.AttackKind.Slash :
             NpcDuelStateMachine.AttackKind.Thrust, startArea, endArea);
@@ -160,15 +180,13 @@ public class PlayerDuelAction : MonoBehaviour
     [SerializeField] private AnimationClip parryThrustClip;
     [Header("Timing (seconds)")]
     [SerializeField, Min(0f)] private float guardBlendSeconds = 0.1f;
-    [Tooltip("오른클릭 직후 접촉을 패링 성공으로 분류하는 시간. 시간이 지나도 버튼을 누르고 있으면 가드는 가능합니다.")]
-    [SerializeField, Min(0f)] private float instantGuardSeconds = 0.15f;
     [Tooltip("기본은 BeginParry~EndParry 이벤트 구간 전체를 사용합니다. 켜면 아래 시간으로 추가 제한합니다.")]
     [SerializeField] private bool limitParryWindow;
     [SerializeField, Min(0.01f)] private float maximumParryWindow = 0.2f;
     [SerializeField, Min(0f)] private float parryCooldown = 0.3f;
     [SerializeField, Min(0.5f)] private float animationTimeout = 5f;
-    [Header("Screen Guard Pose")]
-    [Tooltip("오른버튼 유지 가드의 칼날을 화면상 아래 각도로 정렬합니다. 클립은 수정하지 않고 손 이동 부모만 기울입니다.")]
+    [Header("Screen Guard Pose — fallback without a clip")]
+    [Tooltip("가드 클립이 없을 때만 사용하는 화면 각도 보정입니다. 가드 클립이 있으면 부모 추가 회전 없이 원본 모션을 사용합니다.")]
     [SerializeField] private bool alignGuardBlade = true;
     [Tooltip("화면 기준 가드 칼날 각도. 0=수평, 90=수직. 좌우 중 현재 자세에서 가까운 쪽으로 정렬합니다.")]
     [SerializeField] private float guardBladeAngle;
@@ -191,6 +209,78 @@ public class PlayerDuelAction : MonoBehaviour
     private DuelMouseHandController mouseHand;
     private bool guardHeld, parryWindow, consumed, warnedGuard;
     private float pressedAt, parryWindowEnds, nextParryAt;
+    private Vector3 modelRestLocalPosition;
+    private bool usingGuardMotion, guardPositionOverride;
+    private const float MaximumDefenseFatigue = 100f;
+    private const float FatiguePerBlockedAttack = 45f;
+    private const float GuardRecoveryPerSecond = 3f;
+    private const float ReleasedRecoveryPerSecond = 20f;
+    private const float DefenseBreakSeconds = 2f;
+    public float DefenseFatigue { get; private set; }
+    public bool IsDefenseBroken => defenseBreakRemaining > 0f;
+    private float defenseBreakRemaining;
+    private bool needsDefenseRelease;
+    private const string SlashAttackState = "Slach_Attack";
+    private float attackStartedAt;
+    private bool warnedSlashAttack;
+    public bool IsAttacking { get; private set; }
+
+    private void PlaySlashAttack()
+    {
+        if (animator == null || !animator.HasState(0, Animator.StringToHash(SlashAttackState)))
+        {
+            if (!warnedSlashAttack) Debug.LogWarning("플레이어 Slach_Attack Animator 상태가 없습니다.", this);
+            warnedSlashAttack = true;
+            return;
+        }
+        // 부모의 배치/회전은 유지하며 제작한 자식 클립의 Position/Rotation 곡선을 그대로 재생합니다.
+        guardPositionOverride = usingGuardMotion = false;
+        IsAttacking = true;
+        attackStartedAt = Time.time;
+        animator.Play(SlashAttackState, 0, 0f);
+        blade?.SetMotionActive(true);
+        npcStateMachine?.SetPlayerAttackTrail(true);
+    }
+
+    private void UpdateAttackMotion()
+    {
+        if (!IsAttacking) return;
+        if (animator == null || mouseHand == null || !mouseHand.IsCaptured)
+        {
+            ReturnIdle();
+            return;
+        }
+        var info = animator.GetCurrentAnimatorStateInfo(0);
+        if ((info.IsName(SlashAttackState) && info.normalizedTime >= 1f) ||
+            Time.time - attackStartedAt >= animationTimeout) ReturnIdle();
+    }
+
+    private void AdvanceDefenseFatigue(float deltaTime)
+    {
+        float dt = Mathf.Max(0f, deltaTime);
+        // 자세 유지에는 비용이 없습니다. 가드 중에도 회복하며, 풀면 더 빨리 회복합니다.
+        DefenseFatigue = Mathf.Max(0f, DefenseFatigue -
+            (guardHeld ? GuardRecoveryPerSecond : ReleasedRecoveryPerSecond) * dt);
+        bool wasBroken = IsDefenseBroken;
+        defenseBreakRemaining = Mathf.Max(0f, defenseBreakRemaining - dt);
+        if (wasBroken && !IsDefenseBroken)
+        {
+            mouseHand?.SetMovementSpeedMultiplier(1f);
+            Debug.Log("[Duel] 방어 회복 — 오른클릭을 놓았다가 다시 누르면 방어 가능", this);
+        }
+    }
+
+    private void AddDefenseFatigue()
+    {
+        DefenseFatigue = Mathf.Min(MaximumDefenseFatigue, DefenseFatigue + FatiguePerBlockedAttack);
+        Debug.Log($"[Duel] 방어 피로도 {DefenseFatigue:0.#}/{MaximumDefenseFatigue:0}", this);
+        if (DefenseFatigue < MaximumDefenseFatigue) return;
+        defenseBreakRemaining = DefenseBreakSeconds;
+        needsDefenseRelease = true;
+        ReturnIdle();
+        mouseHand?.SetMovementSpeedMultiplier(0.5f);
+        Debug.Log("[Duel] 방어 한도 초과 — 2초간 방어 불가, 손 이동 속도 50%", this);
+    }
 
     public void BeginDefense(DuelAuthoringReferences references)
     {
@@ -203,6 +293,7 @@ public class PlayerDuelAction : MonoBehaviour
             if (candidate.runtimeAnimatorController != null) { animator = candidate; break; }
         if (animator != null)
         {
+            modelRestLocalPosition = animator.transform.localPosition;
             originalController = animator.runtimeAnimatorController;
             runtimeController = new AnimatorOverrideController(originalController);
             var overrides = new System.Collections.Generic.List<System.Collections.Generic.KeyValuePair<AnimationClip, AnimationClip>>();
@@ -223,17 +314,22 @@ public class PlayerDuelAction : MonoBehaviour
         blade = references.SpawnedPlayerHand.GetComponentInChildren<DuelBladeHitbox>();
         nextParryAt = 0f;
         warnedGuard = false;
+        warnedSlashAttack = false;
     }
 
     /// <summary>위치와 무관한 새 오른클릭. 사용 가능한 쳐내기 클립이 있으면 찌르기에 재생하고, 그 외에는 유지 가드입니다.</summary>
     public void PressDefense(NpcDuelStateMachine.AttackKind incoming)
     {
+        if (IsDefenseBroken || needsDefenseRelease) return;
+        if (IsAttacking) ReturnIdle();
         guardHeld = true;
         pressedAt = Time.time;
         consumed = false;
         if (incoming == NpcDuelStateMachine.AttackKind.Thrust && state != DefenseState.Parry &&
             Time.time >= nextParryAt && HasMotion(parryState))
         {
+            if (guardPositionOverride) animator.transform.localPosition = modelRestLocalPosition;
+            guardPositionOverride = usingGuardMotion = false;
             parryWindow = false;
             state = DefenseState.Parry;
             pressedAt = Time.time;
@@ -248,9 +344,11 @@ public class PlayerDuelAction : MonoBehaviour
     {
         parryWindow = false;
         state = DefenseState.Guard;
-        if (!HasMotion(guardHoldState))
+        usingGuardMotion = HasMotion(guardHoldState);
+        guardPositionOverride = usingGuardMotion;
+        if (!usingGuardMotion)
         {
-            if (!warnedGuard) Debug.LogWarning("가드 클립이 없어 부모의 화면 수평 가드 자세를 사용합니다. ", this);
+            if (!warnedGuard) Debug.LogWarning("가드 클립이 없어 임시 자세만 표시합니다. 방어 모션이 없으므로 방어 성공은 판정하지 않습니다.", this);
             warnedGuard = true;
         }
         else animator.CrossFadeInFixedTime(guardHoldState, guardBlendSeconds, 0, 0f);
@@ -259,6 +357,7 @@ public class PlayerDuelAction : MonoBehaviour
 
     public void ReleaseDefense()
     {
+        needsDefenseRelease = false;
         guardHeld = false;
         // 쳐내기는 클릭을 놓아도 클립 끝까지 진행합니다.
         if (state == DefenseState.Guard) ReturnIdle();
@@ -266,18 +365,33 @@ public class PlayerDuelAction : MonoBehaviour
 
     public bool CanBlock(NpcDuelStateMachine.AttackKind kind)
     {
-        return mouseHand != null && mouseHand.IsCaptured && guardHeld && state != DefenseState.Idle;
+        if (IsDefenseBroken) return false;
+        if (mouseHand == null || !mouseHand.IsCaptured || !guardHeld || animator == null || !animator.isActiveAndEnabled) return false;
+        if (state == DefenseState.Guard) return usingGuardMotion && IsPlayingDefenseMotion(guardHoldState);
+        return IsParryWindowOpen && IsPlayingDefenseMotion(parryState);
+    }
+    private bool IsPlayingDefenseMotion(string name)
+    {
+        if (animator.GetCurrentAnimatorStateInfo(0).IsName(name))
+            foreach (var clip in animator.GetCurrentAnimatorClipInfo(0))
+                if (clip.clip != null && clip.clip.length > 0.01f && clip.weight > 0.001f) return true;
+        if (animator.IsInTransition(0) && animator.GetNextAnimatorStateInfo(0).IsName(name))
+            foreach (var clip in animator.GetNextAnimatorClipInfo(0))
+                if (clip.clip != null && clip.clip.length > 0.01f && clip.weight > 0.001f) return true;
+        return false;
     }
 
     public void NotifySuccessfulDefense(NpcDuelStateMachine.AttackKind kind)
     {
-        if (!consumed && (IsParryWindowOpen || Time.time - pressedAt <= instantGuardSeconds))
+        if (IsDefenseBroken || !guardHeld) return;
+        if (!consumed && IsParryWindowOpen)
         {
             consumed = true;
             parryWindow = false;
             onParrySuccess.Invoke();
         }
         else onGuardSuccess.Invoke();
+        AddDefenseFatigue();
     }
 
     // Animator가 있는 자식의 DuelAnimationEvents가 전달합니다.
@@ -293,9 +407,25 @@ public class PlayerDuelAction : MonoBehaviour
         if (state != DefenseState.Parry) return;
         if (guardHeld) StartGuardPose(); else ReturnIdle();
     }
-    /// <summary>Animator 평가 후 호출합니다. 마우스 위치는 유지하면서 가드 검만 화면상 수평으로 기울입니다.</summary>
+    private void LateUpdate() => RestoreGuardPosition();
+    private void RestoreGuardPosition()
+    {
+        if (!guardPositionOverride || animator == null) return;
+        // 원본 Position 키는 수정하지 않습니다. 방어/Idle 복귀 블렌드 중 모델의 기준점만 고정합니다.
+        animator.transform.localPosition = modelRestLocalPosition;
+        if (state == DefenseState.Idle && !animator.IsInTransition(0) && animator.GetCurrentAnimatorStateInfo(0).IsName(idleState))
+            guardPositionOverride = false;
+    }
+    /// <summary>가드 클립이 있으면 위치 키 밀림만 방지하고 회전은 원본을 유지합니다. 클립이 없을 때만 부모 수평 보정을 사용합니다.</summary>
     public void ApplyGuardPose(Camera camera)
     {
+        RestoreGuardPosition();
+        if (state == DefenseState.Guard && guardHeld && usingGuardMotion)
+        {
+            if (mouseHand != null && mouseHand.ControlledHand != null)
+                mouseHand.ControlledHand.rotation = mouseHand.RestRotation;
+            return;
+        }
         if (!alignGuardBlade || state != DefenseState.Guard || !guardHeld || camera == null ||
             mouseHand == null || mouseHand.ControlledHand == null || blade == null) return;
         var root = mouseHand.ControlledHand;
@@ -319,7 +449,12 @@ public class PlayerDuelAction : MonoBehaviour
     }
     public void StopDefense()
     {
+        DefenseFatigue = defenseBreakRemaining = 0f;
+        needsDefenseRelease = false;
+        mouseHand?.SetMovementSpeedMultiplier(1f);
         ReturnIdle();
+        if (guardPositionOverride && animator != null) animator.transform.localPosition = modelRestLocalPosition;
+        guardPositionOverride = usingGuardMotion = false;
         if (animator != null && originalController != null) animator.runtimeAnimatorController = originalController;
         if (runtimeController != null) Destroy(runtimeController);
         runtimeController = null;
@@ -344,9 +479,9 @@ public class PlayerDuelAction : MonoBehaviour
     {
         if (animator == null || animator.runtimeAnimatorController == null || !animator.HasState(0, Animator.StringToHash(name))) return false;
         AnimationClip assigned = name == guardHoldState ? guardHoldClip : parryThrustClip;
-        if (assigned == null) return false;
         foreach (var clip in animator.runtimeAnimatorController.animationClips)
-            if (clip == assigned) return true;
+            if (assigned != null ? clip == assigned :
+                clip.name == (name == guardHoldState ? "PlayerGuardSlot" : "PlayerParrySlot") && clip.length > 0.01f) return true;
         return false;
     }
     #if UNITY_EDITOR
@@ -388,8 +523,14 @@ public class PlayerDuelAction : MonoBehaviour
     #endif
     private void ReturnIdle()
     {
+        if (IsAttacking)
+        {
+            IsAttacking = false;
+            npcStateMachine?.SetPlayerAttackTrail(false);
+        }
         guardHeld = parryWindow = consumed = false;
         state = DefenseState.Idle;
+        usingGuardMotion = false;
         if (mouseHand != null && mouseHand.ControlledHand != null) mouseHand.ControlledHand.rotation = mouseHand.RestRotation;
         blade?.SetMotionActive(false);
         if (animator != null && animator.HasState(0, Animator.StringToHash(idleState)))

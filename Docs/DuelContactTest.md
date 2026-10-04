@@ -1,47 +1,131 @@
-# 테스트 대련: NPC 공격 제거 / 원본 애니메이션·궤적 유지
+# 테스트 대련: NPC 세로 베기
 
-현재 상태(2026-10-04): NPC의 자동 공격 기능은 제거했습니다. 이전 화면 접촉/피격 테스트 설명은 더 이상 현재 동작이 아닙니다.
+현재 구현 범위: 기존 NPC 궤적 → 준비 → 사용자 Slash 클립 → 방어 성공/실패 → 궤적 복귀 및 대련 승패. Begin~End 사이 실제 3D 칼날 접촉과 플레이어 방어 상태/모션으로 방어를 판정합니다. 실패하면 복제 기사 피격 모션, Health 코인 차감과 붉은 섬광을 적용합니다. 가로/대각선/자동 찌르기는 구현하지 않았습니다. 원본 애니메이션 파일과 Animator Controller를 수정하지 않습니다.
 
-## 유지한 부분
+## 종료 조건 / Health / 방어 피로도
 
-- Duel Test 버튼, 기사 복제품과 두 손 생성, 플레이어 손 클릭/마우스 조작.
-- 플레이어 왼클릭 공격 제스처와 오른클릭 방어 자세 입력. NPC 자동 공격이 없으므로 가드/패링 성공 결과는 자동 발생하지 않습니다.
-- NPC 대기 궤적의 Screen Path / Path Points / Path Travel Seconds / Path Back Offset Z와 기존 씬 설정.
-- 보드 높이 제한(Hand Board Clearance), 기존 궤적 Gizmos, 칼끝 잔상.
-- 사용자 원본 NPC Animator, Idle / Slash / Thrust / Blocked 상태와 애니메이션 파일 및 이벤트.
-- 플레이어가 기존 NPC 영역에 공격 제스처를 했을 때의 On Npc Hit 콜백. 승패 코드를 직접 연결하는 기존 경로입니다.
+- 본 게임은 시작 Story 카드의 `duelHitTarget`을 사용합니다. 기본/현재 교관은 3회, NPC마다 변경할 수 있습니다. 유효 플레이어 공격으로 NPC가 목표 횟수만큼 피격되면 승리합니다. 기존 화면 영역 공격 유효성은 유지합니다.
+- 플레이어도 같은 목표 횟수만큼 피격되면 패배합니다. Health가 10개에서 7개 남아 있어도 피격 3회면 종료합니다. Health가 먼저 0개가 되어도 패배합니다.
+- NPC 공격 한 번의 End 실패 확정에서 피격을 한 번만 집계하고 Health 재고 코인 1개를 차감합니다. 별도 StatContainer Health 능력치 점수는 변경하지 않습니다. 본 게임은 코인 표시/저장도 갱신하며 독립 테스트는 매 대련 Health 10개로 시작하고 실제 저장은 쓰지 않습니다.
+- 피격 순간 Walking_View RawImage 내부에 붉은 섬광을 0.2초 표시합니다. 최대 알파 0.28, 입력 Raycast는 차단하지 않습니다. 종료 시 제거하며 새 Inspector 설정이나 게이지 UI는 없습니다.
+- 방어 자세를 유지하는 것 자체는 피로도가 오르지 않습니다. 실제 방어 모션 + 칼날 접촉 성공 때만 45 증가하며, 가드 중에도 초당 3, 방어를 풀면 초당 20 회복합니다. 한 공격을 여러 프레임 검사해도 한 번만 증가합니다.
+- 피로도 100에서 방어 파괴: 2초간 방어 불가, 손 이동 속도 50%. 시간이 지나면 속도 복원 후 오른버튼을 놓았다가 다시 눌러 방어합니다. 방어를 해제해도 피로도는 즉시 초기화되지 않으며 대련 종료/새 대련에서만 초기화합니다.
+- 승패 확정 즉시 추가 공격/피격/코인 차감을 막습니다. 마지막 기사 피격 모션이 끝난 뒤 생성물과 입력을 정리하고 결과 Story로 돌아갑니다. 기존 애니메이션과 초기 생성 위치, 플레이어 준비 회전/Z=-2.5는 유지합니다.
+- 실행 검증: 유효/무효 공격, 목표3 승리 및 목표4 변경, 실패 공격당 피격/코인 차감 1회, 마지막 Attacked 완료 후 Health7 상태 패배, Health0 조기 패배, 실제 칼날 접촉 방어와 피해 없음, 중복 피로도 없음, 가드 유지 비용0/두 회복 속도/한도 파괴/2초 복원/재입력, 종료 초기화를 확인했습니다. RawImage 섬광 표시 및 비차단/0.2초 소멸도 확인했습니다. Main부터 전체 조우 진행과 실제 저장 쓰기는 검증 과정에서 실행하지 않았습니다.
 
-## 제거한 부분
+## 플레이어 세로 베기 모션
 
-- NPC의 자동 공격 타이머/패턴, 예고 → 공격 → 튕김 상태 전환.
-- 기사 영역으로 손을 옮기는 공격 경로, 공격 중 칼날 위치·각도 자동 보정.
-- NPC 칼날의 접촉/피격/가드/패링 판정, 피해 이벤트.
-- 공격 경고 UI, 접촉 이펙트·소리·히트 스톱·NPC 반동 생성.
+- 왼버튼으로 NPC 영역의 2→3(좌상→좌하) 또는 1→4(우상→우하)를 드래그하고 놓으면 기존 `HandAnimController`의 `Slach_Attack` 상태/클립을 재생합니다. NPC 화면 배열은 우상/좌상/우하/좌하 순서이므로 각각 인덱스 1→3 / 0→2를 사용합니다. 다른 방향이나 찌르기에는 이 세로 클립을 적용하지 않습니다.
+- 두 세로 구역의 시작/끝 조건을 이동 거리보다 먼저 판정합니다. 이전에는 경계 근처의 2px 드래그도 2→3이지만 최소 베기 거리(45px)에 못 미쳐 찌르기/피격만 발생했습니다. 현재는 짧거나 긴 2→3 / 1→4 입력 모두 버튼을 놓을 때만 원본 클립을 재생하고 피격을 한 번 집계합니다. Console의 `[Duel] 플레이어 세로 베기 2→3 — Slach_Attack 재생`으로 모션 시작도 확인할 수 있습니다. 다른 제스처의 거리/쿨다운 규칙은 유지합니다.
+- 사용자 제작 클립의 Position/Rotation 곡선은 수정하지 않고 모델 자식 Animator에서 그대로 재생합니다. 부모 생성 위치/준비 회전/Z=-2.5는 유지합니다. 원본 Controller와 클립을 편집하거나 새 Inspector 옵션을 추가하지 않습니다.
+- 클립 종료 후 기본 `Duel_Idle`로 복귀합니다. 재생 중 같은 공격은 중복 접수하지 않지만 오른클릭 방어로 전환할 수 있습니다. 손 놓기/대련 정리 시 공격 상태도 해제하며, 승리를 확정한 마지막 베기는 끝까지 보여준 뒤 종료합니다. 피격 횟수는 기존 유효 제스처 시점에서 집계합니다.
+- Play 검증: 두 세로 영역 입력의 실제 상태/클립 재생, 원본 위치 곡선 동작과 부모 배치 유지, 중복 입력 없음, 실제 Update에서 종료/Idle 복귀, 다른 방향·찌르기·영역 밖 구분, 방어 전환·손 놓기·마지막 승리 베기 후 정리를 확인했습니다.
+- 짧은 드래그 회귀 검증은 Play에서 실제 입력 처리 함수에 누름/유지/놓음과 구역 좌표를 전달하여 수행했습니다. 두 열의 2px/중심 간 긴 드래그 모두 원본 상태·클립 재생/피격1회/Idle 복귀를 확인했습니다. 네이티브 마우스 입력을 통한 사람의 조작 확인과는 구분합니다.
 
-## 직접 확인하기
+## 플레이어 방어 규칙
 
-1. DecisionScene에서 Play → Duel을 누릅니다.
-2. 플레이어 손을 클릭하면 NPC가 기존 궤적을 따라 이동합니다. Wait For Player Capture가 켜져 있으면 손을 잡기 전에는 대기합니다.
-3. NPC는 자동으로 기사 영역에 공격하거나 피해를 주지 않습니다.
-4. 원본 클립을 확인하려면 Hierarchy의 DuelMiniGame을 선택하고 Npc Duel State Machine 컴포넌트 우측 ⋮ 메뉴에서 아래 명령을 실행합니다(Play 전용).
-   - Preview Original Slash (Play Mode): 원본 베기 자세 미리보기.
-   - Preview Original Thrust (Play Mode): 원본 찌르기 자세 미리보기.
-5. 미리보기 중에도 기존 궤적은 유지합니다. 클립 종료 이벤트 또는 Animation Timeout 후 Idle로 돌아옵니다. 이 과정에 공격/방어 판정은 없습니다.
-6. Escape는 손 조작을 해제합니다. 종료는 Play 중지 또는 DuelMiniGameBridge.CleanupDuel()입니다.
+- 손을 잡은 뒤 오른버튼을 유지하여 실제 `GuardHold` 방어 클립이 재생되는 중이어야 합니다. 논리 방어 상태만 있거나, 클립 없이 임시 가드 자세만 잡은 경우에는 성공하지 않습니다. 기존 Parry 모션은 실제 클립과 BeginParry~EndParry 구간도 만족해야 합니다. 오른클릭 직후라는 이유만으로 가드를 자동 패링으로 분류하지 않습니다.
+- NPC의 `BeginAttackHit`~`EndAttackHit` 사이에 **Sword에 있는 칼날 전용 BoxCollider끼리 3D 공간에서 겹쳐야** 성공합니다. 손 클릭 박스/손잡이/화면 좌표/공격 영역 포함 여부/과거 잔상은 성공 조건이 아닙니다. 화면에서 겹쳐도 Z가 떨어져 있으면 실패합니다.
+- `Physics.ComputePenetration`에 양쪽 검의 위치/회전을 직접 전달하고, 이전 프레임→현재 프레임의 두 검을 같은 시간으로 보간하여 빠른 이동도 검사합니다. Begin~End 밖의 구간은 제외하며 새로운 방어 입력을 이전 프레임으로 소급하지 않습니다. Rigidbody/PhysX callback/전역 Physics 설정은 변경하지 않습니다.
+- 성공 순간 실제 3D 접점에 `VFX_Classic_03` 프리팹을 재생하고 `방어 성공: 2, 3 구역 방어 성공`처럼 선택한 공격 구역을 한 번만 출력합니다. 기사 피격은 발생하지 않습니다. NPC 원본 공격 모션과 복귀는 유지합니다.
+- End까지 성공하지 못하면 `방어 실패: 2, 3 구역 — 플레이어 피격`을 한 번 출력하고 기사 `HumanArmature_Attacked`를 재생합니다. 구간 후반까지 방어를 허용하기 위해 조기 자동 피격 대신 End에서 실패를 확정합니다. 원본 Slash/Thrust 미리보기는 방어/피격 결과를 발생시키지 않습니다.
+- 효과는 `NpcDuelStateMachine`의 `Block Impact Prefab`에 연결합니다. DecisionScene은 `Assets/UnityAssets/VFXPACK_IMPACT_WALLCOEUR_FreeVersion/00_Prefab/0_Classic/VFX_Classic_03.prefab`을 사용합니다. 원본 크기/색/방출 설정은 유지하며 모든 자식 파티클이 끝나면 자동 소멸하고 StopDuel/모드 전환에서도 정리합니다. 효과 참조 외 새 조절 옵션은 없으며 애니메이션/생성 위치/플레이어 Z=-2.5는 변경하지 않았습니다.
+- VFX 교체 Play 확인: 실제 3D 접촉을 만드는 테스트에서 방어 성공 로그 1회, 피격 없음, 선택 프리팹의 4개 파티클 재생 및 자동 정리. 동일 접촉의 무방어 테스트는 실패 로그/피격 1회, 효과 없음. StopDuel의 재생 중 효과 정리도 확인했습니다. 테스트용 위치 변경은 런타임에만 적용하고 저장하지 않았습니다.
+- Play 확인: 방어 모션+접촉 성공(피격 없음/파티클/로그 1회), 무방어 접촉 실패, 방어 상태지만 Idle 모션이면 실패, Z 분리 실패, Begin 전/End 후 접촉 실패, End 직전 약 0.979초 성공, Z=-2.5 고정 성공. 현재 원본 Begin/End는 약 0.3333/1.0167초이며 실패 피격은 End 이후 약 1.017~1.029초에 한 번 발생했습니다. 양 끝 프레임은 비접촉이지만 중간 프레임은 접촉인 3D sweep도 확인했습니다.
 
-## 수정할 코드
+## 복제 기사 피격 모션
 
-대련 스크립트는 모두 `Assets/Decision_YYS/Scripts/Controller/Decision/Duel/`에 있습니다.
+- `NpcDuelStateMachine → Knight Hit Reaction`은 방어 실패가 확정된 뒤 `HumanArmature_Attacked` State를 공격당 한 번 재생합니다. 영역 선택/준비/Begin만으로 재생하지 않으며 성공한 공격은 피격을 건너뜁니다.
+- 이전 임시 자동 피격 옵션 `Play Knight Hit On Attack`/`Knight Hit Progress`는 새 방어 판정과 충돌하므로 제거했습니다. 피격 시점은 End에서의 실패 확정이며 새 Inspector 옵션은 추가하지 않았습니다.
+- 생성 때 꺼 둔 복제 기사 Animator만 재생 중 잠시 켭니다. 원본 기사/프리팹/클립/Controller와 생성 위치는 수정하지 않습니다.
+- `Knight Attacked State`: 클립이 연결된 Animator State 이름입니다. 현재 `HumanArmature_Attacked`. `Knight Hit Timeout`: 종료가 누락된 경우 복구할 최대 시간입니다.
+- 피격 모션이 한 번 끝나면 Animator를 다시 끄고 재생 전 각 Transform 자세를 복원합니다. 기본 Idle로 강제로 전환하지 않아 사용자가 배치한 준비 자세·루트 위치·크기를 유지합니다. Escape로 손을 놓으면 NPC와 피격 모션 모두 대기하고, 종료/모드 전환에서도 복원합니다.
+- `ReceiveNpcHit()`는 방어 실패 확정에서 호출하며 성공한 공격에는 재생하지 않습니다. 원본 Slash/Thrust 미리보기에는 피격이 없습니다.
+- 기존 피격 복구 검증에서는 실제 클립/뼈 동작, 루트 위치·크기 유지, 모션 후 자세 복원 및 StopDuel 정리를 확인했습니다. 현재 방어 성공/실패/실제 모션 조건/구간 제한 확인 결과는 위 방어 규칙을 참고하세요.
 
-- NpcDuelStateMachine.cs: 궤적과 보드 높이 제한, 원본 클립 미리보기. 부모 회전은 변경하지 않습니다.
-- DuelAnimationEvents.cs: 플레이어/NPC 공용 이벤트 수신기. NPC의 BeginAttackHit/EndAttackHit는 잔상만, FinishAttack/FinishBlocked는 미리보기 종료만 처리합니다. 플레이어 BeginParry/EndParry/FinishParry도 이 파일이 받습니다.
-- PlayerDuelAction.cs: 기존 마우스 공격 입력과 PlayerDuelDefense의 방어 자세/클립/이벤트를 한 컴포넌트로 통합했습니다.
-- DuelBladeHitbox.cs: 칼날 마커·잔상과 재사용 가능한 화면 계산 유틸리티. 현재 NPC는 접촉 검사 함수를 호출하지 않습니다.
+## 현재 테스트: 사진의 배치에서 원본 세로 공격 하나
 
-두 테스트 모드와 통합 참조 구성은 [MiniGameIntegration.md](MiniGameIntegration.md)를 참고하세요.
+- `_Systems/DuelMiniGame`의 `NpcDuelStateMachine → Vertical Attack Pose`를 `NpcVerticalAttackPose`에 연결했습니다. 이 Transform의 **월드 Position/Rotation**을 조절하면 공격 준비 배치가 바뀝니다.
+- 공격 사진 기준 Position `(-3.37, -5.69, -1.65)`, Rotation `(7.965, 92.381, -86.854)`, Scale `(1, 1, 1)`입니다. 생성 참조 `NpcHandRoot`와 별개입니다. 최초 생성은 기존의 눕힌 배치 Position `(-5.36, -7.72, -2.93)`, Rotation `(-73.519, -189.13, -21.028)`를 사용합니다. 공격 사진 배치를 생성에 적용하지 않습니다.
+- Duel → 손 잡기 → 기존 궤적 이동 → 부모를 공격 배치로 이동/회전 → 자식 Animator의 `Slash` 상태(`Duel_NpcSlash`) 재생 → 궤적 복귀입니다. `Attack Interval`은 궤적 이동 시간, `Telegraph Seconds`는 준비 배치로 이동하는 시간입니다.
+- 현재 `Vertical Pattern`은 **Left_2To3 하나**입니다. 오른쪽 공격 배치는 아직 따로 만들지 않았으므로 Right를 추가해도 같은 배치에서 재생됩니다. 영역 로그는 선택한 공격 방향이며 실제 접촉/영역 통과 검증을 뜻하지 않습니다.
+- 지정 자세 공격 중에는 기존 `ApplyVerticalBladePosition`, 자동 검 회전, 보드 높이 보정을 적용하지 않습니다. 부모는 고정되고 자식의 Position/Rotation/손가락 곡선은 원본 클립대로 움직입니다. `Vertical Attack Depth Offset`과 `Vertical Blade Angles`는 자세 참조가 없을 때만 적용되는 이전 방식입니다.
+- 연결된 Editor Play에서 공격 50프레임을 확인했습니다. 생성/공격 부모 위치·회전 오차 0, 자식 원본 클립 대비 위치 오차 약 0.0000012 유닛/회전 오차 0, 로그 1회, 궤적 복귀를 확인했습니다. 클립과 컨트롤러 SHA256도 변경 전후 동일합니다. 작업 전 씬/코드 백업: `UserSettings/NpcAttackPoseBackups/20261004_172539/`.
 
-베기·찌르기 클립의 이전 백업은 UserSettings/NpcAttackClipBackups/20261004-025158에 있습니다. 이번 통합에서는 새 NPC 공격 클립을 만들거나 Animator Controller를 교체하지 않았습니다. Unity의 재직렬화로 파일 해시는 달라질 수 있으므로 해시 동일 여부만으로 모션 변경을 판단하지 마세요.
+아래의 화면 영역 강제 보정 설명/좌우 공격 확인 기록은 **Vertical Attack Pose가 없을 때 사용하는 이전 방식**입니다. 현재 씬에서는 위의 지정 자세 방식으로 재생합니다.
 
-Unity CLI로 컴파일과 실제 생성된 손의 궤적 진행, 고정 Z/부모 회전 유지, 원본 Slash/Thrust 재생 및 종료 이벤트를 검사했습니다. 자동 공격 상태·NPC 피해 이벤트·각도 보정·공격 경고 생성은 없습니다. 임시 검사 스크립트는 정리했고 Play는 종료했습니다.
+## NPC 생성 자세 / 궤적 이동 자세 분리
 
-Play 중 Inspector 수정은 종료 시 되돌아갑니다. 유지할 궤적 값은 Edit 모드에서 바꿔 씬을 저장하세요.
+`_Systems/DuelMiniGame`의 `DuelAuthoringReferences`에서 두 참조를 조절합니다.
+
+- **Npc Hand Start Pose** → 씬 루트 `NpcHandRoot`. 기존 생성 사진의 월드 Position `(-5.36, -7.72, -2.93)`, Rotation `(-73.519, -189.13, -21.028)`, Scale `(1, 1, 1)`로 복구했습니다. Duel 시작 시 이 배치를 복사하고, 손을 잡기 전에는 Z/높이/방향 보정을 적용하지 않습니다. 공격 위치만 바꾸려면 별도 `NpcVerticalAttackPose`를 조절하세요. 원본은 Play에서만 숨깁니다.
+- **Npc Hand Patrol Pose** → `JourneyGridBoard/DuelAuthoring_World/NpcHandSpawnPoint/NpcHandPatrolPose`. 부모 기준 로컬 Position `(4.168324, 0.971146, -2.0408)`, Rotation `(2.124, -83.018, -89.391)`, Scale `(1, 1, 1)`입니다. 메시 없는 배치용 Transform입니다.
+- **화면 궤적:** `NpcDuelStateMachine → Screen Path`의 9개 점으로 화면 X/Y 위치를 직접 조절합니다. 왼쪽 위 → 기사 머리 위의 최저점 → 오른쪽 위 U자입니다. `NpcHandPatrolPose`의 X/Y를 더하지 않으며, 이 참조는 월드 Z 깊이와 이동 중 부모 회전을 제공합니다. 두 번째 사진의 로컬 배치 값은 보존하지만 화면 곡선의 X/Y 기준으로 사용하지 않습니다.
+- **월드 궤적:** `Path Points`를 2개 이상 연결했을 때만 `NpcHandPatrolPose` 위치에 곡선 최저점을 맞춰 평행 이동합니다. 이 경우 Screen Path는 사용하지 않습니다.
+- 이 참조를 연결한 경우 `Path Back Offset Z`와 자동 Upright/Facing/Palm Tilt는 이동 자세를 덮어쓰지 않습니다. 공격은 별도 `Vertical Attack Pose`에서 원본 클립으로 재생하고, 끝나면 지정한 궤적/이동 자세로 복귀합니다.
+- 런타임 손은 비균일 보드 스케일로 검이 찌그러지지 않도록 시스템 아래에서 월드 배치로 동작합니다. 따라서 생성된 손의 Inspector 좌표가 배치용 Transform의 **로컬 좌표와 다른 것**은 정상입니다. Inspector 회전이 0~360도로 표시되어도 음수 각도와 같은 회전입니다.
+- 사용자가 만든 Animator/클립/이벤트 및 플레이어 손 배치는 변경하지 않습니다. 손을 다시 놓고 잡아도 생성 자세로 재설정하지 않으며, Duel을 다시 시작할 때만 처음 자세로 돌아갑니다.
+
+연결된 Editor Play 확인: 최초 위치/회전 오차 0, 화면 곡선과 실제 이동 부모 위치 오차 0, 이동 중 회전 오차 0(184개 Patrol 샘플). 사용자 711×400 그림 기준 곡선의 왼쪽 끝 약 `(36,73)`, 최저 기준점 `(236,269)`, 오른쪽 끝 `(410,56)`입니다. 사용자 클립/컨트롤러 파일은 변경하지 않았습니다. 기존 자세 변경 백업은 `UserSettings/NpcPoseBackups/20261004_160842/`, 이번 궤적 변경 전 씬/코드는 `UserSettings/NpcPathBackups/20261004_162728/`에 보관했습니다.
+
+## 기사 주변 영역 번호
+
+화면에서 우상단부터 반시계입니다. 기존 NPC 쪽 제스처 영역의 배열 순서는 변경하지 않았습니다.
+
+```text
+  2 (좌상) | 1 (우상)
+ ----------+----------
+  3 (좌하) | 4 (우하)
+```
+
+- 세로 왼쪽: 2→3. 세로 오른쪽: 1→4. 기본 패턴은 두 방향을 번갈아 반복합니다.
+- `DrawGizmoAreas.GetKnightRegion(number)`는 사용자 번호 1~4입니다.
+- `GetKnightUiArea(index)`는 0부터 시작하는 배열이므로 0=1, 1=2, 2=3, 3=4입니다.
+- 기즈모는 기존 Show Gizmos로 켜고 끕니다. 표시를 꺼도 영역 계산/공격은 유지합니다. 별도 게임 UI를 생성하지 않습니다.
+
+## 실행 / 수정할 Inspector
+
+1. DecisionScene 직접 Play → 상단 Duel → 플레이어 손을 클릭해 잡습니다.
+2. `_Systems/DuelMiniGame`의 `NpcDuelStateMachine`에서 **Vertical Slash — test mode only**를 조절합니다.
+3. **Enable Vertical Attacks**를 끄면 자동 세로 공격을 멈추고 기존 궤적 이동만 합니다.
+4. **Vertical Pattern**: `Left_2To3`, `Right_1To4`를 원하는 순서로 넣습니다. 비우면 공격하지 않습니다.
+5. **Attack Interval**: 공격 사이 궤적 이동 시간. **Telegraph Seconds**: 위쪽 시작 영역으로 검을 준비하는 시간.
+6. **Vertical Attack Depth Offset**: 공격 중 기사 영역 평면 뒤쪽 깊이. 대기 궤적의 Path Back Offset Z와 별개입니다. 공격이 끝나면 기존 궤적 Z로 복귀합니다.
+7. **Vertical Blade Angles**: 부모 손을 보정하는 준비/완료 각도. 카메라 정면=0°, 음수=위로 들기, 양수=내려 베기. 기본 -45→80°. 자식 클립의 손가락/손목/롤은 유지하며 칼날 방향을 화면 수직면에 맞춥니다.
+8. **Log Attacks**: 베기 시작 때 아래 로그를 한 번 출력합니다. 피해/접촉 성공을 의미하지 않습니다.
+
+```text
+NPC: 2, 3 영역을 베는 세로 공격 (2→3)
+NPC: 1, 4 영역을 베는 세로 공격 (1→4)
+```
+
+Escape는 마우스 손 조작을 해제하고, Wait For Player Capture가 켜져 있으면 NPC도 대기합니다. 다시 손을 잡으면 이어집니다. 도박 전환/StopTest/Play 종료는 기존 생성물과 입력을 정리합니다. 영구 설정은 Edit에서 바꾸고 씬을 저장하세요.
+
+## 코드 / 애니메이션 이벤트 흐름
+
+폴더: `Assets/Decision_YYS/Scripts/Controller/Decision/Duel/`
+
+- `DrawGizmoAreas.cs`: 복제 기사의 Knight_Center 기준 네 월드 수직(X/Y) 영역을 계산합니다. 플레이어 영역은 회전 `(0,0,0)`으로 고정해 카메라 기울기를 따라가지 않습니다. 화면 범위는 표시되는 면의 네 꼭짓점을 투영해 계산합니다. 복제품이 없으면 Knight Spawn Pose를 사용합니다. 위쪽 NPC 영역은 기존 카메라 정면 배치를 유지합니다.
+- `NpcDuelStateMachine.Update`: Return / Patrol / Telegraph / Attack 상태와 반복 패턴을 진행합니다.
+- `PrepareVerticalAttack`: 2→3 또는 1→4를 선택하고 현재 칼날 위치에서 준비를 시작합니다.
+- `StartVerticalAttack`: 기존 Slash State를 재생하고 실제 재생 클립의 이벤트 시간을 읽습니다.
+- `ApplyVerticalBladePosition`: Animator 평가 뒤 LateUpdate에서 칼날 중심을 위→아래 영역 중심으로 이동합니다. 손잡이 좌표가 아닙니다. 부모만 보정하며 손 메시의 보드 높이 제한도 유지합니다.
+- `DuelAnimationEvents`: 생성된 NPC Animator 자식에서 NpcDuelStateMachine으로 기존 이벤트를 전달합니다. Inspector 이벤트 목록에 Begin을 중복 등록할 필요가 없습니다.
+- `BeginAttackHit`: 베기 접촉 구간 시작 및 영역 로그. `EndAttackHit`: 종료 요청 후 LateUpdate의 마지막 접촉 검사와 실패 확정. `FinishAttack`: 마지막 결과 처리 후 Idle 재생 및 기존 궤적으로 복귀. 손을 잡은 동안 양쪽 칼날의 실시간 잔상은 이 이벤트와 별개로 유지됩니다.
+
+## Game 화면의 실시간 전체 칼날 궤적
+
+- `DuelBladeHitbox.SetLiveTrail`은 공격/방어 이벤트와 별개로 최근 이동 기록을 켭니다. NPC 컨트롤러가 Animator 평가 후 두 검의 실제 마커 위치를 기록합니다. `DuelBladeHitbox`는 이 기록의 BladeBase~BladeTip 전체 선분들을 이어 반투명 Mesh 면과 각 시점의 칼날 선을 표시합니다. 기존 TrailRenderer는 칼끝 경계선에만 사용합니다. Mesh는 런타임 생성/정리하며 프리팹이나 애니메이션 파일을 변경하지 않습니다.
+- 최초 생성 대기 중에는 상시 잔상을 켜지 않고, 손을 잡은 뒤 NPC 순찰/준비/공격과 플레이어 이동/방어에서도 표시합니다. NPC 원본 공격 미리보기에도 표시됩니다.
+- 기존 `Show Trail`, 색상, 유지 시간, 폭, 머티리얼을 재사용합니다. 기본 유지 시간은 0.3초이며 가만히 있으면 최근 잔상이 자연스럽게 사라집니다. 폭은 선 굵기이며 면은 실제 전체 칼날 길이를 사용합니다. 기본 런타임 머티리얼은 투명/양면/깊이 쓰기 꺼짐으로 배경을 가리지 않고 양쪽에서 보입니다. 새 Inspector 항목은 추가하지 않았습니다.
+- 잔상은 시각화뿐이며 공격/피격 판정을 추가하지 않습니다. 종료 시 양쪽 출력과 기록을 초기화합니다. Play 282샘플에서 전체 칼날 길이 반영 오차 약 0.0000031유닛, 플레이어 Z=-2.5 오차 0, 초기 생성 위치 오차 0, 기록 종료 후 면 사라짐과 대련 종료 후 Mesh 초기화를 확인했습니다. Game 화면에서도 파란색/주황색 전체 칼날 부채꼴 궤적과 칼날 선들을 확인했습니다. 정지/일시정지 중 같은 자세는 반복 기록하지 않아 기존 궤적을 덮어쓰지 않습니다.
+- 이벤트가 빠졌으면 Fallback Slash Window를 사용하고, 클립 완료 또는 Animation Timeout으로 복귀합니다. 기존 이벤트는 우선 사용합니다.
+- 원본 Slash/Thrust Context Menu 미리보기는 자동 공격을 잠시 중단하며 목표 영역 보정을 적용하지 않습니다.
+
+기존 플레이어 왼클릭 공격/오른클릭 방어 입력과 On Npc Hit 콜백은 유지합니다. NPC 베기 중 3D 칼날 접촉에 의한 방어 성공/실패는 위 방어 규칙을 따르며, 체력 수치 계산은 별도입니다.
+
+## 확인 결과
+
+연결된 Unity Editor에서 컴파일 오류 없이 실제 Play로 좌/우 공격 4회, 영역 1~4 칼날 중심 통과, 각 공격의 로그 1회, Escape 대기/재잡기, 원본 Thrust 미리보기 종료, 도박 모드 전환 정리를 확인했습니다. 공격 구간의 칼날 중심과 목표 경로를 화면 좌표로 비교했습니다. 임시 검사 스크립트는 테스트 후 제거합니다.
+
+전체 생성/참조 흐름은 [MiniGameIntegration.md](MiniGameIntegration.md)를 참고하세요.

@@ -13,10 +13,39 @@
       "text": "결투 교관: 지금은 기사 복제품을 생성하는 준비 단계까지만 확인한다. 대련 동작은 이 기사를 기준으로 새로 붙이면 돼."
     },
     {
-      "type": "End",
+      "type": "Choice",
       "isTransition": false,
       "background": "#D7E3F4",
-      "text": "결투 교관: 준비됐으면 어디 한번 덤벼 보라고."
+      "text": "결투 교관: 준비됐으면 어디 한번 덤벼 보라고.",
+      "options": [
+        "대련을 시작한다",
+        "방어 자세를 살핀다",
+        "설명을 먼저 듣는다",
+        "이번에는 지나간다"
+      ],
+      "statWeights": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "choiceActions": [
+        {
+          "action": "story",
+          "storyPath": "Initial/Initial_01/Encounters/duelist/Duel/Start"
+        },
+        {
+          "action": "story",
+          "storyPath": "Initial/Initial_01/Encounters/duelist/Duel/Start"
+        },
+        {
+          "action": "story",
+          "storyPath": "Initial/Initial_01/Encounters/duelist"
+        },
+        {
+          "action": "skip"
+        }
+      ]
     }
   ]
 }

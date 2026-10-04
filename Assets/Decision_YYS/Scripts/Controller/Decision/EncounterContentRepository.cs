@@ -4,26 +4,6 @@ using System.Text.RegularExpressions;
 using UnityEngine;
 
 [Serializable]
-public sealed class EncounterInteractionData
-{
-    public string displayName;
-    public string prompt;
-    public EncounterInteractionOption[] options;
-}
-
-[Serializable]
-public sealed class EncounterInteractionOption
-{
-    public string text;
-    // open: 이 오브젝트의 카드 표시, skip: 지나가기.
-    public string action;
-    public string[] requiresUnlocks;
-    public string[] grantsUnlocks;
-    public string relationshipId;
-    public int relationshipDelta;
-}
-
-[Serializable]
 public sealed class EncounterCardRoot
 {
     public List<EncounterCard> MainStory;
@@ -39,6 +19,12 @@ public sealed class EncounterCard
     public string[] options;
     public int[] statWeights;
     public string npcEmotion;
+    public StoryChoiceAction[] choiceActions;
+    public string startAction;
+    public int duelHitTarget;
+    public string winStoryPath;
+    public string loseStoryPath;
+    public string errorStoryPath;
 }
 
 /// <summary>지형의 connectStoryCards 경로에서 해당 오브젝트의 데이터만 읽습니다.</summary>
@@ -49,31 +35,6 @@ public sealed class EncounterContentRepository
     public EncounterContentRepository(int runNumber = 1)
     {
         this.runNumber = Math.Max(1, runNumber);
-    }
-
-    public bool TryLoadInteraction(string contentPath, out EncounterInteractionData data, out string error)
-    {
-        data = SaveIOService.Instance.LoadResourceData<EncounterInteractionData>(
-            contentPath + "/Interaction");
-
-        if (data?.options == null || data.options.Length != 4)
-        {
-            error = $"{contentPath}/Interaction에는 기어 네 방향의 options 4개가 필요합니다.";
-            return false;
-        }
-
-        foreach (EncounterInteractionOption option in data.options)
-        {
-            if (option == null || string.IsNullOrWhiteSpace(option.text) ||
-                !IsSupportedAction(option.action))
-            {
-                error = $"{contentPath}/Interaction의 text 또는 action이 올바르지 않습니다.";
-                return false;
-            }
-        }
-
-        error = null;
-        return true;
     }
 
     public bool TryLoadCards(string contentPath, out ScenarioData cards, out string error)
@@ -127,6 +88,13 @@ public sealed class EncounterContentRepository
                 return false;
             }
 
+            if (!ValidateActions(sourceCard, out string actionError))
+            {
+                error = $"{contentPath}/Story의 {index}번째 카드: {actionError}";
+                cards = null;
+                return false;
+            }
+
             // JSON은 오브젝트 폴더와 배열 순서로 식별합니다. 런타임 기록용 번호만 결정적으로 만듭니다.
             cards.MainStory.Add(new Dialogue
             {
@@ -137,7 +105,13 @@ public sealed class EncounterContentRepository
                 text = sourceCard.text,
                 options = sourceCard.options,
                 statWeights = sourceCard.statWeights,
-                npcEmotion = sourceCard.npcEmotion
+                npcEmotion = sourceCard.npcEmotion,
+                choiceActions = sourceCard.choiceActions,
+                startAction = sourceCard.startAction,
+                duelHitTarget = sourceCard.duelHitTarget,
+                winStoryPath = sourceCard.winStoryPath,
+                loseStoryPath = sourceCard.loseStoryPath,
+                errorStoryPath = sourceCard.errorStoryPath
             });
         }
 
@@ -145,9 +119,54 @@ public sealed class EncounterContentRepository
         return true;
     }
 
-    private static bool IsSupportedAction(string action) =>
-        action == "open" || action == "skip" || action == "duel" ||
-        action == "coin_heads" || action == "coin_tails";
+
+    private static bool StoryExists(string path) => !string.IsNullOrWhiteSpace(path) &&
+        Resources.Load<TextAsset>("Story_Json_Data/" + path + "/Story") != null;
+
+    private static bool ValidateActions(EncounterCard card, out string error)
+    {
+        if (card.duelHitTarget < 0)
+        {
+            error = "duelHitTarget은 양수이며, 생략/0이면 기본 3회입니다.";
+            return false;
+        }
+        if (card.choiceActions != null && card.choiceActions.Length > 0)
+        {
+            if (card.type != "Choice" || card.choiceActions.Length != 4)
+            {
+                error = "choiceActions는 Choice 카드에서 네 선택지와 순서를 맞춰야 합니다.";
+                return false;
+            }
+            foreach (StoryChoiceAction choice in card.choiceActions)
+            {
+                if (choice == null || (choice.action != "continue" && choice.action != "skip" &&
+                    choice.action != "story") || (choice.action == "story" && !StoryExists(choice.storyPath)))
+                {
+                    error = "선택 행동 또는 분기 Story 경로가 올바르지 않습니다.";
+                    return false;
+                }
+            }
+        }
+        if (!string.IsNullOrWhiteSpace(card.startAction) &&
+            (card.type != "Next" || (card.startAction != "duel" && card.startAction != "coin_heads" &&
+             card.startAction != "coin_tails") || !StoryExists(card.winStoryPath) ||
+             !StoryExists(card.loseStoryPath) || !StoryExists(card.errorStoryPath)))
+        {
+            error = "미니게임 시작 Next 카드의 행동/승리/패배/오류 Story 경로를 확인하세요.";
+            return false;
+        }
+        error = null;
+        return true;
+    }
+
+    private static bool ChoiceActionsEqual(StoryChoiceAction[] left, StoryChoiceAction[] right)
+    {
+        if (ReferenceEquals(left, right)) return true;
+        if (left == null || right == null || left.Length != right.Length) return false;
+        for (int index = 0; index < left.Length; index++)
+            if (JsonUtility.ToJson(left[index]) != JsonUtility.ToJson(right[index])) return false;
+        return true;
+    }
 
     private static bool TryApplyGeneratedText(
         EncounterCardRoot original,
@@ -176,6 +195,12 @@ public sealed class EncounterContentRepository
                 generatedCard.isTransition != originalCard.isTransition ||
                 generatedCard.background != originalCard.background ||
                 generatedCard.npcEmotion != originalCard.npcEmotion ||
+                generatedCard.startAction != originalCard.startAction ||
+                generatedCard.duelHitTarget != originalCard.duelHitTarget ||
+                generatedCard.winStoryPath != originalCard.winStoryPath ||
+                generatedCard.loseStoryPath != originalCard.loseStoryPath ||
+                generatedCard.errorStoryPath != originalCard.errorStoryPath ||
+                !ChoiceActionsEqual(generatedCard.choiceActions, originalCard.choiceActions) ||
                 !ArrayEquals(generatedCard.options, originalCard.options) ||
                 !ArrayEquals(generatedCard.statWeights, originalCard.statWeights))
             {

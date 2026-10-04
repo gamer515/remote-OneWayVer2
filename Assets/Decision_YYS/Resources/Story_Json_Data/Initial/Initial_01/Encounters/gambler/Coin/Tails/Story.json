@@ -1,0 +1,13 @@
+{
+  "MainStory": [
+    {
+      "type": "Next",
+      "isTransition": false,
+      "text": "뒷면을 선택했습니다. 금화가 멈출 때까지 기다리세요.",
+      "startAction": "coin_tails",
+      "winStoryPath": "Initial/Initial_01/Encounters/gambler/Coin/TailsWin",
+      "loseStoryPath": "Initial/Initial_01/Encounters/gambler/Coin/TailsLose",
+      "errorStoryPath": "Initial/Initial_01/Encounters/gambler/Coin/Error"
+    }
+  ]
+}

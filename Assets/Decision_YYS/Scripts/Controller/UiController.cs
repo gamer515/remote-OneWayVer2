@@ -13,6 +13,8 @@ public class UiController : MonoBehaviour
     [SerializeField] private ViewUi viewUi;
 
     public event Action<bool> OnPlayerViewChanged;
+    public void FlashPlayerHit() => viewUi?.FlashPlayerHit();
+    public void ClearPlayerHitFlash() => viewUi?.ClearPlayerHitFlash();
 
     public void ActiveOptionTextUi(bool isActive)
     {

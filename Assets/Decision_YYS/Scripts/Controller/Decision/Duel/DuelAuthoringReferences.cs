@@ -29,8 +29,12 @@ public sealed class DuelAuthoringReferences : MonoBehaviour
     [Tooltip("씬에 직접 배치한 NPC NpcHandRoot입니다. 연결하면 시작 자세를 그대로 복사합니다. 손을 잡기 전에는 기존 NPC Z 보정/궤적 이동보다 이 자세를 우선합니다.")]
     [SerializeField] private Transform npcHandStartPose;
 
+    [Header("NPC Patrol Pose (optional)")]
+    [Tooltip("화면 궤적의 깊이(월드 Z)와 이동 중 부모 회전입니다. 화면 궤적 X/Y는 NpcDuelStateMachine의 Screen Path에서 조절합니다. 직접 지정한 월드 Path Points를 사용할 때만 이 위치에 최저점을 맞춥니다. 연결 시 Path Back Offset Z와 자동 방향 보정 대신 사용하며 생성 대기 자세/자식 애니메이션은 변경하지 않습니다.")]
+    [SerializeField] private Transform npcHandPatrolPose;
+
     [Header("Player Grab Pose (optional)")]
-    [Tooltip("처음 손을 잡았을 때 검을 들어 올릴 월드 위치/회전/크기입니다. 시작 자세와 별개이며, 자식 Animator와 클립은 변경하지 않습니다. 씬의 HandRoot를 조절해 준비 자세를 만들 수 있습니다.")]
+    [Tooltip("처음 손을 잡았을 때 적용할 월드 위치/크기입니다. 비우면 현재 위치/크기를 유지합니다. 잡은 뒤 부모 기본 회전은 (0, -74, -90)으로 적용하며 자식 Animator와 클립은 변경하지 않습니다.")]
     [SerializeField] private Transform playerHandReadyPose;
 
     [Header("Screen-space Authoring Areas")]
@@ -52,6 +56,7 @@ public sealed class DuelAuthoringReferences : MonoBehaviour
     public GameObject SpawnedPlayerHand => spawnedPlayerHand;
     public GameObject SpawnedNpcHand => spawnedNpcHand;
     public bool HasNpcStartPose => npcHandStartPose != null;
+    public Transform NpcHandPatrolPose => npcHandPatrolPose;
 
     private void Awake() => HideScenePreviews();
 
@@ -83,8 +88,14 @@ public sealed class DuelAuthoringReferences : MonoBehaviour
         ApplyStartPose(spawnedNpcHand, npcHandStartPose);
     }
 
-    /// <summary>대련에서 처음 손을 잡을 때만 호출합니다. 이동 부모에 준비 자세를 적용합니다.</summary>
-    public void ApplyPlayerReadyPose() => ApplyStartPose(spawnedPlayerHand, playerHandReadyPose);
+    /// <summary>처음 손을 잡을 때 부모 기본 회전을 적용합니다. 선택적인 배치 참조가 없어도 회전은 적용하며 생성/자식 애니메이션은 건드리지 않습니다.</summary>
+    public void ApplyPlayerReadyPose()
+    {
+        if (spawnedPlayerHand == null) return;
+        ApplyStartPose(spawnedPlayerHand, playerHandReadyPose);
+        // 초기 생성은 눕힌 자세를 유지합니다. 잡기 회전은 선택 참조/자식 클립에 의존하지 않습니다.
+        spawnedPlayerHand.transform.rotation = Quaternion.Euler(0f, -74f, -90f);
+    }
 
     private void ApplyStartPose(GameObject instance, Transform pose)
     {
@@ -145,6 +156,7 @@ public sealed class DuelAuthoringReferences : MonoBehaviour
     {
         DrawAnchor(playerHandSpawnPoint, Color.cyan, 0.14f);
         DrawAnchor(npcHandSpawnPoint, new Color(1f, 0.35f, 0.2f), 0.14f);
+        DrawAnchor(npcHandPatrolPose, Color.yellow, 0.1f);
     }
 
     private static void DrawAnchor(Transform anchor, Color color, float radius)
