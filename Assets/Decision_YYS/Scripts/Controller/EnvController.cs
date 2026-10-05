@@ -158,8 +158,17 @@ public class EnvController : MonoBehaviour
             return false;
         }
 
-        foreach (ChapterInfo chapter in omnibus.chapters)
+        int playableChapterCount = omnibus.PlayableChapterCount;
+        if (playableChapterCount == 0)
         {
+            errorMessage = "Omnibus의 진행 가능한 챕터가 없거나 lastPlayableChapterId가 잘못되었습니다.";
+            return false;
+        }
+
+        // 개발 중 보류한 이후 챕터의 콘텐츠는 시작/검증 대상에서도 제외합니다.
+        for (int chapterIndex = 0; chapterIndex < playableChapterCount; chapterIndex++)
+        {
+            ChapterInfo chapter = omnibus.chapters[chapterIndex];
             if (chapter == null || string.IsNullOrWhiteSpace(chapter.chapterId) ||
                 chapter.episodeIds == null)
             {

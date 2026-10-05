@@ -18,6 +18,7 @@ public partial class DecisionManager : MonoBehaviour
     private DecisionPresentationController presentationController;
     private GameProgress loadedProgress;
     private readonly SceneTransitionService sceneTransitionService = new SceneTransitionService();
+    private DecisionRunCompletionService runCompletionService;
     private bool addedYellowInputFallback;
     private bool addedGearInputFallback;
     private OmnibusData currentOmnibus => session?.Omnibus;
@@ -57,6 +58,8 @@ public partial class DecisionManager : MonoBehaviour
     [SerializeField] private DuelMiniGameBridge duelMiniGame;
     private JourneyCoinSupplyController journeyCoinSupply;
     [Header("Player Movement")]
+    [Tooltip("NPC 등 만남 대상보다 진행 방향(Z축)으로 몇 유닛 앞에서 멈출지 조절합니다. 다음 이동 목표를 정할 때 적용됩니다.")]
+    [SerializeField, Range(0.5f, 10f)] private float encounterStopDistance = 4f;
     private DecisionPlayerController playerController;
 
     [SerializeField] private StatContainer statContainer;
@@ -119,12 +122,30 @@ public partial class DecisionManager : MonoBehaviour
         }
     }
 
-    private void Start()
+    private System.Collections.IEnumerator Start()
     {
         if (GameManager.Instance.CurrentState != GameState.Main)
-            return;
+            yield break;
+
+        // 메인에서 곧바로 재시작해도 다음 회차의 생성 지문이 준비되기 전에 읽지 않습니다.
+        if (AIAPIClient.IsGenerationInProgress)
+            yield return WaitForGeneratedStory();
 
         Initialize();
+    }
+
+    private System.Collections.IEnumerator WaitForGeneratedStory()
+    {
+        currentState = StoryState.Transitioning;
+        SetYellowInputInteractable(false);
+        journeyBoardInput?.SetInputEnabled(false);
+        Debug.Log("[Story] 다음 회차 이야기 생성이 끝나면 플레이를 시작합니다.", this);
+        while (AIAPIClient.IsGenerationInProgress)
+        {
+            yield return null;
+        }
+        // 전체 입력 잠금도 풀어야 이후 Initialize의 노란 버튼/기어 입력이 동작합니다.
+        journeyBoardInput?.SetInputEnabled(true);
     }
 
     private void Update()
@@ -303,7 +324,7 @@ private void SetYellowInputInteractable(bool interactable)
     {
         if (currentOmnibus?.chapters == null) return false;
 
-        int lastChapterIndex = Mathf.Min(chapterIndex, currentOmnibus.chapters.Count - 1);
+        int lastChapterIndex = Mathf.Min(chapterIndex, currentOmnibus.PlayableChapterCount - 1);
         for (int currentChapterIndex = 0;
              currentChapterIndex <= lastChapterIndex;
              currentChapterIndex++)
@@ -311,7 +332,7 @@ private void SetYellowInputInteractable(bool interactable)
             var chapter = currentOmnibus.chapters[currentChapterIndex];
             if (chapter?.episodeIds == null) return false;
 
-            int episodeCount = currentChapterIndex < lastChapterIndex
+            int episodeCount = currentChapterIndex < chapterIndex
                 ? chapter.episodeIds.Count
                 : Mathf.Min(episodeIndex + 1, chapter.episodeIds.Count);
 
@@ -342,19 +363,18 @@ private void SetYellowInputInteractable(bool interactable)
 
     private void LoadCurrentEpisode()
     {
+        // 진행 상한까지 플레이한 경우도 현재 테스트 회차의 정상 종료로 처리합니다.
+        if (currentOmnibus != null && currentOmnibus.IsProgressionLimited &&
+            chapterIndex >= currentOmnibus.PlayableChapterCount)
+        {
+            FinishRunAndReturnToMainMenu($"{currentOmnibus.lastPlayableChapterId}까지 진행 완료");
+            return;
+        }
+
         if (currentOmnibus?.chapters == null ||
             chapterIndex < 0 || chapterIndex >= currentOmnibus.chapters.Count)
         {
-            currentState = StoryState.Transitioning;
-
-            int completedRun = session?.RunNumber ?? 1;
-            saveService?.CompleteCurrentRun();
-            int nextRun = GameManager.Instance.PrepareNextPlaythrough();
-
-            Debug.Log(
-                $"[DecisionManager] {completedRun}회차의 마지막 에피소드가 종료되었습니다. " +
-                $"{nextRun}회차를 Initial부터 시작하도록 준비하고 메인 메뉴로 이동합니다.");
-            sceneTransitionService.LoadMainMenuScene();
+            FinishRunAndReturnToMainMenu("마지막 에피소드 완료");
             return;
         }
 
@@ -399,6 +419,24 @@ private void SetYellowInputInteractable(bool interactable)
 
         currentScenarioPath = mainStory.chapterId + "/" + mainStory.episodeIds[episodeIndex];
         StartEncounterEpisode();
+    }
+
+    private void FinishRunAndReturnToMainMenu(string reason)
+    {
+        currentState = StoryState.Transitioning;
+        encounterFlow = null;
+        SetYellowInputInteractable(false);
+        presentationController?.ExitChoice();
+        bettingButtonController?.SetBettingInteractable(false);
+        journeyBoardInput?.SetInputEnabled(false);
+        if (runCompletionService == null)
+            runCompletionService = new DecisionRunCompletionService(
+                () => saveService?.CompleteCurrentRun(),
+                () => GameManager.Instance.PrepareNextPlaythrough(),
+                () => sceneTransitionService.LoadMainMenuScene());
+        Debug.Log($"[Story] {session?.RunNumber ?? 1}회차 {reason}. " +
+            "다음 회차를 Initial부터 시작하도록 준비하고 메인 메뉴로 이동합니다.", this);
+        runCompletionService.Complete();
     }
 
     private void HandleTargetStatReached()

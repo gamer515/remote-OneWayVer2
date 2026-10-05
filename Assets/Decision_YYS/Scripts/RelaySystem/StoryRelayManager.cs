@@ -27,16 +27,21 @@ public class StoryRelayManager : MonoBehaviour
         int sourceRun,
         StoryInfluenceProfile fixedInfluence = null)
     {
+        StoryPacket packet = CreatePacket(trigger, currentFileName, history,
+            encounterHistory, bettingDecisions, stats, chapter, sourceRun, fixedInfluence);
+        if (packet != null) SendPacket(packet);
+    }
+
+    private StoryPacket CreatePacket(
+        StoryRelayTrigger trigger, string currentFileName, List<Dialogue> history,
+        List<PlayedEncounterCardRecord> encounterHistory,
+        List<BettingDecisionRecord> bettingDecisions, int[] stats, int chapter,
+        int sourceRun, StoryInfluenceProfile fixedInfluence)
+    {
         if (promptData == null)
         {
             Debug.LogError("StoryRelayManager에 PromptData가 연결되지 않았습니다.", this);
-            return;
-        }
-
-        if (chapter == (int)Constants.Chapter.Initial)
-        {
-            Debug.Log("[StoryRelay] Initial은 다음 회차 이야기 생성에서 제외합니다.", this);
-            return;
+            return null;
         }
 
         // 실제로 플레이한 Encounter 카드만 경로 및 카드 순번과 함께 전달합니다.
@@ -47,11 +52,11 @@ public class StoryRelayManager : MonoBehaviour
             : new List<PlayedEncounterCardRecord>();
         List<Dialogue> filtered = filteredEncounters.ConvertAll(record => record.card);
 
-        // Initial처럼 변경 대상으로 표시된 지문이 없는 구간은 AI 요청을 만들지 않습니다.
+        // Initial도 포함하되, 실제로 읽은 지문이 없을 때만 AI 요청을 생략합니다.
         if (filtered.Count == 0)
         {
             Debug.Log("[StoryRelay] 변경 대상 지문이 없어 AI 요청을 생략합니다.", this);
-            return;
+            return null;
         }
         
         List<BettingDecisionRecord> decisionSnapshot = bettingDecisions != null
@@ -76,13 +81,12 @@ public class StoryRelayManager : MonoBehaviour
             promptData.responseFormatTemplateV2);
         finalPrompt += BuildInfluenceInstruction(influence, statsSnapshot);
         
-        StoryPacket packet = new StoryPacket(
+        return new StoryPacket(
             currentFileName,
             finalPrompt,
             filtered,
             filteredEncounters,
             sourceRun);
-        SendPacket(packet);
     }
 
     public StoryInfluenceProfile CreateInfluenceProfile(

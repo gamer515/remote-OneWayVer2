@@ -127,6 +127,13 @@ public sealed class DuelMiniGameBridge : MonoBehaviour
 
     private static void RefreshTestHealthStack(int count)
     {
+        JourneyBoardReferences board = FindFirstObjectByType<JourneyBoardReferences>();
+        if (board != null && board.supplyStacks != null && board.supplyStacks.Length > 0 &&
+            board.supplyStacks[0] != null)
+        {
+            board.supplyStacks[0].SetCount(count);
+            return;
+        }
         foreach (JourneyCoinStack stack in FindObjectsByType<JourneyCoinStack>(FindObjectsSortMode.None))
             if (stack.name == "Supply_1") stack.SetCount(count);
     }
@@ -168,7 +175,7 @@ public sealed class DuelMiniGameBridge : MonoBehaviour
     {
         if (IsEnding && Time.time >= finishAt &&
             (GetComponent<PlayerDuelAction>() == null || !GetComponent<PlayerDuelAction>().IsAttacking) &&
-            (npcStateMachine == null || !npcStateMachine.IsKnightReacting)) Finish(finishWon);
+            (npcStateMachine == null || (!npcStateMachine.IsKnightReacting && !npcStateMachine.HasPendingHitEffects))) Finish(finishWon);
     }
 
     /// <summary>결과 처리 없이 생성물과 입력 연결만 정리합니다.</summary>

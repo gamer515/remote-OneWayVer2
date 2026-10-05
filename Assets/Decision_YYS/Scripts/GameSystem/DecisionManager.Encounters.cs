@@ -6,7 +6,6 @@ using static Constants;
 /// <summary>Initial_01의 진행은 지문 순서가 아닌 배치된 오브젝트가 결정합니다.</summary>
 public partial class DecisionManager
 {
-    private const float EncounterStopDistance = 1.5f;
     private EncounterFlowController encounterFlow;
     private EncounterContentRepository encounterContent;
     private EncounterFlowController.Encounter? pendingEncounter;
@@ -88,7 +87,7 @@ public partial class DecisionManager
         if (encounterFlow.TryFindFirst(startZ, endZ, resolvedPlaceIds, out var first))
         {
             pendingEncounter = first;
-            endZ = first.WorldPosition.z - EncounterStopDistance;
+            endZ = first.WorldPosition.z - encounterStopDistance;
         }
         currentState = StoryState.MovingToEncounter;
         SetYellowInputInteractable(false);

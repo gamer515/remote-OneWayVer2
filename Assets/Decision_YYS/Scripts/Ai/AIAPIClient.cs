@@ -33,6 +33,8 @@ public class AIAPIClient : MonoBehaviour
 
     // 문제 1(Race Condition) 방어용 플래그
     public bool isAiProcessing { get; private set; } = false;
+    // 조회만으로 새 클라이언트나 API 요청을 만들지 않습니다.
+    public static bool IsGenerationInProgress => _instance != null && _instance.isAiProcessing;
     private readonly Queue<StoryPacket> pendingPackets = new Queue<StoryPacket>();
     private readonly HashSet<string> queuedPacketKeys = new HashSet<string>();
 
@@ -96,6 +98,14 @@ public class AIAPIClient : MonoBehaviour
 
     private IEnumerator CommunicateWithGeminiRoutine(StoryPacket packet)
     {
+        if (string.IsNullOrWhiteSpace(apiKey) || apiKey == "YOUR_API_KEY")
+        {
+            const string error = "AIAPIClient의 API Key가 설정되지 않았습니다.";
+            Debug.LogWarning($"[AI SYSTEM] {error} 원본 이야기를 유지합니다.");
+            UpdateGenerationStatus(packet, ContentGenerationStatus.Failed, error);
+            yield break;
+        }
+
         // 1. 요청 페이로드 세팅 (JSON 형태로 응답을 강제함)
         GeminiRequest requestData = new GeminiRequest
         {
@@ -107,6 +117,7 @@ public class AIAPIClient : MonoBehaviour
 
         using (UnityWebRequest request = new UnityWebRequest(apiUrl + apiKey, "POST"))
         {
+            request.timeout = 60;
             byte[] bodyRaw = Encoding.UTF8.GetBytes(jsonPayload);
             request.uploadHandler = new UploadHandlerRaw(bodyRaw);
             request.downloadHandler = new DownloadHandlerBuffer();

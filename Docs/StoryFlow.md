@@ -1,5 +1,17 @@
 # Story 지문과 분기 수정
 
+## 임시 챕터 진행 상한
+
+`Omnibus_01.json`의 `"lastPlayableChapterId": "Initial"`로 현재 플레이를 Initial까지 제한한다. chapters 목록 및 Chapter_1/Chapter_2의 모든 JSON/에셋은 그대로 보존한다. Initial_01은 groundIds 한 개와 chunkCount 1로 한 청크만 사용하며 NPC 3명과 Story 연결은 유지한다. Initial의 마지막 에피소드 완료 후 다음 챕터를 로딩하지 않고 현재 회차 완료 저장 → 다음 회차 준비 → MainMenuScene 이동으로 종료한다. 중복 종료 호출은 새 회차를 추가 생성하지 않는다.
+
+완료된 이전 회차 기록은 보존하고 다음 회차는 Initial부터 시작한다. 이후 전체 진행을 다시 허용하려면 lastPlayableChapterId를 빈 문자열로 바꾸거나 필드를 제거한다. 특정 챕터까지 열려면 해당 chapterId를 지정한다. 제한 이후 콘텐츠는 초기 검증 및 지형 등록 대상에서도 제외된다.
+
+Initial도 기존 AI 이야기 변경 대상으로 포함한다. 챕터 완료 시 실제로 읽은 Encounter 카드만 다음 회차용 요청에 포함한다. 원본 JSON은 변경하지 않고 기존 GeneratedContent/For_Run_XXXX/Encounters 경로에 결과를 저장한다. 문장 text만 변경할 수 있으며 카드 순서·선택지·분기·미니게임 규칙 및 { } 핵심 문자열은 기존 검증으로 보호한다. AIAPIClient는 메인 이동 후에도 요청을 처리한다. 생성 중 곧바로 재시작하면 DecisionScene 초기화를 보류하고 완료 후 지문을 읽는다. API 요청은 60초 제한이며 실패하면 원본 이야기로 진행한다. API 키와 기존 PromptData 연결은 필요하다.
+
+Unity 컴파일 오류 0개. `AgentScripts/InitialChapterLimitCheck.cs`의 진행 상한과 완료 순서/중복 방지, Initial 요청 생성, 응답 검증, 생성 지문 적용, 생성 대기 후 입력 잠금 해제 검사가 통과했다. 실제 저장·씬 이동·API 호출 없이 메모리에서 검사했다. Main부터 Initial 전체를 끝내는 수동 Play와 실제 외부 API 결과 확인은 별도 항목이다.
+
+읽기 전용 DecisionScene 미리보기 검사에서 StoryRelayManager의 PromptData 연결 및 루트 오브젝트 TempAiM의 AIAPIClient를 확인했다. 현재 API Key는 미설정이므로 실제 자동 문장 변경은 기존 AIAPIClient의 API Key를 연결한 뒤 확인해야 한다. 키 미설정 시 외부 요청 없이 Failed 상태를 기록하고 원본 이야기로 진행한다. 검사 중 씬을 저장하거나 API 키 값을 출력하지 않았다.
+
 본 게임의 NPC/장소 지문은 모두 `Assets/Decision_YYS/Resources/Story_Json_Data/` 아래의 `Story.json`으로 진행합니다. 도착하면 첫 카드를 바로 표시하며, 별도 Interaction 시작 나레이션은 없습니다. 기존 일반 대사와 Story 선택지는 유지했습니다.
 
 ## 지금 수정할 파일

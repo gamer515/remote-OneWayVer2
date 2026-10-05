@@ -67,7 +67,7 @@ public sealed class ChapterFlowController
         // Relay에는 초기화 전 스탯과 완료된 챕터 번호가 전달되어야 하므로 먼저 스냅샷을 만듭니다.
         int completedChapterIndex = session.ChapterIndex;
         int[] statsSnapshot = statContainer.stats;
-        if (relayManager != null && completedChapterIndex != (int)Constants.Chapter.Initial)
+        if (relayManager != null)
         {
             foreach (CompletedEpisodeRecord episode in session.CompletedEpisodes)
             {

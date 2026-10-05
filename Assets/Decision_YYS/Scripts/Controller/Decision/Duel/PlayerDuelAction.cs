@@ -133,14 +133,16 @@ public class PlayerDuelAction : MonoBehaviour
         }
         if (!tracking) return;
         largestDistance = Mathf.Max(largestDistance, Vector2.Distance(startPosition, mousePosition));
-        if (!released) return;
-        tracking = false;
-        npcStateMachine?.SetPlayerAttackTrail(false);
         int endArea = FindArea(mousePosition);
         // 명시적인 세로 구역 입력은 이동 거리와 무관하게 베기입니다.
         // 경계 가까이 2→3/1→4를 입력해도 짧은 클릭(찌르기)으로 분류하지 않습니다.
         // NPC 배열은 우상/좌상/우하/좌하 순서이므로 사용자 번호 2→3=1→3, 1→4=0→2입니다.
         bool verticalSlash = (startArea == 1 && endArea == 3) || (startArea == 0 && endArea == 2);
+        // 세로 베기는 버튼을 놓기 전에 다음 구역에 진입하는 순간 시작합니다.
+        // tracking을 소비하므로 계속 누르거나 나중에 놓아도 같은 드래그를 다시 공격으로 집계하지 않습니다.
+        if (!verticalSlash && !released) return;
+        tracking = false;
+        npcStateMachine?.SetPlayerAttackTrail(false);
         bool slash = verticalSlash || largestDistance >= minimumSlashDistance;
         bool thrust = largestDistance <= clickTolerance &&
             Time.time - startedAt <= maximumClickSeconds;
@@ -155,7 +157,13 @@ public class PlayerDuelAction : MonoBehaviour
                 Debug.Log($"[Duel] 플레이어 세로 베기 {(startArea == 1 ? "2→3" : "1→4")} — {SlashAttackState} 재생", this);
         }
         if (slash) onSlash.Invoke(startArea, endArea); else onThrust.Invoke(endArea);
-        npcStateMachine?.ReceivePlayerAttack(slash ? NpcDuelStateMachine.AttackKind.Slash :
+        if (verticalSlash && IsAttacking)
+        {
+            pendingSlashHit = true;
+            slashHitStartArea = startArea;
+            slashHitEndArea = endArea;
+        }
+        else npcStateMachine?.ReceivePlayerAttack(slash ? NpcDuelStateMachine.AttackKind.Slash :
             NpcDuelStateMachine.AttackKind.Thrust, startArea, endArea);
     }
 
@@ -223,6 +231,10 @@ public class PlayerDuelAction : MonoBehaviour
     private const string SlashAttackState = "Slach_Attack";
     private float attackStartedAt;
     private bool warnedSlashAttack;
+    private bool attackPositionOverride;
+    private Vector3 attackModelLocalPosition;
+    private bool pendingSlashHit;
+    private int slashHitStartArea, slashHitEndArea;
     public bool IsAttacking { get; private set; }
 
     private void PlaySlashAttack()
@@ -233,7 +245,11 @@ public class PlayerDuelAction : MonoBehaviour
             warnedSlashAttack = true;
             return;
         }
-        // 부모의 배치/회전은 유지하며 제작한 자식 클립의 Position/Rotation 곡선을 그대로 재생합니다.
+        // 클립 파일은 그대로 둡니다. 위치는 마우스로 움직이는 부모가 담당하고,
+        // 자식은 재생 직전 위치를 유지하며 원본 회전/손가락 모션만 표시합니다.
+        RestoreModelPosition();
+        attackModelLocalPosition = animator.transform.localPosition;
+        attackPositionOverride = true;
         guardPositionOverride = usingGuardMotion = false;
         IsAttacking = true;
         attackStartedAt = Time.time;
@@ -252,7 +268,22 @@ public class PlayerDuelAction : MonoBehaviour
         }
         var info = animator.GetCurrentAnimatorStateInfo(0);
         if ((info.IsName(SlashAttackState) && info.normalizedTime >= 1f) ||
-            Time.time - attackStartedAt >= animationTimeout) ReturnIdle();
+            Time.time - attackStartedAt >= animationTimeout)
+        {
+            // 한 프레임에 중간 타격 단계와 종료를 함께 지난 경우에도 타격을 누락하지 않습니다.
+            RestoreModelPosition();
+            ResolveSlashHit();
+            ReturnIdle();
+        }
+    }
+
+    private void ResolveSlashHit()
+    {
+        if (!pendingSlashHit || !IsAttacking || animator == null || mouseHand == null || !mouseHand.IsCaptured) return;
+        var info = animator.GetCurrentAnimatorStateInfo(0);
+        if (!info.IsName(SlashAttackState) || info.normalizedTime < 0.5f) return;
+        pendingSlashHit = false;
+        npcStateMachine?.ReceivePlayerAttack(NpcDuelStateMachine.AttackKind.Slash, slashHitStartArea, slashHitEndArea);
     }
 
     private void AdvanceDefenseFatigue(float deltaTime)
@@ -328,7 +359,8 @@ public class PlayerDuelAction : MonoBehaviour
         if (incoming == NpcDuelStateMachine.AttackKind.Thrust && state != DefenseState.Parry &&
             Time.time >= nextParryAt && HasMotion(parryState))
         {
-            if (guardPositionOverride) animator.transform.localPosition = modelRestLocalPosition;
+            if (guardPositionOverride || attackPositionOverride) animator.transform.localPosition = modelRestLocalPosition;
+            attackPositionOverride = false;
             guardPositionOverride = usingGuardMotion = false;
             parryWindow = false;
             state = DefenseState.Parry;
@@ -342,6 +374,7 @@ public class PlayerDuelAction : MonoBehaviour
     }
     private void StartGuardPose()
     {
+        attackPositionOverride = false;
         parryWindow = false;
         state = DefenseState.Guard;
         usingGuardMotion = HasMotion(guardHoldState);
@@ -407,19 +440,24 @@ public class PlayerDuelAction : MonoBehaviour
         if (state != DefenseState.Parry) return;
         if (guardHeld) StartGuardPose(); else ReturnIdle();
     }
-    private void LateUpdate() => RestoreGuardPosition();
-    private void RestoreGuardPosition()
+    private void LateUpdate()
     {
-        if (!guardPositionOverride || animator == null) return;
-        // 원본 Position 키는 수정하지 않습니다. 방어/Idle 복귀 블렌드 중 모델의 기준점만 고정합니다.
-        animator.transform.localPosition = modelRestLocalPosition;
-        if (state == DefenseState.Idle && !animator.IsInTransition(0) && animator.GetCurrentAnimatorStateInfo(0).IsName(idleState))
-            guardPositionOverride = false;
+        RestoreModelPosition();
+        ResolveSlashHit();
+    }
+    private void RestoreModelPosition()
+    {
+        if (animator == null || (!guardPositionOverride && !attackPositionOverride)) return;
+        // Animator 평가 뒤, 칼날 접촉/궤적 샘플링 전에도 같은 보정을 적용합니다.
+        // 원본 Position 키는 수정하지 않으며 Idle 복귀 블렌드까지 위치 밀림을 막습니다.
+        animator.transform.localPosition = attackPositionOverride ? attackModelLocalPosition : modelRestLocalPosition;
+        if (!IsAttacking && state == DefenseState.Idle && !animator.IsInTransition(0) && animator.GetCurrentAnimatorStateInfo(0).IsName(idleState))
+            guardPositionOverride = attackPositionOverride = false;
     }
     /// <summary>가드 클립이 있으면 위치 키 밀림만 방지하고 회전은 원본을 유지합니다. 클립이 없을 때만 부모 수평 보정을 사용합니다.</summary>
     public void ApplyGuardPose(Camera camera)
     {
-        RestoreGuardPosition();
+        RestoreModelPosition();
         if (state == DefenseState.Guard && guardHeld && usingGuardMotion)
         {
             if (mouseHand != null && mouseHand.ControlledHand != null)
@@ -449,11 +487,14 @@ public class PlayerDuelAction : MonoBehaviour
     }
     public void StopDefense()
     {
+        tracking = false;
+        nextAttackTime = 0f;
         DefenseFatigue = defenseBreakRemaining = 0f;
         needsDefenseRelease = false;
         mouseHand?.SetMovementSpeedMultiplier(1f);
         ReturnIdle();
-        if (guardPositionOverride && animator != null) animator.transform.localPosition = modelRestLocalPosition;
+        if ((guardPositionOverride || attackPositionOverride) && animator != null) animator.transform.localPosition = modelRestLocalPosition;
+        attackPositionOverride = false;
         guardPositionOverride = usingGuardMotion = false;
         if (animator != null && originalController != null) animator.runtimeAnimatorController = originalController;
         if (runtimeController != null) Destroy(runtimeController);
@@ -523,6 +564,8 @@ public class PlayerDuelAction : MonoBehaviour
     #endif
     private void ReturnIdle()
     {
+        // 중간 타격 전에 방어 전환/손 놓기/대련 종료로 취소되면 피해도 취소합니다.
+        pendingSlashHit = false;
         if (IsAttacking)
         {
             IsAttacking = false;

@@ -45,6 +45,11 @@ public sealed class JourneyCoinSupplyController
             coinContainer.SetParent(board.transform, true);
         }
 
+        if (board != null && board.supplyStacks != null && board.supplyStacks.Length == stacks.Length)
+        {
+            Array.Copy(board.supplyStacks, stacks, stacks.Length);
+            return;
+        }
         foreach (JourneyCoinStack stack in UnityEngine.Object.FindObjectsByType<JourneyCoinStack>(
             FindObjectsSortMode.None))
         {
@@ -93,8 +98,12 @@ public sealed class JourneyCoinSupplyController
         float nearestDistance = float.MaxValue;
         foreach (RaycastHit hit in hits)
         {
-            if (hit.collider.name != "Supply_Button" || hit.distance >= nearestDistance) continue;
-            JourneyCoinStack stack = hit.collider.GetComponentInParent<JourneyCoinStack>();
+            if (hit.distance >= nearestDistance) continue;
+            int boundIndex = board.supplyButtons != null
+                ? Array.IndexOf(board.supplyButtons, hit.collider) : -1;
+            if (boundIndex < 0 && hit.collider.name != "Supply_Button") continue;
+            JourneyCoinStack stack = boundIndex >= 0 && boundIndex < stacks.Length
+                ? stacks[boundIndex] : hit.collider.GetComponentInParent<JourneyCoinStack>();
             if (stack == null) continue;
             selected = stack;
             nearestDistance = hit.distance;
@@ -124,9 +133,11 @@ public sealed class JourneyCoinSupplyController
             return;
         }
 
-        // 경사로 윗부분에서 중력으로 내려가게 합니다. 보드까지의 실제 충돌 동작은 프리팹 Collider가 결정합니다.
-        Vector3 spawn = Vector3.Lerp(board.chuteEntry.position, board.chuteExit.position, 0.22f)
-            + Vector3.up * 0.18f;
+        // V3는 각 코인통 출구, 기존 보드는 왼쪽 경사로에서 배출합니다. 이후 이동은 물리로 처리합니다.
+        Vector3 spawn = board.supplySpawns != null && index < board.supplySpawns.Length &&
+            board.supplySpawns[index] != null ? board.supplySpawns[index].position :
+            Vector3.Lerp(board.chuteEntry.position, board.chuteExit.position, 0.22f)
+                + Vector3.up * 0.18f;
         GameObject coinObject = UnityEngine.Object.Instantiate(
             coinPrefabs[index], spawn, Quaternion.identity, coinContainer);
         coinObject.name = CoinNames[index];

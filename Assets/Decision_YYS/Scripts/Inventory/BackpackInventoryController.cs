@@ -14,9 +14,12 @@ public sealed class BackpackInventoryController : MonoBehaviour
 {
     private const string BackpackStateName = "BackpackOpen";
     private const string BackpackCloseStateName = "BackpackClose";
+    private const string LegacyBackpackOpen = "Backpack_OpenLid";
+    private const string LegacyBackpackClose = "Backpack_CloseLid";
 
     [Header("Backpack")]
     [SerializeField] private Animator backpackAnimator;
+    [SerializeField, HideInInspector] private Animation backpackAnimation;
     [SerializeField] private Collider backpackCollider;
     [SerializeField] private float animationDuration = 0.8333333f;
 
@@ -60,7 +63,7 @@ public sealed class BackpackInventoryController : MonoBehaviour
 
     private void Awake()
     {
-        if (backpackAnimator == null)
+        if (backpackAnimator == null && backpackAnimation == null)
             backpackAnimator = GetComponent<Animator>();
         if (backpackCollider == null)
             backpackCollider = GetComponent<Collider>();
@@ -350,7 +353,20 @@ public sealed class BackpackInventoryController : MonoBehaviour
         if (dragIconRoot != null)
             dragIconRoot.gameObject.SetActive(false);
 
-        if (backpackAnimator != null)
+        if (backpackAnimation != null)
+        {
+            backpackAnimation.Stop();
+            AnimationState closed = backpackAnimation[LegacyBackpackClose];
+            if (closed != null)
+            {
+                closed.enabled = true;
+                closed.weight = 1f;
+                closed.normalizedTime = 1f;
+                backpackAnimation.Sample();
+                closed.enabled = false;
+            }
+        }
+        else if (backpackAnimator != null)
         {
             backpackAnimator.speed = 0f;
             backpackAnimator.Play(BackpackStateName, 0, 0f);
@@ -360,18 +376,23 @@ public sealed class BackpackInventoryController : MonoBehaviour
 
     private void PlayBackpackForward()
     {
+        if (backpackAnimation != null) { backpackAnimation.Play(LegacyBackpackOpen); return; }
+        if (backpackAnimator == null) return;
         backpackAnimator.speed = 1f;
         backpackAnimator.Play(BackpackStateName, 0, 0f);
     }
 
     private void PlayBackpackClose()
     {
+        if (backpackAnimation != null) { backpackAnimation.Play(LegacyBackpackClose); return; }
+        if (backpackAnimator == null) return;
         backpackAnimator.speed = 1f;
         backpackAnimator.Play(BackpackCloseStateName, 0, 0f);
     }
 
     private void StopAnimator()
     {
+        if (backpackAnimation != null) backpackAnimation.Stop();
         if (backpackAnimator != null)
             backpackAnimator.speed = 0f;
     }

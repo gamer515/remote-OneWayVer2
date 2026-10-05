@@ -3,7 +3,7 @@ using UnityEngine.Events;
 
 /// <summary>
 /// [역할] 본 게임/테스트 공용 NPC 손의 궤적 → 준비 → 세로 베기(2→3 / 1→4) → 복귀를 담당합니다.
-/// [범위] 사용자 Slash 클립의 Begin~End 사이 3D 칼날 접촉 + 실제 방어 상태/모션이면 방어 성공, 실패하면 기사 피격입니다.
+/// [범위] 사용자 Slash 클립의 Begin~중간 타격까지 3D 칼날 접촉 + 실제 방어 모션이면 방어 성공, 실패하면 기사 피격입니다.
 /// Vertical Attack Pose가 연결되면 부모를 그 월드 배치로 이동하고, 공격 중 자식 원본 클립만 재생합니다.
 /// [유지] 손 생성 연결, 뒤쪽 Z 배치, 보드 높이 제한, Catmull-Rom 궤적, 원본 Animator/클립.
 /// 화면 궤적의 X/Y는 Screen Path로 정합니다. NPC Patrol Pose는 그 깊이와 이동 회전을 정합니다.
@@ -24,6 +24,9 @@ public class NpcDuelStateMachine : MonoBehaviour
     [SerializeField] private Camera movementCamera;
     [Tooltip("방어 성공 시 실제 칼날 접점에서 재생할 타격 효과 프리팹입니다. 모든 자식 파티클이 끝나면 정리합니다.")]
     [SerializeField] private GameObject blockImpactPrefab;
+    // 제작 요청으로 연결하는 고정 효과입니다. 추가 Inspector 조절 항목은 노출하지 않습니다.
+    [SerializeField, HideInInspector] private GameObject playerHitBloodPrefab;
+    [SerializeField, HideInInspector] private GameObject npcHitBloodPrefab;
     [Header("Patrol Path — preserved")]
     [Tooltip("2개 이상 지정하면 월드 포인트 곡선입니다. 이 경우 NPC Patrol Pose가 연결되면 최저점을 그 위치에 맞춰 평행 이동합니다. 비우면 Screen Path의 화면 위치를 그대로 사용합니다.")]
     [SerializeField] private Transform[] pathPoints = new Transform[0];
@@ -100,7 +103,8 @@ public class NpcDuelStateMachine : MonoBehaviour
     public void SuspendForRoundEnd()
     {
         offenseSuspended = true;
-        if (handAnimator != null) handAnimator.speed = 0f;
+        // 마지막 피격을 확정해도 이미 진행 중인 베기는 끝까지 보여줍니다.
+        if (handAnimator != null && state != DuelState.Attack) handAnimator.speed = 0f;
     }
     private Animator handAnimator;
     private DuelBladeHitbox npcBlade, playerBlade;
@@ -134,6 +138,12 @@ public class NpcDuelStateMachine : MonoBehaviour
     private bool knightAnimatorWasEnabled, knightRootMotionWasEnabled, knightHitPlaying, knightHitPlayed;
     private float knightAnimatorSpeed, knightHitElapsed;
     private KnightPose[] knightRestPose;
+    private const string KnightIdleState = "HumanArmature_New_Idle_swordRight";
+    private bool knightIdleAvailable;
+    private KnightPose knightRootPose;
+    private Collider knightHitBody;
+    private readonly System.Collections.Generic.List<GameObject> bloodEffects = new System.Collections.Generic.List<GameObject>();
+    public bool HasPendingHitEffects => bloodEffects.Exists(effect => effect != null && HasLivingParticles(effect));
     private struct KnightPose
     {
         public Transform target;
@@ -206,6 +216,8 @@ public class NpcDuelStateMachine : MonoBehaviour
         if (blockContactEffect != null) Destroy(blockContactEffect);
         blockContactEffect = null;
         blockContactParticles = null;
+        foreach (var effect in bloodEffects) if (effect != null) Destroy(effect);
+        bloodEffects.Clear();
         FinishKnightReaction();
         if (knightAnimator != null)
         {
@@ -214,6 +226,9 @@ public class NpcDuelStateMachine : MonoBehaviour
             knightAnimator.applyRootMotion = knightRootMotionWasEnabled;
         }
         knightAnimator = null; knightRestPose = null; knightHitPlayed = false;
+        knightIdleAvailable = false;
+        knightHitBody = null;
+        knightRootPose = default;
         if (handAnimator != null) handAnimator.speed = animatorPlaybackSpeed;
         npcBlade?.SetLiveTrail(false); playerBlade?.SetLiveTrail(false);
         npcBlade?.SetMotionActive(false); playerBlade?.SetMotionActive(false);
@@ -230,7 +245,12 @@ public class NpcDuelStateMachine : MonoBehaviour
     private void Update()
     {
         if (hand == null || state == DuelState.Stopped) return;
-        if (offenseSuspended) { UpdateKnightReaction(false); return; }
+        if (offenseSuspended)
+        {
+            UpdateKnightReaction(false);
+            if (handAnimator != null && state == DuelState.Attack && AttackClipTime >= slashLength) handAnimator.speed = 0f;
+            return;
+        }
         bool waiting = waitForPlayerCapture && (playerHand == null || !playerHand.IsCaptured) && !previewPlaying;
         UpdateKnightReaction(waiting);
         if (handAnimator != null) handAnimator.speed = waiting ? 0f : animatorPlaybackSpeed;
@@ -264,6 +284,13 @@ public class NpcDuelStateMachine : MonoBehaviour
     }
     private void LateUpdate()
     {
+        RestoreKnightRoot();
+        for (int i = bloodEffects.Count - 1; i >= 0; i--)
+            if (bloodEffects[i] == null || !HasLivingParticles(bloodEffects[i]))
+            {
+                if (bloodEffects[i] != null) Destroy(bloodEffects[i]);
+                bloodEffects.RemoveAt(i);
+            }
         // 검/손에 붙이지 않은 접점 효과입니다. 방어 종료나 입력 대기 중에도 수명을 정리합니다.
         if (blockContactEffect != null && blockContactParticles != null && !blockContactParticles.IsAlive(true))
         {
@@ -308,6 +335,10 @@ public class NpcDuelStateMachine : MonoBehaviour
     {
         if (previewPlaying || state != DuelState.Attack) { contactHistoryValid = false; return; }
         float clipTime = AttackClipTime;
+        // 기존 구역 피격은 유지하되 원본 Begin~End 전체에서 실제 칼날 방어를 허용합니다.
+        // 중간에 피해를 확정하면 아직 내려오는 검을 막기도 전에 방어가 닫히므로,
+        // End를 포함한 마지막 접촉 검사 뒤에만 실패/피 효과/피격 모션을 확정합니다.
+        float impactTime = slashEnd;
         if (!attackLogged && clipTime >= slashStart) BeginAttackHit();
         if (!slashEnded && clipTime >= slashEnd) EndAttackHit();
         if (clipTime >= slashLength) finishAttackPending = true;
@@ -319,11 +350,12 @@ public class NpcDuelStateMachine : MonoBehaviour
             float startTime = contactHistoryValid ? previousContactTime : clipTime;
             float duration = clipTime - startTime;
             float from = duration > 0f ? Mathf.Clamp01((slashStart - startTime) / duration) : 1f;
-            float to = duration > 0f ? Mathf.Clamp01((slashEnd - startTime) / duration) : 1f;
+            float to = duration > 0f ? Mathf.Clamp01((impactTime - startTime) / duration) : 1f;
             // 방어 시작 프레임은 현재 자세만 검사합니다. 아직 방어하지 않던 과거로 소급하지 않습니다.
             if (!contactHistoryValid || !previouslyDefending) from = 1f;
             if (!AttackBlocked && !attackResolved && attackLogged && defending &&
-                clipTime >= slashStart && startTime <= slashEnd && from <= to &&
+                clipTime >= slashStart && startTime <= impactTime &&
+                (duration > 0f || clipTime <= impactTime) && from <= to &&
                 npcBlade.TrySweepBladeContact(contactHistoryValid ? previousNpcPose : npcPose, npcPose, playerBlade,
                     contactHistoryValid ? previousPlayerPose : playerPose, playerPose, from, to, out var contact))
             {
@@ -335,22 +367,46 @@ public class NpcDuelStateMachine : MonoBehaviour
             previousNpcPose = npcPose; previousPlayerPose = playerPose;
             previousContactTime = clipTime; previouslyDefending = defending; contactHistoryValid = true;
         }
+        if (!attackResolved && attackLogged && clipTime >= impactTime)
+        {
+            attackResolved = true;
+            if (!AttackBlocked)
+            {
+                Debug.Log($"방어 실패: {AttackStartRegion}, {AttackEndRegion} 구역 — 플레이어 피격", this);
+                Vector3 contact = knightHitBody != null && npcBlade != null && npcBlade.IsValid
+                    ? Physics.ClosestPoint(npcBlade.Midpoint, knightHitBody, knightHitBody.transform.position, knightHitBody.transform.rotation)
+                    : areas.KnightWorldCenter;
+                SpawnBloodEffect(playerHitBloodPrefab, contact);
+                ReceiveNpcHit();
+                roundBridge?.NotifyPlayerHit();
+            }
+        }
         if (endAttackPending || finishAttackPending)
         {
             endAttackPending = false;
             slashEnded = true;
             npcBlade?.SetMotionActive(false);
-            if (!attackResolved)
-            {
-                attackResolved = true;
-                if (!AttackBlocked)
-                {
-                    Debug.Log($"방어 실패: {AttackStartRegion}, {AttackEndRegion} 구역 — 플레이어 피격", this);
-                    ReceiveNpcHit();
-                    roundBridge?.NotifyPlayerHit();
-                }
-            }
         }
+    }
+    private static bool HasLivingParticles(GameObject effect)
+    {
+        foreach (var particles in effect.GetComponentsInChildren<ParticleSystem>(true))
+            if (particles.IsAlive(false)) return true;
+        return false;
+    }
+    private void SpawnBloodEffect(GameObject prefab, Vector3 contact)
+    {
+        if (prefab == null) return;
+        // 칼/기사의 자식이 아닌 월드 타격 위치에 남겨 재생합니다. 원본 효과 설정은 수정하지 않습니다.
+        var effect = Instantiate(prefab, contact, prefab.transform.rotation, transform);
+        var systems = effect.GetComponentsInChildren<ParticleSystem>(true);
+        if (systems.Length == 0) { Destroy(effect); return; }
+        foreach (var particles in systems)
+        {
+            particles.Stop(false, ParticleSystemStopBehavior.StopEmittingAndClear);
+            particles.Play(false);
+        }
+        bloodEffects.Add(effect);
     }
     private void SpawnBlockContactEffect(Vector3 contact)
     {
@@ -465,17 +521,39 @@ public class NpcDuelStateMachine : MonoBehaviour
         knightAnimatorWasEnabled = knightAnimator.enabled;
         knightAnimatorSpeed = knightAnimator.speed;
         knightRootMotionWasEnabled = knightAnimator.applyRootMotion;
+        var root = knight.transform;
+        knightRootPose = new KnightPose { target = root, position = root.localPosition, rotation = root.localRotation, scale = root.localScale };
+        knightHitBody = knight.GetComponent<Collider>();
+        knightIdleAvailable = knightAnimator.HasState(0, Animator.StringToHash(KnightIdleState));
+        if (!knightIdleAvailable) Debug.LogWarning($"기사 Idle State '{KnightIdleState}'를 Animator에서 확인하세요.", this);
+        StartKnightIdle();
+    }
+    private void StartKnightIdle()
+    {
+        if (!knightIdleAvailable || knightAnimator == null) return;
+        knightAnimator.enabled = true;
+        knightAnimator.applyRootMotion = false;
+        knightAnimator.speed = knightAnimatorSpeed > 0f ? knightAnimatorSpeed : 1f;
+        knightAnimator.Play(KnightIdleState, 0, 0f);
+        knightAnimator.Update(0f);
+        RestoreKnightRoot();
+    }
+    private void RestoreKnightRoot()
+    {
+        if (knightRootPose.target == null) return;
+        knightRootPose.target.SetLocalPositionAndRotation(knightRootPose.position, knightRootPose.rotation);
+        knightRootPose.target.localScale = knightRootPose.scale;
     }
     /// <summary>복제 기사 피격 모션만 재생합니다. 공격당 한 번이며, 원본 미리보기에는 반응하지 않습니다. 추후 실제 피격 판정에서도 호출할 수 있습니다.</summary>
     public void ReceiveNpcHit()
     {
         if (!Application.isPlaying || state == DuelState.Stopped || previewPlaying || AttackBlocked || knightHitPlayed || knightAnimator == null) return;
-        // 생성 때 Animator가 꺼져 있으므로 잠시 활성화한 뒤 State를 확인합니다.
+        // 복제 기사만 활성화하고 원본 Controller의 피격 State를 재생합니다.
         knightAnimator.enabled = true;
         int hash = Animator.StringToHash(knightAttackedState);
         if (!knightAnimator.HasState(0, hash))
         {
-            knightAnimator.enabled = knightAnimatorWasEnabled;
+            StartKnightIdle();
             Debug.LogWarning($"기사 피격 State '{knightAttackedState}'를 Animator에서 확인하세요.", this);
             knightHitPlayed = true;
             return;
@@ -491,10 +569,21 @@ public class NpcDuelStateMachine : MonoBehaviour
         knightAnimator.Play(hash, 0, 0f);
         // 같은 프레임에서 기본 Idle이 먼저 적용되는 것을 막습니다.
         knightAnimator.Update(0f);
+        RestoreKnightRoot();
     }
     private void UpdateKnightReaction(bool waiting)
     {
-        if (!knightHitPlaying || knightAnimator == null) return;
+        if (knightAnimator == null) return;
+        if (!knightHitPlaying)
+        {
+            // 원본 클립의 Loop 설정은 변경하지 않고 대련 코드에서만 반복합니다.
+            if (knightIdleAvailable)
+            {
+                var idle = knightAnimator.GetCurrentAnimatorStateInfo(0);
+                if (!idle.IsName(KnightIdleState) || (!idle.loop && idle.normalizedTime >= 1f)) StartKnightIdle();
+            }
+            return;
+        }
         knightAnimator.speed = waiting ? 0f : (knightAnimatorSpeed > 0f ? knightAnimatorSpeed : 1f);
         if (waiting) return;
         knightHitElapsed += Time.deltaTime;
@@ -512,7 +601,7 @@ public class NpcDuelStateMachine : MonoBehaviour
             knightAnimator.speed = knightAnimatorSpeed;
             knightAnimator.applyRootMotion = knightRootMotionWasEnabled;
         }
-        // 기본 Idle로 바꾸면 사용자가 배치한 준비 자세/크기가 달라질 수 있어 재생 전 자세로 복원합니다.
+        // 피격 자세를 정리한 뒤 요청한 전투 Idle로 복귀합니다. 생성 루트는 별도로 고정합니다.
         if (knightRestPose != null)
             foreach (var pose in knightRestPose)
                 if (pose.target != null)
@@ -521,7 +610,7 @@ public class NpcDuelStateMachine : MonoBehaviour
                     pose.target.localScale = pose.scale;
                 }
         knightRestPose = null;
-        if (knightAnimator != null) knightAnimator.enabled = knightAnimatorWasEnabled;
+        StartKnightIdle();
     }
     private void PlayState(string name)
     {
@@ -608,7 +697,18 @@ public class NpcDuelStateMachine : MonoBehaviour
     public void ReceivePlayerAttack(AttackKind kind, int startArea, int endArea)
     {
         if (hand == null || state == DuelState.Stopped || previewPlaying || offenseSuspended ||
+            (roundBridge != null && (!roundBridge.IsRunning || roundBridge.IsEnding)) ||
             startArea < 0 || startArea > 3 || endArea < 0 || endArea > 3) return;
+        if (playerBlade != null && playerBlade.IsValid)
+        {
+            Vector2 targetScreen = (areas.GetNpcUiArea(startArea).center + areas.GetNpcUiArea(endArea).center) * 0.5f;
+            Ray ray = movementCamera.ScreenPointToRay(targetScreen);
+            var plane = new Plane(Vector3.forward, playerBlade.Midpoint);
+            Vector3 target = plane.Raycast(ray, out float distance) ? ray.GetPoint(distance) : playerBlade.Midpoint;
+            Vector3 a = playerBlade.BladeBase.position, edge = playerBlade.BladeTip.position - a;
+            Vector3 contact = a + edge * (edge.sqrMagnitude > 0f ? Mathf.Clamp01(Vector3.Dot(target - a, edge) / edge.sqrMagnitude) : 0f);
+            SpawnBloodEffect(npcHitBloodPrefab, contact);
+        }
         // 기존 UnityEvent의 Bridge 연결이 있는 경우 중복 집계하지 않습니다.
         bool bridgeConnected = false;
         for (int index = 0; index < onNpcHit.GetPersistentEventCount(); index++)

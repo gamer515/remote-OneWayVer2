@@ -12,5 +12,8 @@ namespace JourneyMapKit
         public Transform chuteExit;
         public Transform[] coinEntrances;
         public Collider trayFloor;
+        [HideInInspector] public Collider[] supplyButtons;
+        [HideInInspector] public Transform[] supplySpawns;
+        [HideInInspector] public JourneyCoinStack[] supplyStacks;
     }
 }
