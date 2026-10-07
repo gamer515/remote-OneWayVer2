@@ -75,8 +75,8 @@ sysinfo.txt
 *.unitypackage
 *.unitypackage.meta
 *.app
-*[Ss][Dd][Ff].asset
-*[Ss][Dd][Ff].asset.meta
+# TextMeshPro SDF fonts and their GUID metadata are required UI assets.
+# Track them so scene and prefab font references resolve on other machines.
 
 # Crashlytics generated file
 crashlytics-build.properties
