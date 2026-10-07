@@ -107,11 +107,11 @@ public static class InitialChapterLimitCheck
                 card=new Dialogue{id=1,type="Next",text=original.MainStory[0].text}}};
             var build=typeof(StoryRelayManager).GetMethod("CreatePacket",Fields);
             var packet=(StoryPacket)build.Invoke(relay,new object[]{StoryRelayTrigger.EpisodeEnd,
-                "Initial/Initial_01",new List<Dialogue>(),records,new List<BettingDecisionRecord>(),
+                "Initial/Initial_01",records,
                 new[]{10,10,10,10},0,5,null});
             Assert(packet!=null&&packet.sourceRun==5&&packet.targetRun==6,"Initial excluded or target run wrong");
             Assert(packet.encounterHistory.Count==1&&packet.encounterHistory[0].encounterPath==path,"Initial card missing");
-            var items=new[]{new AIAPIClient.AIModifiedData{encounterPath=path,cardIndex=0,text="광부: 잠깐, 낯선 여행자여. 이곳은 위험하네."}};
+            var items=new[]{new AIAPIClient.AIModifiedData{encounterPath=path,cardIndex=0,text="어이, 낯선 여행자. 여기에는 또 어쩐 일이야?"}};
             var validate=typeof(AIAPIClient).GetMethod("TryValidateModifiedItems",BindingFlags.Static|BindingFlags.NonPublic);
             var args=new object[]{packet,items,null};
             Assert((bool)validate.Invoke(null,args),"Valid Initial AI response rejected: "+args[2]);
@@ -131,8 +131,8 @@ public static class InitialChapterLimitCheck
             args=new object[]{packet,items,null};
             Assert(!(bool)validate.Invoke(null,args),"Immutable core changed");
             var noPacket=(StoryPacket)build.Invoke(relay,new object[]{StoryRelayTrigger.EpisodeEnd,
-                "Initial/Initial_01",new List<Dialogue>(),new List<PlayedEncounterCardRecord>(),
-                new List<BettingDecisionRecord>(),new[]{10,10,10,10},0,5,null});
+                "Initial/Initial_01",new List<PlayedEncounterCardRecord>(),
+                new[]{10,10,10,10},0,5,null});
             Assert(noPacket==null,"Empty history queued AI request");
         }
         finally{UnityEngine.Object.DestroyImmediate(prompt);}

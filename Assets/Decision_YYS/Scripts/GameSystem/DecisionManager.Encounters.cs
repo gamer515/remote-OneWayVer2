@@ -41,6 +41,7 @@ public partial class DecisionManager
             if (phase != "card") BeginEncounter(encounter); // 이전 Interaction 체크포인트 호환
             else
             {
+                restoringStoryCard = true;
                 playerController.StopAndLookAt(encounter.WorldPosition);
                 FaceNpcTowardPlayer(encounter.PlaceId);
                 OpenEncounterCards(encounter, activeCardIndex, loadedProgress?.activeStoryPath);
@@ -51,6 +52,7 @@ public partial class DecisionManager
 
     private void HandleEncounterYellowPressed()
     {
+        if (guideProgress?.allocating == true) { ConfirmGuideAllocation(); return; }
         switch (currentState)
         {
             case StoryState.Exploring: BeginWalkStep(); break;
@@ -143,9 +145,12 @@ public partial class DecisionManager
             RenderEncounterOptions();
             return true;
         }
+        RecordStoryChoice(card, choice);
+        int relationshipDelta = choice.relationshipDelta *
+            (statContainer.stats.Length == 4 && statContainer.stats[3] == 0 ? 2 : 1);
         saveService.ApplyEncounterEffect(
-            $"{activePlaceId}:{activeEncounterPath}:{activeCardIndex}:choice:{selectedGearIndex}",
-            choice.grantsUnlocks, choice.relationshipId, choice.relationshipDelta);
+            $"visit:{storyVisit}:choice:{selectedGearIndex}",
+            choice.grantsUnlocks, choice.relationshipId, relationshipDelta);
         switch (choice.action)
         {
             case "skip": ResolveEncounter(); return true;
@@ -165,8 +170,13 @@ public partial class DecisionManager
             OpenStoryBranch(card.errorStoryPath);
             return;
         }
+        var resultRecord = NewStoryEvent("duel_result:" + storyVisit, "duel_result", card);
         duelMiniGame.BeginDuel(
-            won => OpenStoryBranch(won ? card.winStoryPath : card.loseStoryPath),
+            won =>
+            {
+                RecordMiniGameResult(resultRecord, won);
+                OpenStoryBranch(won ? card.winStoryPath : card.loseStoryPath);
+            },
             card.duelHitTarget > 0 ? card.duelHitTarget : 3,
             coinDropController.RemainingCoins[0], ConsumeDuelHealthCoin);
     }
@@ -190,8 +200,13 @@ public partial class DecisionManager
             OpenStoryBranch(card.errorStoryPath);
             return;
         }
+        var resultRecord = NewStoryEvent("gamble_result:" + storyVisit, "gamble_result", card);
+        resultRecord.choiceId = choseHeads ? "heads" : "tails";
         tutorialMiniGames.StartCoinToss(choseHeads, (won, heads) =>
-            OpenStoryBranch(won ? card.winStoryPath : card.loseStoryPath));
+        {
+            RecordMiniGameResult(resultRecord, won);
+            OpenStoryBranch(won ? card.winStoryPath : card.loseStoryPath);
+        });
     }
 
     private void OpenStoryBranch(string storyPath)
@@ -203,7 +218,11 @@ public partial class DecisionManager
     {
         activePlaceId = encounter.PlaceId;
         activeEncounterPath = string.IsNullOrWhiteSpace(storyPath) ? encounter.ContentPath : storyPath;
-        if (!encounterContent.TryLoadCards(activeEncounterPath, out activeCards, out string error) ||
+        int[] stats = statContainer.stats;
+        bool isGuide = encounter.DisplayName == "Guide";
+        if (!encounterContent.TryLoadCards(activeEncounterPath, out activeCards, out string error,
+                !isGuide && stats.Length == 4 && stats[2] == 0,
+                !isGuide && stats.Length == 4 && stats[3] == 0) ||
             activeCards.MainStory.Count == 0)
         {
             Debug.LogError($"[조우 카드] {encounter.PlaceId}: {error}", this);
@@ -216,6 +235,8 @@ public partial class DecisionManager
 
     private void PresentEncounterCard()
     {
+        if (!restoringStoryCard) storyVisit++;
+        restoringStoryCard = false;
         Dialogue card = activeCards.MainStory[activeCardIndex];
         // ResetSelection은 기어 선택 이벤트를 즉시 호출하므로 이전 Choice 상태부터 해제합니다.
         currentState = StoryState.Transitioning;
@@ -225,17 +246,14 @@ public partial class DecisionManager
         bettingButtonController?.SetBettingInteractable(false);
         RecordPlayedEncounterStory(card, activePlaceId, activeEncounterPath, activeCardIndex);
         SaveEncounterState("card");
-        if (card.isTransition)
-            presentationController.PlayStoryTransition(card, () => CompleteEncounterCardPresentation(card));
-        else
-        {
-            presentationController.ShowDialogue(card);
-            CompleteEncounterCardPresentation(card);
-        }
+        SaveGuideCheckpoint();
+        presentationController.ShowDialogue(card);
+        CompleteEncounterCardPresentation(card);
     }
 
     private void CompleteEncounterCardPresentation(Dialogue card)
     {
+        if (card.guideAction != null) { StartCoroutine(RunGuideAction(card)); return; }
         if (!string.IsNullOrWhiteSpace(card.startAction))
         {
             switch (card.startAction)
@@ -249,6 +267,14 @@ public partial class DecisionManager
         if (card.IsChoice)
         {
             currentState = StoryState.WaitingForChoice;
+            // 선택 저장 후 분기 이동 전에 종료된 경우 같은 선택을 이어 갑니다.
+            StoryEventRecord confirmed = storyEvents?.FindLast(record => record.eventKey == "choice:" + storyVisit);
+            if (confirmed != null && confirmed.choiceSlot >= 0 && confirmed.choiceSlot < 4)
+            {
+                selectedGearIndex = confirmed.choiceSlot;
+                AdvanceEncounterCard();
+                return;
+            }
             RenderEncounterOptions();
         }
         else
@@ -267,6 +293,8 @@ public partial class DecisionManager
             Debug.Log($"[카드 선택] {activePlaceId}: {card.options[selectedGearIndex]}", this);
             if (ExecuteStoryChoice(card)) return;
         }
+        Dialogue current = activeCards.MainStory[activeCardIndex];
+        if (!string.IsNullOrWhiteSpace(current.nextStoryPath)) { OpenStoryBranch(current.nextStoryPath); return; }
         activeCardIndex++;
         if (activeCardIndex >= activeCards.MainStory.Count) ResolveEncounter();
         else PresentEncounterCard();
@@ -274,6 +302,14 @@ public partial class DecisionManager
 
     private void HandleEncounterGearSelection(int index)
     {
+        if (guideProgress?.allocating == true)
+        {
+            // 기존 기어의 좌상/우상은 추가, 좌하/우하는 빼기입니다.
+            if (index >= 0 && index < 4) guideProgress.allocationMode = index == 0 || index == 2 ? 1 : -1;
+            ShowGuideAllocation();
+            SaveGuideCheckpoint();
+            return;
+        }
         if (encounterFlow == null || currentState != StoryState.WaitingForChoice) return;
         selectedGearIndex = index >= 0 && index < 4 ? index : -1;
         RenderEncounterOptions();

@@ -21,6 +21,11 @@ public partial class DecisionManager : MonoBehaviour
     private DecisionRunCompletionService runCompletionService;
     private bool addedYellowInputFallback;
     private bool addedGearInputFallback;
+    [SerializeField, HideInInspector] private AnimationClip guideKneelClip;
+    private GuideProgress guideProgress;
+    private List<StoryEventRecord> storyEvents;
+    private int storyVisit;
+    private bool restoringStoryCard;
     private OmnibusData currentOmnibus => session?.Omnibus;
     private int chapterIndex
     {
@@ -102,6 +107,7 @@ public partial class DecisionManager : MonoBehaviour
 
     private void OnDisable()
     {
+        RestoreGuideKneel();
         if (statContainer != null)
         {
             statContainer.OnTargetStatReached -= HandleTargetStatReached;
@@ -150,8 +156,13 @@ public partial class DecisionManager : MonoBehaviour
 
     private void Update()
     {
+        if (guideProgress?.allocating == true)
+        {
+            HandleGuideAllocationInput();
+            return;
+        }
         if (currentState != StoryState.MovingToEncounter && currentState != StoryState.Transitioning &&
-            currentState != StoryState.Duel)
+            currentState != StoryState.Duel && encounterFlow == null)
             journeyCoinSupply?.HandleInput();
 
         // 이동 명령과 화면 표현은 분리하고, 실제 도착한 프레임에서 이야기 화면을 엽니다.
@@ -184,6 +195,13 @@ public partial class DecisionManager : MonoBehaviour
 
         session = startData.Session;
         loadedProgress = startData.SaveManager.LoadProgress();
+        guideProgress = loadedProgress.guideProgress ?? new GuideProgress();
+        guideProgress.completedEffects ??= new List<string>();
+        guideProgress.runHistory ??= new List<PlayedEncounterCardRecord>();
+        storyEvents = loadedProgress.storyEvents ?? new List<StoryEventRecord>();
+        storyVisit = loadedProgress.storyVisit;
+        if (loadedProgress.currentEncounterHistory != null)
+            session.PlayedEncounterHistory.AddRange(loadedProgress.currentEncounterHistory);
         envController.SetContentRun(session.RunNumber, session.RunSeed);
         if (!envController.TryValidateAllContent(session.Omnibus, out string contentError))
         {
@@ -423,6 +441,11 @@ private void SetYellowInputInteractable(bool interactable)
 
     private void FinishRunAndReturnToMainMenu(string reason)
     {
+        if (session != null && saveService != null)
+        {
+            SaveGuideCheckpoint(reason);
+            QueueLocalChapterRevision(reason);
+        }
         currentState = StoryState.Transitioning;
         encounterFlow = null;
         SetYellowInputInteractable(false);
@@ -489,13 +512,15 @@ private void SetYellowInputInteractable(bool interactable)
                 return;
         }
 
-        history.Add(new PlayedEncounterCardRecord
+        var record = new PlayedEncounterCardRecord
         {
             placeId = placeId,
             encounterPath = encounterPath,
             cardIndex = cardIndex,
             card = dialogue
-        });
+        };
+        history.Add(record);
+        guideProgress?.runHistory.Add(record);
     }
 
     private void HandleScreenClicked()
@@ -510,7 +535,6 @@ private void SetYellowInputInteractable(bool interactable)
             scenarioPath = currentScenarioPath,
             storyHistory = new List<Dialogue>(session.PlayedHistory),
             encounterHistory = new List<PlayedEncounterCardRecord>(session.PlayedEncounterHistory),
-            bettingDecisions = new List<BettingDecisionRecord>(session.BettingDecisions),
             finalStats = statContainer.stats,
             remainingCoins = coinDropController.RemainingCoins
         };
@@ -520,7 +544,6 @@ private void SetYellowInputInteractable(bool interactable)
         // 최종 성향은 챕터 종료 시 확정하며, 여기서는 에피소드별 작은 기록만 보관합니다.
         session.PlayedHistory.Clear();
         session.PlayedEncounterHistory.Clear();
-        session.BettingDecisions.Clear();
     }
 
     private void FinishCurrentEpisode()
@@ -536,8 +559,12 @@ private void SetYellowInputInteractable(bool interactable)
 
     private void ResetEpisodeResources()
     {
-        statContainer.ResetForEpisode();
-        coinDropController.ResetInventory();
+        // 로키에게 배분한 능력과 사용한 체력 코인은 다음 에피소드에서도 유지합니다.
+        if (guideProgress?.committedStats == null)
+        {
+            statContainer.ResetForEpisode();
+            coinDropController.ResetInventory();
+        }
         journeyCoinSupply?.ResetBoard();
         ResetGearSelection();
         Debug.Log(

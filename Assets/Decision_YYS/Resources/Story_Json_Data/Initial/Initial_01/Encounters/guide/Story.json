@@ -2,42 +2,125 @@
   "MainStory": [
     {
       "type": "Next",
-      "isTransition": false,
-      "background": "#FFE0B2",
-      "text": "광부: 어이, 자네. 여기 있으면 안 돼."
+      "eventIdStable": "loki_intro_1",
+      "speakerId": "Guide",
+      "text": "어이, 자네. 여기 있으면 안 돼."
     },
     {
       "type": "Next",
-      "isTransition": false,
-      "background": "#FFE0B2",
-      "text": "광부: 여기는 안개 광산이라고. 길을 모르면 발을 잘못 디디기 딱 좋은 곳이지."
+      "eventIdStable": "loki_intro_2",
+      "speakerId": "Guide",
+      "text": "여기는 왕국 전용 광산이라고."
     },
     {
       "type": "Next",
-      "isTransition": false,
-      "background": "#FFE0B2",
-      "text": "광부: 꼴을 보아하니 아무것도 모른 채 들어온 모양이구만."
+      "eventIdStable": "loki_intro_3",
+      "speakerId": "Guide",
+      "text": "꼴을 보아하니 아무것도 모른 채 들어온 모양이구만."
     },
     {
       "type": "Next",
-      "isTransition": false,
-      "background": "#FFE0B2",
-      "text": "광부: 내가 인생을 좀 알려줘야 하나? 잘 봐. 기어를 네 방향 중 하나로 기울이면 대답을 고를 수 있어."
-    },
-    {
-      "type": "Next",
-      "isTransition": false,
-      "background": "#FFE0B2",
-      "text": "광부: 고른 뒤에는 노란 버튼을 눌러. 이야기가 끝났을 때 한 번 더 누르면 다시 길을 걷게 될 거야."
+      "eventIdStable": "loki_take_knowledge",
+      "speakerId": "Guide",
+      "text": "내가 인생을 좀 알려줘야 하나?",
+      "guideAction": {
+        "kind": "take_knowledge",
+        "amount": 5
+      }
     },
     {
       "type": "Choice",
-      "isTransition": false,
-      "background": "#FFCC80",
-      "text": "광부: 자, 어디 제대로 들었나 보자고. 기어를 움직여 대답을 골라 봐.",
-      "options": ["이해했다", "버튼을 확인한다", "기어를 연습한다", "다시 설명해 달라"],
-      "statWeights": [0, 0, 0, 0],
-      "npcEmotion": "Curiosity"
+      "eventIdStable": "loki_garbled_question",
+      "speakerId": "Guide",
+      "text": "아라드찌 모 라게찌?",
+      "options": [
+        "무라아구?",
+        "쥐엥에잔?",
+        "시이이부라랄",
+        "자즈나! 다씨 되돌려"
+      ],
+      "choiceActions": [
+        {
+          "choiceId": "loki_garbled_confused",
+          "action": "continue"
+        },
+        {
+          "choiceId": "loki_garbled_guess",
+          "action": "continue"
+        },
+        {
+          "choiceId": "loki_garbled_mumble",
+          "action": "continue"
+        },
+        {
+          "choiceId": "loki_garbled_restore",
+          "action": "continue"
+        }
+      ],
+      "semanticText": "알아듣지 못하겠지?"
+    },
+    {
+      "type": "Next",
+      "eventIdStable": "loki_return_knowledge",
+      "speakerId": "Guide",
+      "text": "뭐라는 거야, 하하. 자, 어때. 이제 체감이 오나?",
+      "guideAction": {
+        "kind": "return_knowledge"
+      }
+    },
+    {
+      "type": "Next",
+      "eventIdStable": "loki_identity_question",
+      "speakerId": "Guide",
+      "text": "내가 누구냐고?"
+    },
+    {
+      "type": "Next",
+      "eventIdStable": "loki_identity",
+      "speakerId": "Guide",
+      "text": "나는 장난의 신 로키이지. 적적하게 왕국의 광산을 걷고 있었어."
+    },
+    {
+      "type": "Choice",
+      "eventIdStable": "loki_identity_choice",
+      "speakerId": "Guide",
+      "text": "자, 이제 무슨 말을 할 텐가?",
+      "options": [
+        "너가 신이라고?",
+        "왜 여기에 있는 거지?",
+        "관심없어.",
+        "꺼져!"
+      ],
+      "choiceActions": [
+        {
+          "choiceId": "loki_question_god",
+          "action": "story",
+          "storyPath": "Initial/Initial_01/Encounters/guide/QuestionGod",
+          "relationshipId": "Guide",
+          "relationshipDelta": 1
+        },
+        {
+          "choiceId": "loki_question_place",
+          "action": "story",
+          "storyPath": "Initial/Initial_01/Encounters/guide/QuestionPlace",
+          "relationshipId": "Guide",
+          "relationshipDelta": 1
+        },
+        {
+          "choiceId": "loki_dismiss",
+          "action": "story",
+          "storyPath": "Initial/Initial_01/Encounters/guide/Dismiss",
+          "relationshipId": "Guide",
+          "relationshipDelta": -1
+        },
+        {
+          "choiceId": "loki_insult",
+          "action": "story",
+          "storyPath": "Initial/Initial_01/Encounters/guide/Insult",
+          "relationshipId": "Guide",
+          "relationshipDelta": -2
+        }
+      ]
     }
   ]
 }

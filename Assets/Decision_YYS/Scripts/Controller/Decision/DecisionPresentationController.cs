@@ -49,15 +49,11 @@ public sealed class DecisionPresentationController
         uiController?.ActiveOptionTextUi(false);
     }
 
-    public void PlayStoryTransition(Dialogue dialogue, System.Action onCompleted)
+    public void ShowGuideAllocation(string instructions, string summary)
     {
-        if (uiController == null || dialogue == null)
-        {
-            onCompleted?.Invoke();
-            return;
-        }
-
-        ExitChoice();
-        uiController.ChangeUiImage(dialogue, onCompleted);
+        ShowDialogue(new Dialogue { type = "Next", text = instructions });
+        uiController?.ChangeUiText(TextTarget.Option, text: summary);
+        uiController?.ActiveOptionTextUi(true);
     }
+
 }

@@ -14,28 +14,32 @@ public class StoryRelayManager : MonoBehaviour
     [SerializeField] private PromptData promptData;
 
     /// <summary>
-    /// 이야기 데이터를 필터링하고 요약하여 외부로 전송합니다.
+    /// 이야기 데이터를 필터링하고 요약하여 로컬 생성 요청으로 저장합니다.
     /// </summary>
     public void Relay(
         StoryRelayTrigger trigger,
         string currentFileName,
-        List<Dialogue> history,
         List<PlayedEncounterCardRecord> encounterHistory,
-        List<BettingDecisionRecord> bettingDecisions,
         int[] stats,
         int chapter,
         int sourceRun,
         StoryInfluenceProfile fixedInfluence = null)
     {
-        StoryPacket packet = CreatePacket(trigger, currentFileName, history,
-            encounterHistory, bettingDecisions, stats, chapter, sourceRun, fixedInfluence);
-        if (packet != null) SendPacket(packet);
+        StoryPacket packet = CreatePacket(trigger, currentFileName,
+            encounterHistory, stats, chapter, sourceRun, fixedInfluence);
+        // 런타임 외부 통신 금지: 내부 모델 연결 전까지 요청만 로컬에 보관합니다.
+        if (packet != null)
+        {
+            string safeName = "LocalPacket_" + currentFileName.Replace('/', '_');
+            SaveIOService.Instance.SaveRunCheckpoint(sourceRun, safeName, packet);
+            Debug.Log("[StoryRelay] 로컬 생성용 프롬프트 저장 (외부 API 호출 없음).", this);
+        }
     }
 
     private StoryPacket CreatePacket(
-        StoryRelayTrigger trigger, string currentFileName, List<Dialogue> history,
+        StoryRelayTrigger trigger, string currentFileName,
         List<PlayedEncounterCardRecord> encounterHistory,
-        List<BettingDecisionRecord> bettingDecisions, int[] stats, int chapter,
+        int[] stats, int chapter,
         int sourceRun, StoryInfluenceProfile fixedInfluence)
     {
         if (promptData == null)
@@ -59,13 +63,10 @@ public class StoryRelayManager : MonoBehaviour
             return null;
         }
         
-        List<BettingDecisionRecord> decisionSnapshot = bettingDecisions != null
-            ? new List<BettingDecisionRecord>(bettingDecisions)
-            : new List<BettingDecisionRecord>();
         int[] statsSnapshot = stats != null ? (int[])stats.Clone() : new int[0];
         StoryInfluenceProfile influence = fixedInfluence ??
             CreateInfluenceProfile(statsSnapshot, chapter, sourceRun);
-        string summary = BuildSummary(filteredEncounters, decisionSnapshot);
+        string summary = BuildSummary(filteredEncounters);
         string atmosphere = DetermineAtmosphere(influence.intensity);
 
         string template = trigger == StoryRelayTrigger.EpisodeEnd
@@ -95,11 +96,11 @@ public class StoryRelayManager : MonoBehaviour
         int sourceRun)
     {
         int[] safeScores = new int[Mathf.Max(4, stats?.Length ?? 0)];
-        int total = 0; //불필요 추후 변경.
+        int total = 0;
         int changeMagnitude = 0;
         for (int i = 0; i < safeScores.Length; i++)
         {
-            // 음수 가중치로 내려간 능력치도 약점 강도에 그대로 반영합니다.
+            // 저장된 실제 능력치를 기준으로 약점 강도를 계산합니다.
             safeScores[i] = stats != null && i < stats.Length ? stats[i] : 0;
             total += safeScores[i];
             changeMagnitude += Mathf.Abs(safeScores[i] - promptData.neutralStatValue);
@@ -180,18 +181,10 @@ public class StoryRelayManager : MonoBehaviour
     }
 
     private string BuildSummary(
-        List<PlayedEncounterCardRecord> encounterCards,
-        List<BettingDecisionRecord> bettingDecisions)
+        List<PlayedEncounterCardRecord> encounterCards)
     {
         if (encounterCards == null || encounterCards.Count == 0) return "(기록 없음)";
 
-        Dictionary<int, BettingDecisionRecord> decisionsByDialogueId =
-            new Dictionary<int, BettingDecisionRecord>();
-        foreach (BettingDecisionRecord decision in bettingDecisions)
-        {
-            if (decision != null)
-                decisionsByDialogueId[decision.dialogueId] = decision;
-        }
         
         StringBuilder sb = new StringBuilder();
         foreach (PlayedEncounterCardRecord record in encounterCards)
@@ -200,13 +193,6 @@ public class StoryRelayManager : MonoBehaviour
             sb.AppendLine(
                 $"- [ID: {d.id}] [Encounter: {record.encounterPath}] [CardIndex: {record.cardIndex}] " +
                 $"[Place: {record.placeId}] {d.text}");
-            if (decisionsByDialogueId.TryGetValue(d.id, out BettingDecisionRecord decision))
-            {
-                sb.AppendLine(
-                    $"  코인 분포: [{string.Join(", ", decision.coinCounts ?? new int[0])}]\n" +
-                    $"  상황 가중치: [{string.Join(", ", decision.statWeights ?? new int[0])}]\n" +
-                    $"  실제 변화량: [{string.Join(", ", decision.statChanges ?? new int[0])}]");
-            }
         }
         return sb.ToString();
     }
@@ -253,14 +239,4 @@ public class StoryRelayManager : MonoBehaviour
         return namesByChapter[chapter][statIndex];
     }
 
-    private void SendPacket(StoryPacket packet)
-    {
-        if (AIAPIClient.Instance == null)
-        {
-            Debug.LogError("AIAPIClient 인스턴스를 찾을 수 없습니다.");
-            return;
-        }
-
-        AIAPIClient.Instance.ProcessPacket(packet);
-    }
 }

@@ -9,6 +9,7 @@ public class MainStoryUi : ParentUi
 
     private bool isStoryVisible;
     private bool isOptionVisible;
+    private float optionOriginalFontSize;
 
     public override void SetActivateUi(bool turn)
     {
@@ -31,16 +32,21 @@ public class MainStoryUi : ParentUi
     {
         TextMeshProUGUI targetText = GetTextTarget(target);
         if (targetText != null)
+        {
             targetText.text = text;
+            if (target == TextTarget.Option)
+            {
+                if (optionOriginalFontSize <= 0f) optionOriginalFontSize = targetText.fontSize;
+                targetText.fontSize = optionOriginalFontSize;
+                Rect area = targetText.rectTransform.rect;
+                // 긴 선택지도 기존 작은 선택지 칸 안에서 읽히도록 런타임 글자 크기만 조절합니다.
+                while (targetText.fontSize > Mathf.Min(18f, optionOriginalFontSize) &&
+                    targetText.GetPreferredValues(text, area.width, Mathf.Infinity).y > area.height)
+                    targetText.fontSize -= 1f;
+            }
+        }
     }
 
-    public void StartSwapStoryScreen(Dialogue nextStory, string displayText, System.Action onCompleted = null)
-    {
-        if (nextStory != null)
-            ApplyNextStory(displayText);
-
-        onCompleted?.Invoke();
-    }
 
     private TextMeshProUGUI GetTextTarget(TextTarget target)
     {
@@ -55,9 +61,4 @@ public class MainStoryUi : ParentUi
         }
     }
 
-    private void ApplyNextStory(string displayText)
-    {
-        if (front_Dialogue_Text != null)
-            front_Dialogue_Text.text = displayText;
-    }
 }

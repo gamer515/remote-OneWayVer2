@@ -42,6 +42,8 @@ public sealed class DecisionSaveService
         saveManager.SaveStats(stats);
     }
 
+    public bool HasGuideAllocation => saveManager.LoadProgress().guideProgress?.committedStats?.Length == 4;
+
     public void SaveCheckpoint(
         DecisionSession session,
         int[] stats,
@@ -84,6 +86,10 @@ public sealed class DecisionSaveService
     {
         saveManager.SaveRemainingCoins(remainingCoins);
     }
+
+    public void SaveStoryCheckpoint(GuideProgress guide, System.Collections.Generic.List<StoryEventRecord> events,
+        System.Collections.Generic.List<PlayedEncounterCardRecord> history, int[] coins, int visit,
+        string endReason = null) => saveManager.SaveStoryCheckpoint(guide, events, history, coins, visit, endReason);
 
     public void SaveStoredItemIds(System.Collections.Generic.IReadOnlyList<string> itemIds)
     {

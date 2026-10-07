@@ -45,6 +45,11 @@ public class GameProgress
     public bool isCompleted;
     public List<StoryInfluenceProfile> influenceHistory = new List<StoryInfluenceProfile>();
     public List<CompletedEpisodeRecord> pendingEpisodes = new List<CompletedEpisodeRecord>();
+    public GuideProgress guideProgress = new GuideProgress();
+    public List<StoryEventRecord> storyEvents = new List<StoryEventRecord>();
+    public List<PlayedEncounterCardRecord> currentEncounterHistory = new List<PlayedEncounterCardRecord>();
+    public int storyVisit;
+    public string runEndReason;
 }
 
 [System.Serializable]

@@ -13,11 +13,8 @@ public sealed class EncounterCardRoot
 public sealed class EncounterCard
 {
     public string type;
-    public bool isTransition;
-    public string background;
     public string text;
     public string[] options;
-    public int[] statWeights;
     public string npcEmotion;
     public StoryChoiceAction[] choiceActions;
     public string startAction;
@@ -25,6 +22,11 @@ public sealed class EncounterCard
     public string winStoryPath;
     public string loseStoryPath;
     public string errorStoryPath;
+    public string eventIdStable;
+    public string speakerId;
+    public string semanticText;
+    public string nextStoryPath;
+    public GuideCoinAction guideAction;
 }
 
 /// <summary>지형의 connectStoryCards 경로에서 해당 오브젝트의 데이터만 읽습니다.</summary>
@@ -37,11 +39,13 @@ public sealed class EncounterContentRepository
         this.runNumber = Math.Max(1, runNumber);
     }
 
-    public bool TryLoadCards(string contentPath, out ScenarioData cards, out string error)
+    public bool TryLoadCards(string contentPath, out ScenarioData cards, out string error,
+        bool knowledgeZero = false, bool charmZero = false)
     {
         cards = null;
         EncounterCardRoot original = SaveIOService.Instance.LoadResourceData<EncounterCardRoot>(
             contentPath + "/Story");
+        NormalizeOptionalActions(original);
         if (original?.MainStory == null || original.MainStory.Count == 0)
         {
             error = $"{contentPath}/Story에 카드가 없습니다.";
@@ -49,12 +53,26 @@ public sealed class EncounterContentRepository
         }
 
         EncounterCardRoot source = original;
+        string variant = knowledgeZero && charmZero ? "KnowledgeCharmZero" :
+            knowledgeZero ? "KnowledgeZero" : charmZero ? "CharmZero" : null;
+        if (variant != null)
+        {
+            var asset = Resources.Load<TextAsset>("Story_Json_Data/" + contentPath + "/Variants/" + variant + "/Story");
+            if (asset != null)
+            {
+                var alternative = JsonUtility.FromJson<EncounterCardRoot>(asset.text);
+                NormalizeOptionalActions(alternative);
+                if (VariantPreservesActions(original, alternative))
+                    source = original = alternative;
+            }
+        }
         if (runNumber > 1 && SaveIOService.Instance.TryLoadGeneratedContent(
                 runNumber,
                 "Encounters",
-                contentPath + "/Story",
+                contentPath + (variant == null ? "/Story" : "/Variants/" + variant + "/Story"),
                 out EncounterCardRoot generated))
         {
+            NormalizeOptionalActions(generated);
             if (TryApplyGeneratedText(original, generated, out string generatedError))
             {
                 Debug.Log(
@@ -100,18 +118,20 @@ public sealed class EncounterContentRepository
             {
                 id = StableCardId(contentPath, index),
                 type = sourceCard.type,
-                isTransition = sourceCard.isTransition,
-                background = sourceCard.background,
                 text = sourceCard.text,
                 options = sourceCard.options,
-                statWeights = sourceCard.statWeights,
                 npcEmotion = sourceCard.npcEmotion,
                 choiceActions = sourceCard.choiceActions,
                 startAction = sourceCard.startAction,
                 duelHitTarget = sourceCard.duelHitTarget,
                 winStoryPath = sourceCard.winStoryPath,
                 loseStoryPath = sourceCard.loseStoryPath,
-                errorStoryPath = sourceCard.errorStoryPath
+                errorStoryPath = sourceCard.errorStoryPath,
+                eventIdStable = sourceCard.eventIdStable,
+                speakerId = sourceCard.speakerId,
+                semanticText = sourceCard.semanticText,
+                nextStoryPath = sourceCard.nextStoryPath,
+                guideAction = sourceCard.guideAction
             });
         }
 
@@ -123,8 +143,57 @@ public sealed class EncounterContentRepository
     private static bool StoryExists(string path) => !string.IsNullOrWhiteSpace(path) &&
         Resources.Load<TextAsset>("Story_Json_Data/" + path + "/Story") != null;
 
+    private static void NormalizeOptionalActions(EncounterCardRoot root)
+    {
+        if (root?.MainStory == null) return;
+        // JsonUtility는 누락된 inline 직렬화 클래스도 빈 객체로 복원합니다.
+        foreach (var card in root.MainStory)
+            if (card?.guideAction != null && string.IsNullOrEmpty(card.guideAction.kind) &&
+                card.guideAction.amount == 0 && string.IsNullOrEmpty(card.guideAction.readyStoryPath) &&
+                string.IsNullOrEmpty(card.guideAction.retryStoryPath) && string.IsNullOrEmpty(card.guideAction.charmZeroStoryPath))
+                card.guideAction = null;
+    }
+
+    private static bool VariantPreservesActions(EncounterCardRoot original, EncounterCardRoot variant)
+    {
+        if (variant?.MainStory?.Count != original.MainStory.Count) return false;
+        for (int i = 0; i < original.MainStory.Count; i++)
+        {
+            if (original.MainStory[i] == null || variant.MainStory[i] == null) return false;
+            var left = JsonUtility.FromJson<EncounterCard>(JsonUtility.ToJson(original.MainStory[i]));
+            var right = JsonUtility.FromJson<EncounterCard>(JsonUtility.ToJson(variant.MainStory[i]));
+            // 작성된 능력치 변형본도 문구만 바꾸고 선택 결과/공격 규칙은 보존해야 합니다.
+            left.text = right.text = null;
+            left.options = right.options = null;
+            left.semanticText = right.semanticText = null;
+            left.speakerId = right.speakerId = null;
+            if (JsonUtility.ToJson(left) != JsonUtility.ToJson(right)) return false;
+        }
+        return true;
+    }
+
     private static bool ValidateActions(EncounterCard card, out string error)
     {
+        if (card.guideAction != null && (card.type != "Next" ||
+            !Array.Exists(new[] { "take_knowledge", "return_knowledge", "punish", "kneel", "allocate" },
+                kind => kind == card.guideAction.kind) || string.IsNullOrWhiteSpace(card.eventIdStable)))
+        {
+            error = "guideAction의 kind와 고정 eventIdStable을 확인하세요.";
+            return false;
+        }
+        if (card.guideAction?.kind == "allocate" &&
+            (!StoryExists(card.guideAction.readyStoryPath) || !StoryExists(card.guideAction.retryStoryPath) ||
+             (!string.IsNullOrWhiteSpace(card.guideAction.charmZeroStoryPath) &&
+              !StoryExists(card.guideAction.charmZeroStoryPath))))
+        {
+            error = "배분 성공/재시도 Story 경로가 없습니다.";
+            return false;
+        }
+        if (!string.IsNullOrWhiteSpace(card.nextStoryPath) && !StoryExists(card.nextStoryPath))
+        {
+            error = "nextStoryPath의 Story가 없습니다.";
+            return false;
+        }
         if (card.duelHitTarget < 0)
         {
             error = "duelHitTarget은 양수이며, 생략/0이면 기본 3회입니다.";
@@ -192,17 +261,19 @@ public sealed class EncounterContentRepository
             }
 
             if (generatedCard.type != originalCard.type ||
-                generatedCard.isTransition != originalCard.isTransition ||
-                generatedCard.background != originalCard.background ||
                 generatedCard.npcEmotion != originalCard.npcEmotion ||
                 generatedCard.startAction != originalCard.startAction ||
                 generatedCard.duelHitTarget != originalCard.duelHitTarget ||
                 generatedCard.winStoryPath != originalCard.winStoryPath ||
                 generatedCard.loseStoryPath != originalCard.loseStoryPath ||
                 generatedCard.errorStoryPath != originalCard.errorStoryPath ||
+                generatedCard.eventIdStable != originalCard.eventIdStable ||
+                generatedCard.speakerId != originalCard.speakerId ||
+                generatedCard.semanticText != originalCard.semanticText ||
+                generatedCard.nextStoryPath != originalCard.nextStoryPath ||
+                JsonUtility.ToJson(generatedCard.guideAction) != JsonUtility.ToJson(originalCard.guideAction) ||
                 !ChoiceActionsEqual(generatedCard.choiceActions, originalCard.choiceActions) ||
-                !ArrayEquals(generatedCard.options, originalCard.options) ||
-                !ArrayEquals(generatedCard.statWeights, originalCard.statWeights))
+                !ArrayEquals(generatedCard.options, originalCard.options))
             {
                 error = $"{index}번째 카드의 text 외 구조가 원본과 다릅니다.";
                 return false;

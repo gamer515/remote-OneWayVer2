@@ -140,7 +140,7 @@ namespace JourneyMapKit
             SelectGear(index);
         }
 
-        private bool TryCreateRay(Vector2 screenPosition, out Ray ray)
+        public bool TryCreateRay(Vector2 screenPosition, out Ray ray)
         {
             if (boardViewport == null)
             {

@@ -21,11 +21,16 @@ public class SaveIOService
     }
 
     // 저장 파일이 위치할 기본 경로
-    private string BasePath => Path.Combine(Application.persistentDataPath, "Saves");
+    private readonly string basePathOverride;
+    private string BasePath => basePathOverride ?? Path.Combine(Application.persistentDataPath, "Saves");
     private string ProfilePath => Path.Combine(BasePath, "Profile.json");
 
-    private SaveIOService() 
+    private SaveIOService() : this(null) { }
+
+    // Editor regression checks can use an isolated folder without touching player saves.
+    private SaveIOService(string isolatedBasePath)
     {
+        basePathOverride = isolatedBasePath;
         if (!Directory.Exists(BasePath))
         {
             Directory.CreateDirectory(BasePath);
@@ -74,6 +79,11 @@ public class SaveIOService
         string path = Path.Combine(directoryPath, $"{fileName}.json");
         File.WriteAllText(path, JsonUtility.ToJson(data, true));
         Debug.Log($"[SaveIO] {Mathf.Max(1, runNumber)}회차 데이터 저장 성공: {path}");
+    }
+
+    public void SaveRunCheckpoint<T>(int runNumber, string fileName, T data)
+    {
+        WriteJsonAtomically(GetRunDataPath(runNumber, fileName), data);
     }
 
     /// <summary>
@@ -261,7 +271,15 @@ public class SaveIOService
         File.WriteAllText(temporaryPath, JsonUtility.ToJson(data, true));
 
         if (File.Exists(path))
-            File.Replace(temporaryPath, path, null);
+        {
+            // Windows 백신/인덱서가 짧게 파일을 잠근 경우에도 체크포인트를 잃지 않게 재시도합니다.
+            for (int attempt = 0; ; attempt++)
+            {
+                try { File.Replace(temporaryPath, path, null, true); break; }
+                catch (IOException) when (attempt < 4)
+                { System.Threading.Thread.Sleep(10 << attempt); }
+            }
+        }
         else
             File.Move(temporaryPath, path);
     }

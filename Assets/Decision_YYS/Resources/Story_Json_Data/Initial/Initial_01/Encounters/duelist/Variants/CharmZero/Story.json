@@ -1,0 +1,42 @@
+{
+  "MainStory": [
+    {
+      "type": "Next",
+      "text": "인상부터 못마땅하군. 가운데 세운 기사로 연습해.",
+      "speakerId": "Duelist"
+    },
+    {
+      "type": "Next",
+      "text": "오래 설명할 생각은 없다. 기사와 검을 잘 봐.",
+      "speakerId": "Duelist"
+    },
+    {
+      "type": "Choice",
+      "text": "할 건가, 말 건가? 빨리 골라.",
+      "options": [
+        "대련을 시작한다",
+        "방어 자세를 살핀다",
+        "설명을 먼저 듣는다",
+        "이번에는 지나간다"
+      ],
+      "choiceActions": [
+        {
+          "action": "story",
+          "storyPath": "Initial/Initial_01/Encounters/duelist/Duel/Start"
+        },
+        {
+          "action": "story",
+          "storyPath": "Initial/Initial_01/Encounters/duelist/Duel/Start"
+        },
+        {
+          "action": "story",
+          "storyPath": "Initial/Initial_01/Encounters/duelist"
+        },
+        {
+          "action": "skip"
+        }
+      ],
+      "speakerId": "Duelist"
+    }
+  ]
+}

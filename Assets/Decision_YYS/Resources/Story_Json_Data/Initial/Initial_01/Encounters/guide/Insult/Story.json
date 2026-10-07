@@ -1,0 +1,23 @@
+{
+  "MainStory": [
+    {
+      "type": "Next",
+      "eventIdStable": "loki_reply_insult",
+      "speakerId": "Guide",
+      "text": "감히, 신 앞에서 자신의 주제도 모르고 입을 놀리는 구나!",
+      "guideAction": {
+        "kind": "punish"
+      }
+    },
+    {
+      "type": "Next",
+      "eventIdStable": "loki_kneel",
+      "speakerId": "Guide",
+      "text": "로키 앞에서 무릎이 꺾였다.",
+      "guideAction": {
+        "kind": "kneel"
+      },
+      "nextStoryPath": "Initial/Initial_01/Encounters/guide/Redistribute"
+    }
+  ]
+}

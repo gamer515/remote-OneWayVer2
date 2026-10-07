@@ -1,0 +1,42 @@
+{
+  "MainStory": [
+    {
+      "type": "Next",
+      "text": "꼴, 못마땅하군. 가운데 기사, 련습해.",
+      "speakerId": "Duelist"
+    },
+    {
+      "type": "Next",
+      "text": "길게 안 말해. 기사, 칼, 잘 봐.",
+      "speakerId": "Duelist"
+    },
+    {
+      "type": "Choice",
+      "text": "할꺼야? 빨리 골라.",
+      "options": [
+        "싸움 한다",
+        "막는거 본다",
+        "다시 말해",
+        "그냥 간다"
+      ],
+      "choiceActions": [
+        {
+          "action": "story",
+          "storyPath": "Initial/Initial_01/Encounters/duelist/Duel/Start"
+        },
+        {
+          "action": "story",
+          "storyPath": "Initial/Initial_01/Encounters/duelist/Duel/Start"
+        },
+        {
+          "action": "story",
+          "storyPath": "Initial/Initial_01/Encounters/duelist"
+        },
+        {
+          "action": "skip"
+        }
+      ],
+      "speakerId": "Duelist"
+    }
+  ]
+}

@@ -47,6 +47,11 @@ public class SaveManager
 
     public void SaveStats(int[] statsArray)
     {
+        if (cachedProgress.guideProgress?.committedStats != null)
+        {
+            cachedProgress.guideProgress.committedStats = (int[])statsArray.Clone();
+            SaveIOService.Instance.SaveRunCheckpoint(CurrentRun, "Progress", cachedProgress);
+        }
         PlayerStats stats = new PlayerStats
         {
             stats = statsArray
@@ -282,11 +287,26 @@ public class SaveManager
 
     public PlayerStats LoadStats()
     {
+        if (cachedProgress.guideProgress?.committedStats?.Length == 4)
+            return new PlayerStats { stats = (int[])cachedProgress.guideProgress.committedStats.Clone() };
         if (SaveIOService.Instance.RunDataExists(CurrentRun, "Stats"))
         {
             return SaveIOService.Instance.LoadRunData<PlayerStats>(CurrentRun, "Stats");
         }
         return null;
+    }
+
+    public void SaveStoryCheckpoint(GuideProgress guide, System.Collections.Generic.List<StoryEventRecord> events,
+        System.Collections.Generic.List<PlayedEncounterCardRecord> history, int[] coins, int visit,
+        string endReason = null)
+    {
+        cachedProgress.guideProgress = guide;
+        cachedProgress.storyEvents = events;
+        cachedProgress.currentEncounterHistory = new System.Collections.Generic.List<PlayedEncounterCardRecord>(history);
+        cachedProgress.remainingCoins = (int[])coins.Clone();
+        cachedProgress.storyVisit = visit;
+        if (endReason != null) cachedProgress.runEndReason = endReason;
+        SaveIOService.Instance.SaveRunCheckpoint(CurrentRun, "Progress", cachedProgress);
     }
 
     public bool HasSaveData(string key)

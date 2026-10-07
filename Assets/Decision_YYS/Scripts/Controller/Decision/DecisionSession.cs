@@ -17,8 +17,6 @@ public sealed class DecisionSession
     public List<Dialogue> PlayedHistory { get; } = new List<Dialogue>();
     public List<PlayedEncounterCardRecord> PlayedEncounterHistory { get; } =
         new List<PlayedEncounterCardRecord>();
-    public List<BettingDecisionRecord> BettingDecisions { get; } =
-        new List<BettingDecisionRecord>();
     public List<CompletedEpisodeRecord> CompletedEpisodes { get; } =
         new List<CompletedEpisodeRecord>();
 

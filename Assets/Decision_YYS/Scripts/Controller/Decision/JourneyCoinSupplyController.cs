@@ -14,6 +14,7 @@ public sealed class JourneyCoinSupplyController
 {
     private readonly JourneyBoardReferences board;
     private readonly Camera inputCamera;
+    private readonly JourneyBoardInput boardInput;
     private readonly GameObject[] coinPrefabs;
     private readonly JourneyCoinStack[] stacks = new JourneyCoinStack[4];
     private readonly List<BettingCoin> activeCoins = new List<BettingCoin>();
@@ -30,6 +31,7 @@ public sealed class JourneyCoinSupplyController
         Action<int[]> saveInventory,
         int maxCoinsOnBoard = 5)
     {
+        this.boardInput = boardInput;
         board = boardInput != null ? boardInput.board : null;
         inputCamera = boardInput != null && boardInput.inputCamera != null
             ? boardInput.inputCamera : Camera.main;
@@ -83,16 +85,27 @@ public sealed class JourneyCoinSupplyController
 
     public void HandleInput()
     {
-        if (!IsReady) return;
+        int index = GetClickedSupplyIndex();
+        if (index >= 0) Dispense(index);
+    }
+
+    public int GetClickedSupplyIndex()
+    {
+        if (!IsReady || (boardInput != null && !boardInput.InputEnabled)) return -1;
 #if ENABLE_INPUT_SYSTEM
-        if (Mouse.current == null || !Mouse.current.leftButton.wasPressedThisFrame) return;
+        if (Mouse.current == null || !Mouse.current.leftButton.wasPressedThisFrame) return -1;
         Vector2 pointerPosition = Mouse.current.position.ReadValue();
 #else
-        if (!Input.GetMouseButtonDown(0)) return;
+        if (!Input.GetMouseButtonDown(0)) return -1;
         Vector2 pointerPosition = Input.mousePosition;
 #endif
 
-        Ray ray = inputCamera.ScreenPointToRay(pointerPosition);
+        Ray ray;
+        if (boardInput != null)
+        {
+            if (!boardInput.TryCreateRay(pointerPosition, out ray)) return -1;
+        }
+        else ray = inputCamera.ScreenPointToRay(pointerPosition);
         RaycastHit[] hits = Physics.RaycastAll(ray, 1000f, inputCamera.cullingMask);
         JourneyCoinStack selected = null;
         float nearestDistance = float.MaxValue;
@@ -109,9 +122,35 @@ public sealed class JourneyCoinSupplyController
             nearestDistance = hit.distance;
         }
 
-        if (selected == null) return;
+        if (selected == null) return -1;
         for (int index = 0; index < stacks.Length; index++)
-            if (stacks[index] == selected) { Dispense(index); return; }
+            if (stacks[index] == selected) return index;
+        return -1;
+    }
+
+    public System.Collections.IEnumerator AnimateStoryCoin(int index, bool adding)
+    {
+        if (!IsReady || index < 0 || index >= 4 || coinPrefabs[index] == null) yield break;
+        Transform spawnPoint = board.supplySpawns != null && index < board.supplySpawns.Length
+            ? board.supplySpawns[index] : null;
+        Vector3 top = spawnPoint != null ? spawnPoint.position : stacks[index].transform.position + Vector3.up * .3f;
+        // 회수는 코인통 출구에서 사진의 경사로 방향으로 빠지고, 반환은 통 위에서 내려옵니다.
+        Vector3 outside = board.chuteExit.position;
+        Vector3 start = adding ? top + Vector3.up * .7f : top;
+        Vector3 end = adding ? top : outside;
+        GameObject visual = UnityEngine.Object.Instantiate(coinPrefabs[index], start, Quaternion.identity, coinContainer);
+        visual.name = "StoryCoin_" + CoinNames[index];
+        SetLayerRecursively(visual, board.gameObject.layer);
+        foreach (Collider collider in visual.GetComponentsInChildren<Collider>()) collider.enabled = false;
+        foreach (Rigidbody body in visual.GetComponentsInChildren<Rigidbody>()) { body.isKinematic = true; body.useGravity = false; }
+        float elapsed = 0f;
+        while (elapsed < .14f && visual != null)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            visual.transform.position = Vector3.Lerp(start, end, Mathf.SmoothStep(0f, 1f, elapsed / .14f));
+            yield return null;
+        }
+        if (visual != null) UnityEngine.Object.Destroy(visual);
     }
 
     private void Dispense(int index)

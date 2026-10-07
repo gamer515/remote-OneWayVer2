@@ -30,17 +30,6 @@ public class UiController : MonoBehaviour
         mainStoryUi.WriteText(target, dialogue != null ? SanitizeText(dialogue.text) : text);
     }
 
-    public void ChangeUiImage(Dialogue dialogue, Action onCompleted = null)
-    {
-        if (dialogue == null || mainStoryUi == null)
-        {
-            onCompleted?.Invoke();
-            return;
-        }
-
-        ShowEventView();
-        mainStoryUi.StartSwapStoryScreen(dialogue, SanitizeText(dialogue.text), onCompleted);
-    }
 
     private string SanitizeText(string text)
     {

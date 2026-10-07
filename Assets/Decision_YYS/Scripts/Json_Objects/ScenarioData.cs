@@ -19,16 +19,9 @@ public class ScenarioData
 public class Dialogue
 {
     public int id;
-    // AI 통합본과의 기존 호환을 위해 런타임 Dialogue에서는 문자열을 유지합니다.
-    public string change;
     public string type;
-    public bool isTransition; // 제거 or 수정
-    public string background; // 제거 or 수정
-    public string character; // 제거 or 수정
-    public string eventId;
     public string text;
     public string npcEmotion;
-    public int[] statWeights;
     public string[] options;
     public StoryChoiceAction[] choiceActions;
     public string startAction;
@@ -36,6 +29,11 @@ public class Dialogue
     public string winStoryPath;
     public string loseStoryPath;
     public string errorStoryPath;
+    public string eventIdStable;
+    public string speakerId;
+    public string semanticText;
+    public string nextStoryPath;
+    public GuideCoinAction guideAction;
 
     public DialogueType Type
     {
@@ -49,7 +47,6 @@ public class Dialogue
         }
     }
 
-    public bool ShouldRelay => bool.TryParse(change, out bool result) && result;
     public bool IsChoice => Type == DialogueType.Choice;
     public bool IsEnd => Type == DialogueType.End;
 }
@@ -57,6 +54,7 @@ public class Dialogue
 [Serializable]
 public sealed class StoryChoiceAction
 {
+    public string choiceId;
     // continue: 다음 카드, story: 별도 Story 폴더로 분기, skip: 조우 종료.
     public string action;
     public string storyPath;

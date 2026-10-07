@@ -1,0 +1,42 @@
+{
+  "MainStory": [
+    {
+      "type": "Next",
+      "text": "기어로 압면, 뒷면 골라. 노란 버튼 눌러.",
+      "speakerId": "Gambler"
+    },
+    {
+      "type": "Next",
+      "text": "동전 돌다가 머춰. 위쪽 면, 그게 결과야.",
+      "speakerId": "Gambler"
+    },
+    {
+      "type": "Choice",
+      "text": "압면? 뒷면? 골라 보라구.",
+      "options": [
+        "압면 골라",
+        "뒷면 골라",
+        "다시 말해",
+        "안 한다"
+      ],
+      "choiceActions": [
+        {
+          "action": "story",
+          "storyPath": "Initial/Initial_01/Encounters/gambler/Coin/Heads"
+        },
+        {
+          "action": "story",
+          "storyPath": "Initial/Initial_01/Encounters/gambler/Coin/Tails"
+        },
+        {
+          "action": "story",
+          "storyPath": "Initial/Initial_01/Encounters/gambler"
+        },
+        {
+          "action": "skip"
+        }
+      ],
+      "speakerId": "Gambler"
+    }
+  ]
+}

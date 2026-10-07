@@ -9,6 +9,7 @@ public sealed class DecisionPlayerController
 
     public Vector3 TargetPosition { get; private set; }
     public bool IsAvailable => player != null;
+    public Animator PlayerAnimator => player != null ? player.GetComponentInChildren<Animator>() : null;
     public Vector3 CurrentPosition => IsAvailable ? player.transform.position : TargetPosition;
     public Quaternion CurrentRotation => IsAvailable ? player.transform.rotation : Quaternion.identity;
 

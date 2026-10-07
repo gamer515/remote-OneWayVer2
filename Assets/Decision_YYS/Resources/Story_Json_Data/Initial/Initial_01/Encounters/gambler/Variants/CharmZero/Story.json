@@ -1,0 +1,42 @@
+{
+  "MainStory": [
+    {
+      "type": "Next",
+      "text": "반갑지는 않군. 할 거면 기어로 앞면이나 뒷면을 고르고 노란 버튼을 눌러.",
+      "speakerId": "Gambler"
+    },
+    {
+      "type": "Next",
+      "text": "동전이 멈췄을 때 위를 향한 면이 결과다. 두 번 설명하게 하지 마.",
+      "speakerId": "Gambler"
+    },
+    {
+      "type": "Choice",
+      "text": "그래서 어느 쪽인가? 빨리 골라.",
+      "options": [
+        "앞면을 고른다",
+        "뒷면을 고른다",
+        "규칙을 듣는다",
+        "도박을 하지 않는다"
+      ],
+      "choiceActions": [
+        {
+          "action": "story",
+          "storyPath": "Initial/Initial_01/Encounters/gambler/Coin/Heads"
+        },
+        {
+          "action": "story",
+          "storyPath": "Initial/Initial_01/Encounters/gambler/Coin/Tails"
+        },
+        {
+          "action": "story",
+          "storyPath": "Initial/Initial_01/Encounters/gambler"
+        },
+        {
+          "action": "skip"
+        }
+      ],
+      "speakerId": "Gambler"
+    }
+  ]
+}

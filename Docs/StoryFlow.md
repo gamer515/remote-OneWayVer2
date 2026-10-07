@@ -6,11 +6,11 @@
 
 완료된 이전 회차 기록은 보존하고 다음 회차는 Initial부터 시작한다. 이후 전체 진행을 다시 허용하려면 lastPlayableChapterId를 빈 문자열로 바꾸거나 필드를 제거한다. 특정 챕터까지 열려면 해당 chapterId를 지정한다. 제한 이후 콘텐츠는 초기 검증 및 지형 등록 대상에서도 제외된다.
 
-Initial도 기존 AI 이야기 변경 대상으로 포함한다. 챕터 완료 시 실제로 읽은 Encounter 카드만 다음 회차용 요청에 포함한다. 원본 JSON은 변경하지 않고 기존 GeneratedContent/For_Run_XXXX/Encounters 경로에 결과를 저장한다. 문장 text만 변경할 수 있으며 카드 순서·선택지·분기·미니게임 규칙 및 { } 핵심 문자열은 기존 검증으로 보호한다. AIAPIClient는 메인 이동 후에도 요청을 처리한다. 생성 중 곧바로 재시작하면 DecisionScene 초기화를 보류하고 완료 후 지문을 읽는다. API 요청은 60초 제한이며 실패하면 원본 이야기로 진행한다. API 키와 기존 PromptData 연결은 필요하다.
+Initial도 다음 회차 이야기 변경 대상이다. 챕터 완료 시 실제로 읽은 Encounter 카드만 로컬 요청에 포함하며, 회차 종료 시 실제 선택/관계/결과를 담은 LocalStoryRevisionRequest를 저장한다. 현재 내부 모델은 미연결이므로 외부 API를 호출하지 않고 원본 이야기로 진행한다. 향후 GeneratedContent/For_Run_XXXX/Encounters 결과를 적용할 때 카드 순서·선택 결과·분기·미니게임 규칙 및 { } 핵심 문자열은 검증으로 보호한다.
 
 Unity 컴파일 오류 0개. `AgentScripts/InitialChapterLimitCheck.cs`의 진행 상한과 완료 순서/중복 방지, Initial 요청 생성, 응답 검증, 생성 지문 적용, 생성 대기 후 입력 잠금 해제 검사가 통과했다. 실제 저장·씬 이동·API 호출 없이 메모리에서 검사했다. Main부터 Initial 전체를 끝내는 수동 Play와 실제 외부 API 결과 확인은 별도 항목이다.
 
-읽기 전용 DecisionScene 미리보기 검사에서 StoryRelayManager의 PromptData 연결 및 루트 오브젝트 TempAiM의 AIAPIClient를 확인했다. 현재 API Key는 미설정이므로 실제 자동 문장 변경은 기존 AIAPIClient의 API Key를 연결한 뒤 확인해야 한다. 키 미설정 시 외부 요청 없이 Failed 상태를 기록하고 원본 이야기로 진행한다. 검사 중 씬을 저장하거나 API 키 값을 출력하지 않았다.
+Scene의 TempAiM/AIAPIClient는 이전 외부 모델 구현의 잔존 컴포넌트이며 현재 StoryRelay에서는 호출하지 않는다. API 키를 설정하는 방식으로 테스트하지 않는다. 내부 모델 단계에서 이를 교체하며, 이번 검사에서는 씬을 저장하거나 API 키를 출력하지 않았다.
 
 본 게임의 NPC/장소 지문은 모두 `Assets/Decision_YYS/Resources/Story_Json_Data/` 아래의 `Story.json`으로 진행합니다. 도착하면 첫 카드를 바로 표시하며, 별도 Interaction 시작 나레이션은 없습니다. 기존 일반 대사와 Story 선택지는 유지했습니다.
 
@@ -36,7 +36,6 @@ Unity 컴파일 오류 0개. `AgentScripts/InitialChapterLimitCheck.cs`의 진�
   "MainStory": [
     {
       "type": "Choice",
-      "isTransition": false,
       "text": "이제 무엇을 할까요?",
       "options": ["대련한다", "계속 이야기한다", "작별한다", "작별한다"],
       "choiceActions": [
@@ -66,6 +65,8 @@ Unity 컴파일 오류 0개. `AgentScripts/InitialChapterLimitCheck.cs`의 진�
 불필요해진 `Interaction.json` 17개와 대응 메타 파일은 삭제했습니다. 기존 Git 기록에서 복원할 수 있습니다. 코인 클릭이나 물리 입력의 Interaction 명칭은 이야기 시스템과 무관하므로 삭제하지 않았습니다.
 
 ## 확인 범위
+
+최신 정리/검사 및 수동 테스트 순서는 `StoryCleanupAndTest.md`와 `LokiGuideStage1.md`를 기준으로 한다. `background`, `isTransition`, `statWeights`는 현재 Story 스키마에서 제거됐고 전환 전용 UI/가중치 계산도 사용하지 않는다. 아래 내용은 이전 작업의 검사 기록이다.
 
 Unity 컴파일 오류 0개, Story Resources 28개 로딩, NPC/장소 17개의 첫 카드 직접 시작, 미니게임 선택지 2개, 시작/오류 분기 3개, 결과/End 분기 8개, 기존 체크포인트 및 분기 복원 3개를 격리된 메모리 검사로 확인했습니다. 생성 이야기가 선택 행동을 바꾸면 원본으로 대체하는 검증도 확인했습니다. 검사 중 실제 저장 파일과 씬은 저장하지 않았으며 Main 메뉴부터 끝까지 진행하는 Play 검사는 별도로 수행하지 않았습니다.
 

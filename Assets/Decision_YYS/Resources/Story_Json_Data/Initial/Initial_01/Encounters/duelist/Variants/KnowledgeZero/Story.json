@@ -1,0 +1,42 @@
+{
+  "MainStory": [
+    {
+      "type": "Next",
+      "text": "보드 가운데, 자네 대신 기사 세우지.",
+      "speakerId": "Duelist"
+    },
+    {
+      "type": "Next",
+      "text": "저 기사로 련습 하라구. 칼, 잘 보라구.",
+      "speakerId": "Duelist"
+    },
+    {
+      "type": "Choice",
+      "text": "준비 돼써? 덤벼 보라구.",
+      "options": [
+        "싸움 한다",
+        "막는거 본다",
+        "다시 말해",
+        "그냥 간다"
+      ],
+      "choiceActions": [
+        {
+          "action": "story",
+          "storyPath": "Initial/Initial_01/Encounters/duelist/Duel/Start"
+        },
+        {
+          "action": "story",
+          "storyPath": "Initial/Initial_01/Encounters/duelist/Duel/Start"
+        },
+        {
+          "action": "story",
+          "storyPath": "Initial/Initial_01/Encounters/duelist"
+        },
+        {
+          "action": "skip"
+        }
+      ],
+      "speakerId": "Duelist"
+    }
+  ]
+}

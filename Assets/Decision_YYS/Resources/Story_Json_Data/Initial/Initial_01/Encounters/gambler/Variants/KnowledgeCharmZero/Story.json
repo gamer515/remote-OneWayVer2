@@ -1,0 +1,42 @@
+{
+  "MainStory": [
+    {
+      "type": "Next",
+      "text": "반갑진 안쿤. 압면, 뒷면 골라. 노란 버튼.",
+      "speakerId": "Gambler"
+    },
+    {
+      "type": "Next",
+      "text": "동전 머춰. 위쪽 면이 결과야. 두번 안 말해.",
+      "speakerId": "Gambler"
+    },
+    {
+      "type": "Choice",
+      "text": "어느쪽? 빨리 골라.",
+      "options": [
+        "압면 골라",
+        "뒷면 골라",
+        "다시 말해",
+        "안 한다"
+      ],
+      "choiceActions": [
+        {
+          "action": "story",
+          "storyPath": "Initial/Initial_01/Encounters/gambler/Coin/Heads"
+        },
+        {
+          "action": "story",
+          "storyPath": "Initial/Initial_01/Encounters/gambler/Coin/Tails"
+        },
+        {
+          "action": "story",
+          "storyPath": "Initial/Initial_01/Encounters/gambler"
+        },
+        {
+          "action": "skip"
+        }
+      ],
+      "speakerId": "Gambler"
+    }
+  ]
+}

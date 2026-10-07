@@ -1,0 +1,112 @@
+{
+  "MainStory": [
+    {
+      "type": "Next",
+      "eventIdStable": "loki_offer",
+      "speakerId": "Guide",
+      "text": "자, 말이 너무 길었고 앞으로의 여정을 위해, 너에게 기회를 주겠어."
+    },
+    {
+      "type": "Next",
+      "eventIdStable": "loki_health_guide",
+      "speakerId": "Guide",
+      "text": "체력은 버티는 힘이지. 높으면 공격을 막아도 덜 지쳐."
+    },
+    {
+      "type": "Next",
+      "eventIdStable": "loki_health_guide_2",
+      "speakerId": "Guide",
+      "text": "낮으면 쉽게 지치고 다음 공격을 준비하는 데 오래 걸려."
+    },
+    {
+      "type": "Next",
+      "eventIdStable": "loki_speed_guide",
+      "speakerId": "Guide",
+      "text": "민첩이 높으면 걷기와 베기, 방어 자세가 빨라져."
+    },
+    {
+      "type": "Next",
+      "eventIdStable": "loki_speed_guide_2",
+      "speakerId": "Guide",
+      "text": "낮으면 느려지지. 하나도 없으면 걸을 수도 없겠지?"
+    },
+    {
+      "type": "Next",
+      "eventIdStable": "loki_knowledge_guide",
+      "speakerId": "Guide",
+      "text": "지식이 높으면 말에 숨은 뜻을 알아차릴 수 있어."
+    },
+    {
+      "type": "Next",
+      "eventIdStable": "loki_knowledge_guide_2",
+      "speakerId": "Guide",
+      "text": "낮으면 설명을 놓쳐. 하나도 없으면 아까처럼 들릴 거야."
+    },
+    {
+      "type": "Next",
+      "eventIdStable": "loki_knowledge_guide_3",
+      "speakerId": "Guide",
+      "text": "그래도 눈치는 채겠지."
+    },
+    {
+      "type": "Next",
+      "eventIdStable": "loki_charm_guide",
+      "speakerId": "Guide",
+      "text": "매력이 높으면 마음을 여는 대답도 가능해져."
+    },
+    {
+      "type": "Next",
+      "eventIdStable": "loki_charm_guide_2",
+      "speakerId": "Guide",
+      "text": "하나도 없으면 모두가 불친절해지고 보상도 줄겠지."
+    },
+    {
+      "type": "Next",
+      "eventIdStable": "loki_charm_guide_3",
+      "speakerId": "Guide",
+      "text": "네 선택에 대한 반응도 더 커질 거야."
+    },
+    {
+      "type": "Next",
+      "eventIdStable": "loki_partial_immortality",
+      "speakerId": "Guide",
+      "text": "원하는 대로 너의 능력을 배분하라. 잠시 동안은 넌 일부 불멸이 될 거야."
+    },
+    {
+      "type": "Next",
+      "eventIdStable": "loki_allocation_warning",
+      "speakerId": "Guide",
+      "text": "배분하는 동안은 체력이 없어도 괜찮아."
+    },
+    {
+      "type": "Next",
+      "eventIdStable": "loki_allocation_warning_2",
+      "speakerId": "Guide",
+      "text": "하지만 확정하는 순간 체력이 0이면 죽어."
+    },
+    {
+      "type": "Next",
+      "eventIdStable": "loki_allocation_warning_3",
+      "speakerId": "Guide",
+      "text": "기어 위는 추가, 아래는 빼기야. 코인통 버튼을 눌러."
+    },
+    {
+      "type": "Next",
+      "eventIdStable": "loki_allocation_warning_4",
+      "speakerId": "Guide",
+      "text": "20개를 모두 배분한 뒤 노란 버튼으로 확정해."
+    },
+    {
+      "type": "Next",
+      "eventIdStable": "loki_allocate",
+      "speakerId": "Guide",
+      "text": "자, 어서 선택하라고.",
+      "guideAction": {
+        "kind": "allocate",
+        "readyStoryPath": "Initial/Initial_01/Encounters/guide/Farewell",
+        "retryStoryPath": "Initial/Initial_01/Encounters/guide/Retry",
+        "charmZeroStoryPath": "Initial/Initial_01/Encounters/guide/Farewell/CharmZero"
+      }
+    }
+  ]
+}
