@@ -22,6 +22,7 @@ public partial class DecisionManager
         if (saveService == null || session == null || guideProgress == null || storyEvents == null) return;
         saveService.SaveStoryCheckpoint(guideProgress, storyEvents, session.PlayedEncounterHistory,
             coinDropController.RemainingCoins, storyVisit, endReason);
+        LocalStoryNotebook.Refresh(SaveIOService.Instance);
     }
 
     private StoryEventRecord NewStoryEvent(string key, string kind, Dialogue card)
@@ -54,12 +55,16 @@ public partial class DecisionManager
             activeEncounterPath + ":" + record.cardId + ":" + selectedGearIndex : choice.choiceId;
         record.displayedText = card.options[selectedGearIndex];
         record.choiceSlot = selectedGearIndex;
+        record.choiceRole=StoryChoiceRoles.Recorded(card.choiceKind,choice);
         record.semanticText = record.displayedText;
         record.relationshipId = choice.relationshipId;
+        record.requiresUnlocks = choice.requiresUnlocks;
+        record.grantsUnlocks = choice.grantsUnlocks;
         record.relationshipDelta = choice.relationshipDelta * (statContainer.stats[3] == 0 ? 2 : 1);
         record.coinsAfter = coinDropController.RemainingCoins;
         record.statsAfter = statContainer.stats;
         storyEvents.Add(record);
+        presentationController?.ConfirmChoice(record.displayedText);
         SaveGuideCheckpoint();
     }
 
@@ -247,8 +252,8 @@ public partial class DecisionManager
         int[] allocation = guideProgress.allocation;
         string mode = guideProgress.allocationMode == 0 ? "기어 방향을 선택해" :
             guideProgress.allocationMode > 0 ? "추가 모드" : "빼기 모드";
-        string text = "기어 위: 추가 · 아래: 빼기\n" +
-            $"남은 {GuideAllocationRules.Remaining(allocation)}/20 · {mode}";
+        string text = "기어 위: 추가 / 아래: 빼기\n" +
+            $"남은 {GuideAllocationRules.Remaining(allocation)}/20 / {mode}";
         string summary = $"체{allocation[0]} 민{allocation[1]} 지{allocation[2]} 매{allocation[3]}";
         presentationController.ShowGuideAllocation(text, summary);
     }
@@ -287,21 +292,4 @@ public partial class DecisionManager
         OpenStoryBranch(path);
     }
 
-    private void QueueLocalChapterRevision(string reason)
-    {
-        if (session?.Omnibus?.chapters == null || session.ChapterIndex < 0) return;
-        int index = Math.Min(session.ChapterIndex, session.Omnibus.PlayableChapterCount - 1);
-        var chapter = session.Omnibus.chapters[index];
-        var paths = chapter.episodeIds.ConvertAll(id => chapter.chapterId + "/" + id);
-        var request = new LocalStoryRevisionRequest
-        {
-            sourceRun = session.RunNumber, targetRun = session.RunNumber + 1,
-            chapterId = chapter.chapterId, scenarioPaths = paths.ToArray(), reason = reason,
-            finalStats = statContainer?.stats,
-            events = storyEvents ?? new List<StoryEventRecord>(),
-            playedCards = new List<PlayedEncounterCardRecord>(guideProgress.runHistory)
-        };
-        SaveIOService.Instance.SaveRunCheckpoint(session.RunNumber, "LocalStoryRevisionRequest", request);
-        Debug.Log("[Story] 다음 회차 로컬 이야기 변경 요청 저장. 모델 연결 전에는 원본 이야기를 사용합니다.", this);
-    }
 }

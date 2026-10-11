@@ -27,9 +27,14 @@ public class UiController : MonoBehaviour
         if (mainStoryUi == null)
             return;
 
-        mainStoryUi.WriteText(target, dialogue != null ? SanitizeText(dialogue.text) : text);
+        mainStoryUi.WriteText(target, dialogue != null ? SanitizeText(dialogue.text) : text, dialogue?.speakerId);
     }
 
+
+    public void PreviewChoice(string text, string direction = null, bool canConfirm = true) =>
+        mainStoryUi?.PreviewChoice(SanitizeText(text), direction, canConfirm);
+
+    public void AppendPlayerChoice(string text) => mainStoryUi?.AppendPlayerChoice(SanitizeText(text));
 
     private string SanitizeText(string text)
     {

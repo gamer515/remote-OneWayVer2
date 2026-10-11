@@ -41,7 +41,7 @@ unity command run_script --file AgentScripts/InitialChapterLimitCheck.cs --entry
 5. `0/10/5/5`는 확정 후 사망/메인 복귀, `10/0/5/5`는 재배분이다. 배분 중 임시 0은 사망하지 않는다. 가이드 진행 도중 Play 중단/이어하기로 효과가 중복 적용되지 않는지도 확인한다.
 6. 결투·도박의 결과가 설명문이 아닌 NPC 대화로 나오며 선택/결과가 회차 기록에 저장되는지 확인한다. Initial 마지막 에피소드 종료 후 Main으로 돌아가는지도 확인한다.
 
-`Application.persistentDataPath/Saves/Runs/Run_####/Progress.json`에는 선택/관계/결과가, 같은 폴더 `LocalStoryRevisionRequest.json`에는 다음 회차 요청이 저장된다. 현재 요청 상태는 PendingLocalModel이며 아직 실제 LLM 생성은 하지 않는다. 따라서 다음 회차의 새 대사 품질은 아직 시험할 수 없다.
+`Application.persistentDataPath/Saves/Runs/Run_####/Progress.json`에는 선택/관계/결과가, 같은 폴더 `LocalStoryRevisionRequest.json`에는 다음 회차 요청이 저장된다. 요청 상태는 아직 PendingLocalModel이며 챕터 자동 생성은 미연결이다. 후속 구현된 [내장형 LLM 테스트](LocalStoryGenerationTest.md)에서는 실제 요청을 읽어 한 이야기씩 생성/비교할 수 있다. 테스트 결과는 게임에 적용하지 않는다.
 
 ## 에셋 정리 후보 (삭제하지 않음)
 
@@ -71,6 +71,8 @@ unity command run_script --file AgentScripts/StoryCleanupAudit.cs --entry StoryC
 ```
 
 ## 다음 작업
+
+**후속 상태:** 내장형 LLM의 한 이야기 생성/비교 UI를 구현했다. 실행법과 검사/품질 한계는 [LocalStoryGenerationTest.md](LocalStoryGenerationTest.md)를 따른다. 에셋 삭제는 프로젝트 완성 이후로 보류한다. 다음은 실제 선택 기록을 사용한 문장 품질 개선과 챕터 전체 생성 연결이며, 아래는 최초 단계 계획을 남긴 기록이다.
 
 우선 실제 플레이에서 위 조작/분기/저장 흐름을 확인한다. 다음 구현 단계는 **내장형 LLM의 최소 생성 테스트**다.
 

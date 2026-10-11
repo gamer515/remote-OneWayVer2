@@ -23,6 +23,7 @@ public class Dialogue
     public string text;
     public string npcEmotion;
     public string[] options;
+    public string choiceKind;
     public StoryChoiceAction[] choiceActions;
     public string startAction;
     public int duelHitTarget;
@@ -32,6 +33,7 @@ public class Dialogue
     public string eventIdStable;
     public string speakerId;
     public string semanticText;
+    public string coreMeaning;
     public string nextStoryPath;
     public GuideCoinAction guideAction;
 
@@ -55,6 +57,7 @@ public class Dialogue
 public sealed class StoryChoiceAction
 {
     public string choiceId;
+    public string choiceRole;
     // continue: 다음 카드, story: 별도 Story 폴더로 분기, skip: 조우 종료.
     public string action;
     public string storyPath;

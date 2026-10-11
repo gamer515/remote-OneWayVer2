@@ -23,6 +23,7 @@ public class SaveIOService
     // 저장 파일이 위치할 기본 경로
     private readonly string basePathOverride;
     private string BasePath => basePathOverride ?? Path.Combine(Application.persistentDataPath, "Saves");
+    public string StorageRoot => BasePath;
     private string ProfilePath => Path.Combine(BasePath, "Profile.json");
 
     private SaveIOService() : this(null) { }
@@ -79,6 +80,46 @@ public class SaveIOService
         string path = Path.Combine(directoryPath, $"{fileName}.json");
         File.WriteAllText(path, JsonUtility.ToJson(data, true));
         Debug.Log($"[SaveIO] {Mathf.Max(1, runNumber)}회차 데이터 저장 성공: {path}");
+    }
+
+    // The comparison test reads existing saves without creating a profile or advancing a run.
+    public LocalStoryRevisionRequest LoadLatestLocalStoryRevision()
+    {
+        string runs = Path.Combine(BasePath, "Runs");
+        if (!Directory.Exists(runs)) return null;
+        string[] directories = Directory.GetDirectories(runs, "Run_*");
+        System.Array.Sort(directories, (left, right) => RunDirectoryNumber(left).CompareTo(RunDirectoryNumber(right)));
+        for (int i = directories.Length - 1; i >= 0; i--)
+        {
+            string path = Path.Combine(directories[i], "LocalStoryRevisionRequest.json");
+            if (!File.Exists(path)) continue;
+            try
+            {
+                var request = ReadJson<LocalStoryRevisionRequest>(path);
+                if (request != null && request.sourceRun >= 1 && request.targetRun == request.sourceRun + 1)
+                    return request;
+            }
+            catch (System.Exception e) { Debug.LogWarning("[LocalStory] 기록 읽기 실패: " + e.Message); }
+        }
+        return null;
+    }
+    private static int RunDirectoryNumber(string path)
+    {
+        string name = Path.GetFileName(path);
+        return name.Length > 4 && int.TryParse(name.Substring(4), out int number) ? number : 0;
+    }
+
+    public string SaveLocalStoryTest(LocalStoryTestReport report)
+    {
+        try
+        {
+            var document = Newtonsoft.Json.Linq.JObject.Parse(JsonUtility.ToJson(report));
+            string path = LocalStoryTestArchive.Save(Path.Combine(BasePath, "LocalStoryTests"), document);
+            report.archiveId = (string)document["archiveId"];
+            report.archiveNumber = (int)document["archiveNumber"];
+            return path;
+        }
+        catch (System.Exception e) { Debug.LogWarning("[LocalStory] 테스트 기록 저장 실패: " + e.Message); return null; }
     }
 
     public void SaveRunCheckpoint<T>(int runNumber, string fileName, T data)
@@ -157,6 +198,23 @@ public class SaveIOService
             Debug.LogError($"[SaveIO] 생성 콘텐츠 저장 실패: {path}\n{exception.Message}");
             return false;
         }
+    }
+
+    // User-triggered test promotion: retain a recoverable prior generated story before replacement.
+    public bool SaveGeneratedContentForTest<T>(int runNumber,string contentType,string relativePath,T data)
+    {
+        if(!TryGetGeneratedContentPath(runNumber,contentType,relativePath,out string path)) return false;
+        try
+        {
+            if(File.Exists(path))
+            {
+                string recovery=Path.Combine(BasePath,"GeneratedContent","Recovery");
+                Directory.CreateDirectory(recovery);
+                File.Copy(path,Path.Combine(recovery,"Run_"+runNumber.ToString("D4")+"_"+System.Guid.NewGuid().ToString("N")+".json"));
+            }
+            return SaveGeneratedContent(runNumber,contentType,relativePath,data);
+        }
+        catch(System.Exception e) { Debug.LogWarning("[LocalStory] 적용 저장 실패: "+e.Message); return false; }
     }
 
     public void UpdateGeneratedEpisodeStatus(

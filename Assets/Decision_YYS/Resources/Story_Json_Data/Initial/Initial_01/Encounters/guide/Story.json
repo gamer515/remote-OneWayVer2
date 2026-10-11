@@ -1,4 +1,23 @@
 {
+  "storyFrame": {
+    "purpose": "왕국 광산에서 로키와 대화하며 지식이 이해력에 미치는 영향을 직접 체험하고, 로키의 정체를 들은 뒤 플레이어가 반응한다.",
+    "worldFacts": [
+      "장소는 왕국 전용 광산이다. 자유로운 출입이 허용된 곳은 아니다.",
+      "로키는 장난의 신이며 플레이어는 여행자다.",
+      "로키는 적적해서 왕국 광산을 거닐다 플레이어를 만났다.",
+      "이번 사건은 지식을 잠시 빼앗았다 돌려주는 장난이다. 실제 새 능력이나 보상의 지급은 이 장면에 없다."
+    ],
+    "firstMeetingFlow": [
+      "도입: 낯선 여행자를 광산에서 불러 세운다. 광산의 출입 사정과 여행자의 낯선 모습에서 장난스럽게 대화를 이어간다.",
+      "지식 장난: 로키가 인생을 알려주겠다며 이해력을 잃는 경험을 시킨다. 지식을 잃은 동안은 말이 흐트러지고, 돌려준 뒤에는 플레이어가 그 차이를 체감했는지 대화한다.",
+      "정체와 반응: 로키가 자신의 이름과 장난의 신이라는 정체, 광산에 온 이유를 자연스럽게 밝힌다. 끝에서는 플레이어가 로키에게 반응을 고른다."
+    ],
+    "reunionFlow": [
+      "도입: 실제 이전 선택을 기억하는 태도로 여행자를 맞는다. 이미 들은 출입 경고와 자기소개를 처음 만남처럼 반복할 필요는 없다.",
+      "지식 장난: 광산이나 여정에 관한 장난과 실제 기억을 이번 능력 체험으로 연결한다. 지식을 잠시 빼앗는 사건, 난독 선택, 지식 반환 순서는 유지한다.",
+      "정체와 반응: 이미 아는 정체는 로키가 자신을 상기시키는 말로 다룬다. 이전 만남의 태도를 대화에 이어가고 플레이어의 반응 선택으로 끝낸다."
+    ]
+  },
   "MainStory": [
     {
       "type": "Next",
@@ -10,7 +29,8 @@
       "type": "Next",
       "eventIdStable": "loki_intro_2",
       "speakerId": "Guide",
-      "text": "여기는 왕국 전용 광산이라고."
+      "text": "여기는 왕국 전용 광산이라고.",
+      "coreMeaning": "현재 장소는 왕국 전용 광산이며 플레이어의 자유로운 출입이 허용되지 않는다."
     },
     {
       "type": "Next",
@@ -26,11 +46,13 @@
       "guideAction": {
         "kind": "take_knowledge",
         "amount": 5
-      }
+      },
+      "coreMeaning": "로키가 이해력의 영향을 체험시키려 장난을 시작한다. 플레이어의 지식을 잠시 빼앗는 사건이지 코인을 주거나 심부름을 시키는 사건이 아니다. 코인의 개수는 대사로 설명하지 않는다."
     },
     {
       "type": "Choice",
       "eventIdStable": "loki_garbled_question",
+      "choiceKind": "Mechanic",
       "speakerId": "Guide",
       "text": "아라드찌 모 라게찌?",
       "options": [
@@ -57,7 +79,8 @@
           "action": "continue"
         }
       ],
-      "semanticText": "알아듣지 못하겠지?"
+      "semanticText": "알아듣지 못하겠지?",
+      "coreMeaning": "지식을 잃은 플레이어에게 로키가 알아듣지 못하겠느냐고 묻는다. 로키가 이해력을 잃은 것은 아니다. 플레이어가 듣는 말과 자신의 선택지 모두 발음이 흐트러지지만 뜻을 눈치챌 수 있다."
     },
     {
       "type": "Next",
@@ -66,7 +89,8 @@
       "text": "뭐라는 거야, 하하. 자, 어때. 이제 체감이 오나?",
       "guideAction": {
         "kind": "return_knowledge"
-      }
+      },
+      "coreMeaning": "로키가 빼앗은 지식을 돌려준 뒤 플레이어에게 이해력이 달라지는 경험을 체감했는지 묻는다."
     },
     {
       "type": "Next",
@@ -78,22 +102,25 @@
       "type": "Next",
       "eventIdStable": "loki_identity",
       "speakerId": "Guide",
-      "text": "나는 장난의 신 로키이지. 적적하게 왕국의 광산을 걷고 있었어."
+      "text": "나는 장난의 신 로키이지. 적적하게 왕국의 광산을 걷고 있었어.",
+      "coreMeaning": "로키는 장난의 신이며 적적해서 왕국의 광산을 거닐고 있었다. 첫 만남에는 정체를 밝히고 재회에는 이미 알려진 정체를 자연스럽게 상기시킨다."
     },
     {
       "type": "Choice",
       "eventIdStable": "loki_identity_choice",
+      "choiceKind": "Attitude",
       "speakerId": "Guide",
       "text": "자, 이제 무슨 말을 할 텐가?",
       "options": [
-        "너가 신이라고?",
-        "왜 여기에 있는 거지?",
+        "진짜 신이구나. 신기하네!",
+        "왜 이 광산에 있는 거야?",
         "관심없어.",
         "꺼져!"
       ],
       "choiceActions": [
         {
           "choiceId": "loki_question_god",
+          "choiceRole": "Positive",
           "action": "story",
           "storyPath": "Initial/Initial_01/Encounters/guide/QuestionGod",
           "relationshipId": "Guide",
@@ -101,6 +128,7 @@
         },
         {
           "choiceId": "loki_question_place",
+          "choiceRole": "Neutral",
           "action": "story",
           "storyPath": "Initial/Initial_01/Encounters/guide/QuestionPlace",
           "relationshipId": "Guide",
@@ -108,6 +136,7 @@
         },
         {
           "choiceId": "loki_dismiss",
+          "choiceRole": "Negative",
           "action": "story",
           "storyPath": "Initial/Initial_01/Encounters/guide/Dismiss",
           "relationshipId": "Guide",
@@ -115,12 +144,14 @@
         },
         {
           "choiceId": "loki_insult",
+          "choiceRole": "Chaotic",
           "action": "story",
           "storyPath": "Initial/Initial_01/Encounters/guide/Insult",
           "relationshipId": "Guide",
           "relationshipDelta": -2
         }
-      ]
+      ],
+      "coreMeaning": "로키가 플레이어의 반응을 기다린다. 플레이어의 네 반응은 신을 만난 신기함을 긍정적으로 표현하기, 광산에 온 이유를 중립적으로 묻기, 관심 없다고 부정적으로 말하기, 무모하게 모욕하기 순서다."
     }
   ]
 }

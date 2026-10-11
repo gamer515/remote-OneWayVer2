@@ -6,7 +6,15 @@ using UnityEngine;
 [Serializable]
 public sealed class EncounterCardRoot
 {
+    public StorySceneFrame storyFrame;
     public List<EncounterCard> MainStory;
+}
+
+[Serializable]
+public sealed class StorySceneFrame
+{
+    public string purpose;
+    public string[] worldFacts, firstMeetingFlow, reunionFlow;
 }
 
 [Serializable]
@@ -15,6 +23,7 @@ public sealed class EncounterCard
     public string type;
     public string text;
     public string[] options;
+    public string choiceKind;
     public string npcEmotion;
     public StoryChoiceAction[] choiceActions;
     public string startAction;
@@ -25,6 +34,7 @@ public sealed class EncounterCard
     public string eventIdStable;
     public string speakerId;
     public string semanticText;
+    public string coreMeaning;
     public string nextStoryPath;
     public GuideCoinAction guideAction;
 }
@@ -120,6 +130,7 @@ public sealed class EncounterContentRepository
                 type = sourceCard.type,
                 text = sourceCard.text,
                 options = sourceCard.options,
+                choiceKind = sourceCard.choiceKind,
                 npcEmotion = sourceCard.npcEmotion,
                 choiceActions = sourceCard.choiceActions,
                 startAction = sourceCard.startAction,
@@ -130,6 +141,7 @@ public sealed class EncounterContentRepository
                 eventIdStable = sourceCard.eventIdStable,
                 speakerId = sourceCard.speakerId,
                 semanticText = sourceCard.semanticText,
+                coreMeaning = sourceCard.coreMeaning,
                 nextStoryPath = sourceCard.nextStoryPath,
                 guideAction = sourceCard.guideAction
             });
@@ -148,11 +160,40 @@ public sealed class EncounterContentRepository
         if (root?.MainStory == null) return;
         // JsonUtility는 누락된 inline 직렬화 클래스도 빈 객체로 복원합니다.
         foreach (var card in root.MainStory)
+        {
+            if (card == null) continue;
+            // JsonUtility writes null strings/arrays as empty values in saved generated files.
+            // Normalize both sides before comparing metadata, otherwise valid wording always falls back.
+            card.npcEmotion = EmptyToNull(card.npcEmotion);
+            card.choiceKind = EmptyToNull(card.choiceKind);
+            card.startAction = EmptyToNull(card.startAction);
+            card.winStoryPath = EmptyToNull(card.winStoryPath);
+            card.loseStoryPath = EmptyToNull(card.loseStoryPath);
+            card.errorStoryPath = EmptyToNull(card.errorStoryPath);
+            card.eventIdStable = EmptyToNull(card.eventIdStable);
+            card.speakerId = EmptyToNull(card.speakerId);
+            card.semanticText = EmptyToNull(card.semanticText);
+            card.coreMeaning = EmptyToNull(card.coreMeaning);
+            card.nextStoryPath = EmptyToNull(card.nextStoryPath);
+            if (card.options?.Length == 0) card.options = null;
+            if (card.choiceActions?.Length == 0) card.choiceActions = null;
+            foreach (var action in card.choiceActions ?? Array.Empty<StoryChoiceAction>())
+            {
+                if (action == null) continue;
+                action.choiceId = EmptyToNull(action.choiceId);
+                action.choiceRole = EmptyToNull(action.choiceRole);
+                action.storyPath = EmptyToNull(action.storyPath);
+                action.relationshipId = EmptyToNull(action.relationshipId);
+                if (action.requiresUnlocks?.Length == 0) action.requiresUnlocks = null;
+                if (action.grantsUnlocks?.Length == 0) action.grantsUnlocks = null;
+            }
             if (card?.guideAction != null && string.IsNullOrEmpty(card.guideAction.kind) &&
                 card.guideAction.amount == 0 && string.IsNullOrEmpty(card.guideAction.readyStoryPath) &&
                 string.IsNullOrEmpty(card.guideAction.retryStoryPath) && string.IsNullOrEmpty(card.guideAction.charmZeroStoryPath))
                 card.guideAction = null;
+        }
     }
+    private static string EmptyToNull(string value) => string.IsNullOrEmpty(value) ? null : value;
 
     private static bool VariantPreservesActions(EncounterCardRoot original, EncounterCardRoot variant)
     {
@@ -166,6 +207,7 @@ public sealed class EncounterContentRepository
             left.text = right.text = null;
             left.options = right.options = null;
             left.semanticText = right.semanticText = null;
+            left.coreMeaning = right.coreMeaning = null;
             left.speakerId = right.speakerId = null;
             if (JsonUtility.ToJson(left) != JsonUtility.ToJson(right)) return false;
         }
@@ -174,6 +216,7 @@ public sealed class EncounterContentRepository
 
     private static bool ValidateActions(EncounterCard card, out string error)
     {
+        if (!StoryChoiceRoles.Validate(card, out error)) return false;
         if (card.guideAction != null && (card.type != "Next" ||
             !Array.Exists(new[] { "take_knowledge", "return_knowledge", "punish", "kneel", "allocate" },
                 kind => kind == card.guideAction.kind) || string.IsNullOrWhiteSpace(card.eventIdStable)))
@@ -249,6 +292,11 @@ public sealed class EncounterContentRepository
             return false;
         }
 
+        if (JsonUtility.ToJson(original.storyFrame) != JsonUtility.ToJson(generated.storyFrame))
+        {
+            error = "원문의 장면 핵심 설정이 변경되었습니다.";
+            return false;
+        }
         for (int index = 0; index < original.MainStory.Count; index++)
         {
             EncounterCard originalCard = original.MainStory[index];
@@ -260,7 +308,10 @@ public sealed class EncounterContentRepository
                 return false;
             }
 
+            StoryChoiceRoles.FillMissingMetadata(generatedCard, originalCard);
+
             if (generatedCard.type != originalCard.type ||
+                generatedCard.choiceKind != originalCard.choiceKind ||
                 generatedCard.npcEmotion != originalCard.npcEmotion ||
                 generatedCard.startAction != originalCard.startAction ||
                 generatedCard.duelHitTarget != originalCard.duelHitTarget ||
@@ -270,12 +321,13 @@ public sealed class EncounterContentRepository
                 generatedCard.eventIdStable != originalCard.eventIdStable ||
                 generatedCard.speakerId != originalCard.speakerId ||
                 generatedCard.semanticText != originalCard.semanticText ||
+                generatedCard.coreMeaning != originalCard.coreMeaning ||
                 generatedCard.nextStoryPath != originalCard.nextStoryPath ||
                 JsonUtility.ToJson(generatedCard.guideAction) != JsonUtility.ToJson(originalCard.guideAction) ||
                 !ChoiceActionsEqual(generatedCard.choiceActions, originalCard.choiceActions) ||
-                !ArrayEquals(generatedCard.options, originalCard.options))
+                !OptionsPreserveStructure(originalCard.options, generatedCard.options))
             {
-                error = $"{index}번째 카드의 text 외 구조가 원본과 다릅니다.";
+                error = $"{index}번째 카드의 대사/선택지 문구 외 구조가 원본과 다릅니다.";
                 return false;
             }
 
@@ -284,12 +336,30 @@ public sealed class EncounterContentRepository
                 error = $"{index}번째 카드의 {{ }} 핵심 문자열이 변경되었습니다.";
                 return false;
             }
+            if (!LocalStoryRewrite.ValidateCardWording(originalCard, generatedCard, out string wordingError))
+            {
+                error = $"{index}번째 생성 대사: {wordingError}";
+                return false;
+            }
         }
 
         for (int index = 0; index < original.MainStory.Count; index++)
+        {
             original.MainStory[index].text = generated.MainStory[index].text;
+            original.MainStory[index].options = generated.MainStory[index].options;
+        }
 
         error = null;
+        return true;
+    }
+
+    private static bool OptionsPreserveStructure(string[] original, string[] generated)
+    {
+        if (original == null) return generated == null;
+        if (generated == null || generated.Length != original.Length) return false;
+        for (int i = 0; i < original.Length; i++)
+            if (string.IsNullOrWhiteSpace(generated[i]) || generated[i].Length > 45 ||
+                !HasSameImmutableCores(original[i], generated[i])) return false;
         return true;
     }
 

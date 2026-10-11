@@ -42,6 +42,7 @@ public class GameManager : MonoBehaviour
     {
         if (instance == null) { instance = this; DontDestroyOnLoad(gameObject); 
             currentState = GameState.Main; saveManager = new SaveManager();
+            LocalStoryRuntimeService.TryResumePending();
         }
         else if (instance != this) { Destroy(gameObject); }
     }

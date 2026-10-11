@@ -138,7 +138,11 @@ public partial class DecisionManager
 
     private bool ExecuteStoryChoice(Dialogue card)
     {
-        if (card.choiceActions == null || card.choiceActions.Length == 0) return false;
+        if (card.choiceActions == null || card.choiceActions.Length == 0)
+        {
+            presentationController.ConfirmChoice(card.options[selectedGearIndex]);
+            return false;
+        }
         StoryChoiceAction choice = card.choiceActions[selectedGearIndex];
         if (!saveService.HasAllUnlocks(choice.requiresUnlocks))
         {
@@ -151,6 +155,7 @@ public partial class DecisionManager
         saveService.ApplyEncounterEffect(
             $"visit:{storyVisit}:choice:{selectedGearIndex}",
             choice.grantsUnlocks, choice.relationshipId, relationshipDelta);
+        LocalStoryNotebook.Refresh(SaveIOService.Instance);
         switch (choice.action)
         {
             case "skip": ResolveEncounter(); return true;
@@ -218,6 +223,8 @@ public partial class DecisionManager
     {
         activePlaceId = encounter.PlaceId;
         activeEncounterPath = string.IsNullOrWhiteSpace(storyPath) ? encounter.ContentPath : storyPath;
+        if (string.IsNullOrWhiteSpace(storyPath))
+            activeEncounterPath = LocalStoryNotebook.ResolveOpeningPath(SaveIOService.Instance,encounter.DisplayName,activeEncounterPath);
         int[] stats = statContainer.stats;
         bool isGuide = encounter.DisplayName == "Guide";
         if (!encounterContent.TryLoadCards(activeEncounterPath, out activeCards, out string error,
@@ -331,6 +338,7 @@ public partial class DecisionManager
 
     private void ResolveEncounter()
     {
+        var finishedEncounter=pendingEncounter;
         duelMiniGame?.CleanupDuel();
         tutorialMiniGames?.Cleanup();
         if (!string.IsNullOrEmpty(activePlaceId))
@@ -339,6 +347,17 @@ public partial class DecisionManager
             saveService?.MarkEncounterCompleted(activePlaceId);
         }
         BeginExploration();
+        if(finishedEncounter.HasValue)
+        {
+            var finished=finishedEncounter.Value;
+            try
+            {
+                LocalStoryDialogueQueue.EncounterEnded(SaveIOService.Instance,session.RunNumber,
+                    finished.PlaceId,finished.DisplayName,finished.ContentPath);
+                LocalStoryRuntimeService.TryResumePending();
+            }
+            catch(Exception e) { LocalStoryLog.Write(LocalStoryLogStage.Failed,"대화 종료 생성 요청: "+e.Message,this); }
+        }
     }
 
     private void CompleteEncounterEpisode()

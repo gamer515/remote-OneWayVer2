@@ -12,16 +12,30 @@
 /[Uu]ser[Ss]ettings/
 *.log
 
+# Local inference payloads are restored by AgentScripts/SetupLocalStoryModel.ps1.
+# Keep model/runtime out of Git; Windows builds include them through StreamingAssets.
+/Assets/StreamingAssets/LocalStory/*.gguf
+/Assets/StreamingAssets/LocalStory/*.gguf.meta
+/Assets/StreamingAssets/LocalStory/runtimes/
+/Assets/StreamingAssets/LocalStory/runtimes.meta
+
+# Optional comparison models remain outside Assets and game builds.
+/Tests/LocalStoryBenchmark/Models/
+
 # Local authoring and generated document artifacts
 /tmp/
 /outputs/
+/AgentScripts/StoryWorkbook/node_modules/
+/AgentScripts/StoryWorkbook/qa/
+/Assets/StreamingAssets/LocalStory/*.inspect.ndjson*
 /output/
 /.codex-finalizer-*/
 
-# Generated caches from the nested prefab build project
-/AssetBuild/NativePrefabBuildProject/Library/
-/AssetBuild/NativePrefabBuildProject/Logs/
-/AssetBuild/NativePrefabBuildProject/UserSettings/
+# Generated caches from all nested authoring/validation Unity projects
+/AssetBuild/**/[Ll]ibrary/
+/AssetBuild/**/[Ll]ogs/
+/AssetBuild/**/[Tt]emp/
+/AssetBuild/**/[Uu]ser[Ss]ettings/
 /AssetBuild/BlenderTools/
 
 # MemoryCaptures can get excessive in size.

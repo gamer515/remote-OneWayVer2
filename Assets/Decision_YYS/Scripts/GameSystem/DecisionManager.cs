@@ -134,7 +134,8 @@ public partial class DecisionManager : MonoBehaviour
             yield break;
 
         // 메인에서 곧바로 재시작해도 다음 회차의 생성 지문이 준비되기 전에 읽지 않습니다.
-        if (AIAPIClient.IsGenerationInProgress)
+        LocalStoryRuntimeService.TryResumePending();
+        if (AIAPIClient.IsGenerationInProgress || LocalStoryRuntimeService.BlocksCurrentRun)
             yield return WaitForGeneratedStory();
 
         Initialize();
@@ -146,7 +147,7 @@ public partial class DecisionManager : MonoBehaviour
         SetYellowInputInteractable(false);
         journeyBoardInput?.SetInputEnabled(false);
         Debug.Log("[Story] 다음 회차 이야기 생성이 끝나면 플레이를 시작합니다.", this);
-        while (AIAPIClient.IsGenerationInProgress)
+        while (AIAPIClient.IsGenerationInProgress || LocalStoryRuntimeService.BlocksCurrentRun)
         {
             yield return null;
         }
@@ -444,7 +445,6 @@ private void SetYellowInputInteractable(bool interactable)
         if (session != null && saveService != null)
         {
             SaveGuideCheckpoint(reason);
-            QueueLocalChapterRevision(reason);
         }
         currentState = StoryState.Transitioning;
         encounterFlow = null;
@@ -454,8 +454,12 @@ private void SetYellowInputInteractable(bool interactable)
         journeyBoardInput?.SetInputEnabled(false);
         if (runCompletionService == null)
             runCompletionService = new DecisionRunCompletionService(
-                () => saveService?.CompleteCurrentRun(),
-                () => GameManager.Instance.PrepareNextPlaythrough(),
+                () => {
+                    saveService?.CompleteCurrentRun();
+                    try { LocalStoryDialogueQueue.FinalizeRun(SaveIOService.Instance,session.RunNumber); }
+                    catch(Exception e) { LocalStoryLog.Write(LocalStoryLogStage.Failed,"회차 종료 기억 조건 확인: "+e.Message,this); }
+                },
+                () => { int next = GameManager.Instance.PrepareNextPlaythrough(); LocalStoryRuntimeService.TryResumePending(); return next; },
                 () => sceneTransitionService.LoadMainMenuScene());
         Debug.Log($"[Story] {session?.RunNumber ?? 1}회차 {reason}. " +
             "다음 회차를 Initial부터 시작하도록 준비하고 메인 메뉴로 이동합니다.", this);

@@ -214,7 +214,7 @@ public sealed class DuelMiniGameBridge : MonoBehaviour
         callback?.Invoke(won);
     }
 
-    private void CleanupInternal(bool notifyUserCode)
+    private void CleanupInternal(bool notifyUserCode, bool detachFromParent = true)
     {
         bool wasRunning = IsRunning;
         IsRunning = IsEnding = false;
@@ -227,12 +227,13 @@ public sealed class DuelMiniGameBridge : MonoBehaviour
         if (boardInputLocked && boardInput != null)
             boardInput.SetInputEnabled(boardInputWasEnabled);
         boardInputLocked = false;
-        authoringReferences?.CleanupDuelObjects();
-        setupController?.Cleanup();
+        authoringReferences?.CleanupDuelObjects(detachFromParent);
+        setupController?.Cleanup(detachFromParent);
         testSession = false;
         completed = null;
         if (notifyUserCode && wasRunning) onDuelCleanup.Invoke();
     }
 
-    private void OnDisable() => CleanupInternal(true);
+    // Unity forbids reparenting descendants during hierarchy activation/deactivation.
+    private void OnDisable() => CleanupInternal(true, false);
 }

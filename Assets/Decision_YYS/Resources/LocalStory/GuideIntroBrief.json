@@ -1,0 +1,38 @@
+{
+  "storyPath": "Initial/Initial_01/Encounters/guide",
+  "sourceSha256": "35618357c8e56277d691831ab9a796cab4caa31fe5858952bfc828597292c91d",
+  "style": "로키는 능청스럽고 장난스럽다. 플레이어를 자네라고 부른다. 자연스러운 반말 또는 하게체를 쓴다. 로키는 광산과 자신의 정체를 알고 있다.",
+  "eventOrder": [
+    "loki_intro_1",
+    "loki_intro_2",
+    "loki_intro_3",
+    "loki_take_knowledge",
+    "loki_garbled_question",
+    "loki_return_knowledge",
+    "loki_identity_question",
+    "loki_identity",
+    "loki_identity_choice"
+  ],
+  "choiceReferences": [
+    {
+      "choiceId": "loki_garbled_confused",
+      "text": "뭐라고?",
+      "heardText": "머라구우?"
+    },
+    {
+      "choiceId": "loki_garbled_guess",
+      "text": "아, 알겠어!",
+      "heardText": "으응, 아라써어!"
+    },
+    {
+      "choiceId": "loki_garbled_mumble",
+      "text": "으라부라라!",
+      "heardText": "우라부루루!"
+    },
+    {
+      "choiceId": "loki_garbled_restore",
+      "text": "장난 그만하고 다시 돌려줘!",
+      "heardText": "그마안! 다씨 도려주우!"
+    }
+  ]
+}

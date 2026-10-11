@@ -45,6 +45,13 @@ public sealed class GuideProgress
 [Serializable]
 public sealed class LocalStoryRevisionRequest
 {
+    // Real play audit and cross-run impressions are deliberately different inputs.
+    public string generationTrigger;
+    public string memoryMode;
+    public string characterId;
+    public int dialogueRevision;
+    public List<StoryEventRecord> playEvents;
+    public List<LocalStoryDreamMemory> dreamMemories;
     public int sourceRun;
     public int targetRun;
     public string status = "PendingLocalModel";
@@ -54,6 +61,10 @@ public sealed class LocalStoryRevisionRequest
     public int[] finalStats;
     public List<StoryEventRecord> events;
     public List<PlayedEncounterCardRecord> playedCards;
+    public string[] earnedUnlocks;
+    public LocalStoryNpcContext[] npcContexts;
+    public string generationError;
+    public List<LocalStoryRuntimeResult> generationResults = new List<LocalStoryRuntimeResult>();
     public string constraints = "지형/인물/선택 결과/아이템 사실은 변경 금지. 만나지 않은 인물의 과거 만남을 창작하지 말 것. 지문과 허용된 선택지 표현만 변경.";
 }
 
@@ -74,8 +85,11 @@ public sealed class StoryEventRecord
     public string cardId;
     public string kind;
     public string choiceId;
+    public string choiceRole;
     public int choiceSlot;
     public string relationshipId;
+    public string[] requiresUnlocks;
+    public string[] grantsUnlocks;
     public int relationshipDelta;
     public string displayedText;
     public string semanticText;

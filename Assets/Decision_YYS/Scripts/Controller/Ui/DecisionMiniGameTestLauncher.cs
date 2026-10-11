@@ -42,6 +42,7 @@ public sealed class DecisionMiniGameTestLauncher : MonoBehaviour
         if (gambleButton != null) gambleButton.onClick.AddListener(StartGamble);
         if (coinHeadsButton != null) coinHeadsButton.onClick.AddListener(StartHeadsCoinToss);
         if (coinTailsButton != null) coinTailsButton.onClick.AddListener(StartTailsCoinToss);
+        LocalStoryTestPanel.Create(this);
     }
     public void StartDuel()
     {

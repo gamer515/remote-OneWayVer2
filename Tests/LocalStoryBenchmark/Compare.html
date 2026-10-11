@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
+<title>Qwen · Gemma 이야기 비교</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { margin: 0; padding: 24px; font: 16px/1.65 system-ui,sans-serif; color: light-dark(#19232e,#ecf0f4); background: light-dark(#f7f8fa,#141a22); }
+  main { max-width: 1520px; margin: auto; }
+  h1 { font-size: 24px; margin: 0 0 8px; }
+  h2 { font-size: 19px; margin: 12px 0; }
+  h3 { font-size: 17px; margin: 0 0 8px; }
+  p { margin: 8px 0; }
+  button,select { font: inherit; padding: 8px 12px; max-width: 100%; }
+  header { margin-bottom: 20px; }
+  .controls { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin: 18px 0; }
+  .row { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 16px; margin: 16px 0; }
+  .cell { padding: 16px; background: light-dark(#fff,#202a36); border: 1px solid light-dark(#d6dde5,#425164); border-radius: 8px; min-width: 0; }
+  .speech { white-space: pre-wrap; overflow-wrap: anywhere; margin-bottom: 12px; }
+  .meta { color: light-dark(#445264,#b3c0d0); font-size: 14px; overflow-wrap: anywhere; }
+  .failure { color: light-dark(#982715,#ffb3a4); }
+  .pending { color: light-dark(#664706,#efcc86); }
+  ol { margin: 8px 0; padding-left: 24px; }
+  li { margin-bottom: 8px; white-space: pre-wrap; overflow-wrap: anywhere; }
+  pre { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; }
+  details { margin: 10px 0; }
+  textarea { box-sizing: border-box; width: 100%; min-height: 72px; font: inherit; padding: 8px; }
+  .review { margin: 16px 0; }
+  @media(max-width: 850px) { body { padding: 16px; } .row { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>원문 / Qwen / Gemma 대사 비교</h1>
+    <p id="state" role="status"></p>
+    <p>생성 결과는 원문으로 대체하지 않습니다. 자동 규칙 통과는 의미·자연스러움 합격이 아닙니다.</p>
+    <p class="meta" id="condition"></p>
+    <p id="overall"></p>
+  </header>
+  <div class="controls">
+    <label for="case">시험 상황</label><select id="case"></select>
+    <button id="export" type="button">내 평가 JSON 저장</button>
+  </div>
+  <section aria-label="시험 입력과 결과">
+    <h2 id="case-title"></h2>
+    <p id="memory"></p>
+    <div class="row" id="stats"></div>
+    <details><summary>이 상황에서 확인할 기준</summary><ul id="checks"></ul></details>
+    <p class="meta" id="hash"></p>
+  </section>
+  <section id="cards" aria-label="카드별 대사 비교"></section>
+  <section class="review" aria-label="직접 평가">
+    <h2>직접 읽고 평가</h2>
+    <label for="winner">이 상황에서 더 나은 결과</label>
+    <select id="winner">
+      <option value="not_reviewed">미평가</option><option value="qwen">Qwen</option>
+      <option value="gemma">Gemma</option><option value="tie">비슷함</option>
+      <option value="neither">둘 다 만족하지 않음</option>
+    </select>
+    <p><label for="notes">의미 오류·자연스러움·변화 정도에 대한 메모</label></p>
+    <textarea id="notes" placeholder="문제 카드 번호와 실제 문장을 적어 주세요."></textarea>
+    <p class="meta">평가는 이 페이지에서만 유지됩니다. 저장 버튼은 평가 파일만 내려받으며 게임·원문·회차에 적용하지 않습니다.</p>
+  </section>
+  <section aria-label="원시 출력" id="raw"></section>
+</main>
+<script id="comparison-data" type="application/octet-stream">__COMPARISON_DATA__</script>
+<script>
+'use strict';
+const text = new TextDecoder().decode(Uint8Array.from(atob(document.getElementById('comparison-data').textContent.trim()), c => c.charCodeAt(0)));
+const data = JSON.parse(text);
+const byId = id => document.getElementById(id);
+const scenarios = {first:'첫 만남',friendly:'우호 재회',insult:'모욕 재회',allocation:'능력 배분'};
+const reviews = {};
+function el(tag, content, cls) { const e = document.createElement(tag); if(content !== undefined) e.textContent = content; if(cls) e.className = cls; return e; }
+function parsed(report) { if(!report) return {cards:[],error:'미실행'}; try { const p = JSON.parse(report.rawOutput); return {cards:Array.isArray(p?.cards)?p.cards.filter(c => c !== null && typeof c === 'object'):[],error:Array.isArray(p?.cards)?null:'cards 배열 없음'}; } catch(e) { return {cards:[],error:'JSON 파싱 실패: '+e.message}; } }
+function selected() { return data.cases.find(c => c.id === byId('case').value); }
+function remember() { const c = selected(); if(c) reviews[c.id] = {winner:byId('winner').value,notes:byId('notes').value}; }
+function summary(label, report) {
+  const box = el('div',undefined,'cell'); box.append(el('h3',label));
+  if(!report) { box.append(el('p','실제 출력 대기 — 원문이나 Qwen 결과로 채우지 않음','pending')); return box; }
+  box.append(el('p','시간: '+Number(report.seconds).toFixed(2)+'초 / '+(report.backend || '백엔드 미기록')));
+  const result = parsed(report); box.append(el('p',result.error || 'JSON 파싱 가능',result.error?'failure':'meta'));
+  box.append(el('p','자동 규칙: '+(report.valid?'통과':('실패 — '+(report.error || '검사 미완료'))),report.valid?'meta':'failure'));
+  box.append(el('p','품질: 사람의 검토 필요','meta')); return box;
+}
+function column(label, card, pending) {
+  const box = el('div',undefined,'cell'); box.append(el('h3',label));
+  if(!card) { box.append(el('p',pending?'Gemma 실제 출력 대기':'출력 카드 없음','pending')); return box; }
+  box.append(el('div',typeof card.text==='string'?card.text:'text 값이 문자열이 아님','speech'));
+  if(Array.isArray(card.options) && card.options.length) { const list=el('ol'); card.options.forEach(o => list.append(el('li',typeof o==='string'?o:JSON.stringify(o)))); box.append(list); }
+  return box;
+}
+function render() {
+  const c=selected(); if(!c) return;
+  const q=parsed(c.qwen), g=parsed(c.gemma);
+  byId('case-title').textContent=(scenarios[c.id.split('-')[0]] || c.id)+' · 시드 '+c.seed;
+  byId('memory').textContent=c.context;
+  byId('stats').replaceChildren(column('원문', {text:c.storyPath,options:[]},false),summary('Qwen 4B',c.qwen),summary('Gemma 4B QAT',c.gemma));
+  byId('checks').replaceChildren(...c.checks.map(s => el('li',s)));
+  byId('hash').textContent='고정 입력 SHA256: '+data.inputSha256;
+  byId('cards').replaceChildren();
+  c.original.MainStory.forEach((source,i) => {
+    const section=el('section'); section.append(el('h2','카드 '+i));
+    section.append(el('p',(source.speakerId || '')+' / '+(source.eventIdStable || '')+' / '+source.type,'meta'));
+    const row=el('div',undefined,'row'); row.append(column('원문',source,false),column('Qwen',q.cards.find(x => x.index === i),false),column('Gemma',g.cards.find(x => x.index === i),!c.gemma)); section.append(row); byId('cards').append(section);
+  });
+  const review=reviews[c.id] || {winner:'not_reviewed',notes:''};
+  byId('winner').value=review.winner; byId('notes').value=review.notes;
+  byId('winner').disabled=!c.gemma; byId('notes').disabled=!c.gemma;
+  byId('raw').replaceChildren();
+  [['Qwen',c.qwen],['Gemma',c.gemma]].forEach(([label,report]) => { const details=el('details'); details.append(el('summary',label+' JSON / 원시 출력')); details.append(el('pre',report?report.rawOutput:'아직 실행하지 않았습니다.')); byId('raw').append(details); });
+}
+data.cases.forEach(c => { const option=el('option',(scenarios[c.id.split('-')[0]] || c.id)+' / '+c.seed); option.value=c.id; byId('case').append(option); });
+byId('state').textContent=data.cases.some(c => c.gemma)?'Gemma 완료 '+data.cases.filter(c => c.gemma).length+'/8 — 아래에서 실제 결과 비교':'Qwen 기준 결과만 완료. Gemma 모델 접근·호환성 확인 후 비교 시험을 실행해야 합니다.';
+byId('condition').textContent='동일 원문·기억·시드·샘플링 / 한 번 생성 / 자동 교정 없음. Gemma는 system 내용을 첫 user 입력에 병합합니다. 모델과 양자화·대화 템플릿의 차이를 함께 비교하는 시험입니다.';
+function overall(key,label) {
+  const reports=data.cases.map(c=>c[key]).filter(Boolean);
+  if(!reports.length) return label+': 미실행';
+  const times=reports.map(r=>Number(r.seconds)).sort((a,b)=>a-b);
+  const middle=Math.floor(times.length/2);
+  const median=times.length%2?times[middle]:(times[middle-1]+times[middle])/2;
+  return label+': JSON '+reports.filter(r=>!parsed(r).error).length+'/'+reports.length+', 자동 규칙 '+reports.filter(r=>r.valid).length+'/'+reports.length+', 중앙값 '+median.toFixed(1)+'초';
+}
+byId('overall').textContent=overall('qwen','Qwen')+' / '+overall('gemma','Gemma')+' — 의미·한국어 품질은 별도로 읽고 판단';
+byId('case').addEventListener('change',render);
+byId('winner').addEventListener('change',remember); byId('notes').addEventListener('input',remember);
+byId('export').addEventListener('click',() => { remember(); const blob=new Blob([JSON.stringify({suiteId:data.suiteId,inputSha256:data.inputSha256,qwenModel:data.qwenModel,gemmaModel:data.gemmaModel,reviews},null,2)+'\n'],{type:'application/json'}); const url=URL.createObjectURL(blob); const a=el('a'); a.href=url; a.download='LocalStoryComparisonReview.json'; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url),1000); });
+render();
+</script>
+</body>
+</html>

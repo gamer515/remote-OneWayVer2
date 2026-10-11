@@ -21,17 +21,17 @@ public sealed class DecisionPresentationController
 
     public void ShowOptions(string[] options, int selectedIndex)
     {
-        if (uiController == null)
-            return;
-
-        if (options == null || options.Length != 4 || selectedIndex < 0 || selectedIndex >= 4)
+        if (uiController == null) return;
+        if (options == null || options.Length != 4)
         {
             uiController.ActiveOptionTextUi(false);
             return;
         }
-
         string[] directions = { "좌상", "좌하", "우상", "우하" };
-        uiController.ChangeUiText(TextTarget.Option, text: $"▶ {directions[selectedIndex]}: {options[selectedIndex]}");
+        bool selected = selectedIndex >= 0 && selectedIndex < 4;
+        string text = selected ? options[selectedIndex] ?? string.Empty : string.Empty;
+        bool canConfirm = selected && !text.EndsWith(" (잠김)", System.StringComparison.Ordinal);
+        uiController.PreviewChoice(text, selected ? directions[selectedIndex] : null, canConfirm);
         uiController.ActiveOptionTextUi(true);
     }
 
@@ -40,9 +40,12 @@ public sealed class DecisionPresentationController
         if (uiController == null || dialogue == null)
             return;
 
+        uiController.ActiveOptionTextUi(false);
         uiController.ShowEventView();
         uiController.ChangeUiText(TextTarget.FrontDialogue, dialogue);
     }
+
+    public void ConfirmChoice(string text) => uiController?.AppendPlayerChoice(text);
 
     public void ExitChoice()
     {
@@ -51,8 +54,8 @@ public sealed class DecisionPresentationController
 
     public void ShowGuideAllocation(string instructions, string summary)
     {
-        ShowDialogue(new Dialogue { type = "Next", text = instructions });
-        uiController?.ChangeUiText(TextTarget.Option, text: summary);
+        uiController?.ShowEventView();
+        uiController?.ChangeUiText(TextTarget.Option, text: instructions + "\n" + summary);
         uiController?.ActiveOptionTextUi(true);
     }
 

@@ -1,0 +1,33 @@
+{
+  "rules": [
+    {
+      "ruleId": "positive_relationship_choice",
+      "characterId": "*",
+      "kind": "choice",
+      "choiceRole": "Positive",
+      "requireRelationshipChoice": true,
+      "enabled": true,
+      "runCompletedOnly": false,
+      "impression": "꿈에서 이 여행자에게 호감을 느낀 듯하다. 실제로 만났던 사람이라고 확신하거나 구체적인 과거 대사를 기억하지는 않는다."
+    },
+    {
+      "ruleId": "negative_relationship_choice",
+      "characterId": "*",
+      "kind": "choice",
+      "choiceRole": "Negative",
+      "requireRelationshipChoice": true,
+      "enabled": true,
+      "runCompletedOnly": false,
+      "impression": "꿈에서 이 여행자에게 불쾌감과 거리감을 느낀 듯하다. 실제 과거 만남이나 구체적인 사건으로 단정하지 않는다."
+    },
+    {
+      "ruleId": "loki_chaotic_insult",
+      "characterId": "Guide",
+      "kind": "choice",
+      "choiceId": "loki_insult",
+      "enabled": true,
+      "runCompletedOnly": false,
+      "impression": "꿈에서 여행자가 무례하게 행동해 불쾌했던 듯하다. 감정의 흔적만 있고 실제 만남이나 했던 말은 확신할 수 없다."
+    }
+  ]
+}

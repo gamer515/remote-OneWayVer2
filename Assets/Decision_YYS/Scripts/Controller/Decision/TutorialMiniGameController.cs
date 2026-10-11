@@ -97,7 +97,9 @@ public sealed class TutorialMiniGameController : MonoBehaviour
         coinRoutine = StartCoroutine(WaitForCoin(coin, body, choseHeads, completed));
     }
 
-    public void Cleanup()
+    public void Cleanup() => Cleanup(true);
+
+    public void Cleanup(bool detachFromParent)
     {
         if (coinRoutine != null) StopCoroutine(coinRoutine);
         coinRoutine = null;
@@ -105,7 +107,9 @@ public sealed class TutorialMiniGameController : MonoBehaviour
         {
             // Destroy는 프레임 끝에 실행됩니다. 그 전까지 보드 Renderer Bounds에
             // 지난 기사/손이 섞이지 않도록 생성물 루트를 먼저 분리합니다.
-            spawnedRoot.SetParent(null, true);
+            if (detachFromParent && gameObject.activeInHierarchy &&
+                (spawnedRoot.parent == null || spawnedRoot.parent.gameObject.activeInHierarchy))
+                spawnedRoot.SetParent(null, true);
             Destroy(spawnedRoot.gameObject);
         }
         spawnedRoot = null;
@@ -246,5 +250,5 @@ public sealed class TutorialMiniGameController : MonoBehaviour
         }
     }
 
-    private void OnDisable() => Cleanup();
+    private void OnDisable() => Cleanup(false);
 }

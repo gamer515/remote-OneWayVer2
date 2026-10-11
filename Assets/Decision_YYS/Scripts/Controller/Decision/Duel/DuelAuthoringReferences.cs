@@ -118,9 +118,11 @@ public sealed class DuelAuthoringReferences : MonoBehaviour
         if (authoringOverlay != null) authoringOverlay.gameObject.SetActive(visible);
     }
 
-    public void CleanupDuelObjects()
+    public void CleanupDuelObjects() => CleanupDuelObjects(true);
+
+    public void CleanupDuelObjects(bool detachFromParent)
     {
-        CleanupSpawnedHands();
+        CleanupSpawnedHands(detachFromParent);
         KnightTarget = null;
         SetGuidesVisible(false);
     }
@@ -134,18 +136,20 @@ public sealed class DuelAuthoringReferences : MonoBehaviour
         return instance;
     }
 
-    private void CleanupSpawnedHands()
+    private void CleanupSpawnedHands(bool detachFromParent = true)
     {
         // Destroy는 프레임 끝에 실행되므로, 재시작 직후 보드 Bounds에 이전 손
         // Renderer가 포함되지 않도록 앵커에서 먼저 분리합니다.
         if (spawnedPlayerHand != null)
         {
-            spawnedPlayerHand.transform.SetParent(null, true);
+            if (detachFromParent && gameObject.activeInHierarchy)
+                spawnedPlayerHand.transform.SetParent(null, true);
             Destroy(spawnedPlayerHand);
         }
         if (spawnedNpcHand != null)
         {
-            spawnedNpcHand.transform.SetParent(null, true);
+            if (detachFromParent && gameObject.activeInHierarchy)
+                spawnedNpcHand.transform.SetParent(null, true);
             Destroy(spawnedNpcHand);
         }
         spawnedPlayerHand = null;
