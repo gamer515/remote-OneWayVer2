@@ -1,8 +1,9 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { Workbook, SpreadsheetFile, FileBlob } from '@oai/artifact-tool';
 
-const project = 'C:/remote-OneWayVer2';
+const project = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const qa = path.join(project, 'AgentScripts/StoryWorkbook/qa');
 await fs.mkdir(qa, { recursive: true });
 const checkFile = process.argv[2];

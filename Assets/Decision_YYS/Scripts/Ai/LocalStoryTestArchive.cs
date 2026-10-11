@@ -509,6 +509,9 @@ public static class LocalStoryTestArchive
             analysis["saved"]=report.saved;
             analysis["runtimeStage"]=report.runtimeStage;
             analysis["runtimeError"]=report.runtimeError;
+            analysis["modelPath"]=report.modelPath;
+            analysis["runtimePath"]=report.runtimePath;
+            analysis["runtimeFailureDetails"]=report.runtimeFailureDetails;
             analysis["seconds"]=report.seconds;
             Write(analysisFile,analysis.ToString(Formatting.Indented));
             UpdateIndex(root);

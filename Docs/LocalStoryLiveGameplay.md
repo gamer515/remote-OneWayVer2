@@ -52,7 +52,7 @@ Console 검색에 `LocalStory`를 입력하면 생성 관련 로그만 볼 수 �
 ## Excel 위치와 편집
 
 실제로 사용하는 파일: `Application.persistentDataPath/Saves/Narrative/NpcStoryData.xlsx`.
-이 PC에서는 `C:/Users/유영선/AppData/LocalLow/DefaultCompany/OneWayInVc/Saves/Narrative/NpcStoryData.xlsx`입니다.
+Windows에서는 현재 사용자 계정의 `AppData/LocalLow/<회사명>/<제품명>/Saves/Narrative/NpcStoryData.xlsx`에 저장됩니다. Console의 저장 경로를 확인하세요. 다른 PC의 사용자 이름이나 절대 경로를 복사해 설정하지 않습니다.
 
 프로젝트의 `Assets/StreamingAssets/LocalStory/NpcStoryData.xlsx`는 새 PC/세이브에서 처음 복사하는 초기 양식입니다. 이미 복사된 운영 Excel을 덮어쓰지 않습니다. 운영 파일을 수정하고 저장하세요. 실행 중 파일 잠금 때문에 기록 갱신이 실패해도 게임 JSON은 보존하며, 다음 체크포인트에서 다시 갱신합니다.
 
@@ -92,6 +92,27 @@ Console 검색에 `LocalStory`를 입력하면 생성 관련 로그만 볼 수 �
 ## PC / 빌드 범위
 
 현재 검증 대상은 Windows x64 Unity Editor의 Main 실제 플레이 흐름입니다. Gemma 모델은 기존 `Tests/LocalStoryBenchmark/Models`에서 사용하며 아직 배포 빌드에 포함되지 않았습니다. 빌드에서 Gemma를 선택하면 실패 이유를 기록하고 원문을 사용합니다. 몰래 Qwen으로 대체하지 않습니다. Qwen은 기존 StreamingAssets 설치 경로를 사용합니다. Gemma 패키징/최종 빌드는 별도 작업입니다.
+
+## 다른 PC의 경로와 한글 폴더
+
+저장 결과와 운영 Excel은 `Application.persistentDataPath`에서, Qwen과 DLL은 `Application.streamingAssetsPath/LocalStory`에서 찾습니다. Editor용 Gemma는 해당 프로젝트의 `Tests/LocalStoryBenchmark/Models/gemma-3-4b-it-q4_0.gguf`에서 찾습니다. 사용자 이름·프로젝트 드라이브·폴더 이름을 코드에 고정하지 않습니다. 다른 PC의 세이브 경로가 표시된 옛 Analysis는 당시 실행 기록이며 현재 기기의 설정으로 사용하지 않습니다.
+
+GGUF와 DLL은 `.gitignore` 대상이므로 **Git pull만으로 다른 PC에 설치되지 않습니다**. Windows x64 기기마다 프로젝트에서 다음 명령으로 DLL을 설치하세요. Qwen을 사용하는 경우에만 Model도 설치합니다.
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\AgentScripts\SetupLocalStoryModel.ps1 -Part Runtime
+powershell -ExecutionPolicy Bypass -File .\AgentScripts\SetupLocalStoryModel.ps1 -Part Model
+```
+
+Gemma는 위 Model 명령으로 설치되지 않습니다. 사용자가 이미 받은 공식 Gemma 파일을 해당 프로젝트의 `Tests/LocalStoryBenchmark/Models`에 넣어야 합니다. 모델 파일명·크기·SHA256 검증은 유지하고, 없는 모델을 다른 모델로 자동 교체하지 않습니다. macOS/Linux/모바일 추론을 추가한 변경은 아니며, Windows x64 및 기존 CUDA/CPU AVX2 런타임 범위입니다.
+
+LlamaLib 2.0.5의 모델 이름 추출은 Windows 코드 페이지로 경로를 변환해 한글 경로에서 `No mapping for the Unicode character ...` 오류를 낼 수 있습니다. 초기화 시 `LLMService_From_Command`에 명시적인 ASCII 모델 별칭을 전달하여 이 변환을 건너뛰고, 실제 경로·프롬프트·대사는 계속 UTF-8로 전달합니다. 기존 초기화의 스레드·GPU 계층·context/batch·flash attention 설정은 유지합니다. 프로젝트를 영문 폴더로 옮기거나 Windows 전체 코드 페이지를 바꿀 필요가 없도록 처리한 것입니다.
+
+새 실패는 Console에 `LocalStoryNative/model-initialize`, `service-start`, `chat-template`, `completion` 같은 단계와 사용한 모델/DLL 경로를 남깁니다. `Analysis.json`의 `modelPath`, `runtimePath`, `runtimeFailureDetails`에서도 절대 경로와 예외 스택을 확인할 수 있습니다. 옛 실패 기록은 수정하지 않습니다. 수정 후 별도의 새 생성 결과를 확인하세요.
+
+보조 도구 `StoryWorkbook/build.mjs`도 자체 스크립트 위치에서 프로젝트 루트를 계산합니다. `OrganizeLocalStoryTests.ps1`은 현재 Unity Editor가 저장 경로를 결정하며, `unity`가 PATH에 없으면 `-UnityCli <설치된 unity.exe 경로>`를 지정합니다. 정리 대상 경로 검증은 유지합니다.
+
+`AgentScripts/LocalStoryNativePathCheck.cs`의 `Run`은 한글·공백·이모지 경로, 초기화 인수와 별칭, 네이티브 UTF-8 포인터 왕복, 누락 모델·취소 처리를 검사합니다. 실제 Windows DLL/Gemma 초기화와 문장 생성은 별도 실행 확인이 필요합니다.
 
 ## 검사와 아직 직접 해야 할 확인
 

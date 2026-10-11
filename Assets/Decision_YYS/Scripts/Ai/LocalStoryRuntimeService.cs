@@ -225,7 +225,7 @@ public static class LocalStoryRuntimePipeline
             storage.UpdateGeneratedEpisodeStatus(request.sourceRun,request.targetRun,path,ContentGenerationStatus.Ready);
         }
         catch(OperationCanceledException) { report.runtimeError=token.IsCancellationRequested?"생성 취소":"네이티브 취소 또는 5분 시간 제한"; result.error=report.runtimeError; }
-        catch(Exception e) { report.runtimeError=e.Message; result.error=e.Message; }
+        catch(Exception e) { report.runtimeError=e.Message; report.runtimeFailureDetails=e.ToString(); result.error=e.Message; }
         finally
         {
             report.seconds=watch.Elapsed.TotalSeconds;
@@ -273,6 +273,8 @@ public static class LocalStoryRuntimePipeline
         string root=Path.Combine(Application.streamingAssetsPath,"LocalStory");
         var model=report.model.Contains("Gemma")?LocalStoryTestModel.Gemma:LocalStoryTestModel.Qwen;
         string modelPath=LocalStoryTestModels.PathFor(root,model);
+        report.modelPath=Path.GetFullPath(modelPath);
+        report.runtimePath=Path.GetFullPath(Path.Combine(root,"runtimes","win-x64","native"));
         string partial=""; var watch=Stopwatch.StartNew();
         var sampling=LocalStorySampling.Comparison(); report.samplingProfile=sampling.Name; report.draftParameters=sampling.Parameters(report.seed);
         try

@@ -87,8 +87,7 @@ public sealed class LocalStoryNative : IDisposable
     private static extern IntPtr LoadLibraryEx(string path, IntPtr reserved, uint flags);
     [DllImport("kernel32", CharSet = CharSet.Ansi)] private static extern IntPtr GetProcAddress(IntPtr module, string name);
     [DllImport("kernel32")] private static extern bool FreeLibrary(IntPtr module);
-    [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate IntPtr Construct(IntPtr path, int slots, int threads, int gpu,
-        [MarshalAs(UnmanagedType.I1)] bool flash, int context, int batch, [MarshalAs(UnmanagedType.I1)] bool embedding, int loras, IntPtr loraPaths);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate IntPtr ConstructFromCommand(IntPtr command);
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate void ServiceCall(IntPtr instance);
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate void SetString(IntPtr instance, IntPtr value);
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate IntPtr StringCall(IntPtr instance, IntPtr value);
@@ -105,6 +104,7 @@ public sealed class LocalStoryNative : IDisposable
     private CancelCall cancel;
     private StatusCall status;
     private MessageCall message;
+    private string modelFile, runtimeFile;
     private T Bind<T>(string name) where T : Delegate
     {
         IntPtr ptr = GetProcAddress(library, name);
@@ -134,16 +134,31 @@ public sealed class LocalStoryNative : IDisposable
         return Encoding.UTF8.GetString(bytes);
     }
 
+    public static string InitializationCommand(string modelPath, bool gpu)
+    {
+        if (string.IsNullOrWhiteSpace(modelPath) || modelPath.IndexOfAny(new[] { '"', '\0', '\r', '\n' }) >= 0)
+            throw new ArgumentException("모델 경로가 비어 있거나 지원하지 않는 문자를 포함합니다.", nameof(modelPath));
+        // LlamaLib 2.0.5 derives an unnamed model's name through std::filesystem::path
+        // and the Windows ANSI code page. An explicit ASCII alias skips that conversion.
+        // Keep the actual path UTF-8: llama.cpp's model file reader supports Unicode.
+        // This is an in-process C API argument string, never a shell/process command.
+        return "-m \"" + Path.GetFullPath(modelPath) + "\" --alias LocalStory" +
+            " -t 6 -np 1 -c 4096 -b 256 -ngl " + (gpu ? "24" : "0") + " --context-shift -fa off";
+    }
+
     public LocalStoryNative(string runtimeDirectory, string modelPath, bool gpu)
     {
-        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) throw new PlatformNotSupportedException("현재 내장 LLM 테스트는 Windows x64용입니다.");
-        if (!File.Exists(modelPath)) throw new FileNotFoundException("로컬 모델이 없습니다. SetupLocalStoryModel.ps1을 실행하세요.", modelPath);
+        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) || IntPtr.Size != 8) throw new PlatformNotSupportedException("현재 내장 LLM 테스트는 Windows x64용입니다.");
+        modelFile = Path.GetFullPath(modelPath);
+        if (!File.Exists(modelFile)) throw new FileNotFoundException("로컬 모델이 없습니다. 이 기기에 모델을 설치하세요.", modelFile);
+        if (!Directory.Exists(runtimeDirectory)) throw new FileNotFoundException("로컬 추론 DLL 폴더가 없습니다. 이 기기에서 SetupLocalStoryModel.ps1 -Part Runtime을 실행하세요.", runtimeDirectory);
         string[] files = Directory.GetFiles(runtimeDirectory, "*.dll", SearchOption.AllDirectories);
         string selected = Array.Find(files, p => Path.GetFileName(p).Contains(gpu ? "tinyblas" : "avx2") && Path.GetFileName(p).StartsWith("llamalib"));
-        if (selected == null) throw new FileNotFoundException("로컬 추론 DLL이 없습니다.");
+        if (selected == null) throw new FileNotFoundException("로컬 추론 DLL이 없습니다 (" + (gpu ? "tinyblas" : "avx2") + ").", runtimeDirectory);
+        runtimeFile = Path.GetFullPath(selected);
         // SEARCH_DLL_LOAD_DIR + DEFAULT_DIRS: no PATH/current-directory DLL injection.
-        library = LoadLibraryEx(Path.GetFullPath(selected), IntPtr.Zero, 0x100 | 0x1000);
-        if (library == IntPtr.Zero) throw new InvalidOperationException("내장 DLL 로드 실패: " + Marshal.GetLastWin32Error());
+        library = LoadLibraryEx(runtimeFile, IntPtr.Zero, 0x100 | 0x1000);
+        if (library == IntPtr.Zero) throw new InvalidOperationException("[LocalStoryNative/dll-load] Win32=" + Marshal.GetLastWin32Error() + " / DLL=" + runtimeFile);
         try
         {
             status = Bind<StatusCall>("LLM_Status_Code"); message = Bind<MessageCall>("LLM_Status_Message");
@@ -151,11 +166,11 @@ public sealed class LocalStoryNative : IDisposable
             grammar = Bind<SetString>("LLM_Set_Grammar"); parameters = Bind<SetString>("LLM_Set_Completion_Parameters");
             template = Bind<StringCall>("LLM_Apply_Template"); completion = Bind<CompletionCall>("LLM_Completion");
             cancel = Bind<CancelCall>("LLM_Cancel");
-            using (var path = new Utf8(modelPath))
-                service = Bind<Construct>("LLMService_Construct")(path.Pointer, 1, 6, gpu ? 24 : 0, false, 4096, 256, false, 0, IntPtr.Zero);
-            Check();
-            if (service == IntPtr.Zero) throw new InvalidOperationException("내장 모델 초기화 실패");
-            Bind<ServiceCall>("LLM_Start")(service); Check();
+            using (var command = new Utf8(InitializationCommand(modelFile, gpu)))
+                service = Bind<ConstructFromCommand>("LLMService_From_Command")(command.Pointer);
+            Check("model-initialize");
+            if (service == IntPtr.Zero) throw new InvalidOperationException("[LocalStoryNative/model-initialize] 내장 모델 초기화 실패 / 모델=" + modelFile);
+            Bind<ServiceCall>("LLM_Start")(service); Check("service-start");
             Backend = gpu ? "CUDA tinyBLAS (24 layers)" : "CPU AVX2";
         }
         catch { Dispose(); throw; }
@@ -166,22 +181,23 @@ public sealed class LocalStoryNative : IDisposable
         token.ThrowIfCancellationRequested();
         using (var p = new Utf8((sampling ?? LocalStorySampling.Legacy()).Parameters(seed))) parameters(service, p.Pointer);
         using (var g = new Utf8(outputGrammar)) grammar(service, g.Pointer);
-        Check();
+        Check("grammar-and-sampling");
         string prompt;
         using (var m = new Utf8(messagesJson)) prompt = ReadUtf8(template(service, m.Pointer));
-        Check();
+        Check("chat-template");
         StreamCall callback = ptr => { progress?.Invoke(ReadUtf8(ptr)); };
         using (token.Register(() => cancel(service, 0)))
         using (var p = new Utf8(prompt))
         {
             string output = ReadUtf8(completion(service, p.Pointer, callback, 0, false));
             GC.KeepAlive(callback);
-            token.ThrowIfCancellationRequested(); Check(); return output;
+            token.ThrowIfCancellationRequested(); Check("completion"); return output;
         }
     }
-    private void Check()
+    private void Check(string stage)
     {
-        if (status != null && status() < 0) throw new InvalidOperationException(ReadUtf8(message()));
+        if (status != null && status() < 0) throw new InvalidOperationException(
+            "[LocalStoryNative/" + stage + "] " + ReadUtf8(message()) + " / 모델=" + modelFile + " / DLL=" + runtimeFile);
     }
     public void Dispose()
     {
@@ -215,8 +231,13 @@ public static class LocalStoryInference
                 LocalStoryNative engine;
                 string fallback = null;
                 try { engine = new LocalStoryNative(runtime, selectedModel, true); }
-                catch (Exception e) when (!(e is FileNotFoundException))
-                { token.ThrowIfCancellationRequested(); fallback = e.Message; engine = new LocalStoryNative(runtime, selectedModel, false); }
+                catch (Exception e) when (!(e is FileNotFoundException) && !(e is OperationCanceledException) && !(e is PlatformNotSupportedException))
+                {
+                    token.ThrowIfCancellationRequested(); fallback = e.Message;
+                    try { engine = new LocalStoryNative(runtime, selectedModel, false); }
+                    catch (Exception cpuError)
+                    { throw new InvalidOperationException("GPU 초기화 실패: " + fallback + " / CPU 초기화 실패: " + cpuError.Message, cpuError); }
+                }
                 using (engine)
                     return new LocalStoryModelOutput { json = engine.Generate(messages, grammar, seed, token, progress, sampling), backend = engine.Backend, fallback = fallback };
             }, token);

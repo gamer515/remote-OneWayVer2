@@ -36,6 +36,7 @@ using UnityEngine;
     public bool correctionAttempted, correctionValid;
     public EncounterCardRoot corrected;
     public string runtimeStage, runtimeError;
+    public string modelPath, runtimePath, runtimeFailureDetails;
     public int verbatimReferenceLines;
 }
 

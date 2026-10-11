@@ -218,7 +218,7 @@ Gemma는 아직 Editor에서 생성하는 테스트 모델입니다. 여기서 �
 
 1. Unity의 Play를 종료합니다.
 2. 적용 미리보기에 표시된 회차와 이야기 경로를 확인합니다. 예를 들어 2회차 Guide는 아래 위치입니다.
-   `C:/Users/유영선/AppData/LocalLow/DefaultCompany/OneWayInVc/Saves/GeneratedContent/For_Run_0002/Encounters/Initial/Initial_01/Encounters/guide/Story.json`
+   `Application.persistentDataPath/Saves/GeneratedContent/For_Run_0002/Encounters/Initial/Initial_01/Encounters/guide/Story.json`
 3. **위 GeneratedContent 안의 해당 파일만** `Story.json`에서 `Story.disabled.json`으로 이름을 바꿉니다. `disabled`는 파일명에 붙입니다. 폴더명이나 Assets 안의 원문 파일은 바꾸지 않습니다.
 4. 해당 이야기를 다시 불러올 때 원문을 사용합니다. 이미 진행 중인 대화/저장된 진행 상태가 즉시 초기화되는 기능은 아닙니다. 진행 기록을 임의로 지우지 마세요.
 5. 생성본을 다시 쓰려면 `Story.disabled.json`을 `Story.json`으로 되돌립니다. 같은 이름의 파일이 이미 있으면 덮어쓰지 말고 어느 생성본인지 먼저 확인합니다.
