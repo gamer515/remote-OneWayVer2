@@ -5,14 +5,13 @@ using UnityEngine.Rendering;
 
 public sealed class B2Pattern03 : IBattlePattern
 {
-    private const int SwordCount = 16;
+    private const int SwordCount = 12;
 
     public IEnumerator Run(BattleContext c, BattlePatternData data, BattleStepScope scope)
     {
-        c.Arena.Mode = BattleArena.Boundary.Box;
-        c.Player.SetMovementMode(PlayerController.MovementMode.Free);
-        c.Player.SetVisible(true);
-        c.Player.Lock(false);
+        BattlePlayerPreparationRunner.Apply(c, data.playerPreparation);
+
+        // 패턴이 끝나거나 중단되면 플레이어 입력을 잠근다.
         scope.OnDispose(() => c.Player.Lock(true));
 
         // A local sorting group confines the mask to this pattern's swords.

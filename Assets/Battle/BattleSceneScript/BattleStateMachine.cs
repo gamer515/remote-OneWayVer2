@@ -66,16 +66,34 @@ public class BattleStateMachine : MonoBehaviour
 
     void Update()
     {
-        if (sequenceController != null) return;
-        if (inputTimer > 0) inputTimer -= Time.deltaTime;
+        // 새 전투 방식에서는 DialogueStep이 입력을 처리.
+        if (sequenceController != null)
+            return;
 
-        if (IsDialogueState() && !typewriter.IsTyping && inputTimer <= 0)
+        if (inputTimer > 0f)
+            inputTimer -= Time.deltaTime;
+
+        if (!IsDialogueState() || typewriter == null)
+            return;
+
+        // 글자 즉시 출력은 허용하되,
+        // 대화 진행은 기존 입력 대기시간이 지난 뒤 허용.
+        if (!typewriter.IsTyping && inputTimer > 0f)
+            return;
+
+        if (!BattleClickInput.TryConsume())
+            return;
+
+        if (typewriter.IsTyping)
         {
-            if (Input.GetKeyDown(KeyCode.Z) || Input.GetKeyDown(KeyCode.Space))
-            {
-                AdvanceFromDialogue();
-            }
+            // 첫 클릭: 전체 글자 표시.
+            typewriter.SkipTyping();
+            return;
         }
+
+        // 다음 클릭: 다음 프레임에 대화 종료.
+        inputTimer = float.PositiveInfinity;
+        StartCoroutine(AdvanceDialogueNextFrame());
     }
 
     private bool IsDialogueState() => currentState == BattleState.Intro || currentState == BattleState.MidDialogue || currentState == BattleState.End;
@@ -168,5 +186,14 @@ public class BattleStateMachine : MonoBehaviour
         {
             ChangeState(BattleState.MidDialogue);
         }
+    }
+
+    private IEnumerator AdvanceDialogueNextFrame()
+    {
+        // 대화를 닫은 클릭이 다음 공격·이동에 사용되지 않도록 대기.
+        yield return null;
+
+        if (sequenceController == null && IsDialogueState())
+            AdvanceFromDialogue();
     }
 }

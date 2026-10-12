@@ -42,6 +42,13 @@ public sealed class BattleSceneController : MonoBehaviour
     public BattleStageData[] stages;
     public BattleStageData ActiveStage { get; private set; }
     public BattleStartData StartData { get; private set; }
+    public int DebugPatternStepIndex { get; private set; } = -1;
+
+    public bool DebugContinueFromHere { get; private set; }
+
+    public bool IsPatternPreview =>
+        ActiveStage != null &&
+        DebugPatternStepIndex >= 0;
     public BattleResult Result { get; private set; } = BattleResult.Running;
     public string CurrentStep { get; set; }
     public BattleContext Context { get; private set; }
@@ -83,7 +90,7 @@ public sealed class BattleSceneController : MonoBehaviour
         if (legacy == null || player == null || box == null ||
             attacks == null || battleCamera == null ||
             heart == null || mist == null || flatMaterial == null ||
-            stages == null || stages.Length != 3)
+            stages == null || stages.Length == 0)
         {
             Debug.LogError("BattleScene has missing stage references.", this);
             enabled = false;
@@ -92,17 +99,52 @@ public sealed class BattleSceneController : MonoBehaviour
 
         // 전달값을 받는 곳은 여기 한 곳뿐입니다.
         StartData = BattleEntry.TakeOrDefault();
+        int requestedStep = BattleDebugController.TakePatternStep(
+    out int requestedStage,
+    out bool continueFromHere);
 
-        ActiveStage = stages[StartData.StageIndex - 1];
+        // 배열 순서와 관계없이 전투 번호로 데이터를 찾는다.
+        foreach (var stage in stages)
+        {
+            if (stage == null || stage.stageIndex != StartData.StageIndex)
+                continue;
+            if (ActiveStage != null)
+            {
+                Debug.LogError($"{StartData.DisplayName} 데이터가 중복 등록되었습니다.", this);
+                enabled = false;
+                return;
+            }
+            ActiveStage = stage;
+        }
 
         if (ActiveStage == null ||
             ActiveStage.stageIndex != StartData.StageIndex)
         {
             Debug.LogError(
-                $"B{StartData.StageIndex}의 스테이지 설정을 확인해주세요.",
+                $"{StartData.DisplayName}의 스테이지 설정을 확인해주세요.",
                 this);
             enabled = false;
             return;
+        }
+
+        if (requestedStage == StartData.StageIndex &&
+    requestedStep >= 0)
+        {
+            var definitions = ActiveStage.flow.steps;
+
+            if (requestedStep < definitions.Count &&
+                BattlePatternDebugPanel.IsSelectable(
+                    definitions[requestedStep]))
+            {
+                DebugPatternStepIndex = requestedStep;
+                DebugContinueFromHere = continueFromHere;
+            }
+            else
+            {
+                Debug.LogWarning(
+                    "패턴 선택값이 올바르지 않아 전체 전투를 실행합니다.",
+                    this);
+            }
         }
 
         // 같은 데이터 객체를 다른 전투 클래스에도 전달합니다.
@@ -110,7 +152,7 @@ public sealed class BattleSceneController : MonoBehaviour
         attacks.Initialize(StartData);
 
         Debug.Log(
-            $"[Battle Start] B{StartData.StageIndex}, " +
+            $"[Battle Start] {StartData.DisplayName}, " +
             $"Traits: {StartData.Trait1}, {StartData.Trait2}, " +
             $"{StartData.Trait3}, {StartData.Trait4}",
             this);
@@ -126,18 +168,51 @@ public sealed class BattleSceneController : MonoBehaviour
         player.SetVisible(false);
         player.Lock(true);
 
+        if (ActiveStage.stageIndex == 2 ||
+    ActiveStage.stageIndex == 4)
+        {
+            var debug =
+                FindFirstObjectByType<BattleDebugController>();
+
+            if (debug == null)
+                debug = gameObject.AddComponent<BattleDebugController>();
+
+            BattlePatternDebugPanel.Create(this, debug);
+        }
+
         run = StartCoroutine(Execute());
     }
     IEnumerator Execute()
     {
-        IBattleFlow flow = ActiveStage.stageIndex == 1 ? (IBattleFlow)new B1BattleFlow() :
-            ActiveStage.stageIndex == 2 ? new B2BattleFlow() : new B3BattleFlow();
+        IBattleFlow flow;
+        switch (ActiveStage.stageIndex)
+        {
+            case 1: flow = new B1BattleFlow(); break;
+            case 2: flow = new B2BattleFlow(); break;
+            case 3: flow = new B3BattleFlow(); break;
+            case 4: flow = new BDBattleFlow(); break;
+            default:
+                Debug.LogError("등록되지 않은 전투 실행 방식입니다.", this);
+                yield break;
+        }
         yield return flow.Run(Context);
         if (Result != BattleResult.Running) yield break;
         Result = BattleResult.Completed;
         player.Lock(true);
         attacks.CancelSequence();
         Context.Cleanup.Clear();
+        if (IsPatternPreview)
+        {
+            string message = DebugContinueFromHere
+                ? "선택한 단계부터의 연속 실행이 끝났습니다."
+                : "선택한 패턴의 단독 실행이 끝났습니다.";
+
+            Context.ShowMessage(
+                message + "\n왼쪽 위 버튼으로 다시 선택할 수 있습니다.",
+                false);
+
+            yield break;
+        }
         if (ActiveStage.returnToDecision)
         {
             yield return new WaitForSecondsRealtime(1f);
@@ -161,7 +236,7 @@ public sealed class BattleSceneController : MonoBehaviour
         player.Lock(true);
         player.SetVisible(false);
         Context.SlashLine.gameObject.SetActive(false);
-        Context.ShowMessage("쓰러졌다.\nB1 · B2 · B3 버튼으로 다시 시작할 수 있다.", true);
+        Context.ShowMessage("쓰러졌다.\nB1 · B2 · B3 · BD 버튼으로 다시 시작할 수 있다.", true);
     }
     public void CancelBattle()
     {

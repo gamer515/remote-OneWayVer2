@@ -9,18 +9,10 @@ public sealed class B2Pattern01 : IBattlePattern
 
     public IEnumerator Run(BattleContext c, BattlePatternData data, BattleStepScope scope)
     {
-        c.Arena.Mode = BattleArena.Boundary.Box;
-        c.Player.SetVisible(true);
-        c.Player.SetMovementMode(PlayerController.MovementMode.Free);
-        c.Player.Lock(false);
-        scope.OnDispose(() =>
-        {
-            c.Box.CancelAnimations();
-            c.Player.Lock(true);
-            c.Player.SetMovementMode(PlayerController.MovementMode.Free);
-        });
+        BattlePlayerPreparationRunner.Apply(c, data.playerPreparation);
+        scope.OnDispose(() => c.Player.Lock(true));
 
-        // Reuse the twelve entrance enemies; the first four now belong to the box.
+        // ë“±ì¥ ì—°ì¶œì˜ ì ì€ ì´ì–´ë°›ê³ , ì—†ìœ¼ë©´ ì´ íŒ¨í„´ì—ì„œ ì§ì ‘ ë§Œë“ ë‹¤.
         var enemies = new Transform[12];
         var starts = new Vector3[12];
         var radii = new float[12];
@@ -29,15 +21,17 @@ public sealed class B2Pattern01 : IBattlePattern
         {
             enemies[i] = c.Enemies.Find("Enemy " + (i + 5));
             if (enemies[i] == null)
-                throw new InvalidOperationException("B2 Pattern 01 requires Enemy " + (i + 5));
+                enemies[i] = CreatePatternEnemy(c, scope, i);
+            else
+                enemies[i].SetParent(scope.Root, true);
+
+            enemies[i].gameObject.SetActive(true);
+            enemies[i].GetComponent<Renderer>().enabled = true;
             starts[i] = enemies[i].position;
             Vector3 extents = enemies[i].GetComponent<Renderer>().bounds.extents;
             radii[i] = Mathf.Min(extents.x, extents.y);
             largestRadius = Mathf.Max(largestRadius, new Vector2(extents.x, extents.y).magnitude);
         }
-        foreach (Transform enemy in enemies)
-            enemy.SetParent(scope.Root, true);
-
         Vector2 center = c.Arena.Bounds.center;
         Vector2 halfSize = new Vector2(
             (c.Box.rightWall.position.x - c.Box.leftWall.position.x) * 0.5f,
@@ -73,7 +67,7 @@ public sealed class B2Pattern01 : IBattlePattern
         var startRotations = new Quaternion[12];
         var targetRotations = new Quaternion[12];
 
-        // ¸Ó¸®¸¦ µ¹¸®´Â µ¥ °É¸®´Â ½Ã°£.
+        // ë¨¸ë¦¬ë¥¼ ëŒë¦¬ëŠ” ë° ê±¸ë¦¬ëŠ” ì‹œê°„.
         float turnDuration = 0.2f;
 
         float speed = Mathf.Max(0.1f, data.speed);
@@ -86,7 +80,7 @@ public sealed class B2Pattern01 : IBattlePattern
 
             startRotations[i] = enemies[i].rotation;
 
-            // ÀûÀÇ À§ÂÊ(+Y)ÀÌ Áß½ÉÀ» ÇâÇÏµµ·Ï È¸Àü.
+            // ì ì˜ ìœ„ìª½(+Y)ì´ ì¤‘ì‹¬ì„ í–¥í•˜ë„ë¡ íšŒì „.
             float angle =
                 Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg - 90f;
 
@@ -99,7 +93,7 @@ public sealed class B2Pattern01 : IBattlePattern
         float farY = Mathf.Max(Mathf.Abs(screen.yMin - center.y), Mathf.Abs(screen.yMax - center.y));
         float exitDistance = radius + new Vector2(farX, farY).magnitude + largestRadius + 1f;
         float flightTime = exitDistance / speed;
-        // ±âÁ¸ Ãâ¹ß °£°İÀ» À¯ÁöÇÏµÇ, È¸Àü ½Ã°£º¸´Ù Âª¾ÆÁöÁö ¾Êµµ·Ï ¼³Á¤.
+        // ê¸°ì¡´ ì¶œë°œ ê°„ê²©ì„ ìœ ì§€í•˜ë˜, íšŒì „ ì‹œê°„ë³´ë‹¤ ì§§ì•„ì§€ì§€ ì•Šë„ë¡ ì„¤ì •.
         float interval = Mathf.Max(turnDuration, data.interval);
         float elapsed = 0f;
         int remaining = 12;
@@ -117,7 +111,7 @@ public sealed class B2Pattern01 : IBattlePattern
                 if (enemy == null || turnAge < 0f)
                     continue;
 
-                // ÀÚ±â Â÷·Ê¿¡´Â ¸ÕÀú Á¦ÀÚ¸®¿¡¼­ ¸Ó¸®¸¦ µ¹¸².
+                // ìê¸° ì°¨ë¡€ì—ëŠ” ë¨¼ì € ì œìë¦¬ì—ì„œ ë¨¸ë¦¬ë¥¼ ëŒë¦¼.
                 if (turnAge < turnDuration)
                 {
                     float t = Mathf.SmoothStep(
@@ -131,10 +125,10 @@ public sealed class B2Pattern01 : IBattlePattern
                     continue;
                 }
 
-                // È¸ÀüÀ» ³¡³½ ¹æÇâÀ¸·Î °íÁ¤ÇÏ°í µ¹Áø.
+                // íšŒì „ì„ ëë‚¸ ë°©í–¥ìœ¼ë¡œ ê³ ì •í•˜ê³  ëŒì§„.
                 enemy.rotation = targetRotations[index];
 
-                // ÀÌµ¿ ½Ã°£Àº È¸ÀüÀÌ ³¡³­ ½ÃÁ¡ºÎÅÍ °è»ê.
+                // ì´ë™ ì‹œê°„ì€ íšŒì „ì´ ëë‚œ ì‹œì ë¶€í„° ê³„ì‚°.
                 float age = turnAge - turnDuration;
 
                 Vector2 before = enemy.position;
@@ -158,6 +152,18 @@ public sealed class B2Pattern01 : IBattlePattern
             }
             yield return null;
         }
+    }
+
+    private static Transform CreatePatternEnemy(
+        BattleContext c, BattleStepScope scope, int index)
+    {
+        // ê¸°ì¡´ ë“±ì¥ ì—°ì¶œê³¼ ê°™ì€ í¬ê¸°ì˜ ì ì„ í™”ë©´ ìœ„ì—ì„œ ì¤€ë¹„í•œë‹¤.
+        Rect screen = c.Arena.ScreenRect;
+        Vector3 position = new Vector3(
+            screen.center.x + (index % 6 - 2.5f) * 1.8f,
+            screen.yMax + 1f + index / 6 * 1.8f, 0f);
+        return c.Primitive("Enemy " + (index + 5), PrimitiveType.Cube,
+            scope.Root, position, new Vector3(0.65f, 0.95f, 0.2f)).transform;
     }
 
     private static Vector3 CirclePosition(Vector2 center, float radius, int index, float rotation)

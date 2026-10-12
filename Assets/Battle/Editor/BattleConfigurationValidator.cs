@@ -29,12 +29,12 @@ public static class BattleConfigurationValidator
             check(controller.mist != null && AssetDatabase.GetAssetPath(controller.mist) == "Assets/Battle/mist.png", "Incorrect mist");
             check(controller.flatMaterial != null && controller.flatMaterial.shader.name == "OneWay/BattleUnlit", "Missing unlit material");
             check(!ShaderUtil.GetShaderMessages(controller.flatMaterial.shader).Any(m => m.severity.ToString() == "Error"), "Battle shader compile error");
-            check(controller.stages != null && controller.stages.Length == 3, "Three stages required");
-            for (int i = 0; i < 3; i++)
+            check(controller.stages != null && controller.stages.Length == 4, "B1, B2, B3, BD ë°ì´í„°ê°€ í•„ìš”í•©ë‹ˆë‹¤.");
+            for (int i = 0; i < 4; i++)
             {
-                var stage = controller.stages[i];
+                var stage = controller.stages.SingleOrDefault(s => s != null && s.stageIndex == i + 1);
                 check(stage != null && stage.stageIndex == i + 1, "Invalid stage index");
-                check(stage.flow != null && stage.flow.steps.Count > 0, "Stage has no steps");
+                check(stage.flow != null && stage.flow.steps != null && (stage.stageIndex == 4 || stage.flow.steps.Count > 0), "Stage has no steps");
                 foreach (var step in stage.flow.steps)
                 {
                     check(Enum.IsDefined(typeof(BattleStepKind), step.kind), "Unknown step kind");
@@ -42,19 +42,19 @@ public static class BattleConfigurationValidator
                         check(step.pattern != null && step.pattern.duration > 0 && step.pattern.interval > 0 && step.pattern.speed > 0, "Invalid pattern timing");
                 }
             }
-            var b1 = controller.stages[0];
+            var b1 = controller.stages.Single(s => s.stageIndex == 1);
             check(Mathf.Abs(b1.forwardViewportY - 1f / 3f) < .0001f, "B1 forward line must be one third from bottom");
             check(b1.flow.steps.Single(s => s.pattern.kind == BattlePatternKind.Debris).pattern.duration == 60, "B1 must last 60 active seconds");
             check(b1.recoverySeconds == 5, "B1 warning must last five seconds");
-            var b2 = controller.stages[1];
+            var b2 = controller.stages.Single(s => s.stageIndex == 2);
             int slash = b2.flow.steps.FindIndex(s => s.kind == BattleStepKind.Slash);
             check(slash > 0 && slash + 1 < b2.flow.steps.Count, "Missing slash insertion");
             check(b2.flow.steps[slash - 1].pattern.legacyCase == 4 && b2.flow.steps[slash + 1].pattern.legacyCase == 5, "Slash must connect case4 to case5");
             check(b2.slashTargetCount == 5 && b2.slashStartZ > 0 && b2.slashSpeed > 0, "Invalid slash targets");
             var buttons = objects.SelectMany(o => o.GetComponentsInChildren<Button>(true)).ToArray();
-            for (int i = 1; i <= 3; i++)
+            for (int i = 1; i <= 4; i++)
             {
-                string method = "SetBattleStage" + i;
+                string method = i == 4 ? "SetBattleStageBD" : "SetBattleStage" + i;
                 check(buttons.Any(b => Enumerable.Range(0, b.onClick.GetPersistentEventCount()).Any(n =>
                     b.onClick.GetPersistentMethodName(n) == method && b.onClick.GetPersistentTarget(n) is BattleDebugController)), "Missing " + method + " button callback");
             }
@@ -318,7 +318,7 @@ public static class BattleConfigurationValidator
         if (!SessionState.GetBool("BattleSmokeRunning", false))
             return;
 
-        // ±âÁ¸ °ËÁõ ÄÚµå¿Í µ¿ÀÏÇÏ°Ô ÀÓ½Ã °ËÁõ ÇÁ·ÎÁ§Æ®·Î Á¦ÇÑÇÕ´Ï´Ù.
+        // ê¸°ì¡´ ê²€ì¦ ì½”ë“œì™€ ë™ì¼í•˜ê²Œ ì„ì‹œ ê²€ì¦ í”„ë¡œì íŠ¸ë¡œ ì œí•œí•©ë‹ˆë‹¤.
         string projectPath = Application.dataPath.Replace('\\', '/');
 
         if (!projectPath.Contains(

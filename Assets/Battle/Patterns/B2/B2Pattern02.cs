@@ -6,9 +6,8 @@ public sealed class B2Pattern02 : IBattlePattern
 {
     public IEnumerator Run(BattleContext c, BattlePatternData data, BattleStepScope scope)
     {
-        c.Arena.Mode = BattleArena.Boundary.Box;
-        c.Player.SetMovementMode(PlayerController.MovementMode.Free);
-        c.Player.SetVisible(true);
+        // 패턴에 지정한 플레이어 시작 상태를 적용한다.
+        BattlePlayerPreparationRunner.Apply(c, data.playerPreparation);
         c.Player.Lock(true);
         Color previousOverlay = c.Overlay.color;
         scope.OnDispose(() =>

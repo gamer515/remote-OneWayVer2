@@ -1,0 +1,1511 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9685256a0fa44f5aa97fd7a4753a3f71, type: 3}
+  m_Name: BD
+  m_EditorClassIdentifier: Assembly-CSharp::BattleStageData
+  stageIndex: 4
+  flow:
+    steps:
+    - label: "BD \uD328\uD134 01 - \uB300\uAC01\uC120 \uD560\uD034\uAE30"
+      kind: 5
+      text: 
+      duration: 1
+      pattern:
+        kind: 6
+        legacyCase: 1
+        duration: 1.45
+        interval: 0.5
+        speed: 5
+        count: 3
+        angleStep: 17
+        b2PatternId: 1
+        bdPatternId: 1
+        bdClawWidth: 0.22
+        bdClawSpacing: 1.5
+        bdClawLength: 13.5
+        bdClawGrowSeconds: 1
+        bdClawHoldSeconds: 0.25
+        bdClawFadeSeconds: 0.2
+        bdClawDamage: 1
+        formationSeconds: 1
+        orbitSecondsPerTurn: 3
+        orbitPauseSeconds: 1
+        orbitPadding: 0.5
+        swordSprite: {fileID: 0}
+        swordSize: {x: 0.35, y: 2.4}
+        swordFlightSeconds: 3
+        swordRotationSpeed: 360
+        swordPathWidth: 5
+        swordFlashSeconds: 0.08
+        wallSwordLength: 3
+        wallSwordThickness: 0.15
+        fallingSwordDriftSpeed: 0.5
+        burstSwordSpacing: 2
+        burstViewportX: 0.25
+        burstFragmentCount: 12
+        burstFragmentSize: 0.18
+        burstFragmentSpeed: 4
+        burstFragmentLifetime: 4
+        playerPreparation:
+          movement: 0
+          boundary: 0
+          visible: 1
+          startPosition: 1
+          normalizedPosition: {x: 0.5, y: 0.5}
+        sineColumnCount: 49
+        sinePathLength: 16
+        sineBarWidth: 0.22
+        sineGapHeight: 1.8
+        sineAmplitude: 1.5
+        sineMoveSpeed: 2
+        sineDamage: 1
+        bdLaserWaveInterval: 1.5
+        bdLaserEnterSeconds: 0.4
+        bdLaserAimSeconds: 0.3
+        bdLaserHoldSeconds: 0.5
+        bdLaserFadeSeconds: 0.2
+        bdLaserExitSeconds: 0.4
+        bdLaserEmitterSize: 1.4
+        bdLaserBoxGap: 0.45
+        bdLaserSpreadAngle: 10
+        bdLaserFinalScale: 2.2
+        bdLaserDamage: 1
+        bdSpikeSpeed: 3
+        bdSpikeLength: 8
+        bdSpikeHeight: 0.8
+        bdSpikeWidth: 0.2
+        bdSpikeSpacing: 0.4
+        bdSpikeDamage: 1
+        bdPlatformDelay: 0.6
+        bdPlatformSpeed: 4
+        bdPlatformSize: {x: 2.2, y: 0.25}
+        bdPlatformLowHeight: 1.6
+        bdPlatformHeightStep: 1.4
+        bdPlatformSpacing: 3.5
+        bdPlatformLastSpacing: 5.5
+        bdCrossPlatformSize: {x: 1.8, y: 0.25}
+        bdCrossPlatformSpacing: 3.5
+        bdCrossPlatformSpeed: 2
+        bdCrossLowerHeight: 2
+        bdCrossUpperHeight: 4.4
+        bdFallingSquareSize: {x: 1.4, y: 2.5}
+        bdFallingSquareSpeed: 4.5
+        bdFallingSquareInterval: 0.65
+        bdFallingSquareRandomCount: 15
+        bdFallingSquareGap: 0.2
+        bdFallingSquareDamage: 1
+        bdMirrorClawLength: 6.5
+        bdMirrorClawWidth: 0.55
+        bdMirrorClawSpacing: 1.1
+        bdMirrorClawCenterGap: 1.2
+        bdMirrorClawBottomOffset: 0.45
+        bdMirrorClawAngle: 45
+        bdMirrorClawGrowSeconds: 0.4
+        bdMirrorClawHoldSeconds: 1.2
+        bdMirrorClawDamage: 1
+        bdStairPlatformSize: {x: 3.2, y: 0.45}
+        bdStairPlatformHeights: {x: 3, y: 7, z: 11}
+        bdStairClawPlatformAnchorRatio: 0.75
+        bdStairClawPlatformOffsetX: 0
+        bdStairClawPlatformOffsetY: -0.5
+        bdStairJumpForce: 15
+        bdStairClawDelay: 1
+        bdStairClawInterval: 1.2
+        bdStairClawGrowSeconds: 0.4
+        bdStairClawHoldSeconds: 1
+        bdStairClawLength: 4.5
+        bdStairClawWidth: 0.45
+        bdStairClawSpacing: 0.65
+        bdStairClawWallOverlap: 0.45
+        bdStairClawAngle: 40
+        bdStairClawDamage: 1
+        bdStairFloorSize: {x: 0.5, y: 0.8}
+        bdStairFloorGap: 0.3
+        bdStairFloorGrowSeconds: 0.3
+        bdStairFloorDamage: 1
+        bdTrailPlayerSpeed: 5
+        bdTrailSpawnDelay: 0.3
+        bdTrailHoldSeconds: 3
+        bdTrailDuration: 8
+        bdTrailSquareSize: {x: 0.5, y: 1}
+        bdTrailSquareGap: 0.3
+        bdTrailGrowSeconds: 0.15
+        bdTrailRetractSeconds: 0.15
+        bdTrailDamage: 1
+        bdTrailJumpForce: 15
+        bdQuadMoveSeconds: 0.7
+        bdQuadCreateSeconds: 0.3
+        bdQuadAttackCount: 8
+        bdQuadAttackGap: 0.3
+        bdQuadEnterSeconds: 0.4
+        bdQuadAimSeconds: 0.3
+        bdQuadHoldSeconds: 0.5
+        bdQuadFadeSeconds: 0.2
+        bdQuadExitSeconds: 0.4
+        bdQuadEmitterSize: 1.4
+        bdQuadEmitterGap: 0.5
+        bdQuadDamage: 1
+      boxPreparation:
+        transition: 2
+        size: {x: 8, y: 8}
+        keepCurrentCenter: 1
+        center: {x: 0, y: -3}
+        useScreenCenter: 1
+        fitRotationToScreen: 0
+        rotationScreenMargin: 0.5
+        seconds: 0
+    - label: "BD \uD328\uD134 02 - \uC0AC\uC778 \uACE1\uC120 \uD1B5\uB85C"
+      kind: 5
+      text: 
+      duration: 1
+      pattern:
+        kind: 6
+        legacyCase: 1
+        duration: 1.45
+        interval: 0.5
+        speed: 5
+        count: 3
+        angleStep: 17
+        b2PatternId: 1
+        bdPatternId: 2
+        bdClawWidth: 0.22
+        bdClawSpacing: 1.5
+        bdClawLength: 13.5
+        bdClawGrowSeconds: 1
+        bdClawHoldSeconds: 0.25
+        bdClawFadeSeconds: 0.2
+        bdClawDamage: 1
+        formationSeconds: 1
+        orbitSecondsPerTurn: 3
+        orbitPauseSeconds: 1
+        orbitPadding: 0.5
+        swordSprite: {fileID: 0}
+        swordSize: {x: 0.35, y: 2.4}
+        swordFlightSeconds: 3
+        swordRotationSpeed: 360
+        swordPathWidth: 5
+        swordFlashSeconds: 0.08
+        wallSwordLength: 3
+        wallSwordThickness: 0.15
+        fallingSwordDriftSpeed: 0.5
+        burstSwordSpacing: 2
+        burstViewportX: 0.25
+        burstFragmentCount: 12
+        burstFragmentSize: 0.18
+        burstFragmentSpeed: 4
+        burstFragmentLifetime: 4
+        playerPreparation:
+          movement: 0
+          boundary: 0
+          visible: 1
+          startPosition: 0
+          normalizedPosition: {x: 0.5, y: 0.5}
+        sineColumnCount: 35
+        sinePathLength: 16
+        sineBarWidth: 0.22
+        sineGapHeight: 3
+        sineAmplitude: 1.5
+        sineMoveSpeed: 12
+        sineDamage: 1
+        bdLaserWaveInterval: 0.8
+        bdLaserEnterSeconds: 0.4
+        bdLaserAimSeconds: 0.3
+        bdLaserHoldSeconds: 0.5
+        bdLaserFadeSeconds: 0.2
+        bdLaserExitSeconds: 0.4
+        bdLaserEmitterSize: 1.4
+        bdLaserBoxGap: 0.45
+        bdLaserSpreadAngle: 10
+        bdLaserFinalScale: 2.2
+        bdLaserDamage: 1
+        bdSpikeSpeed: 3
+        bdSpikeLength: 8
+        bdSpikeHeight: 0.8
+        bdSpikeWidth: 0.2
+        bdSpikeSpacing: 0.4
+        bdSpikeDamage: 1
+        bdPlatformDelay: 0.6
+        bdPlatformSpeed: 4
+        bdPlatformSize: {x: 2.2, y: 0.25}
+        bdPlatformLowHeight: 1.6
+        bdPlatformHeightStep: 1.4
+        bdPlatformSpacing: 3.5
+        bdPlatformLastSpacing: 5.5
+        bdCrossPlatformSize: {x: 1.8, y: 0.25}
+        bdCrossPlatformSpacing: 3.5
+        bdCrossPlatformSpeed: 2
+        bdCrossLowerHeight: 2
+        bdCrossUpperHeight: 4.4
+        bdFallingSquareSize: {x: 1.4, y: 2.5}
+        bdFallingSquareSpeed: 4.5
+        bdFallingSquareInterval: 0.65
+        bdFallingSquareRandomCount: 15
+        bdFallingSquareGap: 0.2
+        bdFallingSquareDamage: 1
+        bdMirrorClawLength: 6.5
+        bdMirrorClawWidth: 0.55
+        bdMirrorClawSpacing: 1.1
+        bdMirrorClawCenterGap: 1.2
+        bdMirrorClawBottomOffset: 0.45
+        bdMirrorClawAngle: 45
+        bdMirrorClawGrowSeconds: 0.4
+        bdMirrorClawHoldSeconds: 1.2
+        bdMirrorClawDamage: 1
+        bdStairPlatformSize: {x: 3.2, y: 0.45}
+        bdStairPlatformHeights: {x: 3, y: 7, z: 11}
+        bdStairClawPlatformAnchorRatio: 0.75
+        bdStairClawPlatformOffsetX: 0
+        bdStairClawPlatformOffsetY: -0.5
+        bdStairJumpForce: 15
+        bdStairClawDelay: 1
+        bdStairClawInterval: 1.2
+        bdStairClawGrowSeconds: 0.4
+        bdStairClawHoldSeconds: 1
+        bdStairClawLength: 4.5
+        bdStairClawWidth: 0.45
+        bdStairClawSpacing: 0.65
+        bdStairClawWallOverlap: 0.45
+        bdStairClawAngle: 40
+        bdStairClawDamage: 1
+        bdStairFloorSize: {x: 0.5, y: 0.8}
+        bdStairFloorGap: 0.3
+        bdStairFloorGrowSeconds: 0.3
+        bdStairFloorDamage: 1
+        bdTrailPlayerSpeed: 5
+        bdTrailSpawnDelay: 0.3
+        bdTrailHoldSeconds: 3
+        bdTrailDuration: 8
+        bdTrailSquareSize: {x: 0.5, y: 1}
+        bdTrailSquareGap: 0.3
+        bdTrailGrowSeconds: 0.15
+        bdTrailRetractSeconds: 0.15
+        bdTrailDamage: 1
+        bdTrailJumpForce: 15
+        bdQuadMoveSeconds: 0.7
+        bdQuadCreateSeconds: 0.3
+        bdQuadAttackCount: 8
+        bdQuadAttackGap: 0.3
+        bdQuadEnterSeconds: 0.4
+        bdQuadAimSeconds: 0.3
+        bdQuadHoldSeconds: 0.5
+        bdQuadFadeSeconds: 0.2
+        bdQuadExitSeconds: 0.4
+        bdQuadEmitterSize: 1.4
+        bdQuadEmitterGap: 0.5
+        bdQuadDamage: 1
+      boxPreparation:
+        transition: 2
+        size: {x: 8, y: 8}
+        keepCurrentCenter: 1
+        center: {x: 0, y: -3}
+        useScreenCenter: 1
+        fitRotationToScreen: 0
+        rotationScreenMargin: 0.5
+        seconds: 0
+    - label: "BD \uD328\uD134 03 - \uC0BC\uAC01\uD615 \uB808\uC774\uC800"
+      kind: 5
+      text: 
+      duration: 1
+      pattern:
+        kind: 6
+        legacyCase: 1
+        duration: 10
+        interval: 0.5
+        speed: 5
+        count: 8
+        angleStep: 17
+        b2PatternId: 1
+        bdPatternId: 3
+        bdClawWidth: 0.22
+        bdClawSpacing: 1.5
+        bdClawLength: 13.5
+        bdClawGrowSeconds: 1
+        bdClawHoldSeconds: 0.25
+        bdClawFadeSeconds: 0.2
+        bdClawDamage: 1
+        formationSeconds: 1
+        orbitSecondsPerTurn: 3
+        orbitPauseSeconds: 1
+        orbitPadding: 0.5
+        swordSprite: {fileID: 0}
+        swordSize: {x: 0.35, y: 2.4}
+        swordFlightSeconds: 3
+        swordRotationSpeed: 360
+        swordPathWidth: 5
+        swordFlashSeconds: 0.08
+        wallSwordLength: 3
+        wallSwordThickness: 0.15
+        fallingSwordDriftSpeed: 0.5
+        burstSwordSpacing: 2
+        burstViewportX: 0.25
+        burstFragmentCount: 12
+        burstFragmentSize: 0.18
+        burstFragmentSpeed: 4
+        burstFragmentLifetime: 4
+        playerPreparation:
+          movement: 0
+          boundary: 0
+          visible: 1
+          startPosition: 0
+          normalizedPosition: {x: 0.5, y: 0.5}
+        sineColumnCount: 49
+        sinePathLength: 16
+        sineBarWidth: 0.22
+        sineGapHeight: 1.8
+        sineAmplitude: 1.5
+        sineMoveSpeed: 2
+        sineDamage: 1
+        bdLaserWaveInterval: 0.8
+        bdLaserEnterSeconds: 0.4
+        bdLaserAimSeconds: 0.3
+        bdLaserHoldSeconds: 0.5
+        bdLaserFadeSeconds: 0.2
+        bdLaserExitSeconds: 0.4
+        bdLaserEmitterSize: 2
+        bdLaserBoxGap: 0.45
+        bdLaserSpreadAngle: 15
+        bdLaserFinalScale: 3
+        bdLaserDamage: 1
+        bdSpikeSpeed: 3
+        bdSpikeLength: 8
+        bdSpikeHeight: 0.8
+        bdSpikeWidth: 0.2
+        bdSpikeSpacing: 0.4
+        bdSpikeDamage: 1
+        bdPlatformDelay: 0.6
+        bdPlatformSpeed: 4
+        bdPlatformSize: {x: 2.2, y: 0.25}
+        bdPlatformLowHeight: 1.6
+        bdPlatformHeightStep: 1.4
+        bdPlatformSpacing: 3.5
+        bdPlatformLastSpacing: 5.5
+        bdCrossPlatformSize: {x: 1.8, y: 0.25}
+        bdCrossPlatformSpacing: 3.5
+        bdCrossPlatformSpeed: 2
+        bdCrossLowerHeight: 2
+        bdCrossUpperHeight: 4.4
+        bdFallingSquareSize: {x: 1.4, y: 2.5}
+        bdFallingSquareSpeed: 4.5
+        bdFallingSquareInterval: 0.65
+        bdFallingSquareRandomCount: 15
+        bdFallingSquareGap: 0.2
+        bdFallingSquareDamage: 1
+        bdMirrorClawLength: 6.5
+        bdMirrorClawWidth: 0.55
+        bdMirrorClawSpacing: 1.1
+        bdMirrorClawCenterGap: 1.2
+        bdMirrorClawBottomOffset: 0.45
+        bdMirrorClawAngle: 45
+        bdMirrorClawGrowSeconds: 0.4
+        bdMirrorClawHoldSeconds: 1.2
+        bdMirrorClawDamage: 1
+        bdStairPlatformSize: {x: 3.2, y: 0.45}
+        bdStairPlatformHeights: {x: 3, y: 7, z: 11}
+        bdStairClawPlatformAnchorRatio: 0.75
+        bdStairClawPlatformOffsetX: 0
+        bdStairClawPlatformOffsetY: -0.5
+        bdStairJumpForce: 15
+        bdStairClawDelay: 1
+        bdStairClawInterval: 1.2
+        bdStairClawGrowSeconds: 0.4
+        bdStairClawHoldSeconds: 1
+        bdStairClawLength: 4.5
+        bdStairClawWidth: 0.45
+        bdStairClawSpacing: 0.65
+        bdStairClawWallOverlap: 0.45
+        bdStairClawAngle: 40
+        bdStairClawDamage: 1
+        bdStairFloorSize: {x: 0.5, y: 0.8}
+        bdStairFloorGap: 0.3
+        bdStairFloorGrowSeconds: 0.3
+        bdStairFloorDamage: 1
+        bdTrailPlayerSpeed: 5
+        bdTrailSpawnDelay: 0.3
+        bdTrailHoldSeconds: 3
+        bdTrailDuration: 8
+        bdTrailSquareSize: {x: 0.5, y: 1}
+        bdTrailSquareGap: 0.3
+        bdTrailGrowSeconds: 0.15
+        bdTrailRetractSeconds: 0.15
+        bdTrailDamage: 1
+        bdTrailJumpForce: 15
+        bdQuadMoveSeconds: 0.7
+        bdQuadCreateSeconds: 0.3
+        bdQuadAttackCount: 8
+        bdQuadAttackGap: 0.3
+        bdQuadEnterSeconds: 0.4
+        bdQuadAimSeconds: 0.3
+        bdQuadHoldSeconds: 0.5
+        bdQuadFadeSeconds: 0.2
+        bdQuadExitSeconds: 0.4
+        bdQuadEmitterSize: 1.4
+        bdQuadEmitterGap: 0.5
+        bdQuadDamage: 1
+      boxPreparation:
+        transition: 2
+        size: {x: 8, y: 8}
+        keepCurrentCenter: 0
+        center: {x: 0, y: -3}
+        useScreenCenter: 1
+        fitRotationToScreen: 0
+        rotationScreenMargin: 0.5
+        seconds: 0.5
+    - label: "BD \uD328\uD134 04 - \uAC00\uC2DC\uC640 \uC774\uB3D9 \uBC1C\uD310"
+      kind: 5
+      text: 
+      duration: 1
+      pattern:
+        kind: 6
+        legacyCase: 1
+        duration: 10
+        interval: 0.5
+        speed: 5
+        count: 8
+        angleStep: 17
+        b2PatternId: 1
+        bdPatternId: 4
+        bdClawWidth: 0.22
+        bdClawSpacing: 1.5
+        bdClawLength: 13.5
+        bdClawGrowSeconds: 1
+        bdClawHoldSeconds: 0.25
+        bdClawFadeSeconds: 0.2
+        bdClawDamage: 1
+        formationSeconds: 1
+        orbitSecondsPerTurn: 3
+        orbitPauseSeconds: 1
+        orbitPadding: 0.5
+        swordSprite: {fileID: 0}
+        swordSize: {x: 0.35, y: 2.4}
+        swordFlightSeconds: 3
+        swordRotationSpeed: 360
+        swordPathWidth: 5
+        swordFlashSeconds: 0.08
+        wallSwordLength: 3
+        wallSwordThickness: 0.15
+        fallingSwordDriftSpeed: 0.5
+        burstSwordSpacing: 2
+        burstViewportX: 0.25
+        burstFragmentCount: 12
+        burstFragmentSize: 0.18
+        burstFragmentSpeed: 4
+        burstFragmentLifetime: 4
+        playerPreparation:
+          movement: 1
+          boundary: 0
+          visible: 1
+          startPosition: 1
+          normalizedPosition: {x: 0.88, y: 0}
+        sineColumnCount: 49
+        sinePathLength: 16
+        sineBarWidth: 0.22
+        sineGapHeight: 1.8
+        sineAmplitude: 1.5
+        sineMoveSpeed: 2
+        sineDamage: 1
+        bdLaserWaveInterval: 0.8
+        bdLaserEnterSeconds: 0.4
+        bdLaserAimSeconds: 0.3
+        bdLaserHoldSeconds: 0.5
+        bdLaserFadeSeconds: 0.2
+        bdLaserExitSeconds: 0.4
+        bdLaserEmitterSize: 2
+        bdLaserBoxGap: 0.45
+        bdLaserSpreadAngle: 15
+        bdLaserFinalScale: 3
+        bdLaserDamage: 1
+        bdSpikeSpeed: 6
+        bdSpikeLength: 35
+        bdSpikeHeight: 0.8
+        bdSpikeWidth: 0.2
+        bdSpikeSpacing: 0.4
+        bdSpikeDamage: 1
+        bdPlatformDelay: 1
+        bdPlatformSpeed: 7
+        bdPlatformSize: {x: 2.2, y: 0.25}
+        bdPlatformLowHeight: 1.6
+        bdPlatformHeightStep: 1.4
+        bdPlatformSpacing: 8
+        bdPlatformLastSpacing: 12
+        bdCrossPlatformSize: {x: 1.8, y: 0.25}
+        bdCrossPlatformSpacing: 3.5
+        bdCrossPlatformSpeed: 2
+        bdCrossLowerHeight: 2
+        bdCrossUpperHeight: 4.4
+        bdFallingSquareSize: {x: 1.4, y: 2.5}
+        bdFallingSquareSpeed: 4.5
+        bdFallingSquareInterval: 0.65
+        bdFallingSquareRandomCount: 15
+        bdFallingSquareGap: 0.2
+        bdFallingSquareDamage: 1
+        bdMirrorClawLength: 6.5
+        bdMirrorClawWidth: 0.55
+        bdMirrorClawSpacing: 1.1
+        bdMirrorClawCenterGap: 1.2
+        bdMirrorClawBottomOffset: 0.45
+        bdMirrorClawAngle: 45
+        bdMirrorClawGrowSeconds: 0.4
+        bdMirrorClawHoldSeconds: 1.2
+        bdMirrorClawDamage: 1
+        bdStairPlatformSize: {x: 3.2, y: 0.45}
+        bdStairPlatformHeights: {x: 3, y: 7, z: 11}
+        bdStairClawPlatformAnchorRatio: 0.75
+        bdStairClawPlatformOffsetX: 0
+        bdStairClawPlatformOffsetY: -0.5
+        bdStairJumpForce: 15
+        bdStairClawDelay: 1
+        bdStairClawInterval: 1.2
+        bdStairClawGrowSeconds: 0.4
+        bdStairClawHoldSeconds: 1
+        bdStairClawLength: 4.5
+        bdStairClawWidth: 0.45
+        bdStairClawSpacing: 0.65
+        bdStairClawWallOverlap: 0.45
+        bdStairClawAngle: 40
+        bdStairClawDamage: 1
+        bdStairFloorSize: {x: 0.5, y: 0.8}
+        bdStairFloorGap: 0.3
+        bdStairFloorGrowSeconds: 0.3
+        bdStairFloorDamage: 1
+        bdTrailPlayerSpeed: 5
+        bdTrailSpawnDelay: 0.3
+        bdTrailHoldSeconds: 3
+        bdTrailDuration: 8
+        bdTrailSquareSize: {x: 0.5, y: 1}
+        bdTrailSquareGap: 0.3
+        bdTrailGrowSeconds: 0.15
+        bdTrailRetractSeconds: 0.15
+        bdTrailDamage: 1
+        bdTrailJumpForce: 15
+        bdQuadMoveSeconds: 0.7
+        bdQuadCreateSeconds: 0.3
+        bdQuadAttackCount: 8
+        bdQuadAttackGap: 0.3
+        bdQuadEnterSeconds: 0.4
+        bdQuadAimSeconds: 0.3
+        bdQuadHoldSeconds: 0.5
+        bdQuadFadeSeconds: 0.2
+        bdQuadExitSeconds: 0.4
+        bdQuadEmitterSize: 1.4
+        bdQuadEmitterGap: 0.5
+        bdQuadDamage: 1
+      boxPreparation:
+        transition: 2
+        size: {x: 16, y: 8}
+        keepCurrentCenter: 0
+        center: {x: 0, y: -4}
+        useScreenCenter: 1
+        fitRotationToScreen: 0
+        rotationScreenMargin: 0.5
+        seconds: 0.5
+    - label: "BD \uD328\uD134 05 - \uC591\uBC29\uD5A5 \uBC1C\uD310\uACFC \uB808\uC774\uC800"
+      kind: 5
+      text: 
+      duration: 1
+      pattern:
+        kind: 6
+        legacyCase: 1
+        duration: 10
+        interval: 0.5
+        speed: 5
+        count: 8
+        angleStep: 17
+        b2PatternId: 1
+        bdPatternId: 5
+        bdClawWidth: 0.22
+        bdClawSpacing: 1.5
+        bdClawLength: 13.5
+        bdClawGrowSeconds: 1
+        bdClawHoldSeconds: 0.25
+        bdClawFadeSeconds: 0.2
+        bdClawDamage: 1
+        formationSeconds: 1
+        orbitSecondsPerTurn: 3
+        orbitPauseSeconds: 1
+        orbitPadding: 0.5
+        swordSprite: {fileID: 0}
+        swordSize: {x: 0.35, y: 2.4}
+        swordFlightSeconds: 3
+        swordRotationSpeed: 360
+        swordPathWidth: 5
+        swordFlashSeconds: 0.08
+        wallSwordLength: 3
+        wallSwordThickness: 0.15
+        fallingSwordDriftSpeed: 0.5
+        burstSwordSpacing: 2
+        burstViewportX: 0.25
+        burstFragmentCount: 12
+        burstFragmentSize: 0.18
+        burstFragmentSpeed: 4
+        burstFragmentLifetime: 4
+        playerPreparation:
+          movement: 1
+          boundary: 0
+          visible: 1
+          startPosition: 1
+          normalizedPosition: {x: 0.5, y: 0}
+        sineColumnCount: 49
+        sinePathLength: 16
+        sineBarWidth: 0.22
+        sineGapHeight: 1.8
+        sineAmplitude: 1.5
+        sineMoveSpeed: 2
+        sineDamage: 1
+        bdLaserWaveInterval: 1.8
+        bdLaserEnterSeconds: 0.4
+        bdLaserAimSeconds: 0.3
+        bdLaserHoldSeconds: 0.5
+        bdLaserFadeSeconds: 0.2
+        bdLaserExitSeconds: 0.4
+        bdLaserEmitterSize: 2
+        bdLaserBoxGap: 0.45
+        bdLaserSpreadAngle: 10
+        bdLaserFinalScale: 3
+        bdLaserDamage: 1
+        bdSpikeSpeed: 6
+        bdSpikeLength: 35
+        bdSpikeHeight: 0.8
+        bdSpikeWidth: 0.2
+        bdSpikeSpacing: 0.4
+        bdSpikeDamage: 1
+        bdPlatformDelay: 1
+        bdPlatformSpeed: 7
+        bdPlatformSize: {x: 2.2, y: 0.25}
+        bdPlatformLowHeight: 1.6
+        bdPlatformHeightStep: 1.4
+        bdPlatformSpacing: 8
+        bdPlatformLastSpacing: 12
+        bdCrossPlatformSize: {x: 1.8, y: 0.25}
+        bdCrossPlatformSpacing: 6
+        bdCrossPlatformSpeed: 2
+        bdCrossLowerHeight: 2
+        bdCrossUpperHeight: 4.4
+        bdFallingSquareSize: {x: 1.4, y: 2.5}
+        bdFallingSquareSpeed: 4.5
+        bdFallingSquareInterval: 0.65
+        bdFallingSquareRandomCount: 15
+        bdFallingSquareGap: 0.2
+        bdFallingSquareDamage: 1
+        bdMirrorClawLength: 6.5
+        bdMirrorClawWidth: 0.55
+        bdMirrorClawSpacing: 1.1
+        bdMirrorClawCenterGap: 1.2
+        bdMirrorClawBottomOffset: 0.45
+        bdMirrorClawAngle: 45
+        bdMirrorClawGrowSeconds: 0.4
+        bdMirrorClawHoldSeconds: 1.2
+        bdMirrorClawDamage: 1
+        bdStairPlatformSize: {x: 3.2, y: 0.45}
+        bdStairPlatformHeights: {x: 3, y: 7, z: 11}
+        bdStairClawPlatformAnchorRatio: 0.75
+        bdStairClawPlatformOffsetX: 0
+        bdStairClawPlatformOffsetY: -0.5
+        bdStairJumpForce: 15
+        bdStairClawDelay: 1
+        bdStairClawInterval: 1.2
+        bdStairClawGrowSeconds: 0.4
+        bdStairClawHoldSeconds: 1
+        bdStairClawLength: 4.5
+        bdStairClawWidth: 0.45
+        bdStairClawSpacing: 0.65
+        bdStairClawWallOverlap: 0.45
+        bdStairClawAngle: 40
+        bdStairClawDamage: 1
+        bdStairFloorSize: {x: 0.5, y: 0.8}
+        bdStairFloorGap: 0.3
+        bdStairFloorGrowSeconds: 0.3
+        bdStairFloorDamage: 1
+        bdTrailPlayerSpeed: 5
+        bdTrailSpawnDelay: 0.3
+        bdTrailHoldSeconds: 3
+        bdTrailDuration: 8
+        bdTrailSquareSize: {x: 0.5, y: 1}
+        bdTrailSquareGap: 0.3
+        bdTrailGrowSeconds: 0.15
+        bdTrailRetractSeconds: 0.15
+        bdTrailDamage: 1
+        bdTrailJumpForce: 15
+        bdQuadMoveSeconds: 0.7
+        bdQuadCreateSeconds: 0.3
+        bdQuadAttackCount: 8
+        bdQuadAttackGap: 0.3
+        bdQuadEnterSeconds: 0.4
+        bdQuadAimSeconds: 0.3
+        bdQuadHoldSeconds: 0.5
+        bdQuadFadeSeconds: 0.2
+        bdQuadExitSeconds: 0.4
+        bdQuadEmitterSize: 1.4
+        bdQuadEmitterGap: 0.5
+        bdQuadDamage: 1
+      boxPreparation:
+        transition: 2
+        size: {x: 16, y: 8}
+        keepCurrentCenter: 0
+        center: {x: 0, y: -4}
+        useScreenCenter: 1
+        fitRotationToScreen: 0
+        rotationScreenMargin: 0.5
+        seconds: 0.5
+    - label: "BD \uD328\uD134 06 - \uC911\uC559 \uACE0\uC815 \uB099\uD558\uBB3C"
+      kind: 5
+      text: 
+      duration: 1
+      pattern:
+        kind: 6
+        legacyCase: 1
+        duration: 10
+        interval: 0.5
+        speed: 5
+        count: 8
+        angleStep: 17
+        b2PatternId: 1
+        bdPatternId: 6
+        bdClawWidth: 0.22
+        bdClawSpacing: 1.5
+        bdClawLength: 13.5
+        bdClawGrowSeconds: 1
+        bdClawHoldSeconds: 0.25
+        bdClawFadeSeconds: 0.2
+        bdClawDamage: 1
+        formationSeconds: 1
+        orbitSecondsPerTurn: 3
+        orbitPauseSeconds: 1
+        orbitPadding: 0.5
+        swordSprite: {fileID: 0}
+        swordSize: {x: 0.35, y: 2.4}
+        swordFlightSeconds: 3
+        swordRotationSpeed: 360
+        swordPathWidth: 5
+        swordFlashSeconds: 0.08
+        wallSwordLength: 3
+        wallSwordThickness: 0.15
+        fallingSwordDriftSpeed: 0.5
+        burstSwordSpacing: 2
+        burstViewportX: 0.25
+        burstFragmentCount: 12
+        burstFragmentSize: 0.18
+        burstFragmentSpeed: 4
+        burstFragmentLifetime: 4
+        playerPreparation:
+          movement: 1
+          boundary: 0
+          visible: 1
+          startPosition: 1
+          normalizedPosition: {x: 0.03, y: 0}
+        sineColumnCount: 49
+        sinePathLength: 16
+        sineBarWidth: 0.22
+        sineGapHeight: 1.8
+        sineAmplitude: 1.5
+        sineMoveSpeed: 2
+        sineDamage: 1
+        bdLaserWaveInterval: 1.5
+        bdLaserEnterSeconds: 0.4
+        bdLaserAimSeconds: 0.3
+        bdLaserHoldSeconds: 0.5
+        bdLaserFadeSeconds: 0.2
+        bdLaserExitSeconds: 0.4
+        bdLaserEmitterSize: 1.4
+        bdLaserBoxGap: 0.45
+        bdLaserSpreadAngle: 10
+        bdLaserFinalScale: 2.2
+        bdLaserDamage: 1
+        bdSpikeSpeed: 3
+        bdSpikeLength: 8
+        bdSpikeHeight: 0.8
+        bdSpikeWidth: 0.2
+        bdSpikeSpacing: 0.4
+        bdSpikeDamage: 1
+        bdPlatformDelay: 0.6
+        bdPlatformSpeed: 4
+        bdPlatformSize: {x: 2.2, y: 0.25}
+        bdPlatformLowHeight: 1.6
+        bdPlatformHeightStep: 1.4
+        bdPlatformSpacing: 3.5
+        bdPlatformLastSpacing: 5.5
+        bdCrossPlatformSize: {x: 1.8, y: 0.25}
+        bdCrossPlatformSpacing: 3.5
+        bdCrossPlatformSpeed: 2
+        bdCrossLowerHeight: 2
+        bdCrossUpperHeight: 4.4
+        bdFallingSquareSize: {x: 1.4, y: 2.5}
+        bdFallingSquareSpeed: 7
+        bdFallingSquareInterval: 0.65
+        bdFallingSquareRandomCount: 15
+        bdFallingSquareGap: 0.2
+        bdFallingSquareDamage: 1
+        bdMirrorClawLength: 6.5
+        bdMirrorClawWidth: 0.55
+        bdMirrorClawSpacing: 1.1
+        bdMirrorClawCenterGap: 1.2
+        bdMirrorClawBottomOffset: 0.45
+        bdMirrorClawAngle: 45
+        bdMirrorClawGrowSeconds: 0.4
+        bdMirrorClawHoldSeconds: 1.2
+        bdMirrorClawDamage: 1
+        bdStairPlatformSize: {x: 3.2, y: 0.45}
+        bdStairPlatformHeights: {x: 3, y: 7, z: 11}
+        bdStairClawPlatformAnchorRatio: 0.75
+        bdStairClawPlatformOffsetX: 0
+        bdStairClawPlatformOffsetY: -0.5
+        bdStairJumpForce: 15
+        bdStairClawDelay: 1
+        bdStairClawInterval: 1.2
+        bdStairClawGrowSeconds: 0.4
+        bdStairClawHoldSeconds: 1
+        bdStairClawLength: 4.5
+        bdStairClawWidth: 0.45
+        bdStairClawSpacing: 0.65
+        bdStairClawWallOverlap: 0.45
+        bdStairClawAngle: 40
+        bdStairClawDamage: 1
+        bdStairFloorSize: {x: 0.5, y: 0.8}
+        bdStairFloorGap: 0.3
+        bdStairFloorGrowSeconds: 0.3
+        bdStairFloorDamage: 1
+        bdTrailPlayerSpeed: 5
+        bdTrailSpawnDelay: 0.3
+        bdTrailHoldSeconds: 3
+        bdTrailDuration: 8
+        bdTrailSquareSize: {x: 0.5, y: 1}
+        bdTrailSquareGap: 0.3
+        bdTrailGrowSeconds: 0.15
+        bdTrailRetractSeconds: 0.15
+        bdTrailDamage: 1
+        bdTrailJumpForce: 15
+        bdQuadMoveSeconds: 0.7
+        bdQuadCreateSeconds: 0.3
+        bdQuadAttackCount: 8
+        bdQuadAttackGap: 0.3
+        bdQuadEnterSeconds: 0.4
+        bdQuadAimSeconds: 0.3
+        bdQuadHoldSeconds: 0.5
+        bdQuadFadeSeconds: 0.2
+        bdQuadExitSeconds: 0.4
+        bdQuadEmitterSize: 1.4
+        bdQuadEmitterGap: 0.5
+        bdQuadDamage: 1
+      boxPreparation:
+        transition: 2
+        size: {x: 16, y: 8}
+        keepCurrentCenter: 0
+        center: {x: 0, y: -3}
+        useScreenCenter: 1
+        fitRotationToScreen: 0
+        rotationScreenMargin: 0.5
+        seconds: 0.5
+    - label: "BD \uD328\uD134 07 - \uC591\uCABD \uD560\uD034\uAE30"
+      kind: 5
+      text: 
+      duration: 1
+      pattern:
+        kind: 6
+        legacyCase: 1
+        duration: 10
+        interval: 0.5
+        speed: 5
+        count: 8
+        angleStep: 17
+        b2PatternId: 1
+        bdPatternId: 7
+        bdClawWidth: 0.22
+        bdClawSpacing: 1.5
+        bdClawLength: 13.5
+        bdClawGrowSeconds: 1
+        bdClawHoldSeconds: 0.25
+        bdClawFadeSeconds: 0.2
+        bdClawDamage: 1
+        formationSeconds: 1
+        orbitSecondsPerTurn: 3
+        orbitPauseSeconds: 1
+        orbitPadding: 0.5
+        swordSprite: {fileID: 0}
+        swordSize: {x: 0.35, y: 2.4}
+        swordFlightSeconds: 3
+        swordRotationSpeed: 360
+        swordPathWidth: 5
+        swordFlashSeconds: 0.08
+        wallSwordLength: 3
+        wallSwordThickness: 0.15
+        fallingSwordDriftSpeed: 0.5
+        burstSwordSpacing: 2
+        burstViewportX: 0.25
+        burstFragmentCount: 12
+        burstFragmentSize: 0.18
+        burstFragmentSpeed: 4
+        burstFragmentLifetime: 4
+        playerPreparation:
+          movement: 1
+          boundary: 0
+          visible: 1
+          startPosition: 1
+          normalizedPosition: {x: 0.5, y: 0}
+        sineColumnCount: 49
+        sinePathLength: 16
+        sineBarWidth: 0.22
+        sineGapHeight: 1.8
+        sineAmplitude: 1.5
+        sineMoveSpeed: 2
+        sineDamage: 1
+        bdLaserWaveInterval: 1.5
+        bdLaserEnterSeconds: 0.4
+        bdLaserAimSeconds: 0.3
+        bdLaserHoldSeconds: 0.5
+        bdLaserFadeSeconds: 0.2
+        bdLaserExitSeconds: 0.4
+        bdLaserEmitterSize: 1.4
+        bdLaserBoxGap: 0.45
+        bdLaserSpreadAngle: 10
+        bdLaserFinalScale: 2.2
+        bdLaserDamage: 1
+        bdSpikeSpeed: 3
+        bdSpikeLength: 8
+        bdSpikeHeight: 0.8
+        bdSpikeWidth: 0.2
+        bdSpikeSpacing: 0.4
+        bdSpikeDamage: 1
+        bdPlatformDelay: 0.6
+        bdPlatformSpeed: 4
+        bdPlatformSize: {x: 2.2, y: 0.25}
+        bdPlatformLowHeight: 1.6
+        bdPlatformHeightStep: 1.4
+        bdPlatformSpacing: 3.5
+        bdPlatformLastSpacing: 5.5
+        bdCrossPlatformSize: {x: 1.8, y: 0.25}
+        bdCrossPlatformSpacing: 3.5
+        bdCrossPlatformSpeed: 2
+        bdCrossLowerHeight: 2
+        bdCrossUpperHeight: 4.4
+        bdFallingSquareSize: {x: 1.4, y: 2.5}
+        bdFallingSquareSpeed: 4.5
+        bdFallingSquareInterval: 0.65
+        bdFallingSquareRandomCount: 15
+        bdFallingSquareGap: 0.2
+        bdFallingSquareDamage: 1
+        bdMirrorClawLength: 8
+        bdMirrorClawWidth: 0.55
+        bdMirrorClawSpacing: 1.1
+        bdMirrorClawCenterGap: 1
+        bdMirrorClawBottomOffset: 0.45
+        bdMirrorClawAngle: 50
+        bdMirrorClawGrowSeconds: 0.4
+        bdMirrorClawHoldSeconds: 0.6
+        bdMirrorClawDamage: 1
+        bdStairPlatformSize: {x: 3.2, y: 0.45}
+        bdStairPlatformHeights: {x: 3, y: 7, z: 11}
+        bdStairClawPlatformAnchorRatio: 0.75
+        bdStairClawPlatformOffsetX: 0
+        bdStairClawPlatformOffsetY: -0.5
+        bdStairJumpForce: 15
+        bdStairClawDelay: 1
+        bdStairClawInterval: 1.2
+        bdStairClawGrowSeconds: 0.4
+        bdStairClawHoldSeconds: 1
+        bdStairClawLength: 6
+        bdStairClawWidth: 0.45
+        bdStairClawSpacing: 0.65
+        bdStairClawWallOverlap: 0.45
+        bdStairClawAngle: 40
+        bdStairClawDamage: 1
+        bdStairFloorSize: {x: 0.5, y: 0.8}
+        bdStairFloorGap: 0.3
+        bdStairFloorGrowSeconds: 0.3
+        bdStairFloorDamage: 1
+        bdTrailPlayerSpeed: 5
+        bdTrailSpawnDelay: 0.3
+        bdTrailHoldSeconds: 3
+        bdTrailDuration: 8
+        bdTrailSquareSize: {x: 0.5, y: 1}
+        bdTrailSquareGap: 0.3
+        bdTrailGrowSeconds: 0.15
+        bdTrailRetractSeconds: 0.15
+        bdTrailDamage: 1
+        bdTrailJumpForce: 15
+        bdQuadMoveSeconds: 0.7
+        bdQuadCreateSeconds: 0.3
+        bdQuadAttackCount: 8
+        bdQuadAttackGap: 0.3
+        bdQuadEnterSeconds: 0.4
+        bdQuadAimSeconds: 0.3
+        bdQuadHoldSeconds: 0.5
+        bdQuadFadeSeconds: 0.2
+        bdQuadExitSeconds: 0.4
+        bdQuadEmitterSize: 1.4
+        bdQuadEmitterGap: 0.5
+        bdQuadDamage: 1
+      boxPreparation:
+        transition: 2
+        size: {x: 16, y: 8}
+        keepCurrentCenter: 0
+        center: {x: 0, y: -3}
+        useScreenCenter: 1
+        fitRotationToScreen: 0
+        rotationScreenMargin: 0.5
+        seconds: 0.5
+    - label: "BD \uD328\uD134 08 - \uACC4\uB2E8 \uBC1C\uD310\uACFC \uC21C\uCC28 \uD560\uD034\uAE30"
+      kind: 5
+      text: 
+      duration: 1
+      pattern:
+        kind: 6
+        legacyCase: 1
+        duration: 10
+        interval: 0.5
+        speed: 5
+        count: 8
+        angleStep: 17
+        b2PatternId: 1
+        bdPatternId: 8
+        bdClawWidth: 0.22
+        bdClawSpacing: 1.5
+        bdClawLength: 13.5
+        bdClawGrowSeconds: 1
+        bdClawHoldSeconds: 0.25
+        bdClawFadeSeconds: 0.2
+        bdClawDamage: 1
+        formationSeconds: 1
+        orbitSecondsPerTurn: 3
+        orbitPauseSeconds: 1
+        orbitPadding: 0.5
+        swordSprite: {fileID: 0}
+        swordSize: {x: 0.35, y: 2.4}
+        swordFlightSeconds: 3
+        swordRotationSpeed: 360
+        swordPathWidth: 5
+        swordFlashSeconds: 0.08
+        wallSwordLength: 3
+        wallSwordThickness: 0.15
+        fallingSwordDriftSpeed: 0.5
+        burstSwordSpacing: 2
+        burstViewportX: 0.25
+        burstFragmentCount: 12
+        burstFragmentSize: 0.18
+        burstFragmentSpeed: 4
+        burstFragmentLifetime: 4
+        playerPreparation:
+          movement: 1
+          boundary: 0
+          visible: 1
+          startPosition: 1
+          normalizedPosition: {x: 1, y: 0}
+        sineColumnCount: 49
+        sinePathLength: 16
+        sineBarWidth: 0.22
+        sineGapHeight: 1.8
+        sineAmplitude: 1.5
+        sineMoveSpeed: 2
+        sineDamage: 1
+        bdLaserWaveInterval: 1.5
+        bdLaserEnterSeconds: 0.4
+        bdLaserAimSeconds: 0.3
+        bdLaserHoldSeconds: 0.5
+        bdLaserFadeSeconds: 0.2
+        bdLaserExitSeconds: 0.4
+        bdLaserEmitterSize: 1.4
+        bdLaserBoxGap: 0.45
+        bdLaserSpreadAngle: 10
+        bdLaserFinalScale: 2.2
+        bdLaserDamage: 1
+        bdSpikeSpeed: 3
+        bdSpikeLength: 8
+        bdSpikeHeight: 0.8
+        bdSpikeWidth: 0.2
+        bdSpikeSpacing: 0.4
+        bdSpikeDamage: 1
+        bdPlatformDelay: 0.6
+        bdPlatformSpeed: 4
+        bdPlatformSize: {x: 2.2, y: 0.25}
+        bdPlatformLowHeight: 1.6
+        bdPlatformHeightStep: 1.4
+        bdPlatformSpacing: 3.5
+        bdPlatformLastSpacing: 5.5
+        bdCrossPlatformSize: {x: 1.8, y: 0.25}
+        bdCrossPlatformSpacing: 3.5
+        bdCrossPlatformSpeed: 2
+        bdCrossLowerHeight: 2
+        bdCrossUpperHeight: 4.4
+        bdFallingSquareSize: {x: 1.4, y: 2.5}
+        bdFallingSquareSpeed: 4.5
+        bdFallingSquareInterval: 0.65
+        bdFallingSquareRandomCount: 15
+        bdFallingSquareGap: 0.2
+        bdFallingSquareDamage: 1
+        bdMirrorClawLength: 6.5
+        bdMirrorClawWidth: 0.55
+        bdMirrorClawSpacing: 1.1
+        bdMirrorClawCenterGap: 1.2
+        bdMirrorClawBottomOffset: 0.45
+        bdMirrorClawAngle: 40
+        bdMirrorClawGrowSeconds: 0.4
+        bdMirrorClawHoldSeconds: 1.2
+        bdMirrorClawDamage: 1
+        bdStairPlatformSize: {x: 3.2, y: 0.45}
+        bdStairPlatformHeights: {x: 4, y: 8, z: 12}
+        bdStairClawPlatformAnchorRatio: 0.75
+        bdStairClawPlatformOffsetX: 1
+        bdStairClawPlatformOffsetY: 0
+        bdStairJumpForce: 15
+        bdStairClawDelay: 1
+        bdStairClawInterval: 1.2
+        bdStairClawGrowSeconds: 0.4
+        bdStairClawHoldSeconds: 1
+        bdStairClawLength: 8
+        bdStairClawWidth: 0.45
+        bdStairClawSpacing: 1
+        bdStairClawWallOverlap: 0.45
+        bdStairClawAngle: 40
+        bdStairClawDamage: 1
+        bdStairFloorSize: {x: 0.5, y: 0.8}
+        bdStairFloorGap: 0.3
+        bdStairFloorGrowSeconds: 0.3
+        bdStairFloorDamage: 1
+        bdTrailPlayerSpeed: 5
+        bdTrailSpawnDelay: 0.3
+        bdTrailHoldSeconds: 3
+        bdTrailDuration: 8
+        bdTrailSquareSize: {x: 0.5, y: 1}
+        bdTrailSquareGap: 0.3
+        bdTrailGrowSeconds: 0.15
+        bdTrailRetractSeconds: 0.15
+        bdTrailDamage: 1
+        bdTrailJumpForce: 15
+        bdQuadMoveSeconds: 0.7
+        bdQuadCreateSeconds: 0.3
+        bdQuadAttackCount: 8
+        bdQuadAttackGap: 0.3
+        bdQuadEnterSeconds: 0.4
+        bdQuadAimSeconds: 0.3
+        bdQuadHoldSeconds: 0.5
+        bdQuadFadeSeconds: 0.2
+        bdQuadExitSeconds: 0.4
+        bdQuadEmitterSize: 1.4
+        bdQuadEmitterGap: 0.5
+        bdQuadDamage: 1
+      boxPreparation:
+        transition: 2
+        size: {x: 15, y: 18}
+        keepCurrentCenter: 0
+        center: {x: 0, y: 0}
+        useScreenCenter: 0
+        fitRotationToScreen: 0
+        rotationScreenMargin: 0.5
+        seconds: 0.5
+    - label: "BD \uD328\uD134 09 - \uC774\uB3D9 \uACBD\uB85C \uBC14\uB2E5 \uC7A5\uC560\uBB3C"
+      kind: 5
+      text: 
+      duration: 1
+      pattern:
+        kind: 6
+        legacyCase: 1
+        duration: 10
+        interval: 0.5
+        speed: 5
+        count: 8
+        angleStep: 17
+        b2PatternId: 1
+        bdPatternId: 9
+        bdClawWidth: 0.22
+        bdClawSpacing: 1.5
+        bdClawLength: 13.5
+        bdClawGrowSeconds: 1
+        bdClawHoldSeconds: 0.25
+        bdClawFadeSeconds: 0.2
+        bdClawDamage: 1
+        formationSeconds: 1
+        orbitSecondsPerTurn: 3
+        orbitPauseSeconds: 1
+        orbitPadding: 0.5
+        swordSprite: {fileID: 0}
+        swordSize: {x: 0.35, y: 2.4}
+        swordFlightSeconds: 3
+        swordRotationSpeed: 360
+        swordPathWidth: 5
+        swordFlashSeconds: 0.08
+        wallSwordLength: 3
+        wallSwordThickness: 0.15
+        fallingSwordDriftSpeed: 0.5
+        burstSwordSpacing: 2
+        burstViewportX: 0.25
+        burstFragmentCount: 12
+        burstFragmentSize: 0.18
+        burstFragmentSpeed: 4
+        burstFragmentLifetime: 4
+        playerPreparation:
+          movement: 1
+          boundary: 0
+          visible: 1
+          startPosition: 1
+          normalizedPosition: {x: 0, y: 0}
+        sineColumnCount: 49
+        sinePathLength: 16
+        sineBarWidth: 0.22
+        sineGapHeight: 1.8
+        sineAmplitude: 1.5
+        sineMoveSpeed: 2
+        sineDamage: 1
+        bdLaserWaveInterval: 1.5
+        bdLaserEnterSeconds: 0.4
+        bdLaserAimSeconds: 0.3
+        bdLaserHoldSeconds: 0.5
+        bdLaserFadeSeconds: 0.2
+        bdLaserExitSeconds: 0.4
+        bdLaserEmitterSize: 1.4
+        bdLaserBoxGap: 0.45
+        bdLaserSpreadAngle: 10
+        bdLaserFinalScale: 2.2
+        bdLaserDamage: 1
+        bdSpikeSpeed: 3
+        bdSpikeLength: 8
+        bdSpikeHeight: 0.8
+        bdSpikeWidth: 0.2
+        bdSpikeSpacing: 0.4
+        bdSpikeDamage: 1
+        bdPlatformDelay: 0.6
+        bdPlatformSpeed: 4
+        bdPlatformSize: {x: 2.2, y: 0.25}
+        bdPlatformLowHeight: 1.6
+        bdPlatformHeightStep: 1.4
+        bdPlatformSpacing: 3.5
+        bdPlatformLastSpacing: 5.5
+        bdCrossPlatformSize: {x: 1.8, y: 0.25}
+        bdCrossPlatformSpacing: 3.5
+        bdCrossPlatformSpeed: 2
+        bdCrossLowerHeight: 2
+        bdCrossUpperHeight: 4.4
+        bdFallingSquareSize: {x: 1.4, y: 2.5}
+        bdFallingSquareSpeed: 4.5
+        bdFallingSquareInterval: 0.65
+        bdFallingSquareRandomCount: 15
+        bdFallingSquareGap: 0.2
+        bdFallingSquareDamage: 1
+        bdMirrorClawLength: 6.5
+        bdMirrorClawWidth: 0.55
+        bdMirrorClawSpacing: 1.1
+        bdMirrorClawCenterGap: 1.2
+        bdMirrorClawBottomOffset: 0.45
+        bdMirrorClawAngle: 40
+        bdMirrorClawGrowSeconds: 0.4
+        bdMirrorClawHoldSeconds: 1.2
+        bdMirrorClawDamage: 1
+        bdStairPlatformSize: {x: 3.2, y: 0.45}
+        bdStairPlatformHeights: {x: 4, y: 8, z: 12}
+        bdStairClawPlatformAnchorRatio: 0.75
+        bdStairClawPlatformOffsetX: 1
+        bdStairClawPlatformOffsetY: 0
+        bdStairJumpForce: 15
+        bdStairClawDelay: 1
+        bdStairClawInterval: 1.2
+        bdStairClawGrowSeconds: 0.4
+        bdStairClawHoldSeconds: 1
+        bdStairClawLength: 8
+        bdStairClawWidth: 0.45
+        bdStairClawSpacing: 1
+        bdStairClawWallOverlap: 0.45
+        bdStairClawAngle: 40
+        bdStairClawDamage: 1
+        bdStairFloorSize: {x: 0.5, y: 0.8}
+        bdStairFloorGap: 0.3
+        bdStairFloorGrowSeconds: 0.3
+        bdStairFloorDamage: 1
+        bdTrailPlayerSpeed: 5
+        bdTrailSpawnDelay: 0.3
+        bdTrailHoldSeconds: 3
+        bdTrailDuration: 5
+        bdTrailSquareSize: {x: 0.5, y: 1}
+        bdTrailSquareGap: 0.3
+        bdTrailGrowSeconds: 0.15
+        bdTrailRetractSeconds: 0.15
+        bdTrailDamage: 1
+        bdTrailJumpForce: 16
+        bdQuadMoveSeconds: 0.7
+        bdQuadCreateSeconds: 0.3
+        bdQuadAttackCount: 8
+        bdQuadAttackGap: 0.3
+        bdQuadEnterSeconds: 0.4
+        bdQuadAimSeconds: 0.3
+        bdQuadHoldSeconds: 0.5
+        bdQuadFadeSeconds: 0.2
+        bdQuadExitSeconds: 0.4
+        bdQuadEmitterSize: 1.4
+        bdQuadEmitterGap: 0.5
+        bdQuadDamage: 1
+      boxPreparation:
+        transition: 2
+        size: {x: 20, y: 8}
+        keepCurrentCenter: 0
+        center: {x: 0, y: -3}
+        useScreenCenter: 1
+        fitRotationToScreen: 0
+        rotationScreenMargin: 0.5
+        seconds: 0.5
+    - label: "BD \uD328\uD134 10 - \uB124 \uAD6C\uC5ED \uB808\uC774\uC800"
+      kind: 5
+      text: 
+      duration: 1
+      pattern:
+        kind: 6
+        legacyCase: 1
+        duration: 10
+        interval: 0.5
+        speed: 5
+        count: 8
+        angleStep: 17
+        b2PatternId: 1
+        bdPatternId: 10
+        bdClawWidth: 0.22
+        bdClawSpacing: 1.5
+        bdClawLength: 13.5
+        bdClawGrowSeconds: 1
+        bdClawHoldSeconds: 0.25
+        bdClawFadeSeconds: 0.2
+        bdClawDamage: 1
+        formationSeconds: 1
+        orbitSecondsPerTurn: 3
+        orbitPauseSeconds: 1
+        orbitPadding: 0.5
+        swordSprite: {fileID: 0}
+        swordSize: {x: 0.35, y: 2.4}
+        swordFlightSeconds: 3
+        swordRotationSpeed: 360
+        swordPathWidth: 5
+        swordFlashSeconds: 0.08
+        wallSwordLength: 3
+        wallSwordThickness: 0.15
+        fallingSwordDriftSpeed: 0.5
+        burstSwordSpacing: 2
+        burstViewportX: 0.25
+        burstFragmentCount: 12
+        burstFragmentSize: 0.18
+        burstFragmentSpeed: 4
+        burstFragmentLifetime: 4
+        playerPreparation:
+          movement: 1
+          boundary: 0
+          visible: 1
+          startPosition: 1
+          normalizedPosition: {x: 0, y: 0}
+        sineColumnCount: 49
+        sinePathLength: 16
+        sineBarWidth: 0.22
+        sineGapHeight: 1.8
+        sineAmplitude: 1.5
+        sineMoveSpeed: 2
+        sineDamage: 1
+        bdLaserWaveInterval: 1.5
+        bdLaserEnterSeconds: 0.4
+        bdLaserAimSeconds: 0.3
+        bdLaserHoldSeconds: 0.5
+        bdLaserFadeSeconds: 0.2
+        bdLaserExitSeconds: 0.4
+        bdLaserEmitterSize: 1.4
+        bdLaserBoxGap: 0.45
+        bdLaserSpreadAngle: 10
+        bdLaserFinalScale: 2.2
+        bdLaserDamage: 1
+        bdSpikeSpeed: 3
+        bdSpikeLength: 8
+        bdSpikeHeight: 0.8
+        bdSpikeWidth: 0.2
+        bdSpikeSpacing: 0.4
+        bdSpikeDamage: 1
+        bdPlatformDelay: 0.6
+        bdPlatformSpeed: 4
+        bdPlatformSize: {x: 2.2, y: 0.25}
+        bdPlatformLowHeight: 1.6
+        bdPlatformHeightStep: 1.4
+        bdPlatformSpacing: 3.5
+        bdPlatformLastSpacing: 5.5
+        bdCrossPlatformSize: {x: 1.8, y: 0.25}
+        bdCrossPlatformSpacing: 3.5
+        bdCrossPlatformSpeed: 2
+        bdCrossLowerHeight: 2
+        bdCrossUpperHeight: 4.4
+        bdFallingSquareSize: {x: 1.4, y: 2.5}
+        bdFallingSquareSpeed: 4.5
+        bdFallingSquareInterval: 0.65
+        bdFallingSquareRandomCount: 15
+        bdFallingSquareGap: 0.2
+        bdFallingSquareDamage: 1
+        bdMirrorClawLength: 6.5
+        bdMirrorClawWidth: 0.55
+        bdMirrorClawSpacing: 1.1
+        bdMirrorClawCenterGap: 1.2
+        bdMirrorClawBottomOffset: 0.45
+        bdMirrorClawAngle: 40
+        bdMirrorClawGrowSeconds: 0.4
+        bdMirrorClawHoldSeconds: 1.2
+        bdMirrorClawDamage: 1
+        bdStairPlatformSize: {x: 3.2, y: 0.45}
+        bdStairPlatformHeights: {x: 4, y: 8, z: 12}
+        bdStairClawPlatformAnchorRatio: 0.75
+        bdStairClawPlatformOffsetX: 1
+        bdStairClawPlatformOffsetY: 0
+        bdStairJumpForce: 15
+        bdStairClawDelay: 1
+        bdStairClawInterval: 1.2
+        bdStairClawGrowSeconds: 0.4
+        bdStairClawHoldSeconds: 1
+        bdStairClawLength: 8
+        bdStairClawWidth: 0.45
+        bdStairClawSpacing: 1
+        bdStairClawWallOverlap: 0.45
+        bdStairClawAngle: 40
+        bdStairClawDamage: 1
+        bdStairFloorSize: {x: 0.5, y: 0.8}
+        bdStairFloorGap: 0.3
+        bdStairFloorGrowSeconds: 0.3
+        bdStairFloorDamage: 1
+        bdTrailPlayerSpeed: 5
+        bdTrailSpawnDelay: 0.3
+        bdTrailHoldSeconds: 3
+        bdTrailDuration: 5
+        bdTrailSquareSize: {x: 0.5, y: 1}
+        bdTrailSquareGap: 0.3
+        bdTrailGrowSeconds: 0.15
+        bdTrailRetractSeconds: 0.15
+        bdTrailDamage: 1
+        bdTrailJumpForce: 16
+        bdQuadMoveSeconds: 0.7
+        bdQuadCreateSeconds: 0.3
+        bdQuadAttackCount: 8
+        bdQuadAttackGap: 0.3
+        bdQuadEnterSeconds: 0.4
+        bdQuadAimSeconds: 0.3
+        bdQuadHoldSeconds: 0.5
+        bdQuadFadeSeconds: 0.2
+        bdQuadExitSeconds: 0.4
+        bdQuadEmitterSize: 1.4
+        bdQuadEmitterGap: 0.5
+        bdQuadDamage: 1
+      boxPreparation:
+        transition: 0
+        size: {x: 20, y: 8}
+        keepCurrentCenter: 0
+        center: {x: 0, y: -3}
+        useScreenCenter: 1
+        fitRotationToScreen: 0
+        rotationScreenMargin: 0.5
+        seconds: 0.5
+  forwardViewportY: 0.33333334
+  corridorWidth: 0.48
+  backwardSpeed: 0.65
+  clickAdvance: 0.65
+  mouseFollow: 5
+  recoverySeconds: 5
+  recoveryGrace: 1.5
+  slashTargetCount: 5
+  slashSpawnInterval: 1.8
+  slashStartZ: 22
+  slashSpeed: 8
+  slashWidthPixels: 14
+  slashDamage: 1
+  returnToDecision: 0

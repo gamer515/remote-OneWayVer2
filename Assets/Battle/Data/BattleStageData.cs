@@ -3,7 +3,7 @@ using UnityEngine;
 [CreateAssetMenu(menuName = "One-Way/Battle Stage")]
 public class BattleStageData : ScriptableObject
 {
-    [Range(1, 3)] public int stageIndex = 1;
+    [Range(1, 4)] public int stageIndex = 1;
     public BattleFlowDefinition flow = new BattleFlowDefinition();
     [Header("B1 movement")]
     [Range(0.05f, 0.9f)] public float forwardViewportY = 1f / 3f;

@@ -38,7 +38,7 @@ public sealed class B1RecoveryController
 
             while (Time.realtimeSinceStartup - startTime < waitSeconds)
             {
-                if (Input.GetMouseButtonDown(0))
+                if (BattleClickInput.TryConsume())
                 {
                     if (!fullyShown)
                     {

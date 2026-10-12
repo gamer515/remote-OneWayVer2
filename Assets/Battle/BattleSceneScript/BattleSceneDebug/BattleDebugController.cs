@@ -5,12 +5,64 @@ public class BattleDebugController : MonoBehaviour
 {
     private bool isReloading;
 
-    // 기존 이름을 유지하므로 Inspector 버튼 연결도 유지됩니다.
+    private static int pendingStage = -1;
+    private static int pendingStep = -1;
+    private static bool pendingContinue;
+
+    [RuntimeInitializeOnLoadMethod(
+        RuntimeInitializeLoadType.SubsystemRegistration)]
+    private static void ResetPatternSelection()
+    {
+        pendingStage = -1;
+        pendingStep = -1;
+        pendingContinue = false;
+    }
+
+    public static int TakePatternStep(
+        out int stageIndex,
+        out bool continueFromHere)
+    {
+        int selected = pendingStep;
+        stageIndex = pendingStage;
+        continueFromHere = pendingContinue;
+
+        // 저장한 선택값은 다음 씬에서 한 번만 사용한다.
+        ResetPatternSelection();
+
+        return selected;
+    }
+
+    public void SelectPattern(
+        int stageIndex,
+        int stepIndex,
+        bool continueFromHere)
+    {
+        RestartWithStage(
+            stageIndex,
+            stepIndex,
+            continueFromHere);
+    }
+
+    // 기존 B2 버튼 연결도 계속 사용할 수 있도록 유지한다.
+    public void SelectB2Pattern(int stepIndex)
+    {
+        SelectPattern(2, stepIndex, false);
+    }
+
+    public void SelectB2PatternFromHere(int stepIndex)
+    {
+        SelectPattern(2, stepIndex, true);
+    }
+
     public void SetBattleStage1() => RestartWithStage(1);
     public void SetBattleStage2() => RestartWithStage(2);
     public void SetBattleStage3() => RestartWithStage(3);
+    public void SetBattleStageBD() => RestartWithStage(4);
 
-    private void RestartWithStage(int stageIndex)
+    private void RestartWithStage(
+        int stageIndex,
+        int stepIndex = -1,
+        bool continueFromHere = false)
     {
         if (isReloading)
             return;
@@ -25,21 +77,18 @@ public class BattleDebugController : MonoBehaviour
                 ? controller.StartData
                 : BattleStartData.CreateDefault();
 
-        // 성향은 그대로 유지하고 전투 번호만 변경합니다.
         BattleStartData nextData =
             currentData.WithStage(stageIndex);
 
-        // 기존 코루틴, 탄막, 연출 등을 먼저 정리합니다.
+        // 실행 중인 탄막과 연출을 정리한 뒤 씬을 다시 연다.
         if (controller != null)
             controller.CancelBattle();
 
-        BattleEntry.SetNext(nextData);
+        pendingStage = stageIndex;
+        pendingStep = stepIndex;
+        pendingContinue = stepIndex >= 0 && continueFromHere;
 
-        Debug.Log(
-            $"[Battle Debug] B{stageIndex}로 재시작합니다. " +
-            $"Traits: {nextData.Trait1}, {nextData.Trait2}, " +
-            $"{nextData.Trait3}, {nextData.Trait4}",
-            this);
+        BattleEntry.SetNext(nextData);
 
         SceneManager.LoadScene(
             SceneManager.GetActiveScene().name);
