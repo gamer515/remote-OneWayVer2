@@ -26,14 +26,7 @@ public class TypewriterEffect : MonoBehaviour
         textComponent.text = ""; // 시작할 때 텍스트 비우기
     }
 
-    void Update()
-    {
-        // 텍스트가 타이핑 중일 때 스페이스바(또는 Z키)를 누르면 스킵
-        if (isTyping && (Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.Z)))
-        {
-            SkipTyping();
-        }
-    }
+    
 
     // 외부에서 텍스트를 전달하며 타이핑을 시작하는 함수
     public void PlayText(string textToType)
@@ -71,7 +64,7 @@ public class TypewriterEffect : MonoBehaviour
     }
 
     // 타이핑 효과를 멈추고 전체 텍스트를 한 번에 띄움
-    private void SkipTyping()
+    public void SkipTyping()
     {
         if (typingCoroutine != null)
         {

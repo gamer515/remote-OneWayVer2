@@ -40,6 +40,28 @@ MonoBehaviour:
         swordFlashSeconds: 0.08
         wallSwordLength: 3
         wallSwordThickness: 0.15
+        fallingSwordDriftSpeed: 0.5
+        burstSwordSpacing: 2
+        burstViewportX: 0.25
+        burstFragmentCount: 12
+        burstFragmentSize: 0.18
+        burstFragmentSpeed: 4
+        burstFragmentLifetime: 4
+        playerPreparation:
+          movement: 0
+          boundary: 0
+          visible: 1
+          startPosition: 0
+          normalizedPosition: {x: 0.5, y: 0.5}
+      boxPreparation:
+        transition: 0
+        size: {x: 8, y: 8}
+        keepCurrentCenter: 1
+        center: {x: 0, y: -3}
+        useScreenCenter: 0
+        fitRotationToScreen: 0
+        rotationScreenMargin: 0.5
+        seconds: 0.5
     - label: Build top left bottom right
       kind: 4
       text: 
@@ -65,6 +87,28 @@ MonoBehaviour:
         swordFlashSeconds: 0.08
         wallSwordLength: 3
         wallSwordThickness: 0.15
+        fallingSwordDriftSpeed: 0.5
+        burstSwordSpacing: 2
+        burstViewportX: 0.25
+        burstFragmentCount: 12
+        burstFragmentSize: 0.18
+        burstFragmentSpeed: 4
+        burstFragmentLifetime: 4
+        playerPreparation:
+          movement: 0
+          boundary: 0
+          visible: 1
+          startPosition: 0
+          normalizedPosition: {x: 0.5, y: 0.5}
+      boxPreparation:
+        transition: 0
+        size: {x: 8, y: 8}
+        keepCurrentCenter: 1
+        center: {x: 0, y: -3}
+        useScreenCenter: 0
+        fitRotationToScreen: 0
+        rotationScreenMargin: 0.5
+        seconds: 0.5
     - label: B2 Pattern 01 - circle and charge
       kind: 5
       text: 
@@ -90,6 +134,28 @@ MonoBehaviour:
         swordFlashSeconds: 0.08
         wallSwordLength: 3
         wallSwordThickness: 0.15
+        fallingSwordDriftSpeed: 0.5
+        burstSwordSpacing: 2
+        burstViewportX: 0.25
+        burstFragmentCount: 12
+        burstFragmentSize: 0.18
+        burstFragmentSpeed: 4
+        burstFragmentLifetime: 4
+        playerPreparation:
+          movement: 0
+          boundary: 0
+          visible: 1
+          startPosition: 0
+          normalizedPosition: {x: 0.5, y: 0.5}
+      boxPreparation:
+        transition: 1
+        size: {x: 8, y: 8}
+        keepCurrentCenter: 0
+        center: {x: 0, y: -3}
+        useScreenCenter: 0
+        fitRotationToScreen: 0
+        rotationScreenMargin: 0.5
+        seconds: 0.5
     - label: B2 Pattern 02 - rotating swords
       kind: 5
       text: 
@@ -115,6 +181,28 @@ MonoBehaviour:
         swordFlashSeconds: 0.08
         wallSwordLength: 3
         wallSwordThickness: 0.15
+        fallingSwordDriftSpeed: 0.5
+        burstSwordSpacing: 2
+        burstViewportX: 0.25
+        burstFragmentCount: 12
+        burstFragmentSize: 0.18
+        burstFragmentSpeed: 4
+        burstFragmentLifetime: 4
+        playerPreparation:
+          movement: 0
+          boundary: 0
+          visible: 1
+          startPosition: 0
+          normalizedPosition: {x: 0.5, y: 0.5}
+      boxPreparation:
+        transition: 1
+        size: {x: 8, y: 8}
+        keepCurrentCenter: 0
+        center: {x: 0, y: -3}
+        useScreenCenter: 0
+        fitRotationToScreen: 0
+        rotationScreenMargin: 0.5
+        seconds: 0.5
     - label: B2 Pattern 03 - rising wall swords
       kind: 5
       text: 
@@ -140,6 +228,404 @@ MonoBehaviour:
         swordFlashSeconds: 0.08
         wallSwordLength: 6
         wallSwordThickness: 0.15
+        fallingSwordDriftSpeed: 0.5
+        burstSwordSpacing: 2
+        burstViewportX: 0.25
+        burstFragmentCount: 12
+        burstFragmentSize: 0.18
+        burstFragmentSpeed: 4
+        burstFragmentLifetime: 4
+        playerPreparation:
+          movement: 0
+          boundary: 0
+          visible: 1
+          startPosition: 0
+          normalizedPosition: {x: 0.5, y: 0.5}
+      boxPreparation:
+        transition: 1
+        size: {x: 8, y: 8}
+        keepCurrentCenter: 0
+        center: {x: 0, y: -3}
+        useScreenCenter: 0
+        fitRotationToScreen: 0
+        rotationScreenMargin: 0.5
+        seconds: 0.5
+    - label: B2 Pattern 04 - falling drifting swords
+      kind: 5
+      text: 
+      duration: 1
+      pattern:
+        kind: 5
+        legacyCase: 1
+        duration: 1
+        interval: 0.2
+        speed: 16
+        count: 10
+        angleStep: 17
+        b2PatternId: 4
+        formationSeconds: 1
+        orbitSecondsPerTurn: 3
+        orbitPauseSeconds: 1
+        orbitPadding: 0.5
+        swordSprite: {fileID: 0}
+        swordSize: {x: 0.3, y: 6}
+        swordFlightSeconds: 3
+        swordRotationSpeed: 360
+        swordPathWidth: 5
+        swordFlashSeconds: 0.08
+        wallSwordLength: 3
+        wallSwordThickness: 0.15
+        fallingSwordDriftSpeed: 0.5
+        burstSwordSpacing: 2
+        burstViewportX: 0.25
+        burstFragmentCount: 12
+        burstFragmentSize: 0.18
+        burstFragmentSpeed: 4
+        burstFragmentLifetime: 4
+        playerPreparation:
+          movement: 0
+          boundary: 0
+          visible: 1
+          startPosition: 0
+          normalizedPosition: {x: 0.5, y: 0.5}
+      boxPreparation:
+        transition: 1
+        size: {x: 20, y: 4}
+        keepCurrentCenter: 0
+        center: {x: 0, y: -3}
+        useScreenCenter: 0
+        fitRotationToScreen: 0
+        rotationScreenMargin: 0.5
+        seconds: 0.5
+    - label: B2 Pattern 05 - bursting swords
+      kind: 5
+      text: 
+      duration: 1
+      pattern:
+        kind: 5
+        legacyCase: 1
+        duration: 10
+        interval: 0.5
+        speed: 5
+        count: 8
+        angleStep: 17
+        b2PatternId: 5
+        formationSeconds: 1
+        orbitSecondsPerTurn: 3
+        orbitPauseSeconds: 1
+        orbitPadding: 0.5
+        swordSprite: {fileID: 0}
+        swordSize: {x: 0.3, y: 2.4}
+        swordFlightSeconds: 3
+        swordRotationSpeed: 360
+        swordPathWidth: 5
+        swordFlashSeconds: 0.08
+        wallSwordLength: 3
+        wallSwordThickness: 0.15
+        fallingSwordDriftSpeed: 0.5
+        burstSwordSpacing: 5
+        burstViewportX: 0.25
+        burstFragmentCount: 12
+        burstFragmentSize: 0.18
+        burstFragmentSpeed: 4
+        burstFragmentLifetime: 4
+        playerPreparation:
+          movement: 0
+          boundary: 0
+          visible: 1
+          startPosition: 0
+          normalizedPosition: {x: 0.5, y: 0.5}
+      boxPreparation:
+        transition: 1
+        size: {x: 8, y: 8}
+        keepCurrentCenter: 0
+        center: {x: 0, y: -3}
+        useScreenCenter: 0
+        fitRotationToScreen: 0
+        rotationScreenMargin: 0.5
+        seconds: 0.5
+    - label: B2 Pattern 06 - horizontal sword waves
+      kind: 5
+      text: 
+      duration: 1
+      pattern:
+        kind: 5
+        legacyCase: 1
+        duration: 10
+        interval: 0.6
+        speed: 5
+        count: 30
+        angleStep: 17
+        b2PatternId: 6
+        formationSeconds: 1
+        orbitSecondsPerTurn: 3
+        orbitPauseSeconds: 1
+        orbitPadding: 0.5
+        swordSprite: {fileID: 0}
+        swordSize: {x: 1.8, y: 0.2}
+        swordFlightSeconds: 3
+        swordRotationSpeed: 360
+        swordPathWidth: 5
+        swordFlashSeconds: 0.08
+        wallSwordLength: 3
+        wallSwordThickness: 0.15
+        fallingSwordDriftSpeed: 0.5
+        burstSwordSpacing: 5
+        burstViewportX: 0.25
+        burstFragmentCount: 12
+        burstFragmentSize: 0.18
+        burstFragmentSpeed: 4
+        burstFragmentLifetime: 4
+        playerPreparation:
+          movement: 0
+          boundary: 0
+          visible: 1
+          startPosition: 0
+          normalizedPosition: {x: 0.5, y: 0.5}
+      boxPreparation:
+        transition: 1
+        size: {x: 8, y: 8}
+        keepCurrentCenter: 0
+        center: {x: 0, y: -3}
+        useScreenCenter: 0
+        fitRotationToScreen: 0
+        rotationScreenMargin: 0.5
+        seconds: 0.5
+    - label: B2 Pattern 07 - bottom thrust swords
+      kind: 5
+      text: 
+      duration: 1
+      pattern:
+        kind: 5
+        legacyCase: 1
+        duration: 10
+        interval: 0.2
+        speed: 14
+        count: 8
+        angleStep: 17
+        b2PatternId: 7
+        formationSeconds: 1
+        orbitSecondsPerTurn: 3
+        orbitPauseSeconds: 1
+        orbitPadding: 0.5
+        swordSprite: {fileID: 0}
+        swordSize: {x: 0.35, y: 3}
+        swordFlightSeconds: 3
+        swordRotationSpeed: 360
+        swordPathWidth: 5
+        swordFlashSeconds: 0.08
+        wallSwordLength: 3
+        wallSwordThickness: 0.15
+        fallingSwordDriftSpeed: 0.5
+        burstSwordSpacing: 5
+        burstViewportX: 0.25
+        burstFragmentCount: 12
+        burstFragmentSize: 0.18
+        burstFragmentSpeed: 4
+        burstFragmentLifetime: 4
+        playerPreparation:
+          movement: 0
+          boundary: 0
+          visible: 1
+          startPosition: 0
+          normalizedPosition: {x: 0.5, y: 0.5}
+      boxPreparation:
+        transition: 1
+        size: {x: 3, y: 6}
+        keepCurrentCenter: 0
+        center: {x: 0, y: -3}
+        useScreenCenter: 0
+        fitRotationToScreen: 0
+        rotationScreenMargin: 0.5
+        seconds: 0.35
+    - label: B2 Pattern 08 - spinning aimed swords
+      kind: 5
+      text: 
+      duration: 1
+      pattern:
+        kind: 5
+        legacyCase: 1
+        duration: 10
+        interval: 0.2
+        speed: 10
+        count: 8
+        angleStep: 17
+        b2PatternId: 8
+        formationSeconds: 1
+        orbitSecondsPerTurn: 3
+        orbitPauseSeconds: 1
+        orbitPadding: 0.5
+        swordSprite: {fileID: 0}
+        swordSize: {x: 0.35, y: 3}
+        swordFlightSeconds: 3
+        swordRotationSpeed: 720
+        swordPathWidth: 5
+        swordFlashSeconds: 0.08
+        wallSwordLength: 3
+        wallSwordThickness: 0.15
+        fallingSwordDriftSpeed: 0.5
+        burstSwordSpacing: 5
+        burstViewportX: 0.25
+        burstFragmentCount: 12
+        burstFragmentSize: 0.18
+        burstFragmentSpeed: 4
+        burstFragmentLifetime: 4
+        playerPreparation:
+          movement: 0
+          boundary: 0
+          visible: 1
+          startPosition: 0
+          normalizedPosition: {x: 0.5, y: 0.5}
+      boxPreparation:
+        transition: 1
+        size: {x: 8, y: 8}
+        keepCurrentCenter: 0
+        center: {x: 0, y: -3}
+        useScreenCenter: 1
+        fitRotationToScreen: 0
+        rotationScreenMargin: 0.5
+        seconds: 0.5
+    - label: B2 Pattern 09 - rotating spiral
+      kind: 5
+      text: 
+      duration: 1
+      pattern:
+        kind: 5
+        legacyCase: 1
+        duration: 10
+        interval: 0.2
+        speed: 10
+        count: 8
+        angleStep: 17
+        b2PatternId: 9
+        formationSeconds: 1
+        orbitSecondsPerTurn: 3
+        orbitPauseSeconds: 1
+        orbitPadding: 0.5
+        swordSprite: {fileID: 0}
+        swordSize: {x: 0.35, y: 3}
+        swordFlightSeconds: 3
+        swordRotationSpeed: 720
+        swordPathWidth: 5
+        swordFlashSeconds: 0.08
+        wallSwordLength: 3
+        wallSwordThickness: 0.15
+        fallingSwordDriftSpeed: 0.5
+        burstSwordSpacing: 5
+        burstViewportX: 0.25
+        burstFragmentCount: 12
+        burstFragmentSize: 0.18
+        burstFragmentSpeed: 4
+        burstFragmentLifetime: 4
+        playerPreparation:
+          movement: 0
+          boundary: 0
+          visible: 1
+          startPosition: 0
+          normalizedPosition: {x: 0.5, y: 0.5}
+      boxPreparation:
+        transition: 1
+        size: {x: 8, y: 8}
+        keepCurrentCenter: 0
+        center: {x: 0, y: -3}
+        useScreenCenter: 1
+        fitRotationToScreen: 1
+        rotationScreenMargin: 0.5
+        seconds: 0.5
+    - label: B2 Pattern 10 - red green generators
+      kind: 5
+      text: 
+      duration: 1
+      pattern:
+        kind: 5
+        legacyCase: 1
+        duration: 10
+        interval: 0.2
+        speed: 10
+        count: 8
+        angleStep: 17
+        b2PatternId: 10
+        formationSeconds: 1
+        orbitSecondsPerTurn: 3
+        orbitPauseSeconds: 1
+        orbitPadding: 0.5
+        swordSprite: {fileID: 0}
+        swordSize: {x: 0.35, y: 3}
+        swordFlightSeconds: 3
+        swordRotationSpeed: 720
+        swordPathWidth: 5
+        swordFlashSeconds: 0.08
+        wallSwordLength: 3
+        wallSwordThickness: 0.15
+        fallingSwordDriftSpeed: 0.5
+        burstSwordSpacing: 5
+        burstViewportX: 0.25
+        burstFragmentCount: 12
+        burstFragmentSize: 0.18
+        burstFragmentSpeed: 4
+        burstFragmentLifetime: 4
+        playerPreparation:
+          movement: 0
+          boundary: 0
+          visible: 1
+          startPosition: 0
+          normalizedPosition: {x: 0.5, y: 0.5}
+      boxPreparation:
+        transition: 1
+        size: {x: 8, y: 8}
+        keepCurrentCenter: 0
+        center: {x: 0, y: -3}
+        useScreenCenter: 0
+        fitRotationToScreen: 0
+        rotationScreenMargin: 0.5
+        seconds: 0.5
+    - label: B2 Pattern 11 - inverted bursting projectiles
+      kind: 5
+      text: 
+      duration: 1
+      pattern:
+        kind: 5
+        legacyCase: 1
+        duration: 10
+        interval: 0.2
+        speed: 5
+        count: 8
+        angleStep: 17
+        b2PatternId: 11
+        formationSeconds: 1
+        orbitSecondsPerTurn: 3
+        orbitPauseSeconds: 1
+        orbitPadding: 0.5
+        swordSprite: {fileID: 0}
+        swordSize: {x: 0.3, y: 2}
+        swordFlightSeconds: 3
+        swordRotationSpeed: 360
+        swordPathWidth: 5
+        swordFlashSeconds: 0.08
+        wallSwordLength: 3
+        wallSwordThickness: 0.15
+        fallingSwordDriftSpeed: 0.5
+        burstSwordSpacing: 5
+        burstViewportX: 0.5
+        burstFragmentCount: 12
+        burstFragmentSize: 0.18
+        burstFragmentSpeed: 4
+        burstFragmentLifetime: 4
+        playerPreparation:
+          movement: 0
+          boundary: 0
+          visible: 1
+          startPosition: 0
+          normalizedPosition: {x: 0.5, y: 0.5}
+      boxPreparation:
+        transition: 1
+        size: {x: 25, y: 8}
+        keepCurrentCenter: 0
+        center: {x: 0, y: -3}
+        useScreenCenter: 0
+        fitRotationToScreen: 0
+        rotationScreenMargin: 0.5
+        seconds: 0.5
     - label: 2-a - five 3D slash targets
       kind: 6
       text: 
@@ -165,6 +651,28 @@ MonoBehaviour:
         swordFlashSeconds: 0.08
         wallSwordLength: 3
         wallSwordThickness: 0.15
+        fallingSwordDriftSpeed: 0.5
+        burstSwordSpacing: 2
+        burstViewportX: 0.25
+        burstFragmentCount: 12
+        burstFragmentSize: 0.18
+        burstFragmentSpeed: 4
+        burstFragmentLifetime: 4
+        playerPreparation:
+          movement: 0
+          boundary: 0
+          visible: 1
+          startPosition: 0
+          normalizedPosition: {x: 0.5, y: 0.5}
+      boxPreparation:
+        transition: 0
+        size: {x: 8, y: 8}
+        keepCurrentCenter: 1
+        center: {x: 0, y: -3}
+        useScreenCenter: 0
+        fitRotationToScreen: 0
+        rotationScreenMargin: 0.5
+        seconds: 0.5
     - label: Complete B2
       kind: 8
       text: 
@@ -190,6 +698,28 @@ MonoBehaviour:
         swordFlashSeconds: 0.08
         wallSwordLength: 3
         wallSwordThickness: 0.15
+        fallingSwordDriftSpeed: 0.5
+        burstSwordSpacing: 2
+        burstViewportX: 0.25
+        burstFragmentCount: 12
+        burstFragmentSize: 0.18
+        burstFragmentSpeed: 4
+        burstFragmentLifetime: 4
+        playerPreparation:
+          movement: 0
+          boundary: 0
+          visible: 1
+          startPosition: 0
+          normalizedPosition: {x: 0.5, y: 0.5}
+      boxPreparation:
+        transition: 0
+        size: {x: 8, y: 8}
+        keepCurrentCenter: 1
+        center: {x: 0, y: -3}
+        useScreenCenter: 0
+        fitRotationToScreen: 0
+        rotationScreenMargin: 0.5
+        seconds: 0.5
   forwardViewportY: 0.33333334
   corridorWidth: 0.48
   backwardSpeed: 0.65

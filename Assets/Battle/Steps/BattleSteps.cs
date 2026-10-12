@@ -29,7 +29,7 @@ public sealed class DialogueStep : IBattleStep
         BattleStepDefinition d,
         BattleStepScope scope)
     {
-        // ÇÑ ±ÛÀÚ°¡ ³ª¿À´Â °£°İ.
+        // í•œ ê¸€ìê°€ ë‚˜ì˜¤ëŠ” ê°„ê²©.
         const float typingInterval = 0.1f;
 
         c.Player.Lock(true);
@@ -39,7 +39,7 @@ public sealed class DialogueStep : IBattleStep
         int previousVisibleCharacters =
             c.Message.maxVisibleCharacters;
 
-        // µµÁß¿¡ ÀüÅõ°¡ Á¾·áµÅµµ Ç¥½Ã »óÅÂ º¹¿ø.
+        // ë„ì¤‘ì— ì „íˆ¬ê°€ ì¢…ë£Œë¼ë„ í‘œì‹œ ìƒíƒœ ë³µì›.
         scope.OnDispose(() =>
         {
             c.Message.maxVisibleCharacters =
@@ -57,11 +57,11 @@ public sealed class DialogueStep : IBattleStep
         bool fullyShown = totalCharacters == 0;
         int visibleCharacters = 0;
 
-        // ±ÛÀÚ°¡ ¾ø´Â »ç°¢Çü ´ë»çÃ¢ºÎÅÍ È­¸é¿¡ Ç¥½Ã.
+        // ê¸€ìê°€ ì—†ëŠ” ì‚¬ê°í˜• ëŒ€ì‚¬ì°½ë¶€í„° í™”ë©´ì— í‘œì‹œ.
         yield return null;
 
-        // B1.assetÀÇ ÀÌ ´ë»ç ´Ü°è Duration¸¸Å­ ±â´Ù¸° ÈÄ ½ÃÀÛ.
-        // ÇöÀç 0.5¶ó¸é ºó ´ë»çÃ¢À» ¸ÕÀú 0.5ÃÊ º¸¿©ÁÜ.
+        // B1.assetì˜ ì´ ëŒ€ì‚¬ ë‹¨ê³„ Durationë§Œí¼ ê¸°ë‹¤ë¦° í›„ ì‹œì‘.
+        // í˜„ì¬ 0.5ë¼ë©´ ë¹ˆ ëŒ€ì‚¬ì°½ì„ ë¨¼ì € 0.5ì´ˆ ë³´ì—¬ì¤Œ.
         yield return new WaitForSecondsRealtime(
             Mathf.Max(0f, d.duration));
 
@@ -70,22 +70,19 @@ public sealed class DialogueStep : IBattleStep
 
         while (true)
         {
-            bool pressed =
-                Input.GetMouseButtonDown(0) ||
-                Input.GetKeyDown(KeyCode.Space) ||
-                Input.GetKeyDown(KeyCode.Z);
+            bool pressed = BattleClickInput.TryConsume();
 
             if (pressed)
             {
                 if (!fullyShown)
                 {
-                    // Ãâ·Â Áß ÀÔ·Â: ÀüÃ¼ ±ÛÀÚ Ç¥½Ã.
+                    // ì¶œë ¥ ì¤‘ ì…ë ¥: ì „ì²´ ê¸€ì í‘œì‹œ.
                     c.Message.maxVisibleCharacters = totalCharacters;
                     fullyShown = true;
                 }
                 else
                 {
-                    // ´ÙÀ½ ÀÔ·Â: ´ë»ç Á¾·á.
+                    // ë‹¤ìŒ ì…ë ¥: ëŒ€ì‚¬ ì¢…ë£Œ.
                     yield return null;
                     break;
                 }
@@ -93,13 +90,13 @@ public sealed class DialogueStep : IBattleStep
 
             if (!fullyShown && Time.realtimeSinceStartup >= nextCharacterTime)
             {
-                // ÇÁ·¹ÀÓÀÌ ´Ê¾îÁ®µµ ÇÑ ¹ø¿¡ ÇÑ ±ÛÀÚ¸¸ Ãß°¡.
+                // í”„ë ˆì„ì´ ëŠ¦ì–´ì ¸ë„ í•œ ë²ˆì— í•œ ê¸€ìë§Œ ì¶”ê°€.
                 visibleCharacters++;
 
                 c.Message.maxVisibleCharacters = visibleCharacters;
                 fullyShown = visibleCharacters >= totalCharacters;
 
-                // ¹Ğ¸° ½Ã°£À» µû¶óÀâÁö ¾Ê°í Áö±İºÎÅÍ ´Ù½Ã °£°İÀ» ¼À.
+                // ë°€ë¦° ì‹œê°„ì„ ë”°ë¼ì¡ì§€ ì•Šê³  ì§€ê¸ˆë¶€í„° ë‹¤ì‹œ ê°„ê²©ì„ ì…ˆ.
                 nextCharacterTime =
                     Time.realtimeSinceStartup + typingInterval;
             }
@@ -186,11 +183,11 @@ public sealed class BuildBoxStep : IBattleStep
         c.Box.CancelAnimations();
         c.Box.HideUI();
 
-        // ±âÁ¸ º®Àº ¼û±â°í Ãæµ¹µµ ²û.
+        // ê¸°ì¡´ ë²½ì€ ìˆ¨ê¸°ê³  ì¶©ëŒë„ ë”.
         c.Box.SetWalls(false, false);
 
-        // EnemyEntranceStep¿¡¼­ ¸¸µç Ã¹ ³× Àû.
-        // ¼ø¼­: top, left, bottom, right
+        // EnemyEntranceStepì—ì„œ ë§Œë“  ì²« ë„¤ ì .
+        // ìˆœì„œ: top, left, bottom, right
         var enemies = new Transform[4];
 
         for (int i = 0; i < 4; i++)
@@ -199,12 +196,12 @@ public sealed class BuildBoxStep : IBattleStep
 
             if (enemies[i] == null)
                 throw new InvalidOperationException(
-                    "BattleBox·Î º¯ÇüÇÒ Enemy " + (i + 1) + "ÀÌ ¾ø½À´Ï´Ù.");
+                    "BattleBoxë¡œ ë³€í˜•í•  Enemy " + (i + 1) + "ì´ ì—†ìŠµë‹ˆë‹¤.");
         }
 
         Vector2 center = new Vector2(0f, -3f);
 
-        // ¸¶ÁÖ º¸´Â º® Áß½É »çÀÌÀÇ °Å¸®.
+        // ë§ˆì£¼ ë³´ëŠ” ë²½ ì¤‘ì‹¬ ì‚¬ì´ì˜ ê±°ë¦¬.
         float sideLength = 8f;
         float half = sideLength * 0.5f;
         float thickness = Mathf.Max(0.01f, c.Box.wallThickness);
@@ -220,7 +217,7 @@ public sealed class BuildBoxStep : IBattleStep
             new Vector3(half, 0f, 0f)    // right
         };
 
-        // ¸ğ¼­¸®¿¡ Æ´ÀÌ »ı±âÁö ¾Êµµ·Ï µÎ²²¸¸Å­ ±æÀÌ Ãß°¡.
+        // ëª¨ì„œë¦¬ì— í‹ˆì´ ìƒê¸°ì§€ ì•Šë„ë¡ ë‘ê»˜ë§Œí¼ ê¸¸ì´ ì¶”ê°€.
         float wallLength = sideLength + thickness;
 
         Vector3[] targetScales =
@@ -234,7 +231,7 @@ public sealed class BuildBoxStep : IBattleStep
         var startPositions = new Vector3[4];
         var startScales = new Vector3[4];
 
-        // ÀûÀ» BattleBox ¾Æ·¡·Î ÀÌµ¿½ÃÅ°µÇ ÇöÀç ¸ğ½ÀÀº À¯Áö.
+        // ì ì„ BattleBox ì•„ë˜ë¡œ ì´ë™ì‹œí‚¤ë˜ í˜„ì¬ ëª¨ìŠµì€ ìœ ì§€.
         for (int i = 0; i < 4; i++)
         {
             Transform enemy = enemies[i];
@@ -245,12 +242,12 @@ public sealed class BuildBoxStep : IBattleStep
             startPositions[i] = enemy.localPosition;
             startScales[i] = enemy.localScale;
 
-            // ±âÁ¸ º®°ú °°Àº ÅÂ±×¡¤·¹ÀÌ¾î »ç¿ë.
+            // ê¸°ì¡´ ë²½ê³¼ ê°™ì€ íƒœê·¸Â·ë ˆì´ì–´ ì‚¬ìš©.
             Transform oldWall = c.Box.Walls[i];
             enemy.gameObject.tag = oldWall.gameObject.tag;
             enemy.gameObject.layer = oldWall.gameObject.layer;
 
-            // ÀûÀº 3D CubeÀÌÁö¸¸ ÇÃ·¹ÀÌ¾îÀÇ Ãæµ¹Àº 2D »ç¿ë.
+            // ì ì€ 3D Cubeì´ì§€ë§Œ í”Œë ˆì´ì–´ì˜ ì¶©ëŒì€ 2D ì‚¬ìš©.
             var collider = enemy.GetComponent<BoxCollider2D>();
 
             if (collider == null)
@@ -264,7 +261,7 @@ public sealed class BuildBoxStep : IBattleStep
 
         float duration = Mathf.Max(0.1f, d.duration);
 
-        // top ¡æ left ¡æ bottom ¡æ right ¼øÀ¸·Î º¯Çü.
+        // top â†’ left â†’ bottom â†’ right ìˆœìœ¼ë¡œ ë³€í˜•.
         for (int i = 0; i < 4; i++)
         {
             for (float elapsed = 0f;
@@ -283,12 +280,12 @@ public sealed class BuildBoxStep : IBattleStep
                 yield return null;
             }
 
-            // ¸¶Áö¸· ÇÁ·¹ÀÓ¿¡¼­ Á¤È®ÇÑ À§Ä¡¿Í Å©±â·Î °íÁ¤.
+            // ë§ˆì§€ë§‰ í”„ë ˆì„ì—ì„œ ì •í™•í•œ ìœ„ì¹˜ì™€ í¬ê¸°ë¡œ ê³ ì •.
             enemies[i].localPosition = targetPositions[i];
             enemies[i].localScale = targetScales[i];
         }
 
-        // º¯ÇüµÈ Àû ÀÚÃ¼¸¦ ½ÇÁ¦ BattleBox º®À¸·Î µî·Ï.
+        // ë³€í˜•ëœ ì  ìì²´ë¥¼ ì‹¤ì œ BattleBox ë²½ìœ¼ë¡œ ë“±ë¡.
         c.Box.topWall = enemies[0];
         c.Box.leftWall = enemies[1];
         c.Box.bottomWall = enemies[2];
@@ -323,6 +320,10 @@ public sealed class PatternSequenceStep : IBattleStep
             case BattlePatternKind.B2:
                 pattern = B2PatternFactory.Create(
                     d.pattern.b2PatternId);
+                break;
+
+            case BattlePatternKind.BD:
+                pattern = BDPatternFactory.Create(d.pattern.bdPatternId);
                 break;
 
             case BattlePatternKind.Radial:

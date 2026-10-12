@@ -3,6 +3,7 @@ using System;
 public sealed class BattleStartData
 {
     public int StageIndex { get; }
+    public string DisplayName => StageIndex == 4 ? "BD" : "B" + StageIndex;
 
     public int Trait1 { get; }
     public int Trait2 { get; }
@@ -16,11 +17,11 @@ public sealed class BattleStartData
         int trait3,
         int trait4)
     {
-        if (stageIndex < 1 || stageIndex > 3)
+        if (stageIndex < 1 || stageIndex > 4)
         {
             throw new ArgumentOutOfRangeException(
                 nameof(stageIndex),
-                "ÀüÅõ ¹øÈ£´Â 1~3ÀÌ¾î¾ß ÇÕ´Ï´Ù.");
+                "ì „íˆ¬ ë²ˆí˜¸ëŠ” 1~4ì´ì–´ì•¼ í•©ë‹ˆë‹¤.");
         }
 
         StageIndex = stageIndex;
@@ -30,13 +31,13 @@ public sealed class BattleStartData
         Trait4 = trait4;
     }
 
-    // ¿ÜºÎ¿¡¼­ Àü´ŞÇÏÁö ¾Ê¾ÒÀ» ¶§ »ç¿ëÇÒ °ª
+    // ì™¸ë¶€ì—ì„œ ì „ë‹¬í•˜ì§€ ì•Šì•˜ì„ ë•Œ ì‚¬ìš©í•  ê°’
     public static BattleStartData CreateDefault()
     {
         return new BattleStartData(1, 1, 1, 1, 1);
     }
 
-    // µğ¹ö±× ¹öÆ°¿¡¼­ ¼ºÇâÀº À¯ÁöÇÏ°í ÀüÅõ ¹øÈ£¸¸ º¯°æ
+    // ë””ë²„ê·¸ ë²„íŠ¼ì—ì„œ ì„±í–¥ì€ ìœ ì§€í•˜ê³  ì „íˆ¬ ë²ˆí˜¸ë§Œ ë³€ê²½
     public BattleStartData WithStage(int stageIndex)
     {
         return new BattleStartData(

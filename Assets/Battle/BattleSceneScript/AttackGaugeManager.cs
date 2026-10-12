@@ -12,6 +12,8 @@ public class AttackGaugeManager : MonoBehaviour
     public float perfectDistance = 5f;  // 기존 50f -> 20f (더 좁게!)
     public float goodDistance = 5f;     // 기존 200f -> 80f (더 좁게!)
 
+    private int startedFrame;
+
 
     private bool isMoving = false;
     public void CancelGauge() { isMoving = false; }
@@ -19,8 +21,10 @@ public class AttackGaugeManager : MonoBehaviour
 
     public void StartGauge()
     {
-        // gameObject.SetActive(true); <-- 삭제! (BattleManager는 항상 켜져있어야 함)
-        striker.anchoredPosition = new Vector2(-limitX, 0);
+        striker.anchoredPosition = new Vector2(-limitX, 0f);
+
+        direction = 1;
+        startedFrame = Time.frameCount;
         isMoving = true;
     }
 
@@ -36,7 +40,8 @@ public class AttackGaugeManager : MonoBehaviour
 
         striker.anchoredPosition = new Vector2(currentX, 0);
 
-        if (Input.GetKeyDown(KeyCode.Z) || Input.GetKeyDown(KeyCode.Space))
+        if (Time.frameCount > startedFrame &&
+    BattleClickInput.TryConsume())
         {
             StopAndCalculate();
         }

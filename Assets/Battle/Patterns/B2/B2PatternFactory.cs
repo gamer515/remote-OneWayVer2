@@ -16,6 +16,30 @@ public static class B2PatternFactory
             case 3:
                 return new B2Pattern03();
 
+            case 4:
+                return new B2Pattern04();
+
+            case 5:
+                return new B2Pattern05();
+
+            case 6:
+                return new B2Pattern06();
+
+            case 7:
+                return new B2Pattern07();
+
+            case 8:
+                return new B2Pattern08();
+
+            case 9:
+                return new B2Pattern09();
+
+            case 10:
+                return new B2Pattern10();
+
+            case 11:
+                return new B2Pattern11();
+
             default:
                 throw new ArgumentOutOfRangeException(
                     nameof(id),
