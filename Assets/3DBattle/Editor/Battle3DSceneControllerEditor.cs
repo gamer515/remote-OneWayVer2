@@ -35,6 +35,20 @@ namespace OneWay.Battle3D.Editor
 
             var stage = controller.CurrentStage;
             if (stage == null) return;
+            EditorGUILayout.Space();
+            EditorGUILayout.LabelField("Battle End / 전투 종료", EditorStyles.boldLabel);
+            using (new EditorGUI.DisabledScope(!Application.isPlaying || !controller.isActiveAndEnabled ||
+                stage.boss == null || !stage.boss.IsAlive))
+            {
+                if (GUILayout.Button("보스 처치 (Kill Boss)")) controller.DefeatCurrentBoss();
+            }
+            if (Application.isPlaying)
+            {
+                if (controller.IsReturnPending)
+                    EditorGUILayout.HelpBox($"DecisionScene 복귀까지 {controller.ReturnSecondsRemaining:F1}초", MessageType.Info);
+                Repaint();
+            }
+            else EditorGUILayout.HelpBox("Play 모드에서 보스를 처치합니다. 보스 또는 플레이어 사망 후 5초 뒤 DecisionScene으로 돌아갑니다.", MessageType.Info);
             EditorGUILayout.ObjectField("Stage Settings", stage.settings, typeof(BattleStageSettings), false);
             var patterns = stage.settings.patterns;
             if (patterns == null || patterns.Length == 0)
