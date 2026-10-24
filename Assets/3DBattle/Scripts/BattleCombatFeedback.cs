@@ -14,7 +14,7 @@ namespace OneWay.Battle3D
         readonly Vector3[] circle = new Vector3[97];
         static readonly Rect Panel = new Rect(18f, 18f, 330f, 222f);
 
-        public bool IsPointerOverPanel(Vector2 screen) => Panel.Contains(new Vector2(screen.x, Screen.height - screen.y));
+        public bool IsPointerOverPanel(Vector2 screen) => showDebugUI && Panel.Contains(new Vector2(screen.x, Screen.height - screen.y));
 
         void LateUpdate()
         {
@@ -53,21 +53,26 @@ namespace OneWay.Battle3D
             attackLine.startColor = attackLine.endColor = special ? new Color(1f, 0.65f, 0.05f) : Color.white;
         }
 
+        public void ClearEffects()
+        {
+            effectRemaining = 0f;
+            if (attackLine != null) attackLine.enabled = false;
+            if (chargeRing != null) chargeRing.enabled = false;
+        }
+
         void OnGUI()
         {
+            if (!showDebugUI) return;
             if (player == null || boss == null) return;
             GUI.Box(Panel, GUIContent.none);
             GUILayout.BeginArea(new Rect(32f, 28f, 300f, 200f));
             GUILayout.Label("3D BATTLE  /  MOUSE ONLY");
-            GUILayout.Label("RMB: Move   |   LMB on ground: Dash");
-            GUILayout.Label("LMB on boss in range: Tap / Hold + release");
-            GUILayout.Label($"BOSS  {boss.Health:0} / {boss.maxHealth:0}" + (boss.IsAlive ? "" : "  DEFEATED"));
-            GUILayout.HorizontalSlider(boss.Health, 0f, boss.maxHealth);
+            GUILayout.Label("Wheel up: attack / Wheel down: defense");
+            GUILayout.Label("LMB: attack/block / RMB: roll + run");
             GUILayout.Label(player.Status);
-            GUILayout.Label($"CHARGE  {player.Charge01 * 100f:0}%   |   {(player.BossInRange ? "IN RANGE" : "OUT OF RANGE")}");
-            boss.patrolEnabled = GUILayout.Toggle(boss.patrolEnabled, "Boss patrol (test charge cancellation)");
-            if (GUILayout.Button("Reset boss")) { player.CancelInput(); boss.ResetBoss(); }
+            GUILayout.Label($"{(player.IsDefenseMode ? "DEFENSE" : "ATTACK")} / BLOCK: {player.IsBlocking}");
             GUILayout.EndArea();
         }
+        public bool showDebugUI;
     }
 }

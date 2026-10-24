@@ -152,6 +152,9 @@ namespace OneWay.Battle3D.Editor
                 ("Dead", Clip(DungeonPath + "character-human.fbx", "die"), 1f, false));
 
             GameObject knightPrefab = CreateKnightPrefab(knightController, idle);
+            // Preserve the dedicated combo when characters are rebuilt from the menu.
+            if (System.IO.File.Exists("Assets/3DBattle/Authoring~/combo_samples.json"))
+                BattleComboAuthoring.Build();
             GameObject bossPrefab = CreateBossPrefab(bossController, bossIdle);
             // Only replace our visual children; keep the live combat roots and their references.
             RemoveChild(player.transform, "Red Capsule");
@@ -416,7 +419,8 @@ namespace OneWay.Battle3D.Editor
                 Check(boss.Health == health - player.normalDamage, "Short click is one normal attack");
                 Check(player.animator != null && !player.animator.applyRootMotion, "Knight animation is wired without root motion");
                 player.animator.Update(0f);
-                Check(player.animator.GetCurrentAnimatorStateInfo(0).IsName("Attack"), "Normal input starts the supplied sword attack");
+                Check(player.animator.GetCurrentAnimatorStateInfo(0).IsName(player.UsesNewNormalAttack ? "AttackNew" : "Attack"), "Normal input starts the supplied sword attack");
+                if (player.UsesNewNormalAttack) Check(player.NormalAttackStartFrame == 0, "New normal attack begins at frame zero");
                 Transform sword = player.animator.GetComponentsInChildren<Transform>().First(t => t.name == "Sword");
                 Vector3 swordPosition = sword.position;
                 Quaternion swordRotation = sword.rotation;
@@ -490,6 +494,53 @@ namespace OneWay.Battle3D.Editor
                 player.CancelInput();
                 Check(player.State == BattlePlayerController.PressState.Idle && !player.IsDashing && !player.IsMoving,
                     "Focus-loss cleanup clears held input and movement");
+                // Four-step combo, single-slot input buffer, timeout and movement cancellation.
+                boss.ResetBoss();
+                boss.transform.position = centre + Vector3.forward * 4f;
+                Physics.SyncTransforms();
+                Input(dt: 2f);
+                health = boss.Health;
+                Input(down: true); Input(up: true, dt: .05f);
+                Check(player.ComboStep == 1 && boss.Health == health - player.normalDamage, "Combo begins with slash one");
+                Input(down: true); Input(up: true, dt: .05f);
+                Check(player.ComboStep == 1 && boss.Health == health - player.normalDamage, "Fast click buffers without early damage");
+                float firstComboGate = player.ComboChainDelay(0);
+                Input(dt: firstComboGate);
+                Check(player.ComboStep == 2 && boss.Health == health - player.normalDamage * 2, "Buffered slash two fires once");
+                if (player.UsesNewNormalAttack) Check(player.NormalAttackStartFrame == 6, "Repeated normal attack begins at frame six");
+                Input(down: true); Input(up: true, dt: .05f); Input(dt: player.ComboChainDelay(1));
+                Check(player.ComboStep == 3, "Third tap starts spinning slash");
+                if (player.UsesNewNormalAttack) { Input(down: true); Input(up: true, dt: .05f); Input(dt: player.ComboChainDelay(1)); }
+                else { Input(dt: .6f); Input(down: true); Input(up: true, dt: .05f); }
+                Check(player.ComboStep == 4 && boss.Health == health - player.normalDamage * 4, "Fourth tap finishes four-hit chain");
+                Input(dt: 2f); Input(down: true); Input(up: true, dt: .05f);
+                Check(player.ComboStep == 1, "Combo timeout restarts at slash one");
+                if (player.UsesNewNormalAttack) Check(player.NormalAttackStartFrame == 0, "Stopped chain restarts at frame zero");
+                Input(down: true); Input(up: true, dt: .05f);
+                health = boss.Health;
+                Input(right: true); Input(dt: 1f);
+                Check(player.ComboStep == 0 && boss.Health == health, "Movement discards buffered attack");
+                player.CancelInput();
+                // The first two slash windows close at their authored chain frames.
+                boss.ResetBoss(); boss.transform.position = centre + Vector3.forward * 4f;
+                Physics.SyncTransforms();
+                Input(dt: 2f); Input(down: true); Input(up: true, dt: .05f);
+                Input(dt: player.ComboChainDelay(0));
+                Input(down: true); Input(up: true, dt: .02f);
+                Check(player.ComboStep == 1, "Press at slash-one deadline restarts slash one");
+                Input(dt: player.ComboChainDelay(0) - .01f);
+                Input(down: true); Input(up: true, dt: .02f);
+                Check(player.ComboStep == 2, "Press before deadline may release just after it");
+                Input(dt: player.ComboChainDelay(1));
+                Input(down: true); Input(up: true, dt: .02f);
+                Check(player.ComboStep == 1, "Press at slash-two deadline restarts slash one");
+                Input(down: true); Input(up: true, dt: .02f); Input(dt: player.ComboChainDelay(0));
+                Check(player.ComboStep == 2, "Early buffered press still chains to slash two");
+                Input(dt: player.ComboChainDelay(1) + .03f);
+                Check(player.ComboStep == 2, "Unqueued slash two continues its recovery");
+                Input(down: true); Input(up: true, dt: .02f);
+                Check(player.ComboStep == 1, "Press during slash-two recovery restarts slash one");
+                player.CancelInput();
                 boss.TakeDamage(boss.maxHealth);
                 Check(!boss.IsAlive && !player.BossInRange, "Defeated boss cannot be attacked");
                 Check(boss.bodyParts.Length == 4, "Boss body, head, spear and shield receive damage feedback");

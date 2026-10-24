@@ -13,15 +13,22 @@ namespace OneWay.Battle3D
         public Renderer[] bodyParts;
         public Animator animator;
         public Collider hitbox;
+        [Header("Animation states")]
+        public string idleState = "Base Layer.Idle";
+        public string walkState = "Base Layer.Walk";
+        public string deadState = "Base Layer.Dead";
         public float Health { get; private set; }
         public bool IsAlive => Health > 0f;
+        public bool PatternControlsAnimation { get; set; }
         Vector3 origin;
         float phase, flashRemaining;
         MaterialPropertyBlock properties;
         int animationState;
+        BossActionPriority actionPriority;
 
         void Awake()
         {
+            actionPriority = GetComponent<BossActionPriority>();
             Health = maxHealth;
             origin = transform.position;
             properties = new MaterialPropertyBlock();
@@ -32,7 +39,7 @@ namespace OneWay.Battle3D
 
         void Update()
         {
-            if (patrolEnabled && IsAlive)
+            if (patrolEnabled && IsAlive && !(actionPriority != null && actionPriority.BlocksNormalActions))
             {
                 phase += Time.deltaTime * patrolSpeed / Mathf.Max(0.01f, patrolDistance);
                 transform.position = origin + Vector3.forward * (Mathf.Sin(phase) * patrolDistance);
@@ -70,10 +77,12 @@ namespace OneWay.Battle3D
             if (!IsAlive) return;
             Health = Mathf.Max(0f, Health - Mathf.Max(0f, damage));
             flashRemaining = 0.12f;
+            actionPriority?.OnDamage();
         }
 
         public void ResetBoss()
         {
+            actionPriority?.ResetPriority();
             Health = maxHealth;
             phase = flashRemaining = 0f;
             transform.position = origin;
@@ -83,11 +92,27 @@ namespace OneWay.Battle3D
 
         void UpdateAnimation()
         {
+            if (actionPriority != null && actionPriority.ControlsAnimation) return;
+            if (PatternControlsAnimation && IsAlive) return;
             if (animator == null || animator.runtimeAnimatorController == null) return;
-            int desired = Animator.StringToHash(!IsAlive ? "Base Layer.Dead" : patrolEnabled ? "Base Layer.Walk" : "Base Layer.Idle");
+            int desired = Animator.StringToHash(!IsAlive ? deadState : patrolEnabled ? walkState : idleState);
             if (animationState == desired || !animator.HasState(0, desired)) return;
             animator.CrossFadeInFixedTime(desired, 0.15f, 0, 0f);
             animationState = desired;
+        }
+
+        public void RefreshAnimation()
+        {
+            animationState = 0;
+            UpdateAnimation();
+        }
+
+        public void ResetAt(Transform spawn)
+        {
+            PatternControlsAnimation = false;
+            if (spawn != null) transform.SetPositionAndRotation(spawn.position, spawn.rotation);
+            origin = transform.position;
+            ResetBoss();
         }
     }
 }

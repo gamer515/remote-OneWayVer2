@@ -1,0 +1,22 @@
+Blender frame ranges at 30 FPS; frame 1 = source time 0; frame 0 holds first pose. Output samples at 60 FPS.
+Root horizontal travel removed; movement remains controlled by gameplay code. Ground roll corrects body/helmet/shoulder armour; sword excluded from ground solver.
+MeshyWeaponCombo_Player sword tip vs cutting trajectory: active samples=150; mean angle before=82.22; after=0.00 degrees; slow poses smoothly blend to source grip.
+MeshyWeaponCombo_Player ground repair: before minimum=-0.06405; max lift=0.07905
+MeshyWeaponCombo_Player verified minimum Y=0.01470 at 120 FPS
+MeshyWeaponCombo_Player: Blender 0..75 -> 2.5000s; bindings OK; state=AttackNew
+MeshyDoubleComboAttack_Player sword tip vs cutting trajectory: active samples=31; mean angle before=89.61; after=0.00 degrees; slow poses smoothly blend to source grip.
+MeshyDoubleComboAttack_Player ground repair: before minimum=-0.10848; max lift=0.12348
+MeshyDoubleComboAttack_Player verified minimum Y=0.01455 at 120 FPS
+MeshyDoubleComboAttack_Player: Blender 30..45 -> 0.5000s; bindings OK; state=MeshyDoubleComboAttack_Player
+MeshyAttack_Player sword tip vs cutting trajectory: active samples=90; mean angle before=82.94; after=0.00 degrees; slow poses smoothly blend to source grip.
+MeshyAttack_Player ground repair: before minimum=-0.13873; max lift=0.15373
+MeshyAttack_Player verified minimum Y=0.01485 at 120 FPS
+MeshyAttack_Player: Blender 22..85 -> 2.1000s; bindings OK; state=MeshyAttack_Player
+MeshyCrouchPick_Player sword tip vs cutting trajectory: active samples=83; mean angle before=93.36; after=0.00 degrees; slow poses smoothly blend to source grip.
+MeshyCrouchPick_Player ground repair: before minimum=-0.23764; max lift=0.25264
+MeshyCrouchPick_Player verified minimum Y=0.01494 at 120 FPS
+MeshyCrouchPick_Player: Blender 0..60 -> 2.0000s; bindings OK; state=MeshyCrouchPick_Player
+MeshyShieldPushLeft_Player ground repair: before minimum=-0.12054; max lift=0.13554
+MeshyShieldPushLeft_Player verified minimum Y=0.01487 at 120 FPS
+Shield local upper-arm range: left=57.53728 degrees; right=0 degrees (sword guard retained).
+MeshyShieldPushLeft_Player: Blender 1..71 -> 2.3333s; bindings OK; state=MeshyShieldPushLeft_Player
