@@ -128,31 +128,14 @@ public partial class DecisionManager : MonoBehaviour
         }
     }
 
-    private System.Collections.IEnumerator Start()
+    private void Start()
     {
         if (GameManager.Instance.CurrentState != GameState.Main)
-            yield break;
+            return;
 
-        // 메인에서 곧바로 재시작해도 다음 회차의 생성 지문이 준비되기 전에 읽지 않습니다.
+        // Background generation must not lock gameplay. Each dialogue loads ready content or its source.
         LocalStoryRuntimeService.TryResumePending();
-        if (AIAPIClient.IsGenerationInProgress || LocalStoryRuntimeService.BlocksCurrentRun)
-            yield return WaitForGeneratedStory();
-
         Initialize();
-    }
-
-    private System.Collections.IEnumerator WaitForGeneratedStory()
-    {
-        currentState = StoryState.Transitioning;
-        SetYellowInputInteractable(false);
-        journeyBoardInput?.SetInputEnabled(false);
-        Debug.Log("[Story] 다음 회차 이야기 생성이 끝나면 플레이를 시작합니다.", this);
-        while (AIAPIClient.IsGenerationInProgress || LocalStoryRuntimeService.BlocksCurrentRun)
-        {
-            yield return null;
-        }
-        // 전체 입력 잠금도 풀어야 이후 Initialize의 노란 버튼/기어 입력이 동작합니다.
-        journeyBoardInput?.SetInputEnabled(true);
     }
 
     private void Update()
@@ -225,8 +208,18 @@ public partial class DecisionManager : MonoBehaviour
             return;
         }
 
-        Vector3 startPosition = startData.SavedPlayerPosition ?? envController.TerrainOrigin + new Vector3(0, 0f, 10);
+        // Recover invalid legacy/editor coordinates without restarting the story or clearing its history.
+        Vector3 entryPosition = envController.PlaceRegistry.GetChunkWorldPosition(0);
+        entryPosition.z = Mathf.Min(entryPosition.z + 10f, envController.CurrentTerrainEndZ);
+        Vector3 startPosition = DecisionPlayerController.ResolveStartPosition(
+            startData.SavedPlayerPosition, envController.TerrainOrigin,
+            envController.CurrentTerrainEndZ, entryPosition, out bool recoveredPosition);
         playerController.Initialize(startPosition, startData.SavedPlayerRotation);
+        if (recoveredPosition)
+        {
+            Debug.LogWarning($"[Player] 지형 밖 저장 위치 복구: {startData.SavedPlayerPosition} → {startPosition}. 이야기 진행은 유지합니다.", this);
+            saveService.SaveProgress(session, startPosition, playerController.CurrentRotation);
+        }
 
         // 실제 시작 위치가 적용된 후 스트리밍과 카메라에 Player를 연결합니다.
         envController.BindPlayer(startData.Player);
@@ -240,8 +233,8 @@ public partial class DecisionManager : MonoBehaviour
 
         coinDropController.InitializeInventory(startData.RemainingCoins);
         backpackInventory?.Initialize(
-            startData.StoredItemIds,
-            saveService.SaveStoredItemIds);
+            startData.Inventory,
+            saveService.SaveInventoryState);
         if (journeyBoardInput != null)
         {
             journeyCoinSupply = new JourneyCoinSupplyController(

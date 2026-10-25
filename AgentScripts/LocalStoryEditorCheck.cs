@@ -16,7 +16,7 @@ public static class LocalStoryEditorCheck
         int checks=0;
         foreach(string path in LocalStoryTestPanel.DiscoverPaths())
         {
-            var root=JsonUtility.FromJson<EncounterCardRoot>(Resources.Load<TextAsset>("Story_Json_Data/"+path+"/Story").text);
+            var root=JsonUtility.FromJson<EncounterCardRoot>(ChapterContentCatalog.Asset("Story_Json_Data/"+path+"/Story").text);
             string valid=Patch(root);
             Assert(LocalStoryRewrite.TryBuild(valid,root,null,out var result,out var error),path+": "+error); checks++;
             Assert(JsonUtility.ToJson(root)==JsonUtility.ToJson(result),"roundtrip "+path); checks++;
@@ -59,7 +59,7 @@ public static class LocalStoryEditorCheck
     public static async System.Threading.Tasks.Task<string> Infer()
     {
         string path="Initial/Initial_01/Encounters/guide";
-        var root=JsonUtility.FromJson<EncounterCardRoot>(Resources.Load<TextAsset>("Story_Json_Data/"+path+"/Story").text);
+        var root=JsonUtility.FromJson<EncounterCardRoot>(ChapterContentCatalog.Asset("Story_Json_Data/"+path+"/Story").text);
         root.MainStory = root.MainStory.Take(3).ToList();
         var memory=new LocalStoryRevisionRequest { sourceRun=1,targetRun=2,chapterId="Initial",events=new System.Collections.Generic.List<StoryEventRecord>{
             new StoryEventRecord {chapterId="Initial",characterId="Guide",characterName="로키",terrainName="Dungeon",kind="choice",choiceId="loki_insult",semanticText="꺼져!",relationshipDelta=-2}}};
@@ -73,7 +73,7 @@ public static class LocalStoryEditorCheck
     public static string BriefRegression()
     {
         string path=LocalStoryTestInputs.GuidePath;
-        var root=JsonUtility.FromJson<EncounterCardRoot>(Resources.Load<TextAsset>("Story_Json_Data/"+path+"/Story").text);
+        var root=JsonUtility.FromJson<EncounterCardRoot>(ChapterContentCatalog.Asset("Story_Json_Data/"+path+"/Story").text);
         string before=JsonUtility.ToJson(root);
         Assert(LocalStoryRewrite.WritingBrief(path,root)!=null,"Guide brief not loaded");
         string first=LocalStoryRewrite.Messages(path,root,LocalStoryTestInputs.Create(1));
@@ -98,7 +98,7 @@ public static class LocalStoryEditorCheck
     public static async System.Threading.Tasks.Task<string> QualityCase(int scenario=1,int seed=12345)
     {
         string path=LocalStoryTestInputs.GuidePath;
-        var root=JsonUtility.FromJson<EncounterCardRoot>(Resources.Load<TextAsset>("Story_Json_Data/"+path+"/Story").text);
+        var root=JsonUtility.FromJson<EncounterCardRoot>(ChapterContentCatalog.Asset("Story_Json_Data/"+path+"/Story").text);
         string before=JsonUtility.ToJson(root);
         var memory=LocalStoryTestInputs.Create(scenario);
         var report=new LocalStoryTestReport {storyPath=path,original=root,sourceRun=memory?.sourceRun??1,targetRun=memory?.targetRun??2,
@@ -117,7 +117,7 @@ public static class LocalStoryEditorCheck
     public static string CorrectionRegression()
     {
         string path=LocalStoryTestInputs.GuidePath;
-        var root=JsonUtility.FromJson<EncounterCardRoot>(Resources.Load<TextAsset>("Story_Json_Data/"+path+"/Story").text);
+        var root=JsonUtility.FromJson<EncounterCardRoot>(ChapterContentCatalog.Asset("Story_Json_Data/"+path+"/Story").text);
         string before=JsonUtility.ToJson(root), raw=Patch(root);
         string prompt=LocalStoryRewrite.CorrectionMessages(path,root,LocalStoryTestInputs.Create(3),raw);
         string escaped=LocalStoryRewrite.Quote(raw);
@@ -156,7 +156,7 @@ public static class LocalStoryEditorCheck
         var watch=System.Diagnostics.Stopwatch.StartNew();
         try
         {
-            var root=JsonUtility.FromJson<EncounterCardRoot>(Resources.Load<TextAsset>("Story_Json_Data/"+report.storyPath+"/Story").text); report.original=root;
+            var root=JsonUtility.FromJson<EncounterCardRoot>(ChapterContentCatalog.Asset("Story_Json_Data/"+report.storyPath+"/Story").text); report.original=root;
             string before=JsonUtility.ToJson(root);
             var memory=LocalStoryTestInputs.Create(scenario);
             var preset=recommended?LocalStorySampling.Recommended():LocalStorySampling.Legacy();
@@ -198,7 +198,7 @@ public static class LocalStoryEditorCheck
         try
         {
             string path="Initial/Initial_01/Encounters/guide";
-            var root=JsonUtility.FromJson<EncounterCardRoot>(Resources.Load<TextAsset>("Story_Json_Data/"+path+"/Story").text);
+            var root=JsonUtility.FromJson<EncounterCardRoot>(ChapterContentCatalog.Asset("Story_Json_Data/"+path+"/Story").text);
             var changed=JsonUtility.FromJson<EncounterCardRoot>(JsonUtility.ToJson(root));
             changed.MainStory[0].text="자네, 여기에 있으면 안 된다고.";
             changed.MainStory[8].options[0]="정말 신이라는 거야?";
@@ -277,8 +277,11 @@ public static class LocalStoryEditorCheck
     public static string ModelSelectionRegression()
     {
         string path=LocalStoryTestInputs.GuidePath, runtime=System.IO.Path.Combine(Application.streamingAssetsPath,"LocalStory");
-        var source=JsonUtility.FromJson<EncounterCardRoot>(Resources.Load<TextAsset>("Story_Json_Data/"+path+"/Story").text);
+        var source=JsonUtility.FromJson<EncounterCardRoot>(ChapterContentCatalog.Asset("Story_Json_Data/"+path+"/Story").text);
         string before=JsonUtility.ToJson(source); int checks=0;
+        var probe=new GameObject("DefaultModelCheck");probe.SetActive(false);
+        try {Assert(probe.AddComponent<LocalStoryTestPanel>().SelectedModel==LocalStoryTestModel.Gemma,"new test panel must default to Gemma");checks++;}
+        finally {UnityEngine.Object.DestroyImmediate(probe);}
         foreach(int scenario in new[]{1,2,3})
         {
             string prompt=LocalStoryRewrite.Messages(path,source,LocalStoryTestInputs.Create(scenario));
@@ -503,7 +506,7 @@ public static class LocalStoryEditorCheck
         reportField.SetValue(controller,report);
         var buttons=UnityEngine.Object.FindObjectsByType<Button>(FindObjectsInactive.Include,FindObjectsSortMode.None);
         var show=typeof(LocalStoryTestPanel).GetMethod("ShowOutput",flags);
-        string source=Resources.Load<TextAsset>("Story_Json_Data/Initial/Initial_01/Encounters/guide/Story").text;
+        string source=ChapterContentCatalog.Asset("Story_Json_Data/Initial/Initial_01/Encounters/guide/Story").text;
         try
         {
             Assert(!buttons.Any(b=>new[]{"자연스러움: 좋음","다시 작성 필요","다음 회차에 적용"}.Contains(b.name)),"removed controls exist");
@@ -524,7 +527,7 @@ public static class LocalStoryEditorCheck
             Assert(stored.rawOutput==report.rawOutput && !stored.saved,"raw test record incorrect");
             Assert(stored.correctionRawOutput==report.correctionRawOutput && stored.correctionError==report.correctionError,"correction raw/error not stored separately");
             Assert(!System.IO.Directory.Exists(System.IO.Path.Combine(temp,"GeneratedContent")),"game content written by evaluation");
-            Assert(Resources.Load<TextAsset>("Story_Json_Data/Initial/Initial_01/Encounters/guide/Story").text==source,"source modified");
+            Assert(ChapterContentCatalog.Asset("Story_Json_Data/Initial/Initial_01/Encounters/guide/Story").text==source,"source modified");
             return "Passed: valid/invalid output displayed without substitution; raw/correction saved unchanged; review control absent; source and game content untouched.";
         }
         finally

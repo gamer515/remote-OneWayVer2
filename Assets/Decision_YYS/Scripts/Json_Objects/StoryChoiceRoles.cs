@@ -2,12 +2,9 @@ using System;
 using System.Linq;
 using UnityEngine;
 
-/// <summary>Authored attitude slots, not a guess from relationship scores or button positions.</summary>
+/// <summary>Explanation-owned choice meaning, resolved by stable choice ID.</summary>
 public static class StoryChoiceRoles
 {
-    public static string Expected(int slot) => slot == 0 ? "Positive" : slot == 1 ? "Neutral" :
-        slot == 2 ? "Negative" : slot == 3 ? "Chaotic" : "Unknown";
-
     public static bool Validate(EncounterCard card, out string error)
     {
         error = null;
@@ -17,7 +14,7 @@ public static class StoryChoiceRoles
             // Legacy action menus remain readable; relationship choices must be explicitly authored.
             if (actions.Any(a => a != null && (!string.IsNullOrEmpty(a.choiceRole) ||
                 !string.IsNullOrEmpty(a.relationshipId))))
-                error = "관계 선택에는 choiceKind와 선택별 choiceRole을 지정하세요.";
+                error = "관계 선택에는 choiceKind와 설명 파일의 선택별 choiceRole을 지정하세요.";
         }
         else if (card.type != "Choice") error = "choiceKind는 Choice 카드에만 지정합니다.";
         else if (card.choiceKind == "Mechanic")
@@ -33,8 +30,8 @@ public static class StoryChoiceRoles
                 actions.Select(a => a.choiceId).Distinct().Count() != 4)
                 error = "태도 선택의 choiceId는 비어 있지 않고 서로 달라야 합니다.";
             else for (int i = 0; i < 4; i++)
-                if (actions[i].choiceRole != Expected(i))
-                { error = (i + 1) + "번 choiceRole은 " + Expected(i) + "여야 합니다."; break; }
+                if (!IsAttitude(actions[i].choiceRole))
+                { error = "설명 파일에 선택 ID별 태도를 지정하세요: " + actions[i].choiceId; break; }
         }
         else error = "choiceKind는 Attitude 또는 Mechanic입니다.";
         return error == null;
@@ -45,7 +42,7 @@ public static class StoryChoiceRoles
         if (root?.MainStory == null) throw new InvalidOperationException("이야기 카드가 없습니다.");
         for (int i = 0; i < root.MainStory.Count; i++)
             if (root.MainStory[i] == null || !Validate(root.MainStory[i], out _))
-                throw new InvalidOperationException("선택 성격/순서를 확인하세요: index=" + i);
+                throw new InvalidOperationException("설명 파일의 선택 ID별 의도를 확인하세요: index=" + i);
     }
 
     public static string Recorded(string kind, StoryChoiceAction action) => kind == "Mechanic" ? "Mechanic" :
@@ -59,7 +56,7 @@ public static class StoryChoiceRoles
         if (record.choiceRole == "Mechanic" || IsAttitude(record.choiceRole)) return record.choiceRole;
         if (!string.IsNullOrEmpty(record.storyPath) && !string.IsNullOrEmpty(record.choiceId))
         {
-            var asset = Resources.Load<TextAsset>("Story_Json_Data/" + record.storyPath + "/Story");
+            var asset = ChapterContentCatalog.Asset("Story_Json_Data/" + record.storyPath + "/Story");
             var root = asset == null ? null : JsonUtility.FromJson<EncounterCardRoot>(asset.text);
             var matches = (root?.MainStory ?? new System.Collections.Generic.List<EncounterCard>())
                 .Where(c => c != null && (string.IsNullOrEmpty(c.speakerId) || c.speakerId == record.characterId))
@@ -74,11 +71,16 @@ public static class StoryChoiceRoles
     // Older test/Edit input may lack these descriptive fields. Never repair conflicting explicit roles or IDs.
     public static void FillMissingMetadata(EncounterCard older, EncounterCard current)
     {
+        if(string.IsNullOrEmpty(older.speakerId)) older.speakerId=current.speakerId;
         if (string.IsNullOrEmpty(older.choiceKind)) older.choiceKind = current.choiceKind;
         if (older.choiceActions?.Length != current.choiceActions?.Length) return;
         for (int i = 0; i < (older.choiceActions?.Length ?? 0); i++)
+        {
+            if(older.choiceActions[i]!=null && current.choiceActions[i]!=null && string.IsNullOrEmpty(older.choiceActions[i].choiceId))
+                older.choiceActions[i].choiceId=current.choiceActions[i].choiceId;
             if (older.choiceActions[i] != null && current.choiceActions[i] != null &&
                 string.IsNullOrEmpty(older.choiceActions[i].choiceRole))
                 older.choiceActions[i].choiceRole = current.choiceActions[i].choiceRole;
+        }
     }
 }

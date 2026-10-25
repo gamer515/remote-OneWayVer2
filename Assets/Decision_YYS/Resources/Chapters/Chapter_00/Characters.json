@@ -1,0 +1,51 @@
+{
+  "characters": [
+    {
+      "characterId": "Duelist",
+      "name": "결투 교관",
+      "role": "결투를 제안하고 규칙을 안내하는 NPC",
+      "personality": "전투를 통해 여행자를 시험한다.",
+      "repeatWithinTerrain": false,
+      "stats": null,
+      "publicFacts": [],
+      "hidden": {}
+    },
+    {
+      "characterId": "Gambler",
+      "name": "동전 승부사",
+      "role": "동전 도박을 제안하는 NPC",
+      "personality": "여행자의 선택과 반응을 살핀다.",
+      "repeatWithinTerrain": false,
+      "stats": null,
+      "publicFacts": [],
+      "hidden": {}
+    },
+    {
+      "characterId": "Guide",
+      "autoGenerate": true,
+      "name": "로키",
+      "role": "장난의 신 / 첫 안내자",
+      "personality": "장난스럽고 신의 위엄을 내세운다. 모욕을 기억하며 같은 지형에서 여러 번 모습을 드러낼 수 있다.",
+      "repeatWithinTerrain": true,
+      "stats": null,
+      "publicFacts": [],
+      "hidden": {
+        "prototype_loki_mark_secret": {
+          "requiresUnlock_ALL": [
+            "prototype:loki_mine_mark_secret"
+          ],
+          "text": "로키의 표식은 광산의 오래된 길을 알아보는 단서다. 플레이어는 이 사실을 알아냈다.",
+          "storyPath": "Initial/Initial_01/Encounters/guide/Hidden/MarkKnown"
+        },
+        "persistent_mark_owned": {
+          "requiresItems_ALL": [
+            "prototype_loki_mark"
+          ],
+          "storyPath": "Initial/Initial_01/Encounters/guide/Hidden/MarkOwned",
+          "text": "이미 가진 표식을 알아보고, 처음 설명을 듣는 선택지와 반응을 연다."
+        }
+      },
+      "speechStyle": "여행자를 자네라고 부르며 자연스러운 반말 또는 하게체를 쓴다."
+    }
+  ]
+}

@@ -42,6 +42,7 @@ public class GameManager : MonoBehaviour
     {
         if (instance == null) { instance = this; DontDestroyOnLoad(gameObject); 
             currentState = GameState.Main; saveManager = new SaveManager();
+            LocalStoryRuntimeService.PrepareConfiguredModel();
             LocalStoryRuntimeService.TryResumePending();
         }
         else if (instance != this) { Destroy(gameObject); }
@@ -75,7 +76,7 @@ public class GameManager : MonoBehaviour
             savedPlayerPosition,
             savedPlayerRotation,
             saveManager.LoadRemainingCoins(),
-            saveManager.LoadStoredItemIds());
+            saveManager.LoadInventoryState());
     }
 
     private (int, int, int, PlayerStats) LoadData()

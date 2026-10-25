@@ -4,7 +4,6 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Security.Cryptography;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -18,19 +17,22 @@ public static class LocalStoryTestModels
     public const long GemmaBytes = 3155051328;
     public const string GemmaSha256 = "76aed0a8285b83102f18b5d60e53c70d09eb4e9917a20ce8956bd546452b56e2";
     private static string verifiedGemmaStamp;
+    private static readonly object VerificationSync = new object();
     public static string Name(LocalStoryTestModel model) => model == LocalStoryTestModel.Qwen ?
         "Qwen3-4B-Instruct-2507 Q4_K_M" : model == LocalStoryTestModel.Gemma ? "Gemma 3 4B IT QAT Q4_0" :
         throw new ArgumentOutOfRangeException(nameof(model));
     public static string PathFor(string root, LocalStoryTestModel model)
     {
-        if (model == LocalStoryTestModel.Qwen) return Path.Combine(root, QwenFile);
-        if (model != LocalStoryTestModel.Gemma) throw new ArgumentOutOfRangeException(nameof(model));
+        if (model != LocalStoryTestModel.Gemma && model!=LocalStoryTestModel.Qwen) throw new ArgumentOutOfRangeException(nameof(model));
 #if UNITY_EDITOR
-        return Path.GetFullPath(Path.Combine(root, "..", "..", "..", "Tests", "LocalStoryBenchmark", "Models", GemmaFile));
+        return Path.GetFullPath(Path.Combine(root, "..", "..", "..", "Tests", "LocalStoryBenchmark", "Models", model==LocalStoryTestModel.Gemma?GemmaFile:QwenFile));
 #else
-        throw new PlatformNotSupportedException("Gemma는 현재 Unity Editor에서만 사용할 수 있습니다. 배포 빌드에는 포함되지 않아 원문을 사용합니다. 자동으로 Qwen으로 전환하지 않습니다.");
+        return PackagedPath(root, model);
 #endif
     }
+    public static string PackagedPath(string root, LocalStoryTestModel model) => model == LocalStoryTestModel.Gemma ?
+        Path.Combine(root, GemmaFile) : model == LocalStoryTestModel.Qwen ? Path.Combine(root, QwenFile) :
+        throw new ArgumentOutOfRangeException(nameof(model));
     // Gemma's existing benchmark adapter: preserve instructions exactly, merge system/user for its chat template.
     public static string Messages(LocalStoryTestModel model, string messages)
     {
@@ -43,25 +45,31 @@ public static class LocalStoryTestModels
         return new JArray(new JObject { ["role"] = "user", ["content"] =
             (string)input[0]["content"] + "\n\n" + (string)input[1]["content"] }).ToString(Formatting.None);
     }
-    // Called inside the single inference gate. Verify the user-installed official file before native loading.
-    public static void VerifyGemma(string path, CancellationToken token)
+    // Preparation and inference share a process-local cache; every new process still hashes the entire file.
+    public static LocalStoryModelVerification VerifyGemma(string path, CancellationToken token)
     {
         token.ThrowIfCancellationRequested();
-        var file = new FileInfo(path);
-        if (!file.Exists) throw new FileNotFoundException("Gemma 파일이 없습니다. Tests/LocalStoryBenchmark/Models에 직접 설치한 모델을 넣으세요. Qwen으로 대체하지 않습니다.", path);
-        if (file.Length != GemmaBytes) throw new InvalidOperationException("Gemma 모델 크기가 일치하지 않습니다. Qwen으로 대체하지 않습니다.");
-        string stamp = file.FullName + "|" + file.Length + "|" + file.LastWriteTimeUtc.Ticks;
-        if (stamp == verifiedGemmaStamp) return;
-        using var sha = SHA256.Create();
-        using var stream = File.OpenRead(path);
-        var buffer = new byte[1024 * 1024];
-        int read;
-        while ((read = stream.Read(buffer, 0, buffer.Length)) > 0)
-        { token.ThrowIfCancellationRequested(); sha.TransformBlock(buffer, 0, read, buffer, 0); }
-        sha.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
-        string hash = BitConverter.ToString(sha.Hash).Replace("-", "").ToLowerInvariant();
-        if (hash != GemmaSha256) throw new InvalidOperationException("Gemma 모델 SHA256 검증 실패. Qwen으로 대체하지 않습니다.");
-        verifiedGemmaStamp = stamp;
+        var watch = System.Diagnostics.Stopwatch.StartNew();
+        lock (VerificationSync)
+        {
+            token.ThrowIfCancellationRequested();
+            var file = new FileInfo(path);
+            if (!file.Exists) throw new FileNotFoundException("선택한 Gemma 파일이 없습니다. 빌드의 StreamingAssets/LocalStory 모델 패키지를 확인하세요. Editor에서는 Tests/LocalStoryBenchmark/Models를 사용합니다. Qwen으로 대체하지 않습니다.", path);
+            if (file.Length != GemmaBytes) throw new InvalidOperationException("Gemma 모델 크기가 일치하지 않습니다. Qwen으로 대체하지 않습니다.");
+            string stamp = file.FullName + "|" + file.Length + "|" + file.LastWriteTimeUtc.Ticks;
+            bool cached = stamp == verifiedGemmaStamp;
+            if (!cached)
+            {
+                string hash = LocalStoryModelHash.FileHash(path, token);
+                if (hash != GemmaSha256) throw new InvalidOperationException("Gemma 모델 SHA256 검증 실패. Qwen으로 대체하지 않습니다.");
+                file.Refresh();
+                if (!file.Exists || file.FullName + "|" + file.Length + "|" + file.LastWriteTimeUtc.Ticks != stamp)
+                    throw new IOException("검사 중 Gemma 파일이 바뀌었습니다. 다시 검사해야 합니다.");
+                verifiedGemmaStamp = stamp;
+            }
+            return new LocalStoryModelVerification { provider = LocalStoryModelHash.ProviderName, modelPath = file.FullName,
+                cached = cached, bytesHashed = cached ? 0 : file.Length, seconds = watch.Elapsed.TotalSeconds };
+        }
     }
 }
 
@@ -70,12 +78,14 @@ public sealed class LocalStorySampling
 {
     public string Name { get; }
     private readonly string values;
-    private LocalStorySampling(string name, string values) { Name=name; this.values=values; }
+    private readonly int maxTokens;
+    private LocalStorySampling(string name, string values, int maxTokens = 1800) { Name=name; this.values=values; this.maxTokens=maxTokens; }
+    public LocalStorySampling WithTokenLimit(int limit) => new LocalStorySampling(Name, values, Math.Max(128, Math.Min(1800, limit)));
     public static LocalStorySampling Legacy() => new LocalStorySampling("기존", "\"temperature\":0.65,\"top_p\":0.9");
     public static LocalStorySampling Recommended() => new LocalStorySampling("Qwen 권장", "\"temperature\":0.7,\"top_p\":0.8,\"top_k\":20,\"min_p\":0");
     public static LocalStorySampling Comparison() => new LocalStorySampling("공통 비교 (Qwen 권장 값)", Recommended().values);
     public static LocalStorySampling Proofreading() => new LocalStorySampling("교정 시험", "\"temperature\":0.25,\"top_p\":0.8,\"top_k\":20,\"min_p\":0");
-    public string Parameters(int seed) => "{\"n_predict\":1800,"+values+",\"seed\":"+seed+",\"cache_prompt\":false}";
+    public string Parameters(int seed) => "{\"n_predict\":"+maxTokens+","+values+",\"seed\":"+seed+",\"cache_prompt\":true}";
 }
 
 /// <summary>Windows x64 embedded LlamaLib 2.0.5. No process, HTTP client or server.</summary>
@@ -134,7 +144,7 @@ public sealed class LocalStoryNative : IDisposable
         return Encoding.UTF8.GetString(bytes);
     }
 
-    public static string InitializationCommand(string modelPath, bool gpu)
+    public static string InitializationCommand(string modelPath, bool gpu, JObject configuration=null)
     {
         if (string.IsNullOrWhiteSpace(modelPath) || modelPath.IndexOfAny(new[] { '"', '\0', '\r', '\n' }) >= 0)
             throw new ArgumentException("모델 경로가 비어 있거나 지원하지 않는 문자를 포함합니다.", nameof(modelPath));
@@ -142,13 +152,18 @@ public sealed class LocalStoryNative : IDisposable
         // and the Windows ANSI code page. An explicit ASCII alias skips that conversion.
         // Keep the actual path UTF-8: llama.cpp's model file reader supports Unicode.
         // This is an in-process C API argument string, never a shell/process command.
+        var settings=configuration??LocalStoryPrompt.Policy["inference"] as JObject;
+        int threads=(int)settings["cpuThreads"],layers=(int)settings["gpuLayers"],context=(int)settings["contextSize"],batch=(int)settings["batchSize"];
+        string flash=(string)settings["flashAttention"];
+        if(threads<1 || threads>128 || layers<0 || layers>256 || context<1024 || context>32768 || batch<1 || batch>context ||
+            (flash!="on" && flash!="off" && flash!="auto"))throw new InvalidDataException("Invalid PromptPolicy.inference settings.");
         return "-m \"" + Path.GetFullPath(modelPath) + "\" --alias LocalStory" +
-            " -t 6 -np 1 -c 4096 -b 256 -ngl " + (gpu ? "24" : "0") + " --context-shift -fa off";
+            " -t "+threads+" -np 1 -c "+context+" -b "+batch+" -ngl "+(gpu?layers:0)+" --context-shift -fa "+flash;
     }
 
-    public LocalStoryNative(string runtimeDirectory, string modelPath, bool gpu)
+    public LocalStoryNative(string runtimeDirectory, string modelPath, bool gpu, JObject configuration=null)
     {
-        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) || IntPtr.Size != 8) throw new PlatformNotSupportedException("현재 내장 LLM 테스트는 Windows x64용입니다.");
+        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) || IntPtr.Size != 8) throw new PlatformNotSupportedException("현재 내장 LLM은 Windows x64용입니다.");
         modelFile = Path.GetFullPath(modelPath);
         if (!File.Exists(modelFile)) throw new FileNotFoundException("로컬 모델이 없습니다. 이 기기에 모델을 설치하세요.", modelFile);
         if (!Directory.Exists(runtimeDirectory)) throw new FileNotFoundException("로컬 추론 DLL 폴더가 없습니다. 이 기기에서 SetupLocalStoryModel.ps1 -Part Runtime을 실행하세요.", runtimeDirectory);
@@ -166,12 +181,12 @@ public sealed class LocalStoryNative : IDisposable
             grammar = Bind<SetString>("LLM_Set_Grammar"); parameters = Bind<SetString>("LLM_Set_Completion_Parameters");
             template = Bind<StringCall>("LLM_Apply_Template"); completion = Bind<CompletionCall>("LLM_Completion");
             cancel = Bind<CancelCall>("LLM_Cancel");
-            using (var command = new Utf8(InitializationCommand(modelFile, gpu)))
+            using (var command = new Utf8(InitializationCommand(modelFile, gpu, configuration)))
                 service = Bind<ConstructFromCommand>("LLMService_From_Command")(command.Pointer);
             Check("model-initialize");
             if (service == IntPtr.Zero) throw new InvalidOperationException("[LocalStoryNative/model-initialize] 내장 모델 초기화 실패 / 모델=" + modelFile);
             Bind<ServiceCall>("LLM_Start")(service); Check("service-start");
-            Backend = gpu ? "CUDA tinyBLAS (24 layers)" : "CPU AVX2";
+            Backend = gpu ? "CUDA tinyBLAS (GPU layer limit: "+(int)(configuration??LocalStoryPrompt.Policy["inference"])["gpuLayers"]+")" : "CPU AVX2";
         }
         catch { Dispose(); throw; }
     }
@@ -206,15 +221,71 @@ public sealed class LocalStoryNative : IDisposable
     }
 }
 
-/// <summary>One generation at a time. Owns native lifetime entirely on a worker thread.</summary>
+/// <summary>One native session at a time; consecutive requests reuse the installed model.</summary>
 public static class LocalStoryInference
 {
     private static readonly SemaphoreSlim Gate = new SemaphoreSlim(1, 1);
+    // All native access, including teardown, is serialized by Gate and runs off the Unity thread.
+    private static LocalStoryNative session;
+    private static string sessionIdentity, sessionFallback;
+    private static long lastUseTicks;
+    public static bool HasResidentModel => Volatile.Read(ref session) != null;
+
+    private static string Identity(string runtime, string model)
+    {
+        var file = new FileInfo(model);
+        if (!file.Exists) throw new FileNotFoundException("로컬 모델이 없습니다. 이 기기에 모델을 설치하세요.", model);
+        return Path.GetFullPath(runtime) + "|" + file.FullName + "|" + file.Length + "|" + file.LastWriteTimeUtc.Ticks;
+    }
+    private static void ReleaseUnderGate()
+    {
+        var previous = session;
+        session = null; sessionIdentity = null; sessionFallback = null;
+        previous?.Dispose();
+    }
+    public static void ReleaseSession()
+    {
+        Gate.Wait();
+        try
+        {
+            // Reload/quit callers may be on Unity's thread. Native shutdown stays on a worker.
+            var release = Task.Run((Action)ReleaseUnderGate);
+            release.GetAwaiter().GetResult();
+        }
+        finally { Gate.Release(); }
+    }
+    public static void ReleaseIfIdle(TimeSpan idleTime)
+    {
+        if (!HasResidentModel || DateTime.UtcNow.Ticks - Interlocked.Read(ref lastUseTicks) < idleTime.Ticks || !Gate.Wait(0)) return;
+        var release = Task.Run(() =>
+        {
+            try { ReleaseUnderGate(); }
+            finally { Gate.Release(); }
+        });
+        LocalStoryLifetime.Track(release);
+    }
+    // Only read/verify here. Do not allocate a native model or GPU memory on the menu.
+    public static async Task<LocalStoryModelVerification> PrepareGemma(string modelPath, CancellationToken token)
+    {
+        using var local = CancellationTokenSource.CreateLinkedTokenSource(token);
+        LocalStoryLifetime.Register(local);
+        bool acquired = false;
+        try
+        {
+            await Gate.WaitAsync(local.Token).ConfigureAwait(false); acquired = true;
+            var worker = Task.Run(() => LocalStoryTestModels.VerifyGemma(modelPath, local.Token), local.Token);
+            LocalStoryLifetime.Track(worker);
+            return await worker.ConfigureAwait(false);
+        }
+        finally { if (acquired) Gate.Release(); LocalStoryLifetime.Unregister(local); }
+    }
     public static async Task<LocalStoryModelOutput> Generate(string root, string messages, string grammar,
-        int seed, CancellationToken token, Action<string> progress, LocalStorySampling sampling = null, string modelPath = null)
+        int seed, CancellationToken token, Action<string> progress, LocalStorySampling sampling = null, string modelPath = null, bool reuseSession = true)
     {
         // Existing callers keep Qwen. Only explicitly selected test callers supply another installed model.
         string selectedModel = modelPath ?? Path.Combine(root, LocalStoryTestModels.QwenFile);
+        // Load Unity Resources on the caller thread, before entering native/background work.
+        var inference=(JObject)LocalStoryPrompt.Policy["inference"].DeepClone();
         using var local = CancellationTokenSource.CreateLinkedTokenSource(token);
         LocalStoryLifetime.Register(local);
         bool acquired = false;
@@ -226,20 +297,48 @@ public static class LocalStoryInference
             {
                 token.ThrowIfCancellationRequested();
                 string runtime = Path.Combine(root, "runtimes", "win-x64", "native");
+                var verifying = System.Diagnostics.Stopwatch.StartNew();
+                LocalStoryModelVerification verification = null;
                 if (Path.GetFileName(selectedModel) == LocalStoryTestModels.GemmaFile)
-                    LocalStoryTestModels.VerifyGemma(selectedModel, token);
-                LocalStoryNative engine;
-                string fallback = null;
-                try { engine = new LocalStoryNative(runtime, selectedModel, true); }
-                catch (Exception e) when (!(e is FileNotFoundException) && !(e is OperationCanceledException) && !(e is PlatformNotSupportedException))
+                    verification = LocalStoryTestModels.VerifyGemma(selectedModel, token);
+                double verificationSeconds = verifying.Elapsed.TotalSeconds;
+                string identity = Identity(runtime, selectedModel)+"|"+inference.ToString(Formatting.None);
+                bool reused = reuseSession && session != null && sessionIdentity == identity;
+                double loadSeconds = 0;
+                if (!reused)
                 {
-                    token.ThrowIfCancellationRequested(); fallback = e.Message;
-                    try { engine = new LocalStoryNative(runtime, selectedModel, false); }
-                    catch (Exception cpuError)
-                    { throw new InvalidOperationException("GPU 초기화 실패: " + fallback + " / CPU 초기화 실패: " + cpuError.Message, cpuError); }
+                    ReleaseUnderGate();
+                    var loading = System.Diagnostics.Stopwatch.StartNew();
+                    try { session = new LocalStoryNative(runtime, selectedModel, true, inference); }
+                    catch (Exception e) when (!(e is FileNotFoundException) && !(e is OperationCanceledException) && !(e is PlatformNotSupportedException))
+                    {
+                        token.ThrowIfCancellationRequested(); sessionFallback = e.Message;
+                        try { session = new LocalStoryNative(runtime, selectedModel, false, inference); }
+                        catch (Exception cpuError)
+                        { throw new InvalidOperationException("GPU 초기화 실패: " + sessionFallback + " / CPU 초기화 실패: " + cpuError.Message, cpuError); }
+                    }
+                    sessionIdentity = identity;
+                    loadSeconds = loading.Elapsed.TotalSeconds;
                 }
-                using (engine)
-                    return new LocalStoryModelOutput { json = engine.Generate(messages, grammar, seed, token, progress, sampling), backend = engine.Backend, fallback = fallback };
+                var generating = System.Diagnostics.Stopwatch.StartNew();
+                double firstTextSeconds = -1;
+                try
+                {
+                    string json = session.Generate(messages, grammar, seed, token, value =>
+                    {
+                        if (firstTextSeconds < 0 && !string.IsNullOrEmpty(value)) firstTextSeconds = generating.Elapsed.TotalSeconds;
+                        progress?.Invoke(value);
+                    }, sampling);
+                    Interlocked.Exchange(ref lastUseTicks, DateTime.UtcNow.Ticks);
+                    var output = new LocalStoryModelOutput { json = json, backend = session.Backend, fallback = sessionFallback,
+                        verificationProvider = verification?.provider, verificationCached = verification?.cached ?? false,
+                        verificationBytes = verification?.bytesHashed ?? 0,
+                        sessionReused = reused, verificationSeconds = verificationSeconds, modelLoadSeconds = loadSeconds, generationSeconds = generating.Elapsed.TotalSeconds,
+                        firstTextSeconds = firstTextSeconds };
+                    if (!reuseSession) ReleaseUnderGate();
+                    return output;
+                }
+                catch { ReleaseUnderGate(); throw; } // A failed/cancelled native request never poisons the next one.
             }, token);
             LocalStoryLifetime.Track(worker);
             return await worker.ConfigureAwait(false);
@@ -247,7 +346,15 @@ public static class LocalStoryInference
         finally { if(acquired) Gate.Release(); LocalStoryLifetime.Unregister(local); }
     }
 }
-public sealed class LocalStoryModelOutput { public string json, backend, fallback; }
+public sealed class LocalStoryModelOutput
+{
+    public string json, backend, fallback;
+    public string verificationProvider;
+    public bool verificationCached;
+    public long verificationBytes;
+    public bool sessionReused;
+    public double verificationSeconds, modelLoadSeconds, generationSeconds, firstTextSeconds;
+}
 
 public static class LocalStoryLifetime
 {
@@ -260,6 +367,13 @@ public static class LocalStoryLifetime
     {
         lock(Sync) foreach(var request in Requests) request.Cancel();
         WaitForWorkers();
+        LocalStoryInference.ReleaseSession();
+    }
+    [UnityEngine.RuntimeInitializeOnLoadMethod(UnityEngine.RuntimeInitializeLoadType.BeforeSceneLoad)]
+    private static void RegisterShutdown()
+    {
+        UnityEngine.Application.quitting -= CancelAndWait;
+        UnityEngine.Application.quitting += CancelAndWait;
     }
     public static void Track(Task task)
     {

@@ -1,0 +1,202 @@
+{
+  "gambler": {
+    "MainStory": [
+      {
+        "ID": -862278604,
+        "type": "Next",
+        "Text": "기어로 앞면이나 뒷면을 선택한 뒤 노란 버튼을 누르게.",
+        "speakID": "Gambler"
+      },
+      {
+        "ID": -845500985,
+        "type": "Next",
+        "Text": "동전은 보드 위를 돌다가 바닥에 닿아 멈춘다. 위를 향한 면이 결과가 되지.",
+        "speakID": "Gambler"
+      },
+      {
+        "ID": -828723366,
+        "type": "Choice",
+        "choiceKind": "Mechanic",
+        "Text": "자, 앞면인가 뒷면인가? 어느 쪽에 걸겠나?",
+        "options": [
+          "앞면을 고른다",
+          "뒷면을 고른다",
+          "규칙을 듣는다",
+          "도박을 하지 않는다"
+        ],
+        "choiceActions": [
+          {
+            "action": "story",
+            "storyPath": "Initial/Initial_01/Encounters/gambler/Coin/Heads",
+            "choiceID": "-828723366_choice_0"
+          },
+          {
+            "action": "story",
+            "storyPath": "Initial/Initial_01/Encounters/gambler/Coin/Tails",
+            "choiceID": "-828723366_choice_1"
+          },
+          {
+            "action": "story",
+            "storyPath": "Initial/Initial_01/Encounters/gambler",
+            "choiceID": "-828723366_choice_2"
+          },
+          {
+            "action": "skip",
+            "choiceID": "-828723366_choice_3"
+          }
+        ],
+        "speakID": "Gambler"
+      }
+    ]
+  },
+  "gambler/Variants/CharmZero": {
+    "MainStory": [
+      {
+        "ID": 294144131,
+        "type": "Next",
+        "Text": "반갑지는 않군. 할 거면 기어로 앞면이나 뒷면을 고르고 노란 버튼을 눌러.",
+        "speakID": "Gambler"
+      },
+      {
+        "ID": 277366512,
+        "type": "Next",
+        "Text": "동전이 멈췄을 때 위를 향한 면이 결과다. 두 번 설명하게 하지 마.",
+        "speakID": "Gambler"
+      },
+      {
+        "ID": 327699369,
+        "type": "Choice",
+        "choiceKind": "Mechanic",
+        "Text": "그래서 어느 쪽인가? 빨리 골라.",
+        "options": [
+          "앞면을 고른다",
+          "뒷면을 고른다",
+          "규칙을 듣는다",
+          "도박을 하지 않는다"
+        ],
+        "choiceActions": [
+          {
+            "action": "story",
+            "storyPath": "Initial/Initial_01/Encounters/gambler/Coin/Heads",
+            "choiceID": "327699369_choice_0"
+          },
+          {
+            "action": "story",
+            "storyPath": "Initial/Initial_01/Encounters/gambler/Coin/Tails",
+            "choiceID": "327699369_choice_1"
+          },
+          {
+            "action": "story",
+            "storyPath": "Initial/Initial_01/Encounters/gambler",
+            "choiceID": "327699369_choice_2"
+          },
+          {
+            "action": "skip",
+            "choiceID": "327699369_choice_3"
+          }
+        ],
+        "speakID": "Gambler"
+      }
+    ]
+  },
+  "gambler/Variants/KnowledgeCharmZero": {
+    "MainStory": [
+      {
+        "ID": -348116009,
+        "type": "Next",
+        "Text": "반갑진 안쿤. 압면, 뒷면 골라. 노란 버튼.",
+        "speakID": "Gambler"
+      },
+      {
+        "ID": -364893628,
+        "type": "Next",
+        "Text": "동전 머춰. 위쪽 면이 결과야. 두번 안 말해.",
+        "speakID": "Gambler"
+      },
+      {
+        "ID": -314560771,
+        "type": "Choice",
+        "choiceKind": "Mechanic",
+        "Text": "어느쪽? 빨리 골라.",
+        "options": [
+          "압면 골라",
+          "뒷면 골라",
+          "다시 말해",
+          "안 한다"
+        ],
+        "choiceActions": [
+          {
+            "action": "story",
+            "storyPath": "Initial/Initial_01/Encounters/gambler/Coin/Heads",
+            "choiceID": "-314560771_choice_0"
+          },
+          {
+            "action": "story",
+            "storyPath": "Initial/Initial_01/Encounters/gambler/Coin/Tails",
+            "choiceID": "-314560771_choice_1"
+          },
+          {
+            "action": "story",
+            "storyPath": "Initial/Initial_01/Encounters/gambler",
+            "choiceID": "-314560771_choice_2"
+          },
+          {
+            "action": "skip",
+            "choiceID": "-314560771_choice_3"
+          }
+        ],
+        "speakID": "Gambler"
+      }
+    ]
+  },
+  "gambler/Variants/KnowledgeZero": {
+    "MainStory": [
+      {
+        "ID": 391837790,
+        "type": "Next",
+        "Text": "기어로 압면, 뒷면 골라. 노란 버튼 눌러.",
+        "speakID": "Gambler"
+      },
+      {
+        "ID": 408615409,
+        "type": "Next",
+        "Text": "동전 돌다가 머춰. 위쪽 면, 그게 결과야.",
+        "speakID": "Gambler"
+      },
+      {
+        "ID": 358282552,
+        "type": "Choice",
+        "choiceKind": "Mechanic",
+        "Text": "압면? 뒷면? 골라 보라구.",
+        "options": [
+          "압면 골라",
+          "뒷면 골라",
+          "다시 말해",
+          "안 한다"
+        ],
+        "choiceActions": [
+          {
+            "action": "story",
+            "storyPath": "Initial/Initial_01/Encounters/gambler/Coin/Heads",
+            "choiceID": "358282552_choice_0"
+          },
+          {
+            "action": "story",
+            "storyPath": "Initial/Initial_01/Encounters/gambler/Coin/Tails",
+            "choiceID": "358282552_choice_1"
+          },
+          {
+            "action": "story",
+            "storyPath": "Initial/Initial_01/Encounters/gambler",
+            "choiceID": "358282552_choice_2"
+          },
+          {
+            "action": "skip",
+            "choiceID": "358282552_choice_3"
+          }
+        ],
+        "speakID": "Gambler"
+      }
+    ]
+  }
+}

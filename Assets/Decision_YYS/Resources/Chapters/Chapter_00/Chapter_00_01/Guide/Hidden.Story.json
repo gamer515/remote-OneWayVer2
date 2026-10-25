@@ -1,0 +1,176 @@
+{
+  "guide/Mark": {
+    "MainStory": [
+      {
+        "ID": 1366406282,
+        "type": "Next",
+        "eventIDstable": "prototype_mark_intro",
+        "speakID": "Guide",
+        "Text": "내 선물이 신기한가? 그 표식에는 나름 쓸모가 있다네."
+      },
+      {
+        "ID": 1383183901,
+        "type": "Choice",
+        "eventIDstable": "prototype_mark_choice",
+        "speakID": "Guide",
+        "choiceKind": "Mechanic",
+        "Text": "무엇이 궁금한가?",
+        "options": [
+          "표식은 어디에 쓰는 거야?",
+          "이 표식은 돌려줄게.",
+          "로키에 관해 더 물어볼게.",
+          "선물은 간직할게. 계속 이야기해."
+        ],
+        "choiceActions": [
+          {
+            "choiceID": "prototype_mark_show",
+            "action": "story",
+            "storyPath": "Initial/Initial_01/Encounters/guide/QuestionGod"
+          },
+          {
+            "choiceID": "prototype_mark_return",
+            "action": "story",
+            "storyPath": "Initial/Initial_01/Encounters/guide/QuestionGod"
+          },
+          {
+            "choiceID": "prototype_mark_ask",
+            "action": "story",
+            "storyPath": "Initial/Initial_01/Encounters/guide/QuestionGod"
+          },
+          {
+            "choiceID": "prototype_mark_keep",
+            "action": "story",
+            "storyPath": "Initial/Initial_01/Encounters/guide/Redistribute"
+          }
+        ]
+      }
+    ]
+  },
+  "guide/Hidden/MarkOwned": {
+    "MainStory": [
+      {
+        "ID": 18001001,
+        "type": "Choice",
+        "eventIDstable": "loki_mark_owned_choice",
+        "speakID": "Guide",
+        "Text": "자, 신을 만난 기념으로 표식 하나 주지. 잠깐, 자네에게 같은 표식이 있군?",
+        "choiceKind": "Mechanic",
+        "options": [
+          "어, 나 이미 그 아이템 있는데?",
+          "표식의 쓰임을 설명해 줘.",
+          "이 표식은 돌려줄게.",
+          "표식은 간직할게. 계속 이야기해."
+        ],
+        "choiceActions": [
+          {
+            "choiceID": "prototype_mark_owned_explain",
+            "action": "story",
+            "storyPath": "Initial/Initial_01/Encounters/guide/Hidden/MarkOwnedExplain"
+          },
+          {
+            "choiceID": "prototype_mark_owned_ask",
+            "action": "story",
+            "storyPath": "Initial/Initial_01/Encounters/guide/Hidden/MarkExplain"
+          },
+          {
+            "choiceID": "prototype_mark_return",
+            "action": "story",
+            "storyPath": "Initial/Initial_01/Encounters/guide/QuestionGod"
+          },
+          {
+            "choiceID": "prototype_mark_owned_keep",
+            "action": "story",
+            "storyPath": "Initial/Initial_01/Encounters/guide/Redistribute"
+          }
+        ]
+      }
+    ]
+  },
+  "guide/Hidden/MarkKnown": {
+    "MainStory": [
+      {
+        "ID": 18002001,
+        "type": "Choice",
+        "eventIDstable": "loki_mark_known_choice",
+        "speakID": "Guide",
+        "Text": "그 표식…… 그 무늬의 뜻도 알고 있는 건가?",
+        "choiceKind": "Mechanic",
+        "options": [
+          "이미 이 표식이 있고, 오래된 길의 단서라는 것도 알아.",
+          "표식의 쓰임을 설명해 줘.",
+          "이 표식은 돌려줄게.",
+          "표식은 간직할게. 계속 이야기해."
+        ],
+        "choiceActions": [
+          {
+            "choiceID": "prototype_mark_known",
+            "action": "story",
+            "storyPath": "Initial/Initial_01/Encounters/guide/Hidden/MarkKnownExplain"
+          },
+          {
+            "choiceID": "prototype_mark_owned_ask",
+            "action": "story",
+            "storyPath": "Initial/Initial_01/Encounters/guide/Hidden/MarkExplain"
+          },
+          {
+            "choiceID": "prototype_mark_return",
+            "action": "story",
+            "storyPath": "Initial/Initial_01/Encounters/guide/QuestionGod"
+          },
+          {
+            "choiceID": "prototype_mark_owned_keep",
+            "action": "story",
+            "storyPath": "Initial/Initial_01/Encounters/guide/Redistribute"
+          }
+        ]
+      }
+    ]
+  },
+  "guide/Hidden/MarkOwnedExplain": {
+    "MainStory": [
+      {
+        "ID": 18003000,
+        "type": "Next",
+        "eventIDstable": "loki_mark_owned_surprise",
+        "speakID": "Guide",
+        "Text": "어, 왜 자네가 벌써 그 표식을 가지고 있지? 내가 준 기억은 없는데…… 뭐, 설명해 주지."
+      },
+      {
+        "ID": 18003001,
+        "type": "Next",
+        "eventIDstable": "loki_mark_owned_secret",
+        "speakID": "Guide",
+        "Text": "광산의 오래된 길에는 그 표식과 같은 무늬가 남아 있네. 벽에서 같은 무늬를 찾거든 지나치지 말게."
+      }
+    ]
+  },
+  "guide/Hidden/MarkExplain": {
+    "MainStory": [
+      {
+        "ID": 18005000,
+        "type": "Next",
+        "eventIDstable": "loki_mark_explain",
+        "speakID": "Guide",
+        "Text": "그 표식의 쓰임이 궁금한가? 그럼 설명해 주지."
+      },
+      {
+        "ID": 18005001,
+        "type": "Next",
+        "eventIDstable": "loki_mark_secret",
+        "speakID": "Guide",
+        "Text": "광산의 오래된 길에는 그 표식과 같은 무늬가 남아 있네. 벽에서 같은 무늬를 찾거든 지나치지 말게."
+      }
+    ]
+  },
+  "guide/Hidden/MarkKnownExplain": {
+    "MainStory": [
+      {
+        "ID": 18004000,
+        "type": "Next",
+        "eventIDstable": "loki_mark_known_reaction",
+        "speakID": "Guide",
+        "Text": "단서라는 것까지 안다고? 참 이상한 여행자군. 그럼 긴 설명은 줄이지. 광산 벽에서 표식과 같은 무늬를 찾아보게."
+      }
+    ]
+  }
+}

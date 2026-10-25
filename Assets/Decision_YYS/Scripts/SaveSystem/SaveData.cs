@@ -41,6 +41,8 @@ public class GameProgress
     };
     // 가방에는 에셋 참조 대신 카탈로그의 itemId만 저장합니다.
     public List<string> storedItemIds = new List<string>();
+    public int inventoryStateVersion;
+    public List<WorldInventoryItemState> worldInventoryItems = new List<WorldInventoryItemState>();
     // 마지막 챕터까지 끝낸 회차인지 기록해 중단 세이브와 완료 기록을 구분합니다.
     public bool isCompleted;
     public List<StoryInfluenceProfile> influenceHistory = new List<StoryInfluenceProfile>();
@@ -50,6 +52,28 @@ public class GameProgress
     public List<PlayedEncounterCardRecord> currentEncounterHistory = new List<PlayedEncounterCardRecord>();
     public int storyVisit;
     public string runEndReason;
+}
+
+[System.Serializable]
+public sealed class WorldInventoryItemState
+{
+    public string instanceId, itemId;
+    public UnityEngine.Vector3 localPosition;
+    public UnityEngine.Quaternion localRotation;
+}
+
+[System.Serializable]
+public sealed class InventoryState
+{
+    public List<string> storedItemIds = new List<string>();
+    public List<WorldInventoryItemState> worldItems = new List<WorldInventoryItemState>();
+    public List<string> OwnedItemIds()
+    {
+        var owned = new List<string>(storedItemIds ?? new List<string>());
+        foreach (var item in worldItems ?? new List<WorldInventoryItemState>())
+            if (item != null && !string.IsNullOrWhiteSpace(item.itemId)) owned.Add(item.itemId);
+        return owned;
+    }
 }
 
 [System.Serializable]
@@ -70,7 +94,8 @@ public enum ContentGenerationStatus
     Pending,
     Generating,
     Ready,
-    Failed
+    Failed,
+    ReviewRequired
 }
 
 [System.Serializable]

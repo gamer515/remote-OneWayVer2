@@ -178,7 +178,7 @@ public static class LocalStoryArchiveCheck
 DecisionScene을 직접 Play하고 ‘이야기 LLM 테스트’를 엽니다. 상단 ‘모델: Qwen / Gemma’ 버튼으로 모델을 선택하고 이야기·입력 상황을 고른 뒤 생성합니다.
 초안과 Guide 교정 모두 같은 선택 모델을 사용하며 모델명·초안/교정 시간·실행 장치를 표시합니다. 생성 중/저장 결과 보기 중에는 모델을 바꿀 수 없습니다.
 현재 UI는 모델만 전환하고 생성 설정/시드 12345는 고정합니다. 두 모델을 동시에 생성하지 않습니다. 이전 보고서의 ‘공통 비교’는 Qwen 권장 설정값을 두 모델에 동일하게 적용했다는 기록입니다. ‘장면 흐름 v8’은 Guide의 장면 단위 집필 기준입니다. 모델이나 샘플링 수치를 변경한 표시는 아닙니다. ‘큰 흐름 v7’ 결과도 당시 입력 그대로 보존합니다.
-Gemma는 사용자가 조건에 동의하고 설치한 Tests/LocalStoryBenchmark/Models/gemma-3-4b-it-q4_0.gguf를 사용합니다. 현재 Editor 테스트 전용이며 게임 빌드에는 포함되지 않습니다.
+Editor의 Gemma는 사용자가 조건에 동의하고 설치한 Tests/LocalStoryBenchmark/Models/gemma-3-4b-it-q4_0.gguf를 사용합니다. Windows x64 Mono 빌드에는 모델·DLL·고지를 자동 포함하고 Player는 StreamingAssets/LocalStory에서 읽습니다. Qwen은 Editor 비교에 남기고 기본 빌드에서는 제외합니다. 빌드 절차는 프로젝트 Docs/LocalStoryGemmaBuild.md에 있습니다.
 파일이 없거나 검증/실행에 실패하면 오류를 남기고 Qwen으로 자동 대체하지 않습니다. GPU 실패 시 CPU로 실행해도 선택 모델은 바뀌지 않습니다.
 모델 로딩 시간이 포함되며 Gemma 최초 실행은 SHA256 검증 시간도 포함합니다. 저장한 편집 파일의 실제 수정 문장은 다음 테스트 생성의 말투·문장 참고로 사용합니다. 모델 학습은 하지 않습니다. 생성만으로 본 게임에 자동 적용하지 않으며, 상단 ‘게임 확인용 적용’에서 선택/확인한 문구만 별도로 저장합니다.
 
@@ -205,27 +205,20 @@ Guide 수정 예시는 산발적인 6개 문장 대신 카드 순서가 맞는 �
 1. DecisionScene 직접 Play → 이야기 LLM 테스트 → 새 생성 또는 저장 결과 보기.
 2. ‘게임 확인용 적용’을 누르고 AI 초안/AI 교정본/Edit 초안/Edit 교정본을 선택합니다.
 3. 카드별 대사와 대상 회차를 읽고 ‘N회차에 이 내용 저장’을 눌러야 저장됩니다. 교정이 없거나 검사에 실패하면 다른 단계/원문으로 몰래 대체하지 않습니다.
-4. 저장 위치는 Saves/GeneratedContent/For_Run_NNNN/Encounters/이야기경로/Story.json입니다. 다음 메인 플레이에서 해당 회차에 도달해 그 NPC를 만나면 실제 게임 로더가 이 문구를 사용합니다.
+4. 저장 위치는 Saves/Narrative/Chapters/<chapterId>.json의 회차·인물·장면·구간별 항목입니다. 다음 메인 플레이에서 해당 회차에 도달해 그 NPC를 만나면 실제 게임 로더가 이 문구를 사용합니다.
 5. 현재 회차는 바꾸거나 강제로 진행하지 않습니다. 기본 대상은 현재 활성 회차 다음 번호와 보고서 targetRun 중 큰 값(최소 2)입니다. 진행 중에 놓친 NPC를 바로 다시 보여주는 기능은 아닙니다.
 
-원문 Story.json, 실제 선택 기록, AI Result/Input/Analysis, 직접 수정한 Edit은 그대로 보존합니다. 기존 생성 파일을 교체하면 GeneratedContent/Recovery에 이전 파일을 보관합니다.
+원문 Story.json, 실제 선택 기록, AI Result/Input/Analysis, 직접 수정한 Edit은 별도로 보존합니다. 수동 적용본은 자동 생성이 덮어쓰지 않으며 직전 교체본 한 버전을 같은 항목에 보관합니다.
 예전 결과도 현재 원문과 기능/분기/화자 연결이 같으면 새 핵심 속성을 유지한 채 적용할 수 있습니다. Edit의 순서/카드 수/선택지 수/화자는 원문과 맞춰야 합니다.
-Gemma는 아직 Editor에서 생성하는 테스트 모델입니다. 여기서 선택해 저장한 이야기 JSON은 모델이 없어도 다음 회차 게임에서 읽을 수 있습니다. 게임이 끝날 때 Gemma로 자동 생성하는 흐름이나 모델 빌드 포함은 이번 기능과 별개입니다.
+여기서 선택해 저장한 이야기 JSON은 모델이 없어도 다음 회차 게임에서 읽을 수 있습니다. 실제 만남 종료 자동 생성은 대화 큐/런타임 서비스가 맡으며, Windows x64 Mono 빌드에는 Gemma를 자동 포함합니다. 수동 적용 버튼은 별도의 검토 경로입니다.
 
 ## 원문으로 되돌리기
 
-원문은 덮어쓰지 않습니다. 적용한 회차의 생성 파일을 잠시 읽지 않게 하면 게임 로더가 해당 상황의 원문(능력치별 원문 변형이 있다면 그 변형)을 사용합니다.
-
-1. Unity의 Play를 종료합니다.
-2. 적용 미리보기에 표시된 회차와 이야기 경로를 확인합니다. 예를 들어 2회차 Guide는 아래 위치입니다.
-   `Application.persistentDataPath/Saves/GeneratedContent/For_Run_0002/Encounters/Initial/Initial_01/Encounters/guide/Story.json`
-3. **위 GeneratedContent 안의 해당 파일만** `Story.json`에서 `Story.disabled.json`으로 이름을 바꿉니다. `disabled`는 파일명에 붙입니다. 폴더명이나 Assets 안의 원문 파일은 바꾸지 않습니다.
-4. 해당 이야기를 다시 불러올 때 원문을 사용합니다. 이미 진행 중인 대화/저장된 진행 상태가 즉시 초기화되는 기능은 아닙니다. 진행 기록을 임의로 지우지 마세요.
-5. 생성본을 다시 쓰려면 `Story.disabled.json`을 `Story.json`으로 되돌립니다. 같은 이름의 파일이 이미 있으면 덮어쓰지 말고 어느 생성본인지 먼저 확인합니다.
-
-Results/Edits와 실제 선택 기록은 지우지 않습니다. 다른 회차의 생성물도 그대로 둡니다.
-GeneratedContent/Recovery는 교체되기 전의 **생성본** 보관소이며 원문 보관소가 아닙니다.
-현재 원문 복구 전용 UI 버튼은 없습니다.
+원문은 덮어쓰지 않습니다. Play를 중지하고 적용 회차·논리 이야기 경로를 확인합니다.
+`NarrativeStoreCheck.SetEnabled`를 run_script의 entry로 지정하고 해당 회차/경로/false를 args에 전달하면 다음 새 만남부터 원문을 사용합니다. true는 재활성화입니다.
+직전 수동 교체본은 `NarrativeStoreCheck.RestorePrevious`에 회차/경로를 전달해 복원합니다. 중단한 대화의 저장 버전은 유지합니다.
+기존 개별 Story/disabled는 이관 시 Narrative/LegacyContent.zip으로 보관하며 파일 이름 변경 방식은 새 저장소에 적용하지 않습니다. Results/Edits와 실제 진행은 지우지 않습니다.
+구체적인 PowerShell 명령과 검사 결과 기준은 Docs/NarrativeImplementation.md, Docs/LocalStoryLiveGameplay.md를 참고하세요.
 
 ## 이전 장면 흐름 v8 — 당시 기록
 
@@ -411,7 +404,7 @@ Unity 테스트 화면의 ‘저장 결과 보기’를 누르면 Index가 갱�
     }
     public static string Fingerprints(bool verify = false)
     {
-        string source = "Assets/Decision_YYS/Resources/Story_Json_Data";
+        string source = "Assets/Decision_YYS/Resources/Chapters";
         string saves = Path.Combine(Application.persistentDataPath, "Saves");
         var files = Directory.GetFiles(source, "*.json", SearchOption.AllDirectories).Concat(
             Directory.GetFiles(saves, "*.json", SearchOption.AllDirectories).Where(f => !f.StartsWith(LocalStoryTestArchive.Root + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase)));

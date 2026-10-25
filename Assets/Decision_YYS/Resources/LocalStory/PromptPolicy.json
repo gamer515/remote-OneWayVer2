@@ -1,0 +1,56 @@
+{
+  "version": "modules-v2",
+  "modules": [
+    "LocalStory/PromptModules/Common",
+    "LocalStory/PromptModules/Choice",
+    "LocalStory/PromptModules/Normal",
+    "LocalStory/PromptModules/Garbled",
+    "LocalStory/PromptModules/MemoryNone",
+    "LocalStory/PromptModules/MemoryCurrent",
+    "LocalStory/PromptModules/MemoryDream",
+    "LocalStory/PromptModules/Unlocked",
+    "LocalStory/PromptModules/Fixed",
+    "LocalStory/PromptModules/Correction",
+    "LocalStory/PromptModules/Output"
+  ],
+  "participants": {
+    "player": {
+      "id": "Player",
+      "name": "여행자",
+      "role": "플레이어"
+    }
+  },
+  "composition": {
+    "rejectExampleCopies": true,
+    "maxExamples": 2,
+    "useEditedExamples": false,
+    "editedExamplesInstruction": "사람이 수정한 문장은 말투 참고다. 이번 사건의 사실이나 정답으로 복사하지 않는다.",
+    "previousDialogueCards": 2,
+    "previousEvents": 2,
+    "includeSceneFlow": false,
+    "tokenBudget": {
+      "base": 96,
+      "perCard": 256,
+      "perOption": 80
+    },
+    "editedExamplesHeading": "[말투 참고 — 위 사실과 규칙 우선]",
+    "sceneExamplesInstruction": "사람이 수정한 완성 대화는 카드 순서와 직접 발화 형식의 참고다. 이번 사건이나 기억으로 가져오지 않는다. 현재 집필 조건을 우선한다."
+  },
+  "runtime": {
+    "allowFailedOutput": true
+  },
+  "inference": {
+    "cpuThreads": 6,
+    "gpuLayers": 99,
+    "contextSize": 4096,
+    "batchSize": 256,
+    "flashAttention": "off",
+    "idleSeconds": 60
+  },
+  "limits": {
+    "maxCards": 3,
+    "textMaxChars": 160,
+    "optionMaxChars": 45,
+    "maxOutputTokens": 1400
+  }
+}

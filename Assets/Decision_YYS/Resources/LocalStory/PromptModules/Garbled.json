@@ -1,0 +1,37 @@
+{
+  "id": "Garbled",
+  "when": {
+    "speechMode": "garbled"
+  },
+  "rules": [
+    "garbled는 듣는 사람에게 발음이 흐트러져 들리는 상태다. 말하는 사람의 정체·지식·관점이 바뀐 것이 아니다.",
+    "semanticText와 intent를 정상 문장 그대로 반환하면 실패다. reference처럼 발음이 흐트러진 새 표현을 text와 모든 options에 쓴다. 숨은 뜻을 짐작할 수 있도록 음절을 늘리거나 발음을 비튼다."
+  ],
+  "examples": [
+    {
+      "input": {
+        "speaker": "안내자",
+        "listener": "여행자",
+        "speechMode": "garbled",
+        "semanticText": "내 말이 들리나?",
+        "options": [
+          {
+            "index": 0,
+            "intent": "잘 들리지 않는다고 대답한다"
+          }
+        ]
+      },
+      "output": {
+        "cards": [
+          {
+            "index": 0,
+            "text": "내 마리 드을리나아?",
+            "options": [
+              "자알 안 드을려어."
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

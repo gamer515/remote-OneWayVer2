@@ -11,7 +11,7 @@ using Newtonsoft.Json.Linq;
 using UnityEngine;
 
 /// <summary>Test-only evidence with per-result edits and evaluation. Never used as game content.</summary>
-public static class LocalStoryTestArchive
+public static partial class LocalStoryTestArchive
 {
     private static readonly object Sync = new object();
     private static readonly UTF8Encoding Utf8 = new UTF8Encoding(false);
@@ -20,6 +20,11 @@ public static class LocalStoryTestArchive
     public static string NumberedEditPath(string reportFile, JObject report = null)
     {
         reportFile = Path.GetFullPath(reportFile);
+        if(reportFile.EndsWith(".Result.json",StringComparison.Ordinal))
+        {
+            report ??= ReadReport(reportFile);
+            return Path.Combine(TestRoot(reportFile),"Edits",Group(report),((int)report["archiveNumber"]).ToString("D4")+".json");
+        }
         report ??= ReadReport(reportFile);
         string root = Path.GetDirectoryName(Path.GetDirectoryName(Path.GetDirectoryName(reportFile)));
         string model = ((string)report["model"] ?? "").IndexOf("Gemma", StringComparison.OrdinalIgnoreCase) >= 0 ? "Gemma" :
@@ -67,12 +72,20 @@ public static class LocalStoryTestArchive
         File.WriteAllText(temporary, contents, Utf8);
         if (File.Exists(file))
         {
-            try { File.Replace(temporary, file, null); }
-            catch (IOException) when (Path.GetFileName(file) == "Index.html")
+            for(int attempt=0;;attempt++)
             {
-                // Derived view may be open without delete sharing. Evidence/edit writes do not use this fallback.
-                File.Copy(temporary, file, true);
-                File.Delete(temporary);
+                try { File.Replace(temporary, file, null); break; }
+                catch (IOException) when (Path.GetFileName(file) == "Index.html")
+                {
+                    // Derived view may be open without delete sharing. Result/edit writes stay atomic.
+                    File.Copy(temporary, file, true);
+                    File.Delete(temporary); break;
+                }
+                catch(IOException) when(attempt<3 && File.Exists(temporary) && File.Exists(file))
+                {
+                    // Windows can briefly hold a just-written result/sequence file. Retry the atomic replace only.
+                    System.Threading.Thread.Sleep(20<<attempt);
+                }
             }
         }
         else File.Move(temporary, file);
@@ -83,13 +96,14 @@ public static class LocalStoryTestArchive
     {
         string results = Path.Combine(root ?? Root, "Results");
         if (!Directory.Exists(results)) return new List<string>();
-        return Directory.GetFiles(results, "Result.json", SearchOption.AllDirectories)
+        return Directory.GetFiles(results,"*.Result.json",SearchOption.AllDirectories).Concat(Directory.GetFiles(results, "Result.json", SearchOption.AllDirectories))
             .Concat(Directory.GetFiles(results, "*.report.json", SearchOption.AllDirectories)
                 .Where(p => !File.Exists(Path.Combine(Path.GetDirectoryName(p), "Result.json"))))
             .OrderBy(p => p, StringComparer.Ordinal).ToList();
     }
     public static JObject ReadReport(string file)
     {
+        if(file.EndsWith(".Result.json",StringComparison.Ordinal)) return ReadGrouped(file);
         if (Path.GetFileName(file) != "Result.json")
         {
             if (File.Exists(file)) return Read(file);
@@ -105,7 +119,16 @@ public static class LocalStoryTestArchive
         }
         return report;
     }
-    public static LocalStoryTestReport Load(string file) => JsonUtility.FromJson<LocalStoryTestReport>(ReadReport(file).ToString(Formatting.None));
+    public static LocalStoryTestReport Load(string file)
+    {
+        var report=JsonUtility.FromJson<LocalStoryTestReport>(ReadReport(file).ToString(Formatting.None));
+        if(report.original!=null)
+        {
+            if(report.valid && (report.generated?.MainStory==null||report.generated.MainStory.Count==0) && LocalStoryRewrite.TryBuild(report.rawOutput,report.original,report.interactionMemory,out var draft,out _))report.generated=draft;
+            if(report.correctionValid && (report.corrected?.MainStory==null||report.corrected.MainStory.Count==0) && LocalStoryRewrite.TryBuild(report.correctionRawOutput,report.original,report.interactionMemory,out var corrected,out _))report.corrected=corrected;
+        }
+        return report;
+    }
 
     // raw JSON parsing is independent of automatic quality validation. A failed quality check must still be visible.
     public static JArray RawCards(string raw)
@@ -136,10 +159,10 @@ public static class LocalStoryTestArchive
     }
 
     private static readonly HashSet<string> InputFields = new HashSet<string>(new[] {
-        "storyPath", "original", "prompt", "correctionPrompt", "testScenario", "sourceRun", "targetRun", "interactionMemory", "interactionSource", "writingPolicy", "generationGrammar", "examplePrompt", "exampleSummary", "exampleSources", "comparisonMode"
+        "storyPath", "original", "prompt", "correctionPrompt", "testScenario", "sourceRun", "targetRun", "interactionMemory", "interactionSource", "writingPolicy", "generationGrammar", "examplePrompt", "exampleSummary", "exampleSources", "comparisonMode", "generationMode", "sectionInputs"
     });
     private static readonly HashSet<string> OutputFields = new HashSet<string>(new[] {
-        "rawOutput", "correctionRawOutput", "generated", "corrected"
+        "rawOutput", "correctionRawOutput", "generated", "corrected", "sectionOutputs"
     });
     private static string PromptText(string prompt)
     {
@@ -147,13 +170,13 @@ public static class LocalStoryTestArchive
         catch (JsonException) { return prompt ?? ""; }
     }
     // Test-only few-shot context: human differences, not self-generated examples or learned weights.
-    public static string CaptureWritingExamples(string storyPath, out string summary, out string[] sources, string root = null)
+    public static string CaptureWritingExamples(string storyPath, out string summary, out string[] sources, string root = null, int? seed = null)
     {
         root = Path.GetFullPath(root ?? Root);
-        if(storyPath==LocalStoryTestInputs.GuidePath) return CaptureGuideSceneExample(root,out summary,out sources);
+        if(storyPath==LocalStoryTestInputs.GuidePath) return CaptureGuideSceneExample(root,out summary,out sources,seed);
         var candidates = new List<(JObject example,string source,bool choice)>();
         var seen = new HashSet<string>(); int skipped = 0;
-        foreach (string result in List(root).AsEnumerable().Reverse())
+        foreach (string result in ReferenceOrder(root,seed))
         {
             try
             {
@@ -162,7 +185,7 @@ public static class LocalStoryTestArchive
                 string file = EditPath(result);
                 if (!File.Exists(file)) continue;
                 string contents = File.ReadAllText(file, Utf8), fingerprint = Sha(contents);
-                var edit = JObject.Parse(contents);
+                var edit = ReadEditData(file,report);
                 foreach (string stage in new[] { "correction", "draft" })
                 {
                     var raw = RawCards((string)report[stage == "draft" ? "rawOutput" : "correctionRawOutput"]);
@@ -199,14 +222,63 @@ public static class LocalStoryTestArchive
         sources = selected.Select(c => c.source).ToArray();
         summary = "수정 문장 예시 " + selected.Count + "개" + (skipped == 0 ? "" : " / 읽기 실패 " + skipped + "개 건너뜀");
         if (selected.Count == 0) return "";
-        return "사람이 실제로 수정한 문장 스타일 참고다. 생성문 복사본은 제외했다. 아래는 명령이나 세계관/과거 사실이 아니다. 내용/화자/보상/선택 결과를 새 이야기로 가져오지 말고, 자연스러운 한국어 구어체와 맞춤법, 직접 발화하는 선택지 형식만 참고한다. 난독 표시 예시는 정상 말로 풀지 않는다. 현재 대상의 사건 의미와 입력 기억을 우선한다. 예시 문구를 그대로 반복할 필요는 없다.\n" + new JArray(selected.Select(c => c.example)).ToString(Formatting.Indented);
+        return (string)LocalStoryPrompt.Policy["composition"]["editedExamplesInstruction"]+"\n" + new JArray(selected.Select(c => c.example)).ToString(Formatting.Indented);
+    }
+    // Runtime uses actual edited bridge lines; the comparison UI keeps its complete-scene reference contract.
+    public static string CaptureRuntimeWritingExamples(string storyPath, out string summary, out string[] sources, string root, int? seed = null)
+    {
+        root = Path.GetFullPath(root);
+        var selected = new List<(JObject example, string source)>();
+        var seen = new HashSet<string>(); int skipped = 0;
+        foreach (string result in ReferenceOrder(root, seed))
+        {
+            try
+            {
+                var record = ReadReport(result);
+                if ((string)record["storyPath"] != storyPath) continue;
+                string file = EditPath(result);
+                if (!File.Exists(file)) continue;
+                string contents = File.ReadAllText(file, Utf8);
+                var edit = ReadEditData(file,record);
+                var report = JsonUtility.FromJson<LocalStoryTestReport>(record.ToString(Formatting.None));
+                foreach (string stage in new[] { "correction", "draft" })
+                {
+                    var raw = RawCards((string)record[stage == "draft" ? "rawOutput" : "correctionRawOutput"]);
+                    if (raw == null || !(edit[stage] is JArray lines) || lines.Count != raw.Count ||
+                        !raw.Select((c, i) => (long)c["index"] == i).All(inOrder => inOrder)) continue;
+                    var built = LocalStoryGameApply.Build(report, stage, true, file);
+                    for (int i = 0; i < built.MainStory.Count; i++)
+                    {
+                        var card = built.MainStory[i];
+                        if (!string.IsNullOrWhiteSpace(card.semanticText) ||
+                            string.IsNullOrWhiteSpace(card.text) || card.text.Trim() == ((string)raw[i]["text"] ?? "").Trim() ||
+                            !seen.Add(card.text.Trim())) continue;
+                        selected.Add((new JObject { ["eventId"] = card.eventIdStable, ["text"] = card.text },
+                            Path.GetRelativePath(root, file).Replace('\\', '/') + "#" + stage + "[" + i + "]; SHA256=" + Sha(contents)));
+                    }
+                }
+            }
+            catch (Exception e) when (e is IOException || e is JsonException || e is InvalidOperationException ||
+                e is UnauthorizedAccessException || e is FormatException || e is ArgumentException) { skipped++; }
+            if (selected.Count >= 3) break;
+        }
+        selected = selected.Take(3).ToList();
+        sources = selected.Select(s => s.source).ToArray();
+        summary = "수정한 연결 대사 참고 " + selected.Count + "문장" + (skipped == 0 ? "" : " / 읽기 실패 " + skipped + "개 건너뜀");
+        return selected.Count == 0 ? "" : (string)LocalStoryPrompt.Policy["composition"]["editedExamplesInstruction"]+"\n" +
+            new JArray(selected.Select(s => s.example)).ToString(Formatting.None);
     }
     // Guide is a small ordered scene, not a bag of interchangeable dialogue/choice snippets.
     // Only an edited row in every slot qualifies; untouched generated files never count as authored references.
-    private static string CaptureGuideSceneExample(string root,out string summary,out string[] sources)
+    private static System.Collections.Generic.IEnumerable<string> ReferenceOrder(string root,int? seed)
+    {
+        var paths=List(root).AsEnumerable().Reverse();
+        return seed.HasValue ? paths.OrderBy(p=>Sha(seed.Value+":"+Path.GetRelativePath(root,p)),StringComparer.Ordinal) : paths;
+    }
+    private static string CaptureGuideSceneExample(string root,out string summary,out string[] sources,int? seed=null)
     {
         int skipped=0;
-        foreach(string result in List(root).AsEnumerable().Reverse())
+        foreach(string result in ReferenceOrder(root,seed))
         {
             try
             {
@@ -215,7 +287,7 @@ public static class LocalStoryTestArchive
                 string editFile=EditPath(result);
                 if(!File.Exists(editFile)) continue;
                 string contents=File.ReadAllText(editFile,Utf8);
-                var edit=JObject.Parse(contents);
+                var edit=ReadEditData(editFile,report);
                 foreach(string stage in new[]{"correction","draft"})
                 {
                     var raw=RawCards((string)report[stage=="draft"?"rawOutput":"correctionRawOutput"]);
@@ -239,9 +311,7 @@ public static class LocalStoryTestArchive
                         ["index"]=i,["text"]=c.text,["options"]=new JArray(c.options??Array.Empty<string>())}))};
                     sources=new[]{Path.GetRelativePath(root,editFile).Replace('\\','/')+"#"+stage+"[0.."+(lines.Count-1)+"]; SHA256="+Sha(contents)};
                     summary="수정한 완성 대화 1묶음 / "+lines.Count+"카드";
-                    return "사람이 수정한 완성 대화 한 묶음이다. 카드 순서와 직접 말 형식의 참고이지 이번 회차의 원문이나 기억이 아니다. "+
-                        "같은 위치의 사건을 연결하는 법과 자연스러운 말투를 참고하되 그대로 복사하지 않는다. "+
-                        "이번 만남의 실제 기록과 핵심 사건이 우선한다.\n"+example.ToString(Formatting.None);
+                    return (string)LocalStoryPrompt.Policy["composition"]["sceneExamplesInstruction"]+"\n" + example.ToString(Formatting.None);
                 }
             }
             catch(Exception e) when(e is IOException || e is JsonException || e is InvalidOperationException ||
@@ -259,7 +329,7 @@ public static class LocalStoryTestArchive
         if (input.Count == 0 || (string)input.Last["role"] != "user" || input.Last["content"]?.Type != JTokenType.String)
             throw new InvalidOperationException("수정 예시를 연결할 사용자 입력이 없습니다.");
         // Keep the two-message adapter contract for Gemma; the current request stays last.
-        input.Last["content"] = captured + "\n\n[현재 생성 대상 — 아래 사실과 규칙 우선]\n" + (string)input.Last["content"];
+        input.Last["content"] = (string)input.Last["content"] + "\n\n"+(string)LocalStoryPrompt.Policy["composition"]["editedExamplesHeading"]+"\n" + captured;
         return input.ToString(Formatting.None);
     }
     private static JObject Interaction(JObject report)
@@ -296,7 +366,7 @@ public static class LocalStoryTestArchive
         // Only known character IDs are resolved. Human-authored names remain unchanged.
         if (speaker == "Guide" || speaker == "Duelist" || speaker == "Gambler")
         {
-            var character = Resources.Load<TextAsset>("Story_Json_Data/Characters/" + speaker);
+            var character = ChapterContentCatalog.Asset("Story_Json_Data/Characters/" + speaker);
             string name = character == null ? null : (string)JObject.Parse(character.text)["name"];
             if (!string.IsNullOrWhiteSpace(name)) return name;
         }
@@ -439,52 +509,7 @@ public static class LocalStoryTestArchive
     }
     public static string Save(string root, JObject report, string origin = null)
     {
-        lock (Sync)
-        {
-            root = Path.GetFullPath(root);
-            var existing = List(root);
-            if (!string.IsNullOrEmpty(origin))
-            {
-                string prior = existing.FirstOrDefault(p => (string)ReadReport(p)["archiveOrigin"] == origin);
-                if (prior != null) { EnsureEdit(ReadReport(prior), prior); UpdateIndex(root); return prior; }
-            }
-            string id = (string)report["archiveId"];
-            if (string.IsNullOrEmpty(id))
-            {
-                int number = existing.Select(p => (int?)ReadReport(p)["archiveNumber"] ?? 0).DefaultIfEmpty().Max() + 1;
-                id = number.ToString("D4") + "__" + Short((string)report["model"], 28) + "__" +
-                    Short(((string)report["storyPath"] ?? "UnknownStory").Replace('/', '-'), 50) + "__" + Short((string)report["testScenario"], 24);
-                report["archiveNumber"] = number; report["archiveId"] = id;
-            }
-            if (id.Contains("..") || id.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0 || (int?)report["archiveNumber"] <= 0)
-                throw new InvalidOperationException("Unsafe archive ID/number");
-            report["archiveOrigin"] = origin != null ? new JValue(origin) : report["archiveOrigin"]?.DeepClone() ?? JValue.CreateNull();
-            string folder = Path.Combine(root, "Results", ((int)report["archiveNumber"]).ToString("D4"));
-            string file = Path.Combine(folder, "Result.json");
-            if (File.Exists(file))
-            {
-                if (!JToken.DeepEquals(ReadReport(file), JObject.Parse(report.ToString(Formatting.None))))
-                    throw new InvalidOperationException("기존 AI 원출력은 덮어쓰지 않습니다.");
-            }
-            else
-            {
-                var input = new JObject(); var result = new JObject(); var analysis = new JObject();
-                foreach (var property in report.Properties())
-                    (InputFields.Contains(property.Name) ? input : OutputFields.Contains(property.Name) ? result : analysis)
-                        .Add(property.Name, property.Value.DeepClone());
-                input["interactionSummary"] = Interaction(report);
-                result["draftCards"] = RawCards((string)report["rawOutput"]);
-                result["correctionCards"] = RawCards((string)report["correctionRawOutput"]);
-                Write(Path.Combine(folder, "Input.json"), input);
-                Write(Path.Combine(folder, "Analysis.json"), analysis);
-                Write(file, result);
-                if (!JToken.DeepEquals(ReadReport(file), report)) throw new InvalidOperationException("Evidence partition mismatch: " +
-                    string.Join(", ", report.Properties().Where(p=>!JToken.DeepEquals(p.Value,ReadReport(file)[p.Name])).Select(p=>p.Name)) + " at " + file);
-            }
-            EnsureEdit(report, file);
-            UpdateIndex(root);
-            return file;
-        }
+        return SaveGrouped(root,report,origin);
     }
     public static JObject ReadBenchmarkReport(string file)
     {
@@ -502,6 +527,7 @@ public static class LocalStoryTestArchive
         {
             root=Path.GetFullPath(root);
             string file=Path.GetFullPath(reportFile);
+            if(file.EndsWith(".Result.json",StringComparison.Ordinal)) {UpdateGrouped(file,report);return;}
             if(Path.GetFileName(file)!="Result.json" || !file.StartsWith(Path.Combine(root,"Results")+Path.DirectorySeparatorChar,StringComparison.OrdinalIgnoreCase))
                 throw new InvalidOperationException("안전하지 않은 생성 결과 경로");
             string analysisFile=Path.Combine(Path.GetDirectoryName(file),"Analysis.json");
@@ -519,27 +545,7 @@ public static class LocalStoryTestArchive
     }
     public static void UpdateIndex(string root = null)
     {
-        root = Path.GetFullPath(root ?? Root);
-        var rows = new JArray();
-        foreach (string file in List(root).Where(p => Path.GetFileName(p) == "Result.json"))
-        {
-            string folder = Path.GetDirectoryName(file);
-            rows.Add(new JObject {
-                ["input"] = Read(Path.Combine(folder, "Input.json")), ["result"] = Read(file),
-                ["analysis"] = Read(Path.Combine(folder, "Analysis.json")),
-                ["files"] = new JObject(new[] { "Result.json", "Edit.json", "Analysis.json", "Input.json" }
-                    .Select(n => new JProperty(n == "Edit.json" ? Path.GetFileName(EditPath(file)) : n,
-                        Link(root, n == "Edit.json" ? EditPath(file) : Path.Combine(folder, n)))))
-            });
-        }
-        var template = Resources.Load<TextAsset>("LocalStory/TestIndex");
-        if (template == null || template.text.Split(new[] { "__CATALOG_DATA__" }, StringSplitOptions.None).Length != 2)
-            throw new InvalidOperationException("통합 Index 템플릿 없음");
-        string index = Path.Combine(root, "Index.html");
-        if (File.Exists(index) && !File.ReadAllText(index).Contains("<!-- LocalStoryCatalog:v"))
-            throw new InvalidOperationException("Unknown index; preserve existing file");
-        Write(index, template.text.Replace("__CATALOG_DATA__", Convert.ToBase64String(Utf8.GetBytes(new JObject {
-            ["results"] = rows }.ToString(Formatting.None)))));
+        // Results are directly readable JSON; HTML catalog generation was removed.
     }
     // Explicit, scoped one-time migration. No original stories/game saves are touched.
     public static string Migrate(string root, string recoveryDirectory)

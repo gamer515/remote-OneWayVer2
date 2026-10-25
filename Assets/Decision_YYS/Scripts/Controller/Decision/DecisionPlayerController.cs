@@ -23,6 +23,33 @@ public sealed class DecisionPlayerController
         this.player = player;
     }
 
+    // Walking only changes Z; saved X/Y must stay on the terrain's walking lane.
+    // Never hard-code the scene's -200 offset or treat world zero as universally invalid.
+    public static Vector3 ResolveStartPosition(Vector3? savedPosition, Vector3 terrainOrigin,
+        float terrainEndZ, Vector3 fallbackPosition, out bool recovered)
+    {
+        recovered = false;
+        if (!savedPosition.HasValue)
+            return fallbackPosition;
+
+        Vector3 saved = savedPosition.Value;
+        const float laneTolerance = 0.5f;
+        bool validZ = IsFinite(saved.z) && saved.z >= terrainOrigin.z && saved.z <= terrainEndZ;
+        bool validLane = IsFinite(saved.x) && IsFinite(saved.y) &&
+            Mathf.Abs(saved.x - terrainOrigin.x) <= laneTolerance &&
+            Mathf.Abs(saved.y - terrainOrigin.y) <= laneTolerance;
+        if (validLane && validZ)
+            return saved;
+
+        recovered = true;
+        // Preserve an already travelled distance when only the lateral/height coordinates are corrupt.
+        // A stray origin position (0,0,0) on an offset terrain uses the normal entry point instead.
+        float safeZ = validZ && saved.z > terrainOrigin.z + 0.01f ? saved.z : fallbackPosition.z;
+        return new Vector3(terrainOrigin.x, terrainOrigin.y, safeZ);
+    }
+
+    private static bool IsFinite(float value) => !float.IsNaN(value) && !float.IsInfinity(value);
+
     public void Initialize(Vector3 startPosition, Quaternion? savedRotation = null)
     {
         if (!IsAvailable)
@@ -31,7 +58,7 @@ public sealed class DecisionPlayerController
         TargetPosition = startPosition;
         player.Initialize(startPosition);
         if (savedRotation.HasValue)
-            player.transform.rotation = savedRotation.Value;
+            player.SetFacing(savedRotation.Value);
     }
 
     public void MoveToZ(float targetZ)

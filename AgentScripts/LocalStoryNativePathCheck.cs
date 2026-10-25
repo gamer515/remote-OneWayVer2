@@ -28,9 +28,10 @@ public static class LocalStoryNativePathCheck
                 else args.AddRange(segments[i].Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries));
             check(args[0] == "-m" && args[1] == Path.GetFullPath(modelPath), "Unicode/spaces changed the model path");
             check(args[2] == "--alias" && args[3] == "LocalStory", "Native ANSI filename conversion was not bypassed");
-            check(args[13] == (gpu ? "24" : "0"), "GPU/CPU layer count changed");
+            var settings=LocalStoryPrompt.Policy["inference"];
+            check(args[13] == (gpu ? (string)settings["gpuLayers"] : "0"), "GPU/CPU layer count ignored JSON");
             check(string.Join(" ", args.GetRange(4, args.Count - 4)) ==
-                "-t 6 -np 1 -c 4096 -b 256 -ngl " + (gpu ? "24" : "0") + " --context-shift -fa off", "Existing inference settings changed");
+                "-t "+(int)settings["cpuThreads"]+" -np 1 -c "+(int)settings["contextSize"]+" -b "+(int)settings["batchSize"]+" -ngl " + (gpu ? (string)settings["gpuLayers"] : "0") + " --context-shift -fa "+(string)settings["flashAttention"], "Inference settings ignored JSON");
             check(modelPath.StartsWith(Path.GetFullPath(Path.Combine(root, "..", "..", "..")), StringComparison.Ordinal), "Model points outside the current project");
         }
         foreach (string bad in new[] { "", " ", "model\".gguf", "model\n.gguf", "model\r.gguf", "model\0.gguf" })

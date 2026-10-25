@@ -1,0 +1,42 @@
+{
+  "id": "Choice",
+  "when": {
+    "hasChoices": true
+  },
+  "rules": [
+    "text는 NPC가 플레이어의 응답을 유도하는 질문이나 제안이다. options는 각 번호의 intent에 맞는 플레이어의 직접 응답이다.",
+    "options의 순서와 개수를 유지한다. 분류명·번호·내부 식별자를 응답 문구 대신 쓰지 않는다. NPC의 자기소개를 플레이어 자신의 정체로 바꾸지 않는다."
+  ],
+  "examples": [
+    {
+      "when": { "speechMode": "normal" },
+      "input": {
+        "speaker": "문지기",
+        "listener": "여행자",
+        "purpose": "방문 이유를 묻는다",
+        "options": [
+          {
+            "index": 0,
+            "intent": "안으로 들어가도 되는지 정중하게 묻는다"
+          },
+          {
+            "index": 1,
+            "intent": "다른 길로 가겠다며 거절한다"
+          }
+        ]
+      },
+      "output": {
+        "cards": [
+          {
+            "index": 0,
+            "text": "이곳에는 무슨 일로 왔나?",
+            "options": [
+              "잠깐 들어가 봐도 될까요?",
+              "괜찮아요. 다른 길로 갈게요."
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

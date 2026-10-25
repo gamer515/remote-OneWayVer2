@@ -35,6 +35,7 @@ public class UiController : MonoBehaviour
         mainStoryUi?.PreviewChoice(SanitizeText(text), direction, canConfirm);
 
     public void AppendPlayerChoice(string text) => mainStoryUi?.AppendPlayerChoice(SanitizeText(text));
+    public void AppendInteraction(string text, string speakerId) => mainStoryUi?.AppendInteraction(SanitizeText(text), speakerId);
 
     private string SanitizeText(string text)
     {

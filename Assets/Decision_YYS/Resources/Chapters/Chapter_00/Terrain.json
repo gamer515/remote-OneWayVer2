@@ -1,0 +1,311 @@
+{
+  "episodes": {
+    "Initial_01": {
+      "TerrainInfo": {
+        "terrainName": "Dungeon",
+        "groundId": "dungeon_01",
+        "groundIds": [
+          "dungeon_01"
+        ],
+        "chunkCount": 1,
+        "places": [
+          {
+            "placeId": "guide",
+            "chunkIndex": 0,
+            "prefabId": "normal_people",
+            "characterId": "Guide",
+            "connectStoryCards": "Initial/Initial_01/Encounters/guide"
+          },
+          {
+            "placeId": "duelist",
+            "chunkIndex": 0,
+            "prefabId": "normal_people",
+            "characterId": "Duelist",
+            "connectStoryCards": "Initial/Initial_01/Encounters/duelist"
+          },
+          {
+            "placeId": "gambler",
+            "chunkIndex": 0,
+            "prefabId": "normal_people",
+            "characterId": "Gambler",
+            "connectStoryCards": "Initial/Initial_01/Encounters/gambler"
+          }
+        ]
+      }
+    }
+  },
+  "actions": {
+    "Initial/Initial_01/Encounters/duelist/Duel/Start": {
+      "-836919860": {
+        "startAction": "duel",
+        "duelHitTarget": 3,
+        "winStoryPath": "Initial/Initial_01/Encounters/duelist/Duel/Win",
+        "loseStoryPath": "Initial/Initial_01/Encounters/duelist/Duel/Lose",
+        "errorStoryPath": "Initial/Initial_01/Encounters/duelist/Duel/Error"
+      }
+    },
+    "Initial/Initial_01/Encounters/duelist/Duel/Start/Variants/CharmZero": {
+      "1314755467": {
+        "startAction": "duel",
+        "duelHitTarget": 3,
+        "winStoryPath": "Initial/Initial_01/Encounters/duelist/Duel/Win",
+        "loseStoryPath": "Initial/Initial_01/Encounters/duelist/Duel/Lose",
+        "errorStoryPath": "Initial/Initial_01/Encounters/duelist/Duel/Error"
+      }
+    },
+    "Initial/Initial_01/Encounters/duelist/Duel/Start/Variants/KnowledgeCharmZero": {
+      "1767983055": {
+        "startAction": "duel",
+        "duelHitTarget": 3,
+        "winStoryPath": "Initial/Initial_01/Encounters/duelist/Duel/Win",
+        "loseStoryPath": "Initial/Initial_01/Encounters/duelist/Duel/Lose",
+        "errorStoryPath": "Initial/Initial_01/Encounters/duelist/Duel/Error"
+      }
+    },
+    "Initial/Initial_01/Encounters/duelist/Duel/Start/Variants/KnowledgeZero": {
+      "-1566088282": {
+        "startAction": "duel",
+        "duelHitTarget": 3,
+        "winStoryPath": "Initial/Initial_01/Encounters/duelist/Duel/Win",
+        "loseStoryPath": "Initial/Initial_01/Encounters/duelist/Duel/Lose",
+        "errorStoryPath": "Initial/Initial_01/Encounters/duelist/Duel/Error"
+      }
+    },
+    "Initial/Initial_01/Encounters/gambler/Coin/Heads": {
+      "-184480536": {
+        "startAction": "coin_heads",
+        "winStoryPath": "Initial/Initial_01/Encounters/gambler/Coin/HeadsWin",
+        "loseStoryPath": "Initial/Initial_01/Encounters/gambler/Coin/HeadsLose",
+        "errorStoryPath": "Initial/Initial_01/Encounters/gambler/Coin/Error"
+      }
+    },
+    "Initial/Initial_01/Encounters/gambler/Coin/Heads/Variants/CharmZero": {
+      "-1590694369": {
+        "startAction": "coin_heads",
+        "winStoryPath": "Initial/Initial_01/Encounters/gambler/Coin/HeadsWin",
+        "loseStoryPath": "Initial/Initial_01/Encounters/gambler/Coin/HeadsLose",
+        "errorStoryPath": "Initial/Initial_01/Encounters/gambler/Coin/Error"
+      }
+    },
+    "Initial/Initial_01/Encounters/gambler/Coin/Heads/Variants/KnowledgeCharmZero": {
+      "1334137195": {
+        "startAction": "coin_heads",
+        "winStoryPath": "Initial/Initial_01/Encounters/gambler/Coin/HeadsWin",
+        "loseStoryPath": "Initial/Initial_01/Encounters/gambler/Coin/HeadsLose",
+        "errorStoryPath": "Initial/Initial_01/Encounters/gambler/Coin/Error"
+      }
+    },
+    "Initial/Initial_01/Encounters/gambler/Coin/Heads/Variants/KnowledgeZero": {
+      "1707185330": {
+        "startAction": "coin_heads",
+        "winStoryPath": "Initial/Initial_01/Encounters/gambler/Coin/HeadsWin",
+        "loseStoryPath": "Initial/Initial_01/Encounters/gambler/Coin/HeadsLose",
+        "errorStoryPath": "Initial/Initial_01/Encounters/gambler/Coin/Error"
+      }
+    },
+    "Initial/Initial_01/Encounters/gambler/Coin/Tails": {
+      "2098664600": {
+        "startAction": "coin_tails",
+        "winStoryPath": "Initial/Initial_01/Encounters/gambler/Coin/TailsWin",
+        "loseStoryPath": "Initial/Initial_01/Encounters/gambler/Coin/TailsLose",
+        "errorStoryPath": "Initial/Initial_01/Encounters/gambler/Coin/Error"
+      }
+    },
+    "Initial/Initial_01/Encounters/gambler/Coin/Tails/Variants/CharmZero": {
+      "-2114457521": {
+        "startAction": "coin_tails",
+        "winStoryPath": "Initial/Initial_01/Encounters/gambler/Coin/TailsWin",
+        "loseStoryPath": "Initial/Initial_01/Encounters/gambler/Coin/TailsLose",
+        "errorStoryPath": "Initial/Initial_01/Encounters/gambler/Coin/Error"
+      }
+    },
+    "Initial/Initial_01/Encounters/gambler/Coin/Tails/Variants/KnowledgeCharmZero": {
+      "-136714597": {
+        "startAction": "coin_tails",
+        "winStoryPath": "Initial/Initial_01/Encounters/gambler/Coin/TailsWin",
+        "loseStoryPath": "Initial/Initial_01/Encounters/gambler/Coin/TailsLose",
+        "errorStoryPath": "Initial/Initial_01/Encounters/gambler/Coin/Error"
+      }
+    },
+    "Initial/Initial_01/Encounters/gambler/Coin/Tails/Variants/KnowledgeZero": {
+      "-2142075358": {
+        "startAction": "coin_tails",
+        "winStoryPath": "Initial/Initial_01/Encounters/gambler/Coin/TailsWin",
+        "loseStoryPath": "Initial/Initial_01/Encounters/gambler/Coin/TailsLose",
+        "errorStoryPath": "Initial/Initial_01/Encounters/gambler/Coin/Error"
+      }
+    },
+    "Initial/Initial_01/Encounters/guide/Dismiss": {
+      "1398461939": {
+        "nextStoryPath": "Initial/Initial_01/Encounters/guide/Redistribute"
+      }
+    },
+    "Initial/Initial_01/Encounters/guide/Insult": {
+      "-299372329": {
+        "nextStoryPath": "Initial/Initial_01/Encounters/guide/Redistribute"
+      }
+    },
+    "Initial/Initial_01/Encounters/guide/Mark": {
+      "1383183901": {
+        "choiceRules": {
+          "prototype_mark_show": {
+            "requiresItems": [
+              "prototype_loki_mark"
+            ]
+          },
+          "prototype_mark_return": {
+            "requiresItems": [
+              "prototype_loki_mark"
+            ]
+          }
+        }
+      }
+    },
+    "Initial/Initial_01/Encounters/guide/QuestionGod": {
+      "1044699433": {
+        "nextStoryPath": "Initial/Initial_01/Encounters/guide/Redistribute"
+      }
+    },
+    "Initial/Initial_01/Encounters/guide/QuestionPlace": {
+      "-2098066998": {
+        "nextStoryPath": "Initial/Initial_01/Encounters/guide/Redistribute"
+      }
+    },
+    "Initial/Initial_01/Encounters/guide/Retry": {
+      "1829428329": {
+        "nextStoryPath": "Initial/Initial_01/Encounters/guide/Redistribute"
+      }
+    },
+    "Initial/Initial_01/Encounters/guide/Hidden/MarkOwnedExplain": {
+      "18003001": {
+        "nextStoryPath": "Initial/Initial_01/Encounters/guide/QuestionGod"
+      }
+    },
+    "Initial/Initial_01/Encounters/guide/Hidden/MarkExplain": {
+      "18005001": {
+        "nextStoryPath": "Initial/Initial_01/Encounters/guide/QuestionGod"
+      }
+    },
+    "Initial/Initial_01/Encounters/guide/Hidden/MarkKnownExplain": {
+      "18004000": {
+        "nextStoryPath": "Initial/Initial_01/Encounters/guide/QuestionGod"
+      }
+    }
+  },
+  "interactions": [
+    {
+      "id": "persistent_loki_same_run",
+      "characterId": "Guide",
+      "choiceIds": [
+        "loki_question_god"
+      ],
+      "requiresItems": [
+        "prototype_loki_mark"
+      ],
+      "requiresEffects": [
+        "interaction:Initial:prototype_loki_mark_gift"
+      ],
+      "followupStoryPath": "Initial/Initial_01/Encounters/guide/Mark",
+      "notice": "아까 준 표식은 잘 가지고 있나? 궁금한 게 있으면 물어보게."
+    },
+    {
+      "id": "persistent_loki_known",
+      "characterId": "Guide",
+      "choiceIds": [
+        "loki_question_god"
+      ],
+      "requiresItems": [
+        "prototype_loki_mark"
+      ],
+      "requiresUnlocks": [
+        "prototype:loki_mine_mark_secret"
+      ],
+      "followupStoryPath": "Initial/Initial_01/Encounters/guide/Hidden/MarkKnown",
+      "notice": "표식의 뜻까지 알고 있는 여행자를 로키가 의아하게 바라본다.",
+      "excludesEffects": [
+        "interaction:Initial:prototype_loki_mark_gift"
+      ]
+    },
+    {
+      "id": "persistent_loki_owned",
+      "characterId": "Guide",
+      "choiceIds": [
+        "loki_question_god"
+      ],
+      "requiresItems": [
+        "prototype_loki_mark"
+      ],
+      "excludesUnlocks": [
+        "prototype:loki_mine_mark_secret"
+      ],
+      "followupStoryPath": "Initial/Initial_01/Encounters/guide/Hidden/MarkOwned",
+      "notice": "이미 가진 표식을 보고 로키가 말을 멈춘다.",
+      "excludesEffects": [
+        "interaction:Initial:prototype_loki_mark_gift"
+      ]
+    },
+    {
+      "id": "prototype_loki_mark_gift",
+      "characterId": "Guide",
+      "choiceIds": [
+        "loki_question_god"
+      ],
+      "grantsItems": [
+        "prototype_loki_mark"
+      ],
+      "followupStoryPath": "Initial/Initial_01/Encounters/guide/Mark",
+      "notice": "신을 만난 기념으로 이 표식을 가져가게. 잃어버리지는 말고.",
+      "excludesItems": [
+        "prototype_loki_mark"
+      ]
+    },
+    {
+      "id": "prototype_loki_mark_secret",
+      "characterId": "Guide",
+      "choiceIds": [
+        "loki_question_place",
+        "prototype_mark_show",
+        "prototype_mark_owned_ask"
+      ],
+      "requiresItems": [
+        "prototype_loki_mark"
+      ],
+      "grantsUnlocks": [
+        "prototype:loki_mine_mark_secret"
+      ],
+      "revealedFact": "@npc:Guide/hidden/prototype_loki_mark_secret",
+      "notice": "그 표식을 아직 가지고 있군. 광산의 오래된 길에도 같은 무늬가 있지. 눈여겨보게.",
+      "followupStoryPath": "Initial/Initial_01/Encounters/guide/Hidden/MarkExplain"
+    },
+    {
+      "id": "prototype_loki_mark_reclaimed",
+      "characterId": "Guide",
+      "choiceIds": [
+        "loki_insult",
+        "prototype_mark_return"
+      ],
+      "requiresItems": [
+        "prototype_loki_mark"
+      ],
+      "consumesItems": [
+        "prototype_loki_mark"
+      ],
+      "notice": "그렇다면 이 표식은 내가 다시 가져가겠네."
+    },
+    {
+      "id": "persistent_loki_discover",
+      "characterId": "Guide",
+      "choiceIds": [
+        "prototype_mark_owned_explain"
+      ],
+      "requiresItems": [
+        "prototype_loki_mark"
+      ],
+      "grantsUnlocks": [
+        "prototype:loki_mine_mark_secret"
+      ],
+      "revealedFact": "@npc:Guide/hidden/prototype_loki_mark_secret",
+      "notice": "이미 가지고 있던 표식의 쓰임을 로키에게 묻는다."
+    }
+  ]
+}

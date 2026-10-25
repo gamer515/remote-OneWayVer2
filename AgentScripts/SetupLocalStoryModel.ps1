@@ -1,4 +1,4 @@
-param([Parameter(Mandatory=$true)][ValidateSet('Runtime','Model')][string]$Part)
+param([Parameter(Mandatory=$true)][ValidateSet('Runtime','Model')][string]$Part, [ValidateSet('Gemma','Qwen')][string]$Model='Gemma')
 $ErrorActionPreference = 'Stop'
 $taskRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $taskCache = Join-Path $taskRoot 'tmp/LocalStorySetup'
@@ -15,8 +15,13 @@ function Get-VerifiedDownload($Url,$Path,$Sha) {
     }
 }
 if ($Part -eq 'Model') {
-    Get-VerifiedDownload 'https://huggingface.co/bartowski/Qwen_Qwen3-4B-Instruct-2507-GGUF/resolve/ae44f08e1392f39c0e474af10c3ff8355c8b6688/Qwen_Qwen3-4B-Instruct-2507-Q4_K_M.gguf' (Join-Path $taskModels 'Qwen3-4B-Instruct-2507-Q4_K_M.gguf') '2fde00ce69dd4899c70d020845e2638353015bba0fdf161b3eb965f2bca4464e'
-    Write-Output 'Model SHA256 verified (2,497,280,736 bytes).'
+    $taskManifest = Get-Content -LiteralPath (Join-Path $taskRoot ('BuildSupport/LocalStory/' + $Model + '/ModelManifest.json')) -Raw | ConvertFrom-Json
+    $taskCompareModels = Join-Path $taskRoot 'Tests/LocalStoryBenchmark/Models'
+    New-Item -ItemType Directory -Force -Path $taskCompareModels | Out-Null
+    $taskRevision = if ($Model -eq 'Gemma') { $taskManifest.revision } else { $taskManifest.quantizedRevision }
+    $taskModelSource = if ($Model -eq 'Gemma') { $taskManifest.modelSource } else { $taskManifest.quantizedSource }
+    Get-VerifiedDownload ($taskModelSource + '/resolve/' + $taskRevision + '/' + $taskManifest.file) (Join-Path $taskCompareModels $taskManifest.file) $taskManifest.sha256
+    Write-Output ($Model + ' SHA256 verified. Gemma access requires accepting the publisher terms; inference stays offline.')
 } else {
     $taskZip = Join-Path $taskCache 'LlamaLib-v2.0.5.zip'
     Get-VerifiedDownload 'https://github.com/undreamai/LlamaLib/releases/download/v2.0.5/LlamaLib-v2.0.5.zip' $taskZip 'f3d85b2d6fbaa12839173f4438a7a2c7124bf6b25708d8be23348de2dec1156b'

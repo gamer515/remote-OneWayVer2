@@ -22,10 +22,15 @@ using UnityEngine;
 }
 [Serializable] public sealed class LocalStoryDialogueJob
 {
-    public string jobId, characterId, storyPath, inputHash, contentHash, error, reportPath;
+    public string jobId, chapterId, episodeId, characterId, sceneId, sectionId, storyPath, inputHash, contentHash, error, reportPath;
     public string status="Pending";
     public int sourceRun, targetRun, revision;
+    public int relationshipValue, relationshipChange;
+    public string generationPart, model;
     public double seconds;
+    public bool auditArchived;
+    public bool failedOutputChecked;
+    public LocalStorySectionCheckpoint sectionCheckpoint;
     public LocalStoryRevisionRequest snapshot;
 }
 [Serializable] public sealed class LocalStoryDialogueQueueData
@@ -39,30 +44,16 @@ using UnityEngine;
 public static class LocalStoryDialogueQueue
 {
     public const string FileName="LocalStoryDialogueQueue";
-    public static string ChoiceRole(int slot) => StoryChoiceRoles.Expected(slot);
     public static string Hash(string text)
     {
         using var sha=SHA256.Create();
         return BitConverter.ToString(sha.ComputeHash(Encoding.UTF8.GetBytes(text))).Replace("-","").ToLowerInvariant();
     }
-    public static string ContentPath(SaveIOService store,LocalStoryDialogueJob job) =>
-        Path.Combine(store.StorageRoot,"GeneratedContent","For_Run_"+job.targetRun.ToString("D4"),"Encounters",job.storyPath.Replace('/',Path.DirectorySeparatorChar),"Story.json");
     public static LocalStoryDialogueQueueData Load(SaveIOService store,int run) =>
-        store.LoadRunData<LocalStoryDialogueQueueData>(run,FileName);
+        store.LoadNarrativeQueue(run);
     public static void Save(SaveIOService store,LocalStoryDialogueQueueData queue)
     {
-        store.SaveRunCheckpoint(queue.sourceRun,FileName,queue);
-        var summary=queue.jobs.LastOrDefault()?.snapshot;
-        if(summary==null) return;
-        summary=JsonUtility.FromJson<LocalStoryRevisionRequest>(JsonUtility.ToJson(summary));
-        summary.status=queue.jobs.Any(j=>j.status=="Generating")?"GeneratingDialogues":
-            queue.jobs.Any(j=>j.status=="Pending")?"PendingDialogues":
-            queue.jobs.Any(j=>j.status=="Failed")?"Failed":"Ready";
-        summary.generationResults=queue.jobs.Select(j=>new LocalStoryRuntimeResult {
-            storyPath=j.storyPath,model=j.snapshot.npcContexts.FirstOrDefault(c=>c.characterId==j.characterId)?.model,
-            status=j.status,error=j.error,reportPath=j.reportPath }).ToList();
-        summary.generationError=string.Join(" / ",queue.jobs.Where(j=>j.status=="Failed").Select(j=>j.error));
-        store.SaveRunCheckpoint(queue.sourceRun,"LocalStoryRevisionRequest",summary);
+        store.SaveNarrativeQueue(queue);
     }
     public static List<LocalStoryDreamMemory> SelectDreamMemories(SaveIOService store,int throughRun,
         LocalStoryDreamRule[] rules)
@@ -128,9 +119,7 @@ public static class LocalStoryDialogueQueue
         }
         var queue=Load(store,run);
         if(queue==null) return; // No fabricated encounters / legacy saves are not retroactively played.
-        foreach(var group in queue.jobs.GroupBy(j=>j.characterId).ToArray())
-            QueuePaths(store,run,group.Key,group.Select(j=>j.storyPath).ToArray(),"회차 종료 조건 확정");
-        queue=Load(store,run); queue.finalized=true; Save(store,queue);
+        queue.finalized=true; Save(store,queue);
     }
     public static void QueuePaths(SaveIOService store,int run,string npc,string[] paths,string reason)
     {
@@ -138,6 +127,10 @@ public static class LocalStoryDialogueQueue
         string profile=Path.Combine(store.StorageRoot,"Profile.json");
         if(progress==null || !File.Exists(profile) ||
             JsonUtility.FromJson<ProfileData>(File.ReadAllText(profile)).currentRun!=run) return;
+        var queue=Load(store,run)??new LocalStoryDialogueQueueData {sourceRun=run,targetRun=run+1};
+        var requestedPaths=(paths??Array.Empty<string>()).Select(p=>ChapterContentCatalog.ResolveStoryPath(p,run+1)).Distinct()
+            .Where(p=>!queue.jobs.Any(j=>j.storyPath==p)).ToArray();
+        if(requestedPaths.Length==0)return;
         string[] earned=LocalStoryNotebook.EarnedUnlocks(store,run);
         var contexts=LocalStoryNotebook.Contexts(store,earned);
         var person=contexts.FirstOrDefault(c=>c.characterId==npc && c.autoGenerate);
@@ -147,12 +140,15 @@ public static class LocalStoryDialogueQueue
             return;
         }
         var dreams=SelectDreamMemories(store,run,Rules()).Where(m=>m.characterId==npc).ToList();
-        var queue=Load(store,run)??new LocalStoryDialogueQueueData {sourceRun=run,targetRun=run+1};
-        foreach(string path in paths??Array.Empty<string>())
+        int added=0;
+        foreach(string path in requestedPaths)
         {
-            var asset=Resources.Load<TextAsset>("Story_Json_Data/"+path+"/Story");
-            if(!LocalStoryNotebook.IsStoryPath(path) || asset==null || path.Contains("/Variants/")) continue;
-            var original=JsonUtility.FromJson<EncounterCardRoot>(asset.text);
+            // One immutable request per played story and source run. Completion, later choices and
+            // policy edits must not turn the same next-run story into another generation attempt.
+            if(queue.jobs.Any(j=>j.storyPath==path))continue;
+            string source=NarrativeInteractions.StorySource(path);
+            if(!LocalStoryNotebook.IsStoryPath(path) || source==null || path.Contains("/Variants/")) continue;
+            var original=JsonUtility.FromJson<EncounterCardRoot>(source);
             if(original?.MainStory==null || original.MainStory.Count==0 ||
                 !original.MainStory.Any(c=>c.speakerId==npc)) continue;
             // Played cards are evidence/audit only. They are not all NPC memories or a model-written answer.
@@ -160,20 +156,24 @@ public static class LocalStoryDialogueQueue
                 sourceRun=run,targetRun=run+1,characterId=npc,generationTrigger="DialogueEnded",memoryMode="Dream",
                 chapterId=path.Split('/')[0],scenarioPaths=new[]{string.Join("/",path.Split('/').Take(2))},
                 reason=reason,finalStats=store.LoadRunData<PlayerStats>(run,"Stats")?.stats,
-                events=new List<StoryEventRecord>(),playEvents=progress.storyEvents??new List<StoryEventRecord>(),
+                events=new List<StoryEventRecord>(),
                 dreamMemories=dreams,earnedUnlocks=earned,npcContexts=contexts,
-                playedCards=progress.guideProgress?.runHistory??new List<PlayedEncounterCardRecord>()
+                ownedItemIds=(progress.storedItemIds??new List<string>()).Concat((progress.worldInventoryItems??new List<WorldInventoryItemState>()).Where(i=>i!=null).Select(i=>i.itemId)).Distinct().ToArray(),
+                // Full dialogue/choice audit is already stored in this source run's Progress.
+                playedCards=null,playEvents=null
             };
-            string hash=Hash(asset.text+"\n"+JsonUtility.ToJson(person)+"\n"+JsonUtility.ToJson(new DreamEnvelope {memories=dreams}));
-            var job=queue.jobs.FirstOrDefault(j=>j.storyPath==path);
-            if(job!=null && job.inputHash==hash) continue; // Mere extra encounters are not cross-run memory changes.
-            if(job==null) { job=new LocalStoryDialogueJob {jobId=path,storyPath=path,characterId=npc,sourceRun=run,targetRun=run+1}; queue.jobs.Add(job); }
-            job.revision++; job.inputHash=hash; job.status="Pending"; job.error=null;
+            int relationshipValue=progress.relationships?.FirstOrDefault(r=>r.id==npc)?.value??0;
+            int relationshipChange=progress.storyEvents.Where(e=>e.kind=="choice" && e.relationshipId==npc).Sum(e=>e.relationshipDelta);
+            string hash=Hash(source+"\n"+JsonUtility.ToJson(person)+"\n"+JsonUtility.ToJson(new DreamEnvelope {memories=dreams})+"\n"+LocalStorySections.GenerationPolicyHash(path)+"\n"+relationshipValue);
+            var job=new LocalStoryDialogueJob {jobId=path,storyPath=path,characterId=npc,sourceRun=run,targetRun=run+1,revision=1,inputHash=hash};
+            queue.jobs.Add(job);added++;
+            job.model=person.model;job.generationPart=null;
+            job.relationshipValue=relationshipValue;job.relationshipChange=relationshipChange;
             request.dialogueRevision=job.revision; job.snapshot=request;
             LocalStoryLog.Write(LocalStoryLogStage.Request,run+"회차 "+npc+" 대화 종료 → "+(run+1)+
-                "회차용 / "+path+" / 개정 "+job.revision+" / 전달할 꿈 인상 "+dreams.Count+"개");
+                "회차용 / "+path+" / 전달할 꿈 인상 "+dreams.Count+"개");
         }
-        Save(store,queue);
+        if(added>0)Save(store,queue);
     }
     [Serializable] private sealed class DreamEnvelope { public List<LocalStoryDreamMemory> memories; }
     public static bool CanProcess(SaveIOService store,LocalStoryDialogueJob job)
@@ -188,23 +188,14 @@ public static class LocalStoryDialogueQueue
     }
     public static bool CanReplace(SaveIOService store,LocalStoryDialogueJob job)
     {
-        string file=ContentPath(store,job);
-        if(File.Exists(Path.Combine(Path.GetDirectoryName(file),"Story.disabled.json"))) return false;
-        return !File.Exists(file) || (!string.IsNullOrEmpty(job.contentHash) && Hash(File.ReadAllText(file))==job.contentHash);
+        return store.CanReplaceNarrativeContent(job.targetRun,job.storyPath,job.contentHash);
     }
     public static LocalStoryDialogueJob Next(SaveIOService store)
     {
-        string root=Path.Combine(store.StorageRoot,"Runs");
-        if(!Directory.Exists(root)) return null;
-        foreach(string file in Directory.GetFiles(root,FileName+".json",SearchOption.AllDirectories).OrderBy(p=>p))
-        {
-            var q=JsonUtility.FromJson<LocalStoryDialogueQueueData>(File.ReadAllText(file));
-            foreach(var job in q.jobs.Where(j=>j.status=="Pending" || j.status=="Generating"))
-                if(CanProcess(store,job)) return job;
-        }
-        return null;
+        try { return store.NextNarrativeJob(); }
+        catch(Exception e) { LocalStoryLog.Write(LocalStoryLogStage.Deferred,"생성 큐 읽기 보류: "+e.Message); return null; }
     }
-    public static bool BlocksRun(SaveIOService store,int currentRun)
+    public static bool HasPendingForRun(SaveIOService store,int currentRun)
     {
         var q=Load(store,currentRun-1);
         return q?.jobs.Any(j=>j.targetRun==currentRun && (j.status=="Pending" || j.status=="Generating"))==true;
@@ -215,12 +206,13 @@ public static class LocalStoryDialogueQueue
         if(!CanProcess(store,job)) return;
         var queue=Load(store,job.sourceRun);
         var latest=queue.jobs.First(j=>j.jobId==job.jobId);
+        if(latest.status!="Pending" && latest.status!="Generating")return;
         if(!CanReplace(store,latest))
         {
             latest.status="Preserved"; latest.error="수동 적용/수정 파일 또는 disabled 복구 보존"; Save(store,queue);
             LocalStoryLog.Write(LocalStoryLogStage.Deferred,job.characterId+" / "+latest.error); return;
         }
-        latest.status="Generating"; Save(store,queue);
+        latest.status="Generating"; latest.generationPart="모델 준비 / 이야기 구간 확인"; Save(store,queue);
         job=JsonUtility.FromJson<LocalStoryDialogueJob>(JsonUtility.ToJson(latest));
         LocalStoryRuntimeResult result=null;
         var watch=System.Diagnostics.Stopwatch.StartNew();
@@ -237,9 +229,10 @@ public static class LocalStoryDialogueQueue
             if(latest.revision==job.revision)
             {
                 latest.status=token.IsCancellationRequested?"Pending":result?.status??"Failed";
+                if(latest.status=="Ready"||latest.status=="ReviewRequired") latest.generationPart=latest.generationPart?.Replace("작성 중","작성 완료").Replace("교정 중","교정 완료");
                 latest.error=token.IsCancellationRequested?"중단됨 — 다음 실행에서 재개":result?.error;
                 latest.reportPath=result?.reportPath; latest.seconds=watch.Elapsed.TotalSeconds;
-                if(latest.status=="Ready") latest.contentHash=Hash(File.ReadAllText(ContentPath(store,latest)));
+                if(latest.status=="Ready"||latest.status=="ReviewRequired") latest.contentHash=store.NarrativeContentHash(latest.targetRun,latest.storyPath);
                 Save(store,queue);
             }
         }

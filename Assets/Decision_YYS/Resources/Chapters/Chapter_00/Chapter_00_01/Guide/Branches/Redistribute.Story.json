@@ -1,0 +1,148 @@
+{
+  "guide/Redistribute": {
+    "MainStory": [
+      {
+        "ID": 45702499,
+        "type": "Next",
+        "eventIDstable": "loki_offer",
+        "speakID": "Guide",
+        "Text": "자, 말이 너무 길었고 앞으로의 여정을 위해, 너에게 기회를 주겠어."
+      },
+      {
+        "ID": 28924880,
+        "type": "Next",
+        "eventIDstable": "loki_health_guide",
+        "speakID": "Guide",
+        "Text": "체력은 버티는 힘이지. 높으면 공격을 막아도 덜 지쳐."
+      },
+      {
+        "ID": 79257737,
+        "type": "Next",
+        "eventIDstable": "loki_health_guide_2",
+        "speakID": "Guide",
+        "Text": "낮으면 쉽게 지치고 다음 공격을 준비하는 데 오래 걸려."
+      },
+      {
+        "ID": 62480118,
+        "type": "Next",
+        "eventIDstable": "loki_speed_guide",
+        "speakID": "Guide",
+        "Text": "민첩이 높으면 걷기와 베기, 방어 자세가 빨라져."
+      },
+      {
+        "ID": 112812975,
+        "type": "Next",
+        "eventIDstable": "loki_speed_guide_2",
+        "speakID": "Guide",
+        "Text": "낮으면 느려지지. 하나도 없으면 걸을 수도 없겠지?"
+      },
+      {
+        "ID": 96035356,
+        "type": "Next",
+        "eventIDstable": "loki_knowledge_guide",
+        "speakID": "Guide",
+        "Text": "지식이 높으면 말에 숨은 뜻을 알아차릴 수 있어."
+      },
+      {
+        "ID": 146368213,
+        "type": "Next",
+        "eventIDstable": "loki_knowledge_guide_2",
+        "speakID": "Guide",
+        "Text": "낮으면 설명을 놓쳐. 하나도 없으면 아까처럼 들릴 거야."
+      },
+      {
+        "ID": 129590594,
+        "type": "Next",
+        "eventIDstable": "loki_knowledge_guide_3",
+        "speakID": "Guide",
+        "Text": "그래도 눈치는 채겠지."
+      },
+      {
+        "ID": 179923451,
+        "type": "Next",
+        "eventIDstable": "loki_charm_guide",
+        "speakID": "Guide",
+        "Text": "매력이 높으면 마음을 여는 대답도 가능해져."
+      },
+      {
+        "ID": 163145832,
+        "type": "Next",
+        "eventIDstable": "loki_charm_guide_2",
+        "speakID": "Guide",
+        "Text": "하나도 없으면 모두가 불친절해지고 보상도 줄겠지."
+      },
+      {
+        "ID": 213478689,
+        "type": "Next",
+        "eventIDstable": "loki_charm_guide_3",
+        "speakID": "Guide",
+        "Text": "네 선택에 대한 반응도 더 커질 거야."
+      },
+      {
+        "ID": 196701070,
+        "type": "Next",
+        "eventIDstable": "loki_partial_immortality",
+        "speakID": "Guide",
+        "Text": "원하는 대로 너의 능력을 배분하라. 잠시 동안은 넌 일부 불멸이 될 거야."
+      },
+      {
+        "ID": 247033927,
+        "type": "Next",
+        "eventIDstable": "loki_allocation_warning",
+        "speakID": "Guide",
+        "Text": "배분하는 동안은 체력이 없어도 괜찮아."
+      },
+      {
+        "ID": 230256308,
+        "type": "Next",
+        "eventIDstable": "loki_allocation_warning_2",
+        "speakID": "Guide",
+        "Text": "하지만 확정하는 순간 체력이 0이면 죽어."
+      },
+      {
+        "ID": 280589165,
+        "type": "Next",
+        "eventIDstable": "loki_allocation_warning_3",
+        "speakID": "Guide",
+        "Text": "기어 위는 추가, 아래는 빼기야. 코인통 버튼을 눌러."
+      },
+      {
+        "ID": 263811546,
+        "type": "Next",
+        "eventIDstable": "loki_allocation_warning_4",
+        "speakID": "Guide",
+        "Text": "20개를 모두 배분한 뒤 노란 버튼으로 확정해."
+      },
+      {
+        "ID": -222739405,
+        "type": "Next",
+        "eventIDstable": "loki_allocate",
+        "speakID": "Guide",
+        "Text": "자, 어서 선택하라고.",
+        "guideAction": {
+          "kind": "allocate",
+          "readyStoryPath": "Initial/Initial_01/Encounters/guide/Farewell",
+          "retryStoryPath": "Initial/Initial_01/Encounters/guide/Retry",
+          "charmZeroStoryPath": "Initial/Initial_01/Encounters/guide/Farewell/CharmZero"
+        }
+      }
+    ]
+  },
+  "guide/Redistribute/Repeat": {
+    "MainStory": [
+      {
+        "ID": -222739405,
+        "type": "Next",
+        "eventIDstable": "loki_allocate",
+        "speakID": "Guide",
+        "Text": "자, 어서 선택하라고.",
+        "guideAction": {
+          "kind": "allocate",
+          "readyStoryPath": "Initial/Initial_01/Encounters/guide/Farewell",
+          "retryStoryPath": "Initial/Initial_01/Encounters/guide/Retry",
+          "charmZeroStoryPath": "Initial/Initial_01/Encounters/guide/Farewell/CharmZero"
+        }
+      }
+    ]
+  }
+}

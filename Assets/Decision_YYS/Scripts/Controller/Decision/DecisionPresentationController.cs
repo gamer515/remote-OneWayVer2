@@ -46,6 +46,7 @@ public sealed class DecisionPresentationController
     }
 
     public void ConfirmChoice(string text) => uiController?.AppendPlayerChoice(text);
+    public void ShowInteraction(string text, string characterId) => uiController?.AppendInteraction(text, characterId);
 
     public void ExitChoice()
     {

@@ -166,17 +166,66 @@ public class SaveManager
 
     public System.Collections.Generic.List<string> LoadStoredItemIds()
     {
-        if (cachedProgress.storedItemIds == null)
-            cachedProgress.storedItemIds = new System.Collections.Generic.List<string>();
-        return new System.Collections.Generic.List<string>(cachedProgress.storedItemIds);
+        return LoadInventoryState().storedItemIds;
+    }
+
+    public InventoryState LoadInventoryState()
+    {
+        if (cachedProgress.inventoryStateVersion < 1)
+        {
+            var candidate = JsonUtility.FromJson<GameProgress>(JsonUtility.ToJson(cachedProgress));
+            candidate.storedItemIds ??= new System.Collections.Generic.List<string>();
+            candidate.worldInventoryItems ??= new System.Collections.Generic.List<WorldInventoryItemState>();
+            // Older versions saved removal from the bag but no board item. Recover only recorded,
+            // still-owned receipts; an actual return/consumption/loss offsets the receipt.
+            var balances = new System.Collections.Generic.Dictionary<string, int>();
+            foreach (var record in candidate.storyEvents ?? new System.Collections.Generic.List<StoryEventRecord>())
+            {
+                if (record == null || string.IsNullOrWhiteSpace(record.itemId) || record.quantity <= 0) continue;
+                int sign = record.kind == "item_received" ? 1 :
+                    record.kind == "item_returned" || record.kind == "item_consumed" || record.kind == "item_lost" ? -1 : 0;
+                balances.TryGetValue(record.itemId, out int balance);
+                balances[record.itemId] = balance + sign * record.quantity;
+            }
+            foreach (var pair in balances)
+            {
+                int owned = candidate.storedItemIds.FindAll(id => id == pair.Key).Count +
+                    candidate.worldInventoryItems.FindAll(item => item != null && item.itemId == pair.Key).Count;
+                for (int i = owned; i < pair.Value; i++) candidate.storedItemIds.Add(pair.Key);
+            }
+            candidate.inventoryStateVersion = 1;
+            SaveIOService.Instance.SaveRunCheckpoint(CurrentRun, "Progress", candidate);
+            cachedProgress.storedItemIds = candidate.storedItemIds;
+            cachedProgress.worldInventoryItems = candidate.worldInventoryItems;
+            cachedProgress.inventoryStateVersion = 1;
+        }
+        return JsonUtility.FromJson<InventoryState>(JsonUtility.ToJson(new InventoryState {
+            storedItemIds = cachedProgress.storedItemIds,
+            worldItems = cachedProgress.worldInventoryItems
+        }));
+    }
+
+    public void SaveInventoryState(InventoryState state)
+    {
+        if (state == null) return;
+        var candidate = JsonUtility.FromJson<GameProgress>(JsonUtility.ToJson(cachedProgress));
+        var copy = JsonUtility.FromJson<InventoryState>(JsonUtility.ToJson(state));
+        candidate.storedItemIds = copy.storedItemIds ?? new System.Collections.Generic.List<string>();
+        candidate.worldInventoryItems = copy.worldItems ?? new System.Collections.Generic.List<WorldInventoryItemState>();
+        candidate.inventoryStateVersion = 1;
+        SaveIOService.Instance.SaveRunCheckpoint(CurrentRun, "Progress", candidate);
+        cachedProgress.storedItemIds = candidate.storedItemIds;
+        cachedProgress.worldInventoryItems = candidate.worldInventoryItems;
+        cachedProgress.inventoryStateVersion = 1;
     }
 
     public void SaveStoredItemIds(System.Collections.Generic.IReadOnlyList<string> itemIds)
     {
-        cachedProgress.storedItemIds = itemIds == null
+        var state = LoadInventoryState();
+        state.storedItemIds = itemIds == null
             ? new System.Collections.Generic.List<string>()
             : new System.Collections.Generic.List<string>(itemIds);
-        SaveIOService.Instance.SaveRunData(CurrentRun, "Progress", cachedProgress);
+        SaveInventoryState(state);
     }
 
     public bool HasUnlock(string unlockId)
@@ -238,6 +287,27 @@ public class SaveManager
             new[] { $"event:{placeId}" },
             null,
             0);
+    }
+
+    public System.Collections.Generic.List<NarrativeInteractionRule> ApplyNarrativeInteractions(StoryEventRecord choice)
+    {
+        var applied = new System.Collections.Generic.List<NarrativeInteractionRule>();
+        var chapter = NarrativeInteractions.Chapter(choice?.chapterId);
+        if (chapter == null) return applied;
+        // Stage the exchange and its journal together; a failed write leaves the live state unchanged.
+        var candidate = JsonUtility.FromJson<GameProgress>(JsonUtility.ToJson(cachedProgress));
+        foreach (var rule in chapter.interactions ?? System.Array.Empty<NarrativeInteractionRule>())
+            if (NarrativeInteractions.TryApply(candidate, rule, choice)) applied.Add(rule);
+        if (applied.Count == 0) return applied;
+        SaveIOService.Instance.SaveRunCheckpoint(CurrentRun, "Progress", candidate);
+        cachedProgress.storedItemIds = candidate.storedItemIds;
+        cachedProgress.worldInventoryItems = candidate.worldInventoryItems;
+        cachedProgress.unlockedIds = candidate.unlockedIds;
+        cachedProgress.appliedEffectIds = candidate.appliedEffectIds;
+        // DecisionManager holds this list too; keep that reference so its next checkpoint cannot lose events.
+        cachedProgress.storyEvents ??= new System.Collections.Generic.List<StoryEventRecord>();
+        cachedProgress.storyEvents.Clear(); cachedProgress.storyEvents.AddRange(candidate.storyEvents);
+        return applied;
     }
 
     public void RecordInfluenceProfile(StoryInfluenceProfile profile)
@@ -333,11 +403,19 @@ public class SaveManager
     /// </summary>
     public int StartNextRun()
     {
+        // Death restarts the journey, while owned items and discoveries survive.
+        // Load first so legacy outside-item recovery is completed before copying ownership.
+        InventoryState inventory = LoadInventoryState();
         CompleteCurrentRun();
 
         int nextRun = CurrentRun + 1;
         GameProgress nextProgress = new GameProgress
         {
+            storedItemIds = inventory.storedItemIds,
+            worldInventoryItems = inventory.worldItems,
+            inventoryStateVersion = 1,
+            unlockedIds = (cachedProgress.unlockedIds ?? new System.Collections.Generic.List<string>()).FindAll(id=>
+                !string.IsNullOrEmpty(id) && !id.StartsWith("event:",System.StringComparison.Ordinal)),
             runSeed = System.Math.Max(
                 1,
                 System.BitConverter.ToInt32(System.Guid.NewGuid().ToByteArray(), 0) & int.MaxValue)

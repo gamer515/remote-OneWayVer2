@@ -1,0 +1,88 @@
+{
+  "guide/Redistribute": {
+    "storyFlame": null,
+    "coreMeaning": {
+      "45702499": {},
+      "28924880": {},
+      "79257737": {},
+      "62480118": {},
+      "112812975": {},
+      "96035356": {},
+      "146368213": {},
+      "129590594": {},
+      "179923451": {},
+      "163145832": {},
+      "213478689": {},
+      "196701070": {},
+      "247033927": {},
+      "230256308": {},
+      "280589165": {},
+      "263811546": {},
+      "-222739405": {},
+      "scene": {
+        "repeatFromRun": 2,
+        "repeatStoryPath": "Initial/Initial_01/Encounters/guide/Redistribute/Repeat"
+      }
+    },
+    "paragraphs": [
+      {
+        "id": "main",
+        "eventIds": [
+          "loki_offer",
+          "loki_health_guide",
+          "loki_health_guide_2",
+          "loki_speed_guide",
+          "loki_speed_guide_2",
+          "loki_knowledge_guide",
+          "loki_knowledge_guide_2",
+          "loki_knowledge_guide_3",
+          "loki_charm_guide",
+          "loki_charm_guide_2",
+          "loki_charm_guide_3",
+          "loki_partial_immortality",
+          "loki_allocation_warning",
+          "loki_allocation_warning_2",
+          "loki_allocation_warning_3",
+          "loki_allocation_warning_4",
+          "loki_allocate"
+        ],
+        "purpose": "이 단락의 모든 카드가 각자의 핵심 의미와 선택 의도에 맞게 이어지도록 대화를 구성한다.",
+        "currentState": [
+          "이야기에 명시된 사건 순서와 카드별 현재 상황을 따른다."
+        ]
+      }
+    ]
+  },
+  "guide/Redistribute/Repeat": {
+    "storyFlame": {
+      "purpose": "이미 아는 능력 설명을 반복하지 않고 바로 능력을 배분한다.",
+      "worldFacts": [
+        "실제 배분 규칙과 확정·재시도·사망 처리는 유지된다.",
+        "체력·민첩·지식·매력에 관한 소개는 이미 들었다."
+      ],
+      "firstMeetingFlow": [
+        "짧은 배분 시작 발화 후 배분 조작을 연다."
+      ],
+      "reunionFlow": [
+        "설명을 반복하지 않고 배분 조작을 연다."
+      ]
+    },
+    "coreMeaning": {
+      "-222739405": {
+        "coreMeaning": "로키가 능력을 선택하라고 짧게 재촉하며 실제 배분 조작이 시작된다. 능력이나 조작 방법을 다시 설명하지 않는다."
+      }
+    },
+    "paragraphs": [
+      {
+        "id": "main",
+        "eventIds": [
+          "loki_allocate"
+        ],
+        "purpose": "이미 아는 능력 설명을 반복하지 않고 바로 능력을 배분한다.",
+        "currentState": [
+          "이야기에 명시된 사건 순서와 카드별 현재 상황을 따른다."
+        ]
+      }
+    ]
+  }
+}

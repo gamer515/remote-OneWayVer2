@@ -72,7 +72,7 @@ public static class GuideStageOneCheck
             repo.TryLoadCards(root, out var intro, out _);
             Check(intro.MainStory.Count == 9 && intro.MainStory.Last().choiceActions.Select(c => c.choiceId).Distinct().Count() == 4,
                 "Loki introduction and four stable identity choices", checks);
-            Check(JsonUtility.FromJson<StoryCharacter>(Resources.Load<TextAsset>("Story_Json_Data/Characters/Guide").text).name == "로키", "Separate Loki character profile", checks);
+            Check(JsonUtility.FromJson<StoryCharacter>(ChapterContentCatalog.Asset("Story_Json_Data/Characters/Guide").text).name == "로키", "Separate Loki character profile", checks);
             foreach (string npc in new[] { "duelist", "gambler" })
             {
                 string path = "Initial/Initial_01/Encounters/" + npc;

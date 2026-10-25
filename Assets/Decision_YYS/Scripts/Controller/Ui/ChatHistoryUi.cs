@@ -107,7 +107,7 @@ public sealed class ChatHistoryUi : MonoBehaviour
     {
         if (string.IsNullOrWhiteSpace(speakerId)) return "이야기";
         if (speakerNames.TryGetValue(speakerId, out string name)) return name;
-        TextAsset profile = Resources.Load<TextAsset>("Story_Json_Data/Characters/" + speakerId);
+        TextAsset profile = ChapterContentCatalog.Asset("Story_Json_Data/Characters/" + speakerId);
         StoryCharacter character = profile != null ? JsonUtility.FromJson<StoryCharacter>(profile.text) : null;
         name = string.IsNullOrWhiteSpace(character?.name) ? speakerId : character.name;
         speakerNames[speakerId] = name;
