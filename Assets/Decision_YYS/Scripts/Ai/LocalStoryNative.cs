@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-public enum LocalStoryTestModel { Qwen, Gemma }
+public enum LocalStoryTestModel { Qwen, Gemma, OmniRoute }
 
 /// <summary>Installed model adapters shared by tests and the real next-run pipeline. No downloads.</summary>
 public static class LocalStoryTestModels
@@ -20,7 +20,11 @@ public static class LocalStoryTestModels
     private static readonly object VerificationSync = new object();
     public static string Name(LocalStoryTestModel model) => model == LocalStoryTestModel.Qwen ?
         "Qwen3-4B-Instruct-2507 Q4_K_M" : model == LocalStoryTestModel.Gemma ? "Gemma 3 4B IT QAT Q4_0" :
+        model == LocalStoryTestModel.OmniRoute ? "OmniRoute / " + StoryGenerationSettings.Read().combo :
         throw new ArgumentOutOfRangeException(nameof(model));
+    public static LocalStoryTestModel ModelFor(LocalStoryTestReport report) =>
+        report.model.StartsWith("OmniRoute", StringComparison.OrdinalIgnoreCase) ? LocalStoryTestModel.OmniRoute :
+        report.model.IndexOf("Gemma", StringComparison.OrdinalIgnoreCase) >= 0 ? LocalStoryTestModel.Gemma : LocalStoryTestModel.Qwen;
     public static string PathFor(string root, LocalStoryTestModel model)
     {
         if (model != LocalStoryTestModel.Gemma && model!=LocalStoryTestModel.Qwen) throw new ArgumentOutOfRangeException(nameof(model));
@@ -36,7 +40,7 @@ public static class LocalStoryTestModels
     // Gemma's existing benchmark adapter: preserve instructions exactly, merge system/user for its chat template.
     public static string Messages(LocalStoryTestModel model, string messages)
     {
-        if (model == LocalStoryTestModel.Qwen) return messages;
+        if (model == LocalStoryTestModel.Qwen || model == LocalStoryTestModel.OmniRoute) return messages;
         if (model != LocalStoryTestModel.Gemma) throw new ArgumentOutOfRangeException(nameof(model));
         var input = JArray.Parse(messages);
         if (input.Count != 2 || (string)input[0]["role"] != "system" || (string)input[1]["role"] != "user" ||

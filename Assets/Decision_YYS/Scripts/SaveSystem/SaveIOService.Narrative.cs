@@ -269,11 +269,11 @@ public partial class SaveIOService
                 if((job.status=="Ready" || job.status=="ReviewRequired" || job.status=="Failed") && job.snapshot!=null && !string.IsNullOrEmpty(job.reportPath) && File.Exists(job.reportPath))
                 {
                     job.snapshot.playEvents=null;job.snapshot.playedCards=null;
-                    job.auditArchived=true;job.sectionCheckpoint=null;
+                    job.auditArchived=true;job.sectionCheckpoint=null;job.omniSectionCheckpoint=null;
                 }
                 if(!LocalStoryPrompt.SaveDiagnosticReports && (job.status=="Ready" || job.status=="ReviewRequired" || job.status=="Failed"))
                 {
-                    job.sectionCheckpoint=null;
+                    job.sectionCheckpoint=null;job.omniSectionCheckpoint=null;
                     job.reportPath=null;job.auditArchived=false;
                 }
             }

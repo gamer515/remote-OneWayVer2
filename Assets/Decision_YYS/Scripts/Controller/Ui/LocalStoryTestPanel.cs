@@ -165,13 +165,16 @@ public sealed class LocalStoryTestPanel : MonoBehaviour
         contextLabel.text = inputScenario>0?"테스트 전용: "+LocalStoryTestInputs.Name(inputScenario)+" / 가상 기억 사용 / 실제 선택/세이브 미변경":
             memory == null ? "실제 완료 회차 기록 없음 — 첫 만남 표현 테스트" :
             $"실제 기록: {memory.sourceRun} -> {memory.targetRun}회차 / {memory.chapterId} / 사건 {memory.events?.Count ?? 0}개 / 능력치 {string.Join("/", memory.finalStats ?? Array.Empty<int>())}";
-        statusLabel.text = LocalStoryTestModels.Name(selectedModel)+" / 외부 통신 없음 / 모델 로딩 시간 포함\n"+
+        statusLabel.text = selectedModel==LocalStoryTestModel.OmniRoute?
+            LocalStoryTestModels.Name(selectedModel)+" / OmniRoute HTTP / 공통 프롬프트·검사 사용":
+            LocalStoryTestModels.Name(selectedModel)+" / 외부 통신 없음 / 모델 로딩 시간 포함\n"+
             (selectedModel==LocalStoryTestModel.Gemma?"초안·교정 모두 Gemma 사용. Windows x64 Mono 빌드 지원. 모델 파일 검증 시간 포함.":"초안·교정 모두 Qwen 사용. 기본 Gemma 빌드에는 Qwen 모델을 포함하지 않습니다.");
     }
     private void UpdateModelLabels()
     {
-        string name=selectedModel==LocalStoryTestModel.Gemma?"Gemma":"Qwen";
+        string name=selectedModel.ToString();
         if(readingSaved) name=Report?.model?.IndexOf("Gemma",StringComparison.OrdinalIgnoreCase)>=0?"Gemma":
+            Report?.model?.IndexOf("OmniRoute",StringComparison.OrdinalIgnoreCase)>=0?"OmniRoute":
             Report?.model?.IndexOf("Qwen",StringComparison.OrdinalIgnoreCase)>=0?"Qwen":"저장 결과";
         modelButton.GetComponentInChildren<TMP_Text>().text="모델: "+name;
         generateButton.GetComponentInChildren<TMP_Text>().text=readingSaved?"생성 (읽기 전용)":"생성 ("+name+")";
@@ -179,7 +182,7 @@ public sealed class LocalStoryTestPanel : MonoBehaviour
     private void CycleModel()
     {
         if(IsGenerating || readingSaved) return;
-        selectedModel=selectedModel==LocalStoryTestModel.Qwen?LocalStoryTestModel.Gemma:LocalStoryTestModel.Qwen;
+        selectedModel=(LocalStoryTestModel)(((int)selectedModel+1)%Enum.GetValues(typeof(LocalStoryTestModel)).Length);
         ShowSelected(); SetBusy(false);
     }
     private void CycleInput()
@@ -205,7 +208,7 @@ public sealed class LocalStoryTestPanel : MonoBehaviour
             else { report.examplePrompt=""; report.exampleSources=Array.Empty<string>(); report.exampleSummary="수정 예시 미사용 대조 시험"; report.comparisonMode="NoWritingExamples"; }
             LocalStoryPrompt.Plan(path,runOriginal); }
         catch(Exception e) { statusLabel.text="생성 입력 확인 실패: "+e.Message;
-            LocalStoryLog.Write(LocalStoryLogStage.Failed,"테스트 / "+report.model+" / "+path+" / 입력 확인: "+e.Message); return; }
+            LocalStoryLog.Generation(LocalStoryLogStage.Failed,report,"테스트 / 입력 확인: "+e.Message); return; }
         string writingPolicy=LocalStoryRewrite.WritingPolicy+" / "+LocalStorySections.PolicyVersion;
         report.testScenario=(inputScenario==0?"ActualRecord":"Synthetic / "+LocalStoryTestInputs.Name(inputScenario))+" / "+writingPolicy;
         if(!useWritingExamples) report.testScenario+=" / 수정 예시 제외 대조";
@@ -231,7 +234,7 @@ public sealed class LocalStoryTestPanel : MonoBehaviour
     private async Task RunGeneration(LocalStoryTestReport report, CancellationToken token)
     {
         var watch = Stopwatch.StartNew();
-        LocalStoryLog.Write(LocalStoryLogStage.Working,"테스트 / "+report.model+" / "+report.storyPath+" / Explanation 단락 생성 시작 (게임 적용 아님)");
+        LocalStoryLog.Generation(LocalStoryLogStage.Working,report,"테스트 / Explanation 단락 생성 시작 (게임 적용 아님)");
         bool interrupted=false, failed=false;
         report.sectionProgress=(start,count,index,total,phase)=>
         {
@@ -264,8 +267,8 @@ public sealed class LocalStoryTestPanel : MonoBehaviour
             report.seconds=watch.Elapsed.TotalSeconds;
             if(this!=null) {ShowOutput(report);SaveIOService.Instance.SaveLocalStoryTest(report);}
             bool valid=!failed && !interrupted && (report.correctionAttempted?report.correctionValid:report.valid);
-            LocalStoryLog.Write(interrupted?LocalStoryLogStage.Deferred:valid?LocalStoryLogStage.Complete:LocalStoryLogStage.Failed,
-                "테스트 / "+report.model+" / "+report.storyPath+" / "+report.seconds.ToString("F1")+"초 / 요청 "+report.sectionsGenerated+" / 교정 "+report.sectionsCorrected+" / "+
+            LocalStoryLog.Generation(interrupted?LocalStoryLogStage.Deferred:valid?LocalStoryLogStage.Complete:LocalStoryLogStage.Failed,report,
+                "테스트 / "+report.seconds.ToString("F1")+"초 / 요청 "+report.sectionsGenerated+" / 교정 "+report.sectionsCorrected+" / "+
                 (interrupted?"취소 또는 시간 제한":valid?"출력 검사 통과 (게임 적용 아님)":report.correctionError??report.error??"출력 검사 실패"));
         }
     }

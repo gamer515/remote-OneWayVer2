@@ -45,6 +45,10 @@ public class GameProgress
     public List<WorldInventoryItemState> worldInventoryItems = new List<WorldInventoryItemState>();
     // 마지막 챕터까지 끝낸 회차인지 기록해 중단 세이브와 완료 기록을 구분합니다.
     public bool isCompleted;
+    // Journey completion enters a battle within this run; only its outcome advances the profile.
+    public bool finalBattlePending;
+    public int finalBattleStage = 1;
+    public bool finalBattleWon;
     public List<StoryInfluenceProfile> influenceHistory = new List<StoryInfluenceProfile>();
     public List<CompletedEpisodeRecord> pendingEpisodes = new List<CompletedEpisodeRecord>();
     public GuideProgress guideProgress = new GuideProgress();

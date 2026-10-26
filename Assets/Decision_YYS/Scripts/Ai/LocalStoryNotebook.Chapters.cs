@@ -149,7 +149,7 @@ public static partial class LocalStoryNotebook
         {
             var source=ChapterContentCatalog.Character(r[0]);if(source==null||result.Any(c=>c.characterId==r[0]))throw new InvalidDataException("알 수 없거나 중복된 NPC: "+r[0]);
             if(r[5]!="0"&&r[5]!="1")throw new InvalidDataException("자동생성은 0 또는 1: "+r[0]);
-            if(r[6]!="Gemma"&&r[6]!="Qwen")throw new InvalidDataException("알 수 없는 모델: "+r[6]);
+            if(r[6]!="Gemma"&&r[6]!="Qwen"&&r[6]!="OmniRoute")throw new InvalidDataException("알 수 없는 모델: "+r[6]);
             string[] needs=Ids(r[4]);string hidden=r[3].Contains("@npc:")?ChapterContentCatalog.Setting(r[3],earned):needs.Length>0&&needs.All(earned.Contains)?r[3]:"";
             if(!r[3].Contains("@npc:")&&needs.Length>0&&!needs.All(earned.Contains))hidden="";
             result.Add(new LocalStoryNpcContext {characterId=r[0],name=string.IsNullOrEmpty(r[1])?source.name:r[1],role=source.role,personality=source.personality,

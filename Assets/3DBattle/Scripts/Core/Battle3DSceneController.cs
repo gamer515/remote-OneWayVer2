@@ -18,6 +18,7 @@ namespace OneWay.Battle3D
         const double ReturnDelay = 5d;
         double returnAt = -1d;
         bool battleReady, returnRequested;
+        System.Func<bool, bool> finishFinalBattle = GameManager.TryFinishFinalBattle;
         public bool IsReturnPending => returnAt >= 0d && !returnRequested;
         public float ReturnSecondsRemaining => IsReturnPending
             ? Mathf.Max(0f, (float)(returnAt - Time.realtimeSinceStartupAsDouble)) : 0f;
@@ -36,6 +37,12 @@ namespace OneWay.Battle3D
             if (Time.realtimeSinceStartupAsDouble < returnAt) return;
             // Latch before loading so simultaneous deaths cannot request two scene loads.
             returnRequested = true;
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+            var finalBoss = CurrentStage?.boss;
+            var finalHealth = player != null ? player.GetComponent<BattlePlayerHealth>() : null;
+            bool won = finalBoss != null && !finalBoss.IsAlive && (finalHealth == null || finalHealth.IsAlive);
+            if (finishFinalBattle(won)) return;
             if (!Application.CanStreamedLevelBeLoaded(ReturnScene))
             {
                 Debug.LogError("DecisionScene is not available in the active build scene list.", this);

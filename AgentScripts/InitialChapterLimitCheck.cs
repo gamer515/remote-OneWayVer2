@@ -38,6 +38,8 @@ public static class InitialChapterLimitCheck
                 var session=new DecisionSession(omnibus,5,123,chapterIndex,0,0);
                 typeof(DecisionManager).GetField("session",Fields).SetValue(manager,session);
                 var calls=new List<string>();
+                typeof(DecisionManager).GetField("finalBattleRequested",Fields).SetValue(manager,false);
+                typeof(DecisionManager).GetField("finalBattleTransition",Fields).SetValue(manager,(Action)(()=>calls.Add("battle")));
                 var completion=new DecisionRunCompletionService(
                     ()=>calls.Add("complete"),
                     ()=>{calls.Add("prepareNext");return 6;},
@@ -49,10 +51,10 @@ public static class InitialChapterLimitCheck
                 Assert(!input.InputEnabled,"Progress input not locked");
                 var state=(Constants.StoryState)typeof(DecisionManager).GetField("currentState",Fields).GetValue(manager);
                 Assert(state==Constants.StoryState.Transitioning,"Did not exit before loading next chapter");
-                Assert(calls.SequenceEqual(new[]{"complete","prepareNext","mainMenu"}),"Completion order incorrect");
+                Assert(calls.SequenceEqual(new[]{"battle"}),"Final journey must enter battle without completing/advancing the run");
                 load.Invoke(manager,null);
-                Assert(calls.Count==3,"Repeated completion created another run");
-                checks.Add(new{chapterIndex,returnedToMainMenu=true,sourceSessionPreserved=true,nextRunPreparedOnce=true});
+                Assert(calls.Count==1,"Repeated journey completion re-entered battle");
+                checks.Add(new{chapterIndex,enteredBattle=true,sourceSessionPreserved=true,nextRunDeferredUntilBattle=true});
             }
             AssertInitialPacket(go);
             omnibus.lastPlayableChapterId="Chapter_1";
@@ -97,13 +99,13 @@ public static class InitialChapterLimitCheck
             var generated=JsonUtility.FromJson<EncounterCardRoot>(text);
             generated.MainStory[0].text=items[0].text;
             var apply=typeof(EncounterContentRepository).GetMethod("TryApplyGeneratedText",BindingFlags.Static|BindingFlags.NonPublic);
-            args=new object[]{original,generated,null};
+            args=new object[]{original,generated,null,false};
             Assert((bool)apply.Invoke(null,args)&&original.MainStory[0].text==items[0].text,"Initial generated text not applied");
             items[0].encounterPath="Chapter_2/unrequested";
             args=new object[]{packet,items,null};
             Assert(!(bool)validate.Invoke(null,args),"Unrequested chapter accepted");
             generated.MainStory[0].type="End";
-            args=new object[]{original,generated,null};
+            args=new object[]{original,generated,null,false};
             Assert(!(bool)apply.Invoke(null,args),"Generated response changed card structure");
             records[0].card.text="{안개 광산}에서 조심하라.";
             items[0].encounterPath=path;items[0].text="다른 광산이다.";

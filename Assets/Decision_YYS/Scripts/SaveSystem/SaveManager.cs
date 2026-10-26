@@ -397,6 +397,23 @@ public class SaveManager
         Debug.Log($"[Save] {CurrentRun}회차 완료 상태 저장");
     }
 
+    public void BeginFinalBattle(int stage)
+    {
+        if (cachedProgress.isCompleted) throw new System.InvalidOperationException("완료된 회차에서 새 전투를 시작할 수 없습니다.");
+        cachedProgress.finalBattlePending = true;
+        cachedProgress.finalBattleStage = System.Math.Max(1, stage);
+        cachedProgress.interactionPhase = "battle";
+        SaveIOService.Instance.SaveRunData(CurrentRun, "Progress", cachedProgress);
+    }
+
+    public void RecordFinalBattleOutcome(bool won)
+    {
+        if (!cachedProgress.finalBattlePending) throw new System.InvalidOperationException("진행 중인 최종 전투가 없습니다.");
+        cachedProgress.finalBattleWon = won;
+        cachedProgress.runEndReason = won ? "3D 전투 보스 처치" : "3D 전투에서 사망";
+        SaveIOService.Instance.SaveRunData(CurrentRun, "Progress", cachedProgress);
+    }
+
     /// <summary>
     /// 기존 회차를 보존하고 다음 회차의 빈 진행도를 만든 뒤 활성 회차를 변경합니다.
     /// 실제 씬 재시작은 이 메서드를 호출하는 화면 흐름에서 담당합니다.

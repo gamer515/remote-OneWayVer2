@@ -245,7 +245,7 @@ public partial class SaveIOService
             ["impressions"]=JArray.FromObject(memories),
             ["unlocks"]=JArray.FromObject(jobs.SelectMany(j=>j.snapshot?.earnedUnlocks??Array.Empty<string>()).Distinct()),
             ["stories"]=new JArray(jobs.Select(j=>new JObject { ["storyPath"]=j.storyPath,["chunkIndex"]=(int?)ChapterContentCatalog.Info(j.storyPath)?["chunkIndex"],
-                ["status"]=j.status,["additionalContent"]=j.snapshot?.reason??"" })) });
+                ["status"]=j.status,["generationWinner"]=j.generationWinner,["additionalContent"]=j.snapshot?.reason??"" })) });
     }
     private LocalStoryDialogueQueueData ReadPackedQueue(int run)
     {

@@ -19,6 +19,8 @@ using UnityEngine;
 {
     public string storyPath, model = "Qwen3-4B-Instruct-2507 Q4_K_M", backend, fallback, prompt, rawOutput, testScenario;
     public string archiveId, archiveOrigin;
+    public string generationIdentity, generationWinner;
+    public string[] generationFailures;
     public string writingPolicy, generationGrammar;
     public string examplePrompt, exampleSummary;
     public string comparisonMode;
@@ -32,6 +34,8 @@ using UnityEngine;
     [NonSerialized] public string reviewRawOutput;
     public string reviewError;
     [NonSerialized] public LocalStorySectionCheckpoint sectionCheckpoint;
+    [NonSerialized] public LocalStorySectionCheckpoint omniSectionCheckpoint;
+    [NonSerialized] public Action<LocalStorySectionCheckpoint> saveOmniSectionCheckpoint;
     [NonSerialized] public Action<LocalStorySectionCheckpoint> saveSectionCheckpoint;
     [NonSerialized] public Action<int,int,int,int,string> sectionProgress;
     [NonSerialized] public Func<bool> sectionStillCurrent;

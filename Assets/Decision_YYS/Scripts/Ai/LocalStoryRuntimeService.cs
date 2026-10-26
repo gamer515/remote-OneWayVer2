@@ -19,6 +19,16 @@ public enum LocalStoryLogStage { Request, Working, Complete, Failed, Deferred, R
 /// <summary>Colour is presentation only; stage labels remain searchable in plain player logs.</summary>
 public static class LocalStoryLog
 {
+    public static string Source(LocalStoryTestReport report)
+    {
+        string model=report?.model;
+        if(string.IsNullOrWhiteSpace(model)) return "[생성 방식 미확인]";
+        return (model.StartsWith("OmniRoute",StringComparison.OrdinalIgnoreCase)?"[외부 통신] ":"[내장형] ")+model;
+    }
+    public static void Generation(LocalStoryLogStage stage,LocalStoryTestReport report,string message)
+    {
+        Write(stage,Source(report)+" / "+report?.storyPath+" / "+message);
+    }
     public static string Format(LocalStoryLogStage stage, string message,string activity="생성")
     {
         string label, colour;
@@ -75,22 +85,22 @@ public sealed class LocalStoryRuntimeService : MonoBehaviour
             EnsureInstance();
             instance.Prepare(LocalStoryTestModels.PathFor(root,LocalStoryTestModel.Gemma));
         }
-        catch(Exception e) { PreparationStatus="검사 보류"; LocalStoryLog.Write(LocalStoryLogStage.Deferred,"Gemma 사전 검사: "+e.Message,activity:"모델 검사"); }
+        catch(Exception e) { PreparationStatus="검사 보류"; LocalStoryLog.Write(LocalStoryLogStage.Deferred,"[내장형] Gemma 사전 검사: "+e.Message,activity:"모델 검사"); }
     }
     private async void Prepare(string modelPath)
     {
         preparation = new CancellationTokenSource();
         PreparationStatus="Gemma 파일 검사 중"; LastPreparation=null;
-        LocalStoryLog.Write(LocalStoryLogStage.Working,"Gemma 사전 검사 시작 / 입력은 계속 가능",activity:"모델 검사");
+        LocalStoryLog.Write(LocalStoryLogStage.Working,"[내장형] Gemma 사전 검사 시작 / 입력은 계속 가능",activity:"모델 검사");
         try
         {
             LastPreparation=await LocalStoryInference.PrepareGemma(modelPath,preparation.Token);
             PreparationStatus="Gemma 파일 검사 완료";
-            LocalStoryLog.Write(LocalStoryLogStage.Complete,"Gemma 사전 검사 / "+LastPreparation.seconds.ToString("F2")+
+            LocalStoryLog.Write(LocalStoryLogStage.Complete,"[내장형] Gemma 사전 검사 / "+LastPreparation.seconds.ToString("F2")+
                 "초 / "+LastPreparation.provider+" / "+(LastPreparation.cached?"같은 파일 검사 재사용":LastPreparation.bytesHashed+" bytes 전체 검사")+" / 모델 메모리 적재는 생성 시 수행",activity:"모델 검사");
         }
         catch(OperationCanceledException) { PreparationStatus="검사 중단"; }
-        catch(Exception e) { PreparationStatus="검사 실패 — 원문으로 플레이 가능"; LocalStoryLog.Write(LocalStoryLogStage.Deferred,"Gemma 사전 검사: "+e.Message,activity:"모델 검사"); }
+        catch(Exception e) { PreparationStatus="검사 실패 — 원문으로 플레이 가능"; LocalStoryLog.Write(LocalStoryLogStage.Deferred,"[내장형] Gemma 사전 검사: "+e.Message,activity:"모델 검사"); }
         finally { preparation.Dispose(); preparation=null; }
     }
     public static void TryResumePending()
@@ -122,7 +132,7 @@ public sealed class LocalStoryRuntimeService : MonoBehaviour
             while(!token.IsCancellationRequested && (job=LocalStoryDialogueQueue.Next(storage))!=null)
             {
                 Status=job.sourceRun+"회차 "+job.characterId+" → "+job.targetRun+"회차용";
-                await LocalStoryDialogueQueue.Process(storage,job,LocalStoryRuntimePipeline.Infer,token);
+                await LocalStoryDialogueQueue.Process(storage,job,StoryGenerationRace.GenerateRuntime,token);
             }
         }
         catch(OperationCanceledException) { LocalStoryLog.Write(LocalStoryLogStage.Deferred,"생성 작업 중단. 저장된 요청은 다음 실행에서 재개합니다."); }
@@ -212,8 +222,8 @@ public static class LocalStoryRuntimePipeline
             report.interactionSource="실제 대화 종료 기록(감사 자료) / 조건으로 선별된 꿈 인상만 모델에 전달";
             report.testScenario="ActualGameplay / DialogueEnded / "+request.sourceRun+"→"+request.targetRun;
         }
-        string logTarget=request.sourceRun+"회차 기록 → "+request.targetRun+"회차용 / "+npc.name+" / "+npc.model+" / "+path;
-        LocalStoryLog.Write(LocalStoryLogStage.Working,logTarget+" / 모델 로딩·초안 작성 시작");
+        string logTarget=request.sourceRun+"회차 기록 → "+request.targetRun+"회차용 / "+npc.name+" / "+path;
+        LocalStoryLog.Write(LocalStoryLogStage.Working,logTarget+" / 이야기 생성 작업 시작");
         try
         {
             if(!Enum.TryParse(npc.model,out LocalStoryTestModel model)) throw new InvalidOperationException("알 수 없는 모델");
@@ -225,6 +235,8 @@ public static class LocalStoryRuntimePipeline
             {
                 report.sectionCheckpoint=LocalStoryDialogueQueue.Load(storage,request.sourceRun)?.jobs
                     .FirstOrDefault(j=>j.storyPath==path && j.revision==request.dialogueRevision)?.sectionCheckpoint;
+                report.omniSectionCheckpoint=LocalStoryDialogueQueue.Load(storage,request.sourceRun)?.jobs
+                    .FirstOrDefault(j=>j.storyPath==path && j.revision==request.dialogueRevision)?.omniSectionCheckpoint;
                 report.sectionStillCurrent=canCommit;
                 report.sectionProgress=(start,count,index,total,phase)=>
                 {
@@ -248,6 +260,15 @@ public static class LocalStoryRuntimePipeline
                     current.sectionCheckpoint=checkpointState;
                     LocalStoryDialogueQueue.Save(storage,queue);
                 };
+                report.saveOmniSectionCheckpoint=checkpointState=>
+                {
+                    if(!canCommit()) return;
+                    var queue=LocalStoryDialogueQueue.Load(storage,request.sourceRun);
+                    var current=queue?.jobs.FirstOrDefault(j=>j.storyPath==path && j.revision==request.dialogueRevision);
+                    if(current==null) return;
+                    current.omniSectionCheckpoint=checkpointState;
+                    LocalStoryDialogueQueue.Save(storage,queue);
+                };
             }
             string messages=LocalStoryRewrite.Messages(path,report.original,request);
             report.prompt=LocalStoryTestModels.Messages(model,LocalStoryTestArchive.AttachWritingExamples(messages,report.examplePrompt));
@@ -256,6 +277,7 @@ public static class LocalStoryRuntimePipeline
             budget.CancelAfter(TimeSpan.FromMinutes(5));
             await generate(report,budget.Token);
             token.ThrowIfCancellationRequested();
+            result.model=report.model;
             var built=report.correctionAttempted ? (report.correctionValid?report.corrected:null) : (report.valid?report.generated:null);
             if(built==null && report.allowFailedOutput)
             {
@@ -296,8 +318,9 @@ public static class LocalStoryRuntimePipeline
             if(checkpoint) storage.SaveRunCheckpoint(request.sourceRun,"LocalStoryRevisionRequest",request);
             LocalStoryLog.Write(result.status=="ReviewRequired"?LocalStoryLogStage.Review:result.status=="Ready"?LocalStoryLogStage.Complete:
                 token.IsCancellationRequested || result.status=="Preserved"?LocalStoryLogStage.Deferred:LocalStoryLogStage.Failed,
-                logTarget+" / "+report.seconds.ToString("F1")+"초 / "+
+                LocalStoryLog.Source(report)+" / "+logTarget+" / "+report.seconds.ToString("F1")+"초 / "+
                 (result.status=="Ready"?"다음 회차 저장 완료":result.status=="ReviewRequired"?"검사 실패본 저장·다음 회차 반영 / "+result.error:result.error??"완료하지 못함")+
+                (string.IsNullOrWhiteSpace(report.backend)?"":" / "+report.backend)+
                 (LocalStoryPrompt.SaveDiagnosticReports?" / 결과: "+(result.reportPath??"저장되지 않음"):""));
         }
         return result;
@@ -319,15 +342,39 @@ public static class LocalStoryRuntimePipeline
     public static async Task Infer(LocalStoryTestReport report,CancellationToken token)
     {
         string root=Path.Combine(Application.streamingAssetsPath,"LocalStory");
-        var model=report.model.Contains("Gemma")?LocalStoryTestModel.Gemma:LocalStoryTestModel.Qwen;
+        var model=LocalStoryTestModels.ModelFor(report);
+        var omni=model==LocalStoryTestModel.OmniRoute?StoryGenerationSettings.Read():null;
         string modelPath=null;
-        report.runtimePath=Path.GetFullPath(Path.Combine(root,"runtimes","win-x64","native"));
+        report.runtimePath=omni!=null?omni.apiUrl:Path.GetFullPath(Path.Combine(root,"runtimes","win-x64","native"));
+        report.generationIdentity=omni!=null?omni.apiUrl+"|"+omni.combo:"Embedded|"+model;
         report.samplingProfile="짧은 구간 작성 / 필요한 구간만 교정";
-        await LocalStorySections.Generate(report,token,(input,correction,ct,progress) =>
+        LocalStoryLog.Generation(LocalStoryLogStage.Working,report,omni!=null?"이야기 생성 시작 / HTTP 요청":"이야기 생성 시작 / 로컬 모델 추론");
+        try
         {
-            if(modelPath==null) {modelPath=LocalStoryTestModels.PathFor(root,model);report.modelPath=Path.GetFullPath(modelPath);}
-            return LocalStoryInference.Generate(root,correction?input.correctionPrompt:input.prompt,input.grammar,input.seed,ct,progress,
-                (correction?LocalStorySampling.Proofreading():LocalStorySampling.Comparison()).WithTokenLimit(input.maxTokens),modelPath);
-        });
+            await LocalStorySections.Generate(report,token,(input,correction,ct,progress) =>
+            {
+                if(omni!=null)
+                {
+                    string messages=correction?input.correctionPrompt:input.prompt;
+                    var parameters=OmniRouteFreeStackConverter.RequestBody(messages,input.maxTokens,input.seed,omni.combo);
+                    parameters.Remove("messages");
+                    if(correction) input.correctionParameters=report.correctionParameters=parameters.ToString(Newtonsoft.Json.Formatting.None);
+                    else input.draftParameters=report.draftParameters=parameters.ToString(Newtonsoft.Json.Formatting.None);
+                    return OmniRouteFreeStackConverter.Generate(messages,input.maxTokens,input.seed,ct,omni);
+                }
+                if(modelPath==null) {modelPath=LocalStoryTestModels.PathFor(root,model);report.modelPath=Path.GetFullPath(modelPath);}
+                return LocalStoryInference.Generate(root,correction?input.correctionPrompt:input.prompt,input.grammar,input.seed,ct,progress,
+                    (correction?LocalStorySampling.Proofreading():LocalStorySampling.Comparison()).WithTokenLimit(input.maxTokens),modelPath);
+            });
+            bool valid=report.correctionAttempted?report.correctionValid:report.valid;
+            LocalStoryLog.Generation(valid?LocalStoryLogStage.Complete:report.reviewRequired?LocalStoryLogStage.Review:LocalStoryLogStage.Failed,
+                report,"이야기 생성 종료 / "+(valid?"검사 통과":report.reviewError??report.correctionError??report.error??"검사 실패")+
+                (string.IsNullOrWhiteSpace(report.backend)?"":" / "+report.backend));
+        }
+        catch(OperationCanceledException)
+        {
+            LocalStoryLog.Generation(LocalStoryLogStage.Deferred,report,"생성 취소");
+            throw;
+        }
     }
 }

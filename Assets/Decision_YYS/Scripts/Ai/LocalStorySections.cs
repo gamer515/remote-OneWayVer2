@@ -147,7 +147,7 @@ public static class LocalStorySections
         var accepted = new List<EncounterCard>();
         var plan = LocalStoryPrompt.Plan(report.storyPath, report.original);
         report.paragraphsPlanned=WritingGuide(report.storyPath).paragraphs.Length;
-        string key = LocalStoryDialogueQueue.Hash(report.writingPolicy + "\n" + JsonUtility.ToJson(report.original) + "\n" + report.model + "\n" + report.seed +
+        string key = LocalStoryDialogueQueue.Hash(report.writingPolicy + "\n" + JsonUtility.ToJson(report.original) + "\n" + report.model + "\n" + report.generationIdentity + "\n" + report.seed +
             "\n" + JsonUtility.ToJson(report.interactionMemory) + "\n" + report.examplePrompt + "\n" + maxCards + ":" + proofreadAll + ":" + report.allowFailedOutput + ":" + GenerationPolicyHash(report.storyPath));
         var checkpoint = report.sectionCheckpoint;
         EncounterCardRoot restored=null;
@@ -191,13 +191,14 @@ public static class LocalStorySections
                 input.draftParameters = LocalStorySampling.Comparison().WithTokenLimit(input.maxTokens).Parameters(input.seed);
                 report.draftParameters=input.draftParameters;
                 var watch = Stopwatch.StartNew();
-                LocalStoryLog.Write(LocalStoryLogStage.Working, report.storyPath + " / 카드 " + (range.start + 1) + "~" + (range.start + range.count) + " 작성");
+                LocalStoryLog.Generation(LocalStoryLogStage.Working, report,"카드 " + (range.start + 1) + "~" + (range.start + range.count) + " 작성");
                 report.sectionProgress?.Invoke(range.start,range.count,report.sectionInputs.Count,plan.Count,"작성 중");
                 try
                 {
                     var draft = await infer(input, false, token, s => output.rawOutput = s);
                     output.rawOutput = draft.json; output.draftSessionReused = draft.sessionReused;
                     Record(report, output, draft, false); report.sectionsGenerated++;
+                    LocalStoryLog.Generation(LocalStoryLogStage.Working,report,"카드 "+(range.start+1)+"~"+(range.start+range.count)+" 응답 수신 / "+draft.backend);
                 }
                 finally { output.draftSeconds = watch.Elapsed.TotalSeconds; report.draftSeconds += output.draftSeconds; }
                 output.valid = TrySection(report,source,output.rawOutput,accepted,range.start,out var built,out output.error);
@@ -212,13 +213,14 @@ public static class LocalStorySections
                     report.correctionParameters=input.correctionParameters;
                     report.correctionPrompt = "필요한 구간만 교정합니다. 실제 요청은 sectionInputs의 correctionPrompt에서 확인합니다.";
                     report.sectionsCorrected++; watch.Restart();
-                    LocalStoryLog.Write(LocalStoryLogStage.Working, report.storyPath + " / 카드 " + (range.start + 1) + "~" + (range.start + range.count) + " 구간 교정");
+                    LocalStoryLog.Generation(LocalStoryLogStage.Working, report,"카드 " + (range.start + 1) + "~" + (range.start + range.count) + " 구간 교정");
                     report.sectionProgress?.Invoke(range.start,range.count,report.sectionInputs.Count,plan.Count,"교정 중");
                     try
                     {
                         var correction = await infer(input, true, token, s => output.correctionRawOutput = s);
                         output.correctionRawOutput = correction.json; output.correctionSessionReused = correction.sessionReused;
                         Record(report, output, correction, true);
+                        LocalStoryLog.Generation(LocalStoryLogStage.Working,report,"카드 "+(range.start+1)+"~"+(range.start+range.count)+" 교정 응답 수신 / "+correction.backend);
                         output.correctionValid = TrySection(report,source,output.correctionRawOutput,accepted,range.start,out built,out output.correctionError);
                         if(output.correctionValid && !LocalStoryPromptModules.ValidateExampleCopies(source,built,input.correctionPrompt,out output.correctionError))output.correctionValid=false;
                     }
@@ -230,7 +232,7 @@ public static class LocalStorySections
                             LocalStoryRewrite.TryBuildForReview(output.rawOutput,source,out built,out _);
                         output.sourceFallback=!output.reviewApplied;
                         if(output.sourceFallback)built=source;
-                        LocalStoryLog.Write(LocalStoryLogStage.Failed,report.storyPath+" / 카드 "+(range.start+1)+"~"+(range.start+range.count)+" / "+
+                        LocalStoryLog.Generation(LocalStoryLogStage.Failed,report,"카드 "+(range.start+1)+"~"+(range.start+range.count)+" / "+
                             (output.reviewApplied?"검사 실패 문구 반영, 다음 구간 계속":"출력 형식 불일치로 이 구간 원문 유지, 다음 구간 계속")+" / "+output.correctionError);
                     }
                 }
@@ -275,7 +277,7 @@ public static class LocalStorySections
     private static string Wrap(LocalStoryTestReport report, LocalStorySectionInput input, string messages)
     {
         var parsed = JArray.Parse(messages);
-        return LocalStoryTestModels.Messages(report.model.Contains("Gemma") ? LocalStoryTestModel.Gemma : LocalStoryTestModel.Qwen,
+        return LocalStoryTestModels.Messages(LocalStoryTestModels.ModelFor(report),
             LocalStoryTestArchive.AttachWritingExamples(parsed.ToString(Newtonsoft.Json.Formatting.None), ScopedExample(report, input)));
     }
     private static string ScopedExample(LocalStoryTestReport report, LocalStorySectionInput input)

@@ -10,7 +10,7 @@ public static class ProgressDocument
 {
     private static readonly object Gate=new object();
     private static readonly Dictionary<string,string[]> Groups=new Dictionary<string,string[]> {
-        ["progress"]=new[]{"runSeed","chapterIndex","episodeIndex","storyIndex","currentPosition","currentRotation","isCompleted","runEndReason"},
+        ["progress"]=new[]{"runSeed","chapterIndex","episodeIndex","storyIndex","currentPosition","currentRotation","isCompleted","runEndReason","finalBattlePending","finalBattleStage","finalBattleWon"},
         ["encounter"]=new[]{"interactionPhase","activeStoryPath","activePlaceId","activeCardIndex","resolvedPlaceIds","storyVisit"},
         ["player"]=new[]{"remainingCoins","storedItemIds","inventoryStateVersion","worldInventoryItems"},
         ["world"]=new[]{"unlockedIds","relationships","appliedEffectIds"},

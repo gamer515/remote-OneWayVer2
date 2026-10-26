@@ -31,6 +31,7 @@ public class GameManager : MonoBehaviour
     public GameState CurrentState { get => currentState; set => currentState = value; }
 
     private SaveManager saveManager;
+    private DecisionRunCompletionService finalBattleCompletion;
 
     [Header("Player")]
     [SerializeField] private GameObject playerPrefab;
@@ -116,5 +117,62 @@ public class GameManager : MonoBehaviour
             saveManager = new SaveManager();
 
         return saveManager.StartNextRun();
+    }
+
+    public void EnterFinalBattle(int stage = 1)
+    {
+        saveManager ??= new SaveManager();
+        saveManager.BeginFinalBattle(stage);
+        finalBattleCompletion = null;
+        LoadFinalBattle();
+    }
+
+    private void LoadFinalBattle()
+    {
+        var progress = saveManager.LoadProgress();
+        var stats = saveManager.LoadStats()?.stats;
+        int Trait(int index) => stats?.Length == 4 ? stats[index] : 1;
+        new SceneTransitionService().LoadFinalBattleScene(new OneWay.Battle3D.Battle3DStartData(
+            System.Math.Max(1, progress.finalBattleStage), Trait(0), Trait(1), Trait(2), Trait(3)));
+    }
+
+    public bool ResumeFinalBattle()
+    {
+        saveManager ??= new SaveManager();
+        var progress = saveManager.LoadProgress();
+        if (!progress.finalBattlePending) return false;
+        // A crash between completion and Profile update must not replay the boss or skip a run.
+        if (progress.isCompleted) FinishFinalBattle(progress.finalBattleWon);
+        else LoadFinalBattle();
+        return true;
+    }
+
+    public static bool TryFinishFinalBattle(bool won)
+    {
+        if (instance == null || instance.saveManager?.LoadProgress()?.finalBattlePending != true) return false;
+        instance.FinishFinalBattle(won);
+        return true;
+    }
+
+    private void FinishFinalBattle(bool won)
+    {
+        if (finalBattleCompletion == null)
+        {
+            int sourceRun = saveManager.CurrentRun;
+            finalBattleCompletion = new DecisionRunCompletionService(
+                () => {
+                    saveManager.RecordFinalBattleOutcome(won);
+                    saveManager.CompleteCurrentRun();
+                    try { LocalStoryDialogueQueue.FinalizeRun(SaveIOService.Instance, sourceRun); }
+                    catch (System.Exception e) { LocalStoryLog.Write(LocalStoryLogStage.Failed, "전투 종료 기억 조건 확인: " + e.Message); }
+                },
+                () => { int next = PrepareNextPlaythrough(); LocalStoryRuntimeService.TryResumePending(); return next; },
+                () => {
+                    new SceneTransitionService().LoadMainMenuScene();
+                    Cursor.lockState = CursorLockMode.None;
+                    Cursor.visible = true;
+                });
+        }
+        finalBattleCompletion.Complete();
     }
 }

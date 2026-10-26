@@ -22,6 +22,8 @@ using UnityEngine;
 }
 [Serializable] public sealed class LocalStoryDialogueJob
 {
+    public LocalStorySectionCheckpoint omniSectionCheckpoint;
+    public string generationWinner;
     public string jobId, chapterId, episodeId, characterId, sceneId, sectionId, storyPath, inputHash, contentHash, error, reportPath;
     public string status="Pending";
     public int sourceRun, targetRun, revision;
@@ -232,6 +234,7 @@ public static class LocalStoryDialogueQueue
                 if(latest.status=="Ready"||latest.status=="ReviewRequired") latest.generationPart=latest.generationPart?.Replace("작성 중","작성 완료").Replace("교정 중","교정 완료");
                 latest.error=token.IsCancellationRequested?"중단됨 — 다음 실행에서 재개":result?.error;
                 latest.reportPath=result?.reportPath; latest.seconds=watch.Elapsed.TotalSeconds;
+                latest.generationWinner=result?.model;
                 if(latest.status=="Ready"||latest.status=="ReviewRequired") latest.contentHash=store.NarrativeContentHash(latest.targetRun,latest.storyPath);
                 Save(store,queue);
             }

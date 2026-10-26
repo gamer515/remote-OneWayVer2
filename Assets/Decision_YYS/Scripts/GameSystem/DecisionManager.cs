@@ -13,6 +13,8 @@ public partial class DecisionManager : MonoBehaviour
     private StoryState currentState;
 
     private DecisionSession session;
+    private bool finalBattleRequested;
+    private Action finalBattleTransition;
     private DecisionSaveService saveService;
     private ChapterFlowController chapterFlowController;
     private DecisionPresentationController presentationController;
@@ -132,6 +134,8 @@ public partial class DecisionManager : MonoBehaviour
     {
         if (GameManager.Instance.CurrentState != GameState.Main)
             return;
+
+        if (GameManager.Instance.ResumeFinalBattle()) return;
 
         // Background generation must not lock gameplay. Each dialogue loads ready content or its source.
         LocalStoryRuntimeService.TryResumePending();
@@ -379,14 +383,14 @@ private void SetYellowInputInteractable(bool interactable)
         if (currentOmnibus != null && currentOmnibus.IsProgressionLimited &&
             chapterIndex >= currentOmnibus.PlayableChapterCount)
         {
-            FinishRunAndReturnToMainMenu($"{currentOmnibus.lastPlayableChapterId}까지 진행 완료");
+            EnterFinalBattle($"{currentOmnibus.lastPlayableChapterId}까지 진행 완료");
             return;
         }
 
         if (currentOmnibus?.chapters == null ||
             chapterIndex < 0 || chapterIndex >= currentOmnibus.chapters.Count)
         {
-            FinishRunAndReturnToMainMenu("마지막 에피소드 완료");
+            EnterFinalBattle("마지막 에피소드 완료");
             return;
         }
 
@@ -433,7 +437,7 @@ private void SetYellowInputInteractable(bool interactable)
         StartEncounterEpisode();
     }
 
-    private void FinishRunAndReturnToMainMenu(string reason)
+    private void PrepareRunTransition(string reason)
     {
         if (session != null && saveService != null)
         {
@@ -445,6 +449,20 @@ private void SetYellowInputInteractable(bool interactable)
         presentationController?.ExitChoice();
         bettingButtonController?.SetBettingInteractable(false);
         journeyBoardInput?.SetInputEnabled(false);
+    }
+
+    private void EnterFinalBattle(string reason)
+    {
+        if (finalBattleRequested) return;
+        finalBattleRequested = true;
+        PrepareRunTransition(reason);
+        Debug.Log($"[Story] {session?.RunNumber ?? 1}회차 {reason}. 3D 보스 전투로 이동합니다.", this);
+        (finalBattleTransition ?? (() => GameManager.Instance.EnterFinalBattle()))();
+    }
+
+    private void FinishRunAndReturnToMainMenu(string reason)
+    {
+        PrepareRunTransition(reason);
         if (runCompletionService == null)
             runCompletionService = new DecisionRunCompletionService(
                 () => {
