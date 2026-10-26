@@ -19,7 +19,7 @@ public static class LocalStoryPrompt
             if(policy!=null) return policy;
             var asset=Resources.Load<TextAsset>("LocalStory/PromptPolicy");
             if(asset==null) throw new InvalidDataException("공통 집필 규칙이 없습니다: LocalStory/PromptPolicy.json");
-            var data=JObject.Parse(asset.text);
+            var data=JObject.Parse(asset.text,new JsonLoadSettings {DuplicatePropertyNameHandling=DuplicatePropertyNameHandling.Error});
             if(!(data["modules"] is JArray modules) || modules.Count==0 || !(data["composition"] is JObject) || !(data["participants"]?["player"] is JObject))
                 throw new InvalidDataException("PromptPolicy modules/composition/participants를 확인하세요.");
             policy=data; return policy;
@@ -28,6 +28,7 @@ public static class LocalStoryPrompt
     public static string CommonRules => LocalStoryPromptModules.Rules(LocalStoryPromptModules.All().Where(m=>!((JObject)m.data["when"]).HasValues));
     public static string Hash => LocalStoryPromptModules.Hash;
     public static bool AllowFailedOutput => (bool?)Policy["runtime"]?["allowFailedOutput"]??false;
+    public static bool SaveDiagnosticReports => (bool?)Policy["runtime"]?["saveDiagnosticReports"]??true;
     public static NarrativeWritingLimits Limits(string path,NarrativeWritingParagraph paragraph=null)
     {
         var result=Policy["limits"].ToObject<NarrativeWritingLimits>();

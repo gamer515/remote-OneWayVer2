@@ -1,6 +1,6 @@
 # 이야기 생성 확인 방법
 
-현재 프롬프트는 v8 JSON 모듈 구조다. [PromptModules.md](PromptModules.md)를 우선 참조한다. 일반 적용은 실패본을 차단하며, 아래 v7 실패본 자동 재생 설명은 이전 동작 기록이다. 진단 재생은 PromptPolicy.runtime.allowFailedOutput을 명시적으로 켜서 확인한다.
+현재 프롬프트는 JSON 모듈 구조이며 [PromptModules.md](PromptModules.md), [StorageLifecycle.md](StorageLifecycle.md)를 우선 참조한다. 사용자 요청으로 실패본 다음 회차 재생을 켰고, 회차 전환·정책 변경에 의한 개정 재생성은 없앴다. 아래 버전별 설명은 과거 검증 기록이다.
 
 2026-10-26 현재 구조. 데이터 작성과 경로 설명은 [ChapterStoryAuthoring.md](ChapterStoryAuthoring.md)를 참조한다.
 

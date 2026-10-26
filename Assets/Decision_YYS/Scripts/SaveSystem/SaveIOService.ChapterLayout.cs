@@ -39,7 +39,7 @@ public partial class SaveIOService
         if(Directory.Exists(runs)) foreach(string dir in Directory.GetDirectories(runs,"Run_*"))
             if(int.TryParse(Path.GetFileName(dir).Substring(4),out int run) && File.Exists(Path.Combine(dir,LocalStoryDialogueQueue.FileName+".json")))
             {var queue=LoadNarrativeQueue(run);if(queue!=null) SaveNarrativeQueue(queue);}
-        LocalStoryTestArchive.MigrateGrouped(Path.Combine(BasePath,"LocalStoryTests"));
+        if(LocalStoryPrompt.SaveDiagnosticReports) LocalStoryTestArchive.MigrateGrouped(Path.Combine(BasePath,"LocalStoryTests"));
         layoutReady=true;
     }
     private string EnsureRunDirectory(int run)

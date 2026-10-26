@@ -273,7 +273,7 @@ public static class LocalStoryRuntimePipeline
             }
             report.seconds=watch.Elapsed.TotalSeconds;
             result.reportPath=storage.SaveLocalStoryTest(report);
-            if(result.reportPath==null) throw new IOException("원출력/입력 기록을 저장하지 못해 게임 적용을 보류합니다.");
+            if(LocalStoryPrompt.SaveDiagnosticReports && result.reportPath==null) throw new IOException("원출력/입력 기록을 저장하지 못해 게임 적용을 보류합니다.");
             bool saved=report.reviewRequired?storage.SaveGeneratedContentForReview(request.targetRun,"Encounters",path+"/Story",built,report.reviewError):
                 storage.SaveGeneratedContent(request.targetRun,"Encounters",path+"/Story",built);
             if(!saved) throw new IOException("다음 회차 저장 실패");
@@ -285,8 +285,11 @@ public static class LocalStoryRuntimePipeline
         finally
         {
             report.seconds=watch.Elapsed.TotalSeconds;
-            if(result.reportPath==null) result.reportPath=storage.SaveLocalStoryTest(report);
-            else LocalStoryTestArchive.RecordRuntimeApplication(Path.Combine(storage.StorageRoot,"LocalStoryTests"),result.reportPath,report);
+            if(LocalStoryPrompt.SaveDiagnosticReports)
+            {
+                if(result.reportPath==null) result.reportPath=storage.SaveLocalStoryTest(report);
+                else LocalStoryTestArchive.RecordRuntimeApplication(Path.Combine(storage.StorageRoot,"LocalStoryTests"),result.reportPath,report);
+            }
             request.generationResults.RemoveAll(r => r.storyPath==path);
             request.generationResults.Add(result);
             if(result.status!="Ready" && result.status!="ReviewRequired" && canCommit()) storage.UpdateGeneratedEpisodeStatus(request.sourceRun,request.targetRun,path,ContentGenerationStatus.Failed,result.error);
@@ -295,7 +298,7 @@ public static class LocalStoryRuntimePipeline
                 token.IsCancellationRequested || result.status=="Preserved"?LocalStoryLogStage.Deferred:LocalStoryLogStage.Failed,
                 logTarget+" / "+report.seconds.ToString("F1")+"초 / "+
                 (result.status=="Ready"?"다음 회차 저장 완료":result.status=="ReviewRequired"?"검사 실패본 저장·다음 회차 반영 / "+result.error:result.error??"완료하지 못함")+
-                " / 결과: "+(result.reportPath??"저장되지 않음"));
+                (LocalStoryPrompt.SaveDiagnosticReports?" / 결과: "+(result.reportPath??"저장되지 않음"):""));
         }
         return result;
     }

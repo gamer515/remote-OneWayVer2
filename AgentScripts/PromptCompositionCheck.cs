@@ -16,6 +16,34 @@ public static class PromptCompositionCheck
     public static Task<object> After() => Capture("after");
     public static Task<object> Final() => Capture("final");
     public static Task<object> Verified() => Capture("verified");
+    public static Task<object> Bounded() => Capture("bounded");
+    public static Task<object> BoundedMark()
+    {
+        var scenario=JObject.Parse(File.ReadAllText("Tests/LocalStoryBenchmark/CompositionCases.json"))["cases"][1];
+        return Capture("bounded-mark",(string)scenario["storyPath"],scenario["memory"].ToObject<LocalStoryRevisionRequest>());
+    }
+    public static async Task<object> NativeBounded()
+    {
+        Check(!Application.isPlaying&&!LocalStoryRuntimeService.IsBusy,"Stop gameplay/generation first.");ChapterContentCatalog.Reset();LocalStoryLifetime.CancelAndWait();
+        var original=JsonUtility.FromJson<EncounterCardRoot>(NarrativeInteractions.StorySource(PathId));int start=original.MainStory.Count-1;
+        var source=LocalStorySections.Slice(original,start,1);var limits=new NarrativeWritingLimits{textMaxChars=8,optionMaxChars=8};
+        string messages=LocalStoryTestModels.Messages(LocalStoryTestModel.Gemma,LocalStoryPrompt.Messages(PathId,original,start,1,new List<EncounterCard>(),null));
+        string root=System.IO.Path.Combine(Application.streamingAssetsPath,"LocalStory");
+        using var stop=new CancellationTokenSource(TimeSpan.FromSeconds(90));
+        try
+        {
+            var output=await LocalStoryInference.Generate(root,messages,LocalStoryRewrite.Grammar(source,true,limits),12345,stop.Token,null,
+                LocalStorySampling.Comparison().WithTokenLimit(384),LocalStoryTestModels.PathFor(root,LocalStoryTestModel.Gemma));
+            var cards=JObject.Parse(output.json)["cards"];
+            Check(cards.Count()==1&&(int)cards[0]["index"]==0,"bounded grammar lost card structure");
+            Check(((string)cards[0]["text"]).Length<=8&&cards[0]["options"].Count()==4&&cards[0]["options"].All(o=>((string)o).Length<=8),"native grammar did not enforce distinct text/option bounds");
+            var result=new JObject{["passed"]=true,["inputTokens"]=output.inputTokens,["outputTokens"]=output.outputTokens,["prefillSeconds"]=output.prefillSeconds,
+                ["decodeSeconds"]=output.decodeSeconds,["tokenLimitReached"]=output.tokenLimitReached,["content"]=JObject.Parse(output.json)};
+            string folder=System.IO.Path.GetFullPath("tmp/PromptComposition");Directory.CreateDirectory(folder);
+            File.WriteAllText(System.IO.Path.Combine(folder,"native-bounded.json"),result.ToString(),new UTF8Encoding(false));return result;
+        }
+        finally{LocalStoryLifetime.CancelAndWait();}
+    }
     public static async Task<object> StrictRuntime()
     {
         ChapterContentCatalog.Reset();var runtime=LocalStoryPrompt.Policy["runtime"];bool prior=(bool)runtime["allowFailedOutput"];
@@ -70,8 +98,14 @@ public static class PromptCompositionCheck
         string correction=LocalStoryPrompt.Messages(PathId,original,8,1,new List<EncounterCard>(),null,"{}","invalid");
         Assert(Modules(correction).Contains("Correction"),"repair rule missing");
         Assert(LocalStoryPrompt.Policy["runtime"]["allowFailedOutput"]?.Type==JTokenType.Boolean,"missing configurable failed playback policy");
+        string bounded=LocalStoryRewrite.Grammar(LocalStorySections.Slice(original,8,1),true,new NarrativeWritingLimits{ textMaxChars=8,optionMaxChars=5 });
+        Assert(bounded.Contains("char{1,8}")&&bounded.Contains("char{1,5}")&&!bounded.Contains("chars ::="),"grammar ignores configured text/option limits");
         var sampleCopy=LocalStorySections.Slice(original,8,1);sampleCopy.MainStory[0].options[0]=(string)Request(choice)["examples"][0]["output"]["cards"][0]["options"][0];
         Assert(!LocalStoryPromptModules.ValidateExampleCopies(LocalStorySections.Slice(original,8,1),sampleCopy,choice,out _),"unrelated example copied into player option");
+        var shortSample=LocalStorySections.Slice(original,4,1);shortSample.MainStory[0].options[0]=(string)Request(garbled)["examples"][0]["output"]["cards"][0]["options"][0];
+        Assert(LocalStoryPromptModules.ValidateExampleCopies(LocalStorySections.Slice(original,4,1),shortSample,garbled,out _),"short reusable utterance treated as unrelated example copy");
+        var marker=LocalStorySections.Slice(original,8,1);marker.MainStory[0].options[0]="intent_0";
+        Assert(!LocalStoryRewrite.ValidateCardWording(original.MainStory[8],marker.MainStory[0],out _),"schema marker accepted as player dialogue");
         var module=LocalStoryPromptModules.Read("LocalStory/PromptModules/Common");string hash=LocalStoryPrompt.Hash;
         var rules=(JArray)module["rules"];rules.Add("MODULE_FILE_SENTINEL");
         try {Assert(Make(0,3).Contains("MODULE_FILE_SENTINEL"),"rules hardcoded instead of composed");Assert(LocalStoryPrompt.Hash!=hash,"module edit did not invalidate generation");}
@@ -82,13 +116,14 @@ public static class PromptCompositionCheck
         File.WriteAllText(System.IO.Path.Combine(folder,"composed-examples.json"),new JObject{["normal"]=JArray.Parse(normal),["choice"]=JArray.Parse(choice),["garbled"]=JArray.Parse(garbled),["correction"]=JArray.Parse(correction)}.ToString(),new UTF8Encoding(false));
         return new {passed=true,checks,normalModules=Modules(normal),choiceModules=Modules(choice),realSavesUntouched=true};
     }
-    static async Task<object> Capture(string label)
+    static async Task<object> Capture(string label,string storyPath=null,LocalStoryRevisionRequest memory=null)
     {
         if(Application.isPlaying || LocalStoryRuntimeService.IsBusy) throw new Exception("Stop gameplay/generation first.");
         ChapterContentCatalog.Reset();
         LocalStoryLifetime.CancelAndWait();
-        var report=new LocalStoryTestReport {storyPath=PathId,model=LocalStoryTestModels.Name(LocalStoryTestModel.Gemma),
-            original=JsonUtility.FromJson<EncounterCardRoot>(NarrativeInteractions.StorySource(PathId)),seed=12345,allowFailedOutput=true};
+        storyPath??=PathId;
+        var report=new LocalStoryTestReport {storyPath=storyPath,model=LocalStoryTestModels.Name(LocalStoryTestModel.Gemma),
+            original=JsonUtility.FromJson<EncounterCardRoot>(NarrativeInteractions.StorySource(storyPath)),interactionMemory=memory,seed=12345,allowFailedOutput=true};
         string folder=System.IO.Path.GetFullPath("tmp/PromptComposition");Directory.CreateDirectory(folder);
         string file=System.IO.Path.Combine(folder,label+".json");
         using var stop=new CancellationTokenSource(TimeSpan.FromMinutes(4));

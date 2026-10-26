@@ -18,7 +18,7 @@ public static class LocalStoryPromptModules
         if(documents.TryGetValue(resource,out var cached)) return cached;
         var asset=Resources.Load<TextAsset>(resource);
         if(asset==null) throw new InvalidDataException("Missing prompt JSON: "+resource);
-        var value=JObject.Parse(asset.text);documents.Add(resource,value);return value;
+        var value=JObject.Parse(asset.text,new JsonLoadSettings {DuplicatePropertyNameHandling=DuplicatePropertyNameHandling.Error});documents.Add(resource,value);return value;
     }
     public static IEnumerable<(string resource,JObject data)> All()
     {
@@ -88,11 +88,12 @@ public static class LocalStoryPromptModules
                 if(request["cards"] is JArray) {examples=request["examples"] as JArray;break;}
             }
         if(examples==null)return true;
+        int minimum=(int?)LocalStoryPrompt.Policy["composition"]["exampleCopyMinChars"]??0;
         IEnumerable<string> Phrases(EncounterCardRoot root)=>root.MainStory.SelectMany(c=>new[]{c.text}.Concat(c.options??Array.Empty<string>())).Where(s=>!string.IsNullOrWhiteSpace(s)).Select(s=>s.Trim());
         var authored=new HashSet<string>(Phrases(source));
         var samples=new HashSet<string>(examples.SelectMany(e=>e["output"]["cards"])
             .SelectMany(c=>new[]{(string)c["text"]}.Concat((c["options"] as JArray??new JArray()).Values<string>()))
-            .Where(s=>!string.IsNullOrWhiteSpace(s)).Select(s=>s.Trim()).Where(s=>!authored.Contains(s)));
+            .Where(s=>!string.IsNullOrWhiteSpace(s)).Select(s=>s.Trim()).Where(s=>s.Length>=minimum&&!authored.Contains(s)));
         if(Phrases(generated).Any(samples.Contains)) {error="example-copy";return false;}
         return true;
     }

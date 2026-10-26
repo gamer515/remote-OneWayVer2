@@ -114,6 +114,7 @@ public partial class SaveIOService
 
     public string SaveLocalStoryTest(LocalStoryTestReport report)
     {
+        if(!LocalStoryPrompt.SaveDiagnosticReports) return null;
         try
         {
             var document = Newtonsoft.Json.Linq.JObject.Parse(JsonUtility.ToJson(report));

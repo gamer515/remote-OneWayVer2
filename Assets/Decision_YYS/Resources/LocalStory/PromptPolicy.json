@@ -22,6 +22,7 @@
   },
   "composition": {
     "rejectExampleCopies": true,
+    "exampleCopyMinChars": 12,
     "maxExamples": 2,
     "useEditedExamples": false,
     "editedExamplesInstruction": "사람이 수정한 문장은 말투 참고다. 이번 사건의 사실이나 정답으로 복사하지 않는다.",
@@ -36,8 +37,22 @@
     "editedExamplesHeading": "[말투 참고 — 위 사실과 규칙 우선]",
     "sceneExamplesInstruction": "사람이 수정한 완성 대화는 카드 순서와 직접 발화 형식의 참고다. 이번 사건이나 기억으로 가져오지 않는다. 현재 집필 조건을 우선한다."
   },
+  "validation": {
+    "invalidOutputPatterns": [
+      {
+        "code": "schema-label",
+        "pattern": "^(?:index|text|intent|options|speaker|listener|reference|semanticText|coreMeaning|speakerId|choiceId)(?:_\\d+)?$"
+      },
+      {
+        "code": "json-fragment",
+        "pattern": "^[{}\\[\\]]+$"
+      }
+    ]
+  },
   "runtime": {
-    "allowFailedOutput": true
+    "allowFailedOutput": true,
+    "saveDiagnosticReports": false,
+    "maxCorrectionsPerSection": 0
   },
   "inference": {
     "cpuThreads": 6,

@@ -10,9 +10,12 @@
   "runtime": "LlamaLib 2.0.5",
   "runtimeSource": "https://github.com/undreamai/LlamaLib/releases/tag/v2.0.5",
   "runtimeArchiveSha256": "f3d85b2d6fbaa12839173f4438a7a2c7124bf6b25708d8be23348de2dec1156b",
-  "licenses": [ "Qwen-LICENSE.txt", "LICENSE", "third_party_licenses/llama.cpp.LICENSE.txt" ],
+  "licenses": [
+    "Qwen-LICENSE.txt",
+    "LICENSE",
+    "third_party_licenses/llama.cpp.LICENSE.txt"
+  ],
   "platform": "Windows x64",
-  "gpuLayers": 24,
-  "contextTokens": 4096,
-  "externalInferenceNetwork": false
+  "externalInferenceNetwork": false,
+  "inferenceSettingsResource": "LocalStory/PromptPolicy"
 }

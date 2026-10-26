@@ -22,6 +22,68 @@ public static class StorageLifecycleCheck
         p.guideProgress.runHistory.Add(new PlayedEncounterCardRecord{placeId="fixture",encounterPath=Guide});
         p.storyEvents.Add(new StoryEventRecord{eventKey="actual:1",kind="choice",chapterId="Initial",characterId="Guide",choiceId="loki_insult",relationshipId="Guide",relationshipDelta=-2});return p;
     }
+    public static object ApplyToActual()
+    {
+        if(Application.isPlaying || LocalStoryRuntimeService.IsBusy)throw new Exception("Stop gameplay and generation first.");
+        ChapterContentCatalog.Reset();
+        string root=Path.Combine(Application.persistentDataPath,"Saves");
+        if(!Directory.Exists(root))throw new DirectoryNotFoundException(root);
+        string folder=Path.GetFullPath("tmp/StorageLifecycle/ActualBackup/"+DateTime.UtcNow.ToString("yyyyMMdd-HHmmss"));
+        Directory.CreateDirectory(folder);
+        var before=new Dictionary<string,string>();
+        foreach(string file in Directory.GetFiles(root,"*",SearchOption.AllDirectories))
+        {
+            string relative=Path.GetRelativePath(root,file);byte[] bytes=File.ReadAllBytes(file);
+            string backup=Path.Combine(folder,relative);Directory.CreateDirectory(Path.GetDirectoryName(backup));File.WriteAllBytes(backup,bytes);
+            if(!File.ReadAllBytes(backup).SequenceEqual(bytes))throw new IOException("Backup failed: "+relative);
+            before[relative]=LocalStoryDialogueQueue.Hash(Convert.ToBase64String(bytes));
+        }
+        File.WriteAllText(Path.Combine(folder,"Manifest.json"),JObject.FromObject(before).ToString());
+        string tests=Path.Combine(root,"LocalStoryTests");
+        var reportFiles=LocalStoryTestArchive.List(tests);
+        var reports=reportFiles.ToDictionary(f=>f,f=>LocalStoryTestArchive.ReadReport(f));
+        int migrated=LocalStoryTestArchive.MigrateGrouped(tests);
+        foreach(string file in reportFiles)
+        {
+            var after=LocalStoryTestArchive.ReadReport(file);var prior=reports[file];
+            foreach(string key in new[]{"rawOutput","correctionRawOutput","original"})
+                if(!JToken.DeepEquals(after[key],prior[key]))throw new IOException("Report changed during migration: "+file+" / "+key);
+        }
+        var store=Store(root);int run=JsonUtility.FromJson<ProfileData>(File.ReadAllText(Path.Combine(root,"Profile.json"))).currentRun;
+        store.NextNarrativeJob();store.NextNarrativeJob(); // Normalize old jobs and inspect stored failures. Never invoke a model.
+        var queue=LocalStoryDialogueQueue.Load(store,Math.Max(1,run-1));var displayed=new JArray();
+        var instance=typeof(SaveIOService).GetField("_instance",BindingFlags.Static|BindingFlags.NonPublic);var previous=instance.GetValue(null);
+        try
+        {
+            instance.SetValue(null,store);
+            var repository=new EncounterContentRepository(run);
+            foreach(var job in queue?.jobs??new List<LocalStoryDialogueJob>())
+            {
+                bool loaded=repository.TryLoadCards(job.storyPath,out var cards,out string error);
+                bool generated=store.TryLoadGeneratedContent(run,"Encounters",job.storyPath+"/Story",out EncounterCardRoot content);
+                bool matched=!generated || (loaded&&cards.MainStory.Select(c=>c.text).SequenceEqual(content.MainStory.Select(c=>c.text)));
+                if(!matched)throw new IOException("Game loader mismatch: "+job.storyPath);
+                displayed.Add(new JObject{["storyPath"]=job.storyPath,["status"]=job.status,["reviewRequired"]=store.NarrativeRequiresReview(run,job.storyPath,out _),
+                    ["loaded"]=loaded,["generated"]=generated,["matchesGameLoader"]=matched,["cards"]=cards?.MainStory.Count??0,["error"]=error??job.error});
+            }
+        }
+        finally{instance.SetValue(null,previous);}
+        int protectedFiles=0;
+        foreach(var pair in before)
+            if(pair.Key=="Profile.json" || pair.Key.StartsWith("Runs"+Path.DirectorySeparatorChar,StringComparison.Ordinal) ||
+                pair.Key.StartsWith("Records"+Path.DirectorySeparatorChar,StringComparison.Ordinal) || pair.Key.Contains(Path.DirectorySeparatorChar+"Edits"+Path.DirectorySeparatorChar))
+            {
+                string path=Path.Combine(root,pair.Key);
+                if(!File.Exists(path) || LocalStoryDialogueQueue.Hash(Convert.ToBase64String(File.ReadAllBytes(path)))!=pair.Value)
+                    throw new IOException("Protected save/edit changed: "+pair.Key);
+                protectedFiles++;
+            }
+        var result=new JObject{["backup"]=folder,["backedUpFiles"]=before.Count,["protectedFilesUnchanged"]=protectedFiles,["migratedReports"]=migrated,
+            ["reportCountBefore"]=reportFiles.Count,["reportCountAfter"]=LocalStoryTestArchive.List(tests).Count,
+            ["nativeInferenceInvoked"]=false,["pendingJobs"]=queue?.jobs.Count(j=>j.status=="Pending"||j.status=="Generating")??0,["playback"]=displayed};
+        File.WriteAllText(Path.GetFullPath("tmp/StorageLifecycle/actual-result.json"),result.ToString(),new UTF8Encoding(false));
+        return result;
+    }
     public static async Task<object> Regression()
     {
         if(Application.isPlaying)throw new Exception("Stop gameplay first.");ChapterContentCatalog.Reset();
@@ -51,8 +113,13 @@ public static class StorageLifecycleCheck
         finally{composition["maxExamples"]=prior;}
         await LocalStoryDialogueQueue.Process(store,job,(r,ct)=>throw new Exception("completed work inferred again"),CancellationToken.None);
         Check(LocalStoryTestArchive.List(Path.Combine(root,"LocalStoryTests")).Count==reports,"duplicate result created");
-        var queue=LocalStoryDialogueQueue.Load(store,1);queue.jobs[0].status="Pending";queue.jobs[0].revision=2;store.SaveNarrativeQueue(queue);
+        string oldReport=job.reportPath;
+        string emptyAttempt=LocalStoryTestArchive.Save(Path.Combine(root,"LocalStoryTests"),JObject.FromObject(new {
+            storyPath=Guide,sourceRun=1,targetRun=2,original=JObject.Parse(JsonUtility.ToJson(Source())),rawOutput="{broken",runtimeError="cancelled"}));
+        var queue=LocalStoryDialogueQueue.Load(store,1);queue.jobs[0].status="Pending";queue.jobs[0].revision=2;queue.jobs[0].reportPath=emptyAttempt;queue.jobs[0].error="cancelled";store.SaveNarrativeQueue(queue);
         Check(LocalStoryDialogueQueue.Next(store)==null&&LocalStoryDialogueQueue.Load(store,1).jobs.Single().status=="Ready","legacy requeue not recovered from existing content");
+        var reused=LocalStoryDialogueQueue.Load(store,1).jobs.Single();
+        Check(reused.reportPath==oldReport&&string.IsNullOrEmpty(reused.error),"completed result still points to failed attempt");
         var nextProgress=Progress();store.SaveRunCheckpoint(2,"Progress",nextProgress);
         LocalStoryDialogueQueue.EncounterEnded(store,2,"fixture","Guide",Guide);
         Check(LocalStoryDialogueQueue.Load(store,2).jobs.Single().targetRun==3,"new actual dialogue cannot create following-run work");

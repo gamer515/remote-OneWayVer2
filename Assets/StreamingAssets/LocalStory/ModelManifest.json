@@ -11,8 +11,13 @@
   "runtimeSource": "https://github.com/undreamai/LlamaLib/releases/tag/v2.0.5",
   "runtimeArchiveSha256": "f3d85b2d6fbaa12839173f4438a7a2c7124bf6b25708d8be23348de2dec1156b",
   "platform": "Windows x64 Mono",
-  "gpuLayers": 24,
-  "contextTokens": 4096,
   "externalInferenceNetwork": false,
-  "licenses": ["Gemma/Notice.txt", "Gemma/GemmaTerms.html", "Gemma/GemmaProhibitedUsePolicy.html", "LICENSE", "third_party_licenses/llama.cpp.LICENSE.txt"]
+  "licenses": [
+    "Gemma/Notice.txt",
+    "Gemma/GemmaTerms.html",
+    "Gemma/GemmaProhibitedUsePolicy.html",
+    "LICENSE",
+    "third_party_licenses/llama.cpp.LICENSE.txt"
+  ],
+  "inferenceSettingsResource": "LocalStory/PromptPolicy"
 }

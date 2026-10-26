@@ -27,6 +27,9 @@ using UnityEngine;
     public bool reviewApplied, sourceFallback;
     public double draftSeconds, correctionSeconds, verificationSeconds, modelLoadSeconds, generationSeconds;
     public double draftFirstTextSeconds, correctionFirstTextSeconds;
+    public int draftInputTokens=-1,draftOutputTokens=-1,correctionInputTokens=-1,correctionOutputTokens=-1;
+    public double draftPrefillSeconds=-1,draftDecodeSeconds=-1,correctionPrefillSeconds=-1,correctionDecodeSeconds=-1;
+    public bool draftTokenLimitReached,correctionTokenLimitReached;
     public string verificationProvider;
     public long verificationBytes;
 }
@@ -131,9 +134,13 @@ public static class LocalStorySections
         var chapter = NarrativeInteractions.Chapter(report.storyPath.Split('/')[0]);
         int maxCards = LocalStoryPrompt.Limits(report.storyPath).maxCards;
         bool proofreadAll = chapter?.proofreadAllSections == true;
-        report.samplingProfile = proofreadAll ? "짧은 구간 작성 / 생성 구간 전체 교정" : "짧은 구간 작성 / 검사 실패 구간만 교정";
+        int corrections=(int?)LocalStoryPrompt.Policy["runtime"]?["maxCorrectionsPerSection"]??1;
+        if(corrections<0 || corrections>1)throw new InvalidOperationException("runtime.maxCorrectionsPerSection must be 0 or 1.");
+        // Strict application and explicit proofreading keep their repair pass.
+        bool repair=corrections>0 || !report.allowFailedOutput || proofreadAll;
+        report.samplingProfile = proofreadAll ? "짧은 구간 작성 / 생성 구간 전체 교정" : repair?"짧은 구간 작성 / 검사 실패 구간만 교정":"짧은 구간 작성 / 자동 교정 생략·실패본 확인";
         report.writingPolicy = LocalStoryRewrite.WritingPolicy + " / " + PolicyVersion + " / 빈 대사 제한 v1";
-        report.generationMode = proofreadAll ? "SectionsWithProofreading" : "SectionsWithTargetedRepair";
+        report.generationMode = proofreadAll ? "SectionsWithProofreading" : repair?"SectionsWithTargetedRepair":"SectionsWithoutRepair";
         report.prompt = "구간별 독립 생성. 실제 모델 요청과 토큰 예산은 sectionInputs에서 확인합니다.";
         report.sectionInputs = new List<LocalStorySectionInput>(); report.sectionOutputs = new List<LocalStorySectionOutput>();
         report.sectionsGenerated = report.sectionsCorrected = report.sectionsResumed = report.authoredCards = 0;
@@ -176,7 +183,8 @@ public static class LocalStorySections
                     report.saveSectionCheckpoint?.Invoke(new LocalStorySectionCheckpoint {key = key,
                         inputs = report.sectionInputs.ToList(), outputs = report.sectionOutputs.ToList(), accepted = accepted.ToList()});
                 }
-                input.grammar = LocalStoryRewrite.Grammar(source, requireNonEmpty: true);
+                input.grammar = LocalStoryRewrite.Grammar(source, requireNonEmpty: true,
+                    limits:LocalStoryPrompt.Limits(report.storyPath,LocalStoryPrompt.Paragraph(report.storyPath,report.original.MainStory[range.start],range.start)));
                 report.generationGrammar=input.grammar;
                 input.prompt = Wrap(report, input, LocalStoryRewrite.SectionMessages(report.storyPath, report.original, range.start, input.count, accepted, report.interactionMemory));
                 input.promptModules=LocalStoryPromptModules.Sources(input.prompt);input.promptChars=input.prompt.Length;
@@ -194,7 +202,7 @@ public static class LocalStorySections
                 finally { output.draftSeconds = watch.Elapsed.TotalSeconds; report.draftSeconds += output.draftSeconds; }
                 output.valid = TrySection(report,source,output.rawOutput,accepted,range.start,out var built,out output.error);
                 if(output.valid && !LocalStoryPromptModules.ValidateExampleCopies(source,built,input.prompt,out output.error))output.valid=false;
-                if (!output.valid || proofreadAll)
+                if ((!output.valid || proofreadAll) && repair)
                 {
                     output.correctionAttempted = report.correctionAttempted = true;
                     input.correctionPrompt = Wrap(report, input, LocalStoryRewrite.SectionMessages(report.storyPath, report.original,
@@ -225,6 +233,12 @@ public static class LocalStorySections
                         LocalStoryLog.Write(LocalStoryLogStage.Failed,report.storyPath+" / 카드 "+(range.start+1)+"~"+(range.start+range.count)+" / "+
                             (output.reviewApplied?"검사 실패 문구 반영, 다음 구간 계속":"출력 형식 불일치로 이 구간 원문 유지, 다음 구간 계속")+" / "+output.correctionError);
                     }
+                }
+                else if(!output.valid)
+                {
+                    output.reviewApplied=LocalStoryRewrite.TryBuildForReview(output.rawOutput,source,out built,out _);
+                    output.sourceFallback=!output.reviewApplied;
+                    if(output.sourceFallback)built=source;
                 }
                 accepted.AddRange(built.MainStory);
                 SaveProgress();
@@ -297,6 +311,8 @@ public static class LocalStorySections
         if (correction)
         {
             section.correctionFirstTextSeconds=output.firstTextSeconds;
+            section.correctionInputTokens=output.inputTokens;section.correctionOutputTokens=output.outputTokens;
+            section.correctionPrefillSeconds=output.prefillSeconds;section.correctionDecodeSeconds=output.decodeSeconds;section.correctionTokenLimitReached=output.tokenLimitReached;
             report.correctionBackend = output.backend; report.correctionFallback = output.fallback;
             report.correctionSessionReused = output.sessionReused;
             report.correctionModelLoadSeconds += output.modelLoadSeconds; report.correctionGenerationSeconds += output.generationSeconds;
@@ -306,6 +322,8 @@ public static class LocalStorySections
         else
         {
             section.draftFirstTextSeconds=output.firstTextSeconds;
+            section.draftInputTokens=output.inputTokens;section.draftOutputTokens=output.outputTokens;
+            section.draftPrefillSeconds=output.prefillSeconds;section.draftDecodeSeconds=output.decodeSeconds;section.draftTokenLimitReached=output.tokenLimitReached;
             if (report.sectionsGenerated == 0) { report.draftSessionReused = output.sessionReused; report.draftFirstTextSeconds = output.firstTextSeconds; }
             report.draftModelLoadSeconds += output.modelLoadSeconds; report.draftGenerationSeconds += output.generationSeconds;
             report.draftVerificationSeconds += output.verificationSeconds;

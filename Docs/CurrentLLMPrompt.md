@@ -163,11 +163,12 @@ memory.mode가 None이다. 이전 만남이나 친분을 만들지 않는다.
 ### 별도 출력 문법
 ```text
 root ::= "{" ws "\"cards\"" ws ":" ws "[" ws card0 ws "," ws card1 ws "," ws card2 ws "]" ws "}" ws
-card0 ::= "{\"index\":0,\"text\":" ws string ws ",\"options\":[" ws "]}"
-card1 ::= "{\"index\":1,\"text\":" ws string ws ",\"options\":[" ws "]}"
-card2 ::= "{\"index\":2,\"text\":" ws string ws ",\"options\":[" ws "]}"
-string ::= "\"" chars "\""
-chars ::= ([^"\\\x00-\x1F] | "\\" (["\\/bfnrt] | "u" [0-9a-fA-F] [0-9a-fA-F] [0-9a-fA-F] [0-9a-fA-F]))+
+card0 ::= "{\"index\":0,\"text\":" ws text-string ws ",\"options\":[" ws "]}"
+card1 ::= "{\"index\":1,\"text\":" ws text-string ws ",\"options\":[" ws "]}"
+card2 ::= "{\"index\":2,\"text\":" ws text-string ws ",\"options\":[" ws "]}"
+text-string ::= "\"" char{1,160} "\""
+option-string ::= "\"" char{1,45} "\""
+char ::= ([^"\\\x00-\x1F] | "\\" (["\\/bfnrt] | "u" [0-9a-fA-F] [0-9a-fA-F] [0-9a-fA-F] [0-9a-fA-F]))
 ws ::= [ \t\n\r]?
 
 ```
@@ -318,9 +319,10 @@ memory.mode가 None이다. 이전 만남이나 친분을 만들지 않는다.
 ### 별도 출력 문법
 ```text
 root ::= "{" ws "\"cards\"" ws ":" ws "[" ws card0 ws "]" ws "}" ws
-card0 ::= "{\"index\":0,\"text\":" ws string ws ",\"options\":[" ws "]}"
-string ::= "\"" chars "\""
-chars ::= ([^"\\\x00-\x1F] | "\\" (["\\/bfnrt] | "u" [0-9a-fA-F] [0-9a-fA-F] [0-9a-fA-F] [0-9a-fA-F]))+
+card0 ::= "{\"index\":0,\"text\":" ws text-string ws ",\"options\":[" ws "]}"
+text-string ::= "\"" char{1,160} "\""
+option-string ::= "\"" char{1,45} "\""
+char ::= ([^"\\\x00-\x1F] | "\\" (["\\/bfnrt] | "u" [0-9a-fA-F] [0-9a-fA-F] [0-9a-fA-F] [0-9a-fA-F]))
 ws ::= [ \t\n\r]?
 
 ```
@@ -502,9 +504,10 @@ memory.mode가 None이다. 이전 만남이나 친분을 만들지 않는다.
 ### 별도 출력 문법
 ```text
 root ::= "{" ws "\"cards\"" ws ":" ws "[" ws card0 ws "]" ws "}" ws
-card0 ::= "{\"index\":0,\"text\":" ws string ws ",\"options\":[" ws string ws "," ws string ws "," ws string ws "," ws string ws "]}"
-string ::= "\"" chars "\""
-chars ::= ([^"\\\x00-\x1F] | "\\" (["\\/bfnrt] | "u" [0-9a-fA-F] [0-9a-fA-F] [0-9a-fA-F] [0-9a-fA-F]))+
+card0 ::= "{\"index\":0,\"text\":" ws text-string ws ",\"options\":[" ws option-string ws "," ws option-string ws "," ws option-string ws "," ws option-string ws "]}"
+text-string ::= "\"" char{1,160} "\""
+option-string ::= "\"" char{1,45} "\""
+char ::= ([^"\\\x00-\x1F] | "\\" (["\\/bfnrt] | "u" [0-9a-fA-F] [0-9a-fA-F] [0-9a-fA-F] [0-9a-fA-F]))
 ws ::= [ \t\n\r]?
 
 ```
@@ -656,9 +659,10 @@ memory.mode가 None이다. 이전 만남이나 친분을 만들지 않는다.
 ### 별도 출력 문법
 ```text
 root ::= "{" ws "\"cards\"" ws ":" ws "[" ws card0 ws "]" ws "}" ws
-card0 ::= "{\"index\":0,\"text\":" ws string ws ",\"options\":[" ws "]}"
-string ::= "\"" chars "\""
-chars ::= ([^"\\\x00-\x1F] | "\\" (["\\/bfnrt] | "u" [0-9a-fA-F] [0-9a-fA-F] [0-9a-fA-F] [0-9a-fA-F]))+
+card0 ::= "{\"index\":0,\"text\":" ws text-string ws ",\"options\":[" ws "]}"
+text-string ::= "\"" char{1,160} "\""
+option-string ::= "\"" char{1,45} "\""
+char ::= ([^"\\\x00-\x1F] | "\\" (["\\/bfnrt] | "u" [0-9a-fA-F] [0-9a-fA-F] [0-9a-fA-F] [0-9a-fA-F]))
 ws ::= [ \t\n\r]?
 
 ```
@@ -814,10 +818,11 @@ memory.mode가 None이다. 이전 만남이나 친분을 만들지 않는다.
 ### 별도 출력 문법
 ```text
 root ::= "{" ws "\"cards\"" ws ":" ws "[" ws card0 ws "," ws card1 ws "]" ws "}" ws
-card0 ::= "{\"index\":0,\"text\":" ws string ws ",\"options\":[" ws "]}"
-card1 ::= "{\"index\":1,\"text\":" ws string ws ",\"options\":[" ws "]}"
-string ::= "\"" chars "\""
-chars ::= ([^"\\\x00-\x1F] | "\\" (["\\/bfnrt] | "u" [0-9a-fA-F] [0-9a-fA-F] [0-9a-fA-F] [0-9a-fA-F]))+
+card0 ::= "{\"index\":0,\"text\":" ws text-string ws ",\"options\":[" ws "]}"
+card1 ::= "{\"index\":1,\"text\":" ws text-string ws ",\"options\":[" ws "]}"
+text-string ::= "\"" char{1,160} "\""
+option-string ::= "\"" char{1,45} "\""
+char ::= ([^"\\\x00-\x1F] | "\\" (["\\/bfnrt] | "u" [0-9a-fA-F] [0-9a-fA-F] [0-9a-fA-F] [0-9a-fA-F]))
 ws ::= [ \t\n\r]?
 
 ```
@@ -1019,9 +1024,10 @@ memory.mode가 None이다. 이전 만남이나 친분을 만들지 않는다.
 ### 별도 출력 문법
 ```text
 root ::= "{" ws "\"cards\"" ws ":" ws "[" ws card0 ws "]" ws "}" ws
-card0 ::= "{\"index\":0,\"text\":" ws string ws ",\"options\":[" ws string ws "," ws string ws "," ws string ws "," ws string ws "]}"
-string ::= "\"" chars "\""
-chars ::= ([^"\\\x00-\x1F] | "\\" (["\\/bfnrt] | "u" [0-9a-fA-F] [0-9a-fA-F] [0-9a-fA-F] [0-9a-fA-F]))+
+card0 ::= "{\"index\":0,\"text\":" ws text-string ws ",\"options\":[" ws option-string ws "," ws option-string ws "," ws option-string ws "," ws option-string ws "]}"
+text-string ::= "\"" char{1,160} "\""
+option-string ::= "\"" char{1,45} "\""
+char ::= ([^"\\\x00-\x1F] | "\\" (["\\/bfnrt] | "u" [0-9a-fA-F] [0-9a-fA-F] [0-9a-fA-F] [0-9a-fA-F]))
 ws ::= [ \t\n\r]?
 
 ```

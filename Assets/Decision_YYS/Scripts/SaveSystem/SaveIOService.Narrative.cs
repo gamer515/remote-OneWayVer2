@@ -271,6 +271,11 @@ public partial class SaveIOService
                     job.snapshot.playEvents=null;job.snapshot.playedCards=null;
                     job.auditArchived=true;job.sectionCheckpoint=null;
                 }
+                if(!LocalStoryPrompt.SaveDiagnosticReports && (job.status=="Ready" || job.status=="ReviewRequired" || job.status=="Failed"))
+                {
+                    job.sectionCheckpoint=null;
+                    job.reportPath=null;job.auditArchived=false;
+                }
             }
             WritePackedQueue(saved);
             string legacy=GetRunDataPath(queue.sourceRun,LocalStoryDialogueQueue.FileName);
@@ -332,6 +337,9 @@ public partial class SaveIOService
                 {
                     job.status=!entry.enabled || entry.origin!="Runtime" || string.IsNullOrEmpty(entry.contentJson)?"Preserved":entry.reviewRequired?"ReviewRequired":"Ready";
                     job.contentHash=entry.contentHash;job.sectionCheckpoint=null;job.auditArchived=true;
+                    job.error=entry.reviewRequired?entry.validationError:null;
+                    if(entry.origin=="Runtime" && !string.IsNullOrEmpty(entry.contentJson))
+                        job.reportPath=FindAppliedReport(job,entry)??job.reportPath;
                     job.generationPart="저장된 결과 사용";updated=true;continue;
                 }
                 if(string.IsNullOrEmpty(job.reportPath) || !File.Exists(job.reportPath))continue;
@@ -350,9 +358,33 @@ public partial class SaveIOService
                 catch(Exception e) when(e is IOException || e is Newtonsoft.Json.JsonException || e is ArgumentException)
                 {job.status="Failed";job.error=e.Message;updated=true;}
             }
+            foreach(var job in queue.jobs.Where(j=>j.status=="Ready" && !string.IsNullOrEmpty(j.error)))
+            {
+                NarrativeStoryEntry entry;lock(narrativeGate)entry=FindNarrative(job.targetRun,job.storyPath);
+                if(entry?.origin!="Runtime" || entry.reviewRequired)continue;
+                job.error=null;job.reportPath=FindAppliedReport(job,entry)??job.reportPath;updated=true;
+            }
             if(updated) {SaveNarrativeQueue(queue);ApplySavedFailedOutputs();queue=LoadNarrativeQueue(run);}
             var next=queue.jobs.FirstOrDefault(j=>(j.status=="Pending"||j.status=="Generating")&&LocalStoryDialogueQueue.CanProcess(this,j));
             if(next!=null) return next;
+        }
+        return null;
+    }
+    private string FindAppliedReport(LocalStoryDialogueJob job,NarrativeStoryEntry entry)
+    {
+        foreach(string file in LocalStoryTestArchive.List(Path.Combine(StorageRoot,"LocalStoryTests")).OrderByDescending(p=>p,StringComparer.Ordinal))
+        {
+            try
+            {
+                var report=LocalStoryTestArchive.Load(file);
+                if(report.sourceRun!=job.sourceRun || report.targetRun!=job.targetRun || report.storyPath!=job.storyPath)continue;
+                var canonical=JsonUtility.FromJson<EncounterCardRoot>(NarrativeInteractions.StorySource(job.storyPath));
+                foreach(string raw in new[]{report.correctionRawOutput,report.rawOutput}.Where(s=>!string.IsNullOrWhiteSpace(s)))
+                    if(LocalStoryRewrite.TryBuildForReview(raw,canonical,out var candidate,out _,true) &&
+                        LocalStoryDialogueQueue.Hash(JsonUtility.ToJson(candidate,true))==entry.contentHash)return file;
+            }
+            catch(Exception e) when(e is IOException || e is Newtonsoft.Json.JsonException || e is FormatException || e is ArgumentException)
+            {Debug.LogWarning("[Narrative] 결과 연결 확인 보류: "+e.Message);}
         }
         return null;
     }

@@ -1,0 +1,62 @@
+{
+  "suiteId": "json-modules-examples-v1",
+  "seeds": [12345, 67890],
+  "exampleLimits": [0, 2],
+  "timeoutSecondsPerCase": 150,
+  "comparisonProfiles": {
+    "baseline": {"runtime":{"maxCorrectionsPerSection":1}},
+    "baseDirect": {"runtime":{"maxCorrectionsPerSection":0}},
+    "baseBatch512": {"runtime":{"maxCorrectionsPerSection":0},"inference":{"batchSize":512}},
+    "baseFlash": {"runtime":{"maxCorrectionsPerSection":0},"inference":{"batchSize":512,"flashAttention":"on"}}
+  },
+  "variants": {
+    "bounded-regression": {
+      "caseIds": ["mark-dream-impression"],
+      "seeds": [12345],
+      "exampleLimits": [0]
+    }
+  },
+  "cases": [
+    {
+      "id": "intro-first-meeting",
+      "storyPath": "Initial/Initial_01/Encounters/guide",
+      "memory": { "chapterId": "Initial", "memoryMode": "None" },
+      "referenceAnswers": {
+        "reviewedByUser": false,
+        "cards": [
+          {"eventId":"loki_return_knowledge","speaker":"로키","text":"자, 빼앗은 지식은 돌려줬네. 이제 내가 하는 말이 알아들리나?"},
+          {"eventId":"loki_identity_choice","speaker":"로키","text":"장난의 신을 만난 소감이 어떤가?","options":["진짜 신을 만나다니 신기하네.","그런데 왜 이 광산에 있는 거야?","별로 관심 없어.","신이라는 작자가 할 일도 없나 보네."]}
+        ]
+      },
+      "review": [
+        "NPC가 말하고 플레이어가 선택지로 대답하는가",
+        "광산 안내·지식 회수·난독 반응·지식 반환·정체 소개의 사건을 유지하는가",
+        "지식 변화의 대상이 플레이어로 유지되는가",
+        "선택지의 질문·무관심·모욕 의도를 유지하는가"
+      ]
+    },
+    {
+      "id": "mark-dream-impression",
+      "storyPath": "Initial/Initial_01/Encounters/guide/Mark",
+      "referenceAnswers": {
+        "reviewedByUser": false,
+        "cards": [
+          {"eventId":"prototype_mark_intro","speaker":"로키","text":"그 표식은 잘 챙겨 두게. 어디 흘리고 다니지 말고."},
+          {"eventId":"prototype_mark_choice","speaker":"로키","text":"그래, 더 궁금한 게 있나?","options":["이 표식은 어디에 쓰는 거야?","표식은 돌려줄게.","너에 관해 더 물어보고 싶어.","선물은 간직할게. 계속 이야기해."]}
+        ]
+      },
+      "memory": {
+        "chapterId": "Initial",
+        "memoryMode": "Dream",
+        "dreamMemories": [
+          { "characterId": "Guide", "sourceRun": 1, "impression": "여행자에게서 까칠한 인상이 희미하게 남는다." }
+        ]
+      },
+      "review": [
+        "표식 전달과 현재 선택 의도를 유지하는가",
+        "꿈의 인상을 실제 과거 만남이나 대사로 단정하지 않는가",
+        "기록에 없는 새 보상이나 효과를 만들지 않는가"
+      ]
+    }
+  ]
+}

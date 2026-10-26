@@ -93,6 +93,7 @@ public sealed class LocalStoryNative : IDisposable
 {
     private IntPtr library, service;
     public string Backend { get; private set; }
+    public JObject LastDiagnostics { get; private set; }
     [DllImport("kernel32", CharSet = CharSet.Unicode, SetLastError = true)]
     private static extern IntPtr LoadLibraryEx(string path, IntPtr reserved, uint flags);
     [DllImport("kernel32", CharSet = CharSet.Ansi)] private static extern IntPtr GetProcAddress(IntPtr module, string name);
@@ -101,6 +102,7 @@ public sealed class LocalStoryNative : IDisposable
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate void ServiceCall(IntPtr instance);
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate void SetString(IntPtr instance, IntPtr value);
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate IntPtr StringCall(IntPtr instance, IntPtr value);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate IntPtr ReadValue(IntPtr instance);
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate void CancelCall(IntPtr instance, int slot);
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate void StreamCall(IntPtr text);
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate IntPtr CompletionCall(IntPtr instance, IntPtr prompt, StreamCall callback, int slot,
@@ -110,6 +112,8 @@ public sealed class LocalStoryNative : IDisposable
     private ServiceCall stop, delete;
     private SetString grammar, parameters;
     private StringCall template;
+    private StringCall tokenize;
+    private ReadValue readGrammar;
     private CompletionCall completion;
     private CancelCall cancel;
     private StatusCall status;
@@ -180,6 +184,7 @@ public sealed class LocalStoryNative : IDisposable
             stop = Bind<ServiceCall>("LLM_Stop"); delete = Bind<ServiceCall>("LLM_Delete");
             grammar = Bind<SetString>("LLM_Set_Grammar"); parameters = Bind<SetString>("LLM_Set_Completion_Parameters");
             template = Bind<StringCall>("LLM_Apply_Template"); completion = Bind<CompletionCall>("LLM_Completion");
+            tokenize=Bind<StringCall>("LLM_Tokenize");readGrammar=Bind<ReadValue>("LLM_Get_Grammar");
             cancel = Bind<CancelCall>("LLM_Cancel");
             using (var command = new Utf8(InitializationCommand(modelFile, gpu, configuration)))
                 service = Bind<ConstructFromCommand>("LLMService_From_Command")(command.Pointer);
@@ -197,16 +202,29 @@ public sealed class LocalStoryNative : IDisposable
         using (var p = new Utf8((sampling ?? LocalStorySampling.Legacy()).Parameters(seed))) parameters(service, p.Pointer);
         using (var g = new Utf8(outputGrammar)) grammar(service, g.Pointer);
         Check("grammar-and-sampling");
+        if(ReadUtf8(readGrammar(service))!=outputGrammar)throw new InvalidOperationException("Native grammar read-back mismatch.");
         string prompt;
         using (var m = new Utf8(messagesJson)) prompt = ReadUtf8(template(service, m.Pointer));
         Check("chat-template");
+        int inputTokens;
+        using(var p=new Utf8(prompt))inputTokens=JArray.Parse(ReadUtf8(tokenize(service,p.Pointer))).Count;
+        Check("tokenize");
         StreamCall callback = ptr => { progress?.Invoke(ReadUtf8(ptr)); };
         using (token.Register(() => cancel(service, 0)))
         using (var p = new Utf8(prompt))
         {
-            string output = ReadUtf8(completion(service, p.Pointer, callback, 0, false));
+            string response = ReadUtf8(completion(service, p.Pointer, callback, 0, true));
             GC.KeepAlive(callback);
-            token.ThrowIfCancellationRequested(); Check("completion"); return output;
+            token.ThrowIfCancellationRequested(); Check("completion");
+            var data=JObject.Parse(response);
+            if(data["error"]!=null)throw new InvalidOperationException("Native completion: "+data["error"].ToString(Formatting.None));
+            string output=(string)data["content"]??throw new InvalidDataException("Native completion content missing.");
+            LastDiagnostics=new JObject {
+                ["inputTokens"]=inputTokens,["outputTokens"]=(int?)data["tokens_predicted"]??(int?)data["timings"]?["predicted_n"]??-1,
+                ["prefillSeconds"]=data["timings"]?["prompt_ms"]==null?-1:(double)data["timings"]["prompt_ms"]/1000,
+                ["decodeSeconds"]=data["timings"]?["predicted_ms"]==null?-1:(double)data["timings"]["predicted_ms"]/1000,
+                ["tokenLimitReached"]=(bool?)data["stopped_limit"]==true || (string)data["stop_type"]=="limit" };
+            return output;
         }
     }
     private void Check(string stage)
@@ -335,6 +353,9 @@ public static class LocalStoryInference
                         verificationBytes = verification?.bytesHashed ?? 0,
                         sessionReused = reused, verificationSeconds = verificationSeconds, modelLoadSeconds = loadSeconds, generationSeconds = generating.Elapsed.TotalSeconds,
                         firstTextSeconds = firstTextSeconds };
+                    output.inputTokens=(int)session.LastDiagnostics["inputTokens"];output.outputTokens=(int)session.LastDiagnostics["outputTokens"];
+                    output.prefillSeconds=(double)session.LastDiagnostics["prefillSeconds"];output.decodeSeconds=(double)session.LastDiagnostics["decodeSeconds"];
+                    output.tokenLimitReached=(bool)session.LastDiagnostics["tokenLimitReached"];
                     if (!reuseSession) ReleaseUnderGate();
                     return output;
                 }
@@ -354,6 +375,9 @@ public sealed class LocalStoryModelOutput
     public long verificationBytes;
     public bool sessionReused;
     public double verificationSeconds, modelLoadSeconds, generationSeconds, firstTextSeconds;
+    public int inputTokens=-1,outputTokens=-1;
+    public double prefillSeconds=-1,decodeSeconds=-1;
+    public bool tokenLimitReached;
 }
 
 public static class LocalStoryLifetime

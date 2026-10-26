@@ -1,6 +1,6 @@
 # 이야기 데이터 실행 구조
 
-v8부터 집필 규칙과 예시는 [JSON 모듈](PromptModules.md)에서 조건별로 조립한다. 실패본 자동 게임 적용은 기본적으로 껐다. 아래의 v7 실패본 재생 설명은 진단 모드를 켰을 때에만 적용한다.
+집필 규칙과 예시는 [JSON 모듈](PromptModules.md)에서 조건별로 조립한다. 사용자 요청으로 실패본은 다음 회차에서 확인하고, 완료 결과는 회차 전환이나 정책 변경으로 다시 생성하지 않는다. 현재 저장 규칙은 [StorageLifecycle.md](StorageLifecycle.md)를 참조한다.
 
 현재 작성법은 [ChapterStoryAuthoring.md](ChapterStoryAuthoring.md), 확인 절차는 [LocalStoryTestWorkflow.md](LocalStoryTestWorkflow.md)를 참조한다.
 

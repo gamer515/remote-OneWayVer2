@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using Newtonsoft.Json.Linq;
 using UnityEngine;
 
 [Serializable] public sealed class LocalStoryPatch { public LocalStoryPatchCard[] cards; }
@@ -113,8 +114,10 @@ public static partial class LocalStoryRewrite
         }
         return b.Append('"').ToString();
     }
-    public static string Grammar(EncounterCardRoot original, bool requireNonEmpty = false)
+    public static string Grammar(EncounterCardRoot original, bool requireNonEmpty = false,NarrativeWritingLimits limits=null)
     {
+        limits??=LocalStoryPrompt.Policy["limits"].ToObject<NarrativeWritingLimits>();
+        if(limits.textMaxChars<1 || limits.optionMaxChars<1)throw new ArgumentException("Invalid JSON wording limits.");
         var b = new StringBuilder("root ::= \"{\" ws \"\\\"cards\\\"\" ws \":\" ws \"[\" ws ");
         for (int i = 0; i < original.MainStory.Count; i++)
             b.Append((i == 0 ? "" : "\",\" ws ") + "card" + i + " ws ");
@@ -123,15 +126,17 @@ public static partial class LocalStoryRewrite
         {
             var card = original.MainStory[i];
             b.Append("card" + i + " ::= " + Quote("{\"index\":" + i + ",\"text\":") + " ws " +
-                "string" + " ws " + Quote(",\"options\":[") + " ws ");
+                "text-string" + " ws " + Quote(",\"options\":[") + " ws ");
             for (int j = 0; j < (card.options?.Length ?? 0); j++)
-                b.Append((j == 0 ? "" : "\",\" ws ") + "string" + " ws ");
+                b.Append((j == 0 ? "" : "\",\" ws ") + "option-string" + " ws ");
             b.Append(Quote("]}") + "\n");
         }
         // Unbounded ws let the model spend its entire output budget on newlines between cards.
         // One optional whitespace token at each boundary is sufficient; display formatting is separate.
-        b.Append("string ::= \"\\\"\" chars \"\\\"\"\nchars ::= ([^\"\\\\\\x00-\\x1F] | \"\\\\\" ([\"\\\\/bfnrt] | \"u\" [0-9a-fA-F] [0-9a-fA-F] [0-9a-fA-F] [0-9a-fA-F]))" +
-            (requireNonEmpty ? "+" : "*") + "\nws ::= [ \\t\\n\\r]?\n");
+        int minimum=requireNonEmpty?1:0;
+        b.Append("text-string ::= \"\\\"\" char{"+minimum+","+limits.textMaxChars+"} \"\\\"\"\n");
+        b.Append("option-string ::= \"\\\"\" char{"+minimum+","+limits.optionMaxChars+"} \"\\\"\"\n");
+        b.Append("char ::= ([^\"\\\\\\x00-\\x1F] | \"\\\\\" ([\"\\\\/bfnrt] | \"u\" [0-9a-fA-F] [0-9a-fA-F] [0-9a-fA-F] [0-9a-fA-F]))\nws ::= [ \\t\\n\\r]?\n");
         return b.ToString();
     }
 
@@ -331,6 +336,9 @@ public static partial class LocalStoryRewrite
     private static void ValidateWording(string original, string changed, int limit, LocalStoryRevisionRequest memory)
     {
         if (string.IsNullOrWhiteSpace(changed) || changed.Length > limit) throw new FormatException("대사/선택지 비어 있음 또는 길이 초과");
+        foreach(var rule in LocalStoryPrompt.Policy["validation"]?["invalidOutputPatterns"] as JArray??new JArray())
+            if(Regex.IsMatch(changed.Trim(),(string)rule["pattern"]) && !Regex.IsMatch((original??"").Trim(),(string)rule["pattern"]))
+                throw new FormatException("invalid-wording:"+(string)rule["code"]);
         if (Regex.IsMatch(changed, @"^\s*[^:：\r\n]{1,20}[:：]") || Regex.IsMatch(changed, @"\b(?:Guide|Player|Duelist|Gambler)\s*(?:→|->)") || changed.Contains("<think>") || changed.Contains("```"))
             throw new FormatException("역할 접두사/추론문/코드 블록 금지");
         if (Cores(original) != Cores(changed)) throw new FormatException("{고정 문자열} 변경");
