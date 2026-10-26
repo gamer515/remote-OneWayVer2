@@ -18,6 +18,13 @@ public sealed class StorySceneFrame
 }
 
 [Serializable]
+public sealed class EncounterDialogueSnapshot
+{
+    public string placeId, storyPath, variant, sourceHash, contentHash;
+    public ScenarioData cards;
+}
+
+[Serializable]
 public sealed class EncounterCard
 {
     public string type;
@@ -43,6 +50,7 @@ public sealed class EncounterCard
 public sealed class EncounterContentRepository
 {
     private readonly int runNumber;
+    private string sourceHash, sourceVariant;
 
     public EncounterContentRepository(int runNumber = 1)
     {
@@ -50,11 +58,12 @@ public sealed class EncounterContentRepository
     }
 
     public bool TryLoadCards(string contentPath, out ScenarioData cards, out string error,
-        bool knowledgeZero = false, bool charmZero = false)
+        bool knowledgeZero = false, bool charmZero = false, EncounterDialogueSnapshot snapshot = null)
     {
         cards = null;
-        EncounterCardRoot original = SaveIOService.Instance.LoadResourceData<EncounterCardRoot>(
-            contentPath + "/Story");
+        contentPath=ChapterContentCatalog.ResolveStoryPath(contentPath,runNumber);
+        string sourceJson=NarrativeInteractions.StorySource(contentPath);
+        EncounterCardRoot original = sourceJson==null?null:JsonUtility.FromJson<EncounterCardRoot>(sourceJson);
         NormalizeOptionalActions(original);
         if (original?.MainStory == null || original.MainStory.Count == 0)
         {
@@ -67,7 +76,7 @@ public sealed class EncounterContentRepository
             knowledgeZero ? "KnowledgeZero" : charmZero ? "CharmZero" : null;
         if (variant != null)
         {
-            var asset = Resources.Load<TextAsset>("Story_Json_Data/" + contentPath + "/Variants/" + variant + "/Story");
+            var asset = ChapterContentCatalog.Asset("Story_Json_Data/" + contentPath + "/Variants/" + variant + "/Story");
             if (asset != null)
             {
                 var alternative = JsonUtility.FromJson<EncounterCardRoot>(asset.text);
@@ -76,6 +85,17 @@ public sealed class EncounterContentRepository
                     source = original = alternative;
             }
         }
+        sourceHash = LocalStoryDialogueQueue.Hash(JsonUtility.ToJson(original));
+        sourceVariant = variant;
+        if (snapshot != null && snapshot.storyPath == contentPath && (snapshot.variant ?? "") == (variant ?? "") &&
+            snapshot.cards?.MainStory?.Count == original.MainStory.Count &&
+            snapshot.contentHash == LocalStoryDialogueQueue.Hash(JsonUtility.ToJson(snapshot.cards)) &&
+            SnapshotBindingsMatch(original,snapshot))
+        {
+            cards = JsonUtility.FromJson<ScenarioData>(JsonUtility.ToJson(snapshot.cards));
+            error = null;
+            return true;
+        }
         if (runNumber > 1 && SaveIOService.Instance.TryLoadGeneratedContent(
                 runNumber,
                 "Encounters",
@@ -83,8 +103,10 @@ public sealed class EncounterContentRepository
                 out EncounterCardRoot generated))
         {
             NormalizeOptionalActions(generated);
-            if (TryApplyGeneratedText(original, generated, out string generatedError))
+            bool review=SaveIOService.Instance.NarrativeRequiresReview(runNumber,contentPath,out string reviewError);
+            if (TryApplyGeneratedText(original, generated, out string generatedError,review))
             {
+                if(review)Debug.LogWarning("[LocalStory][검사 실패본 사용] "+runNumber+"회차 / "+contentPath+" / "+reviewError);
                 Debug.Log(
                     $"[EncounterContentRepository] {runNumber}회차 생성 이야기를 사용합니다: " +
                     $"{contentPath}/Story");
@@ -126,7 +148,7 @@ public sealed class EncounterContentRepository
             // JSON은 오브젝트 폴더와 배열 순서로 식별합니다. 런타임 기록용 번호만 결정적으로 만듭니다.
             cards.MainStory.Add(new Dialogue
             {
-                id = StableCardId(contentPath, index),
+                id = ChapterContentCatalog.Info(contentPath)!=null ? ChapterContentCatalog.CardId(contentPath,index) : StableCardId(contentPath, index),
                 type = sourceCard.type,
                 text = sourceCard.text,
                 options = sourceCard.options,
@@ -151,9 +173,30 @@ public sealed class EncounterContentRepository
         return true;
     }
 
+    private static bool SnapshotBindingsMatch(EncounterCardRoot original,EncounterDialogueSnapshot snapshot)
+    {
+        if(string.IsNullOrEmpty(snapshot.sourceHash)) return false;
+        // An already opened conversation survives writing-policy/wording updates. Its actual actions must still match.
+        var pinned=JsonUtility.FromJson<EncounterCardRoot>(JsonUtility.ToJson(snapshot.cards));
+        pinned.storyFrame=original.storyFrame;
+        for(int i=0;i<pinned.MainStory.Count;i++)
+        {
+            StoryChoiceRoles.FillMissingMetadata(pinned.MainStory[i],original.MainStory[i]);
+            pinned.MainStory[i].coreMeaning=original.MainStory[i].coreMeaning;
+            pinned.MainStory[i].semanticText=original.MainStory[i].semanticText;
+        }
+        return LocalStoryRewrite.SameBindings(original,pinned);
+    }
+
+    public EncounterDialogueSnapshot Capture(string placeId, string contentPath, ScenarioData cards) => new EncounterDialogueSnapshot {
+        placeId = placeId, storyPath = ChapterContentCatalog.ResolveStoryPath(contentPath,runNumber), variant = sourceVariant, sourceHash = sourceHash,
+        cards = JsonUtility.FromJson<ScenarioData>(JsonUtility.ToJson(cards)),
+        contentHash = LocalStoryDialogueQueue.Hash(JsonUtility.ToJson(cards))
+    };
+
 
     private static bool StoryExists(string path) => !string.IsNullOrWhiteSpace(path) &&
-        Resources.Load<TextAsset>("Story_Json_Data/" + path + "/Story") != null;
+        NarrativeInteractions.StorySource(path) != null;
 
     private static void NormalizeOptionalActions(EncounterCardRoot root)
     {
@@ -185,6 +228,7 @@ public sealed class EncounterContentRepository
                 action.storyPath = EmptyToNull(action.storyPath);
                 action.relationshipId = EmptyToNull(action.relationshipId);
                 if (action.requiresUnlocks?.Length == 0) action.requiresUnlocks = null;
+                if (action.requiresItems?.Length == 0) action.requiresItems = null;
                 if (action.grantsUnlocks?.Length == 0) action.grantsUnlocks = null;
             }
             if (card?.guideAction != null && string.IsNullOrEmpty(card.guideAction.kind) &&
@@ -209,6 +253,13 @@ public sealed class EncounterContentRepository
             left.semanticText = right.semanticText = null;
             left.coreMeaning = right.coreMeaning = null;
             left.speakerId = right.speakerId = null;
+            // Authored mechanic variants have their own stable line/choice IDs. Compare the
+            // execution fields; generated text is still checked against the selected variant exactly.
+            if (left.choiceKind == "Mechanic" && right.choiceKind == "Mechanic" &&
+                left.choiceActions?.Length == right.choiceActions?.Length)
+                for (int j = 0; j < (left.choiceActions?.Length ?? 0); j++)
+                    if (left.choiceActions[j] != null && right.choiceActions[j] != null)
+                        left.choiceActions[j].choiceId = right.choiceActions[j].choiceId = null;
             if (JsonUtility.ToJson(left) != JsonUtility.ToJson(right)) return false;
         }
         return true;
@@ -283,7 +334,7 @@ public sealed class EncounterContentRepository
     private static bool TryApplyGeneratedText(
         EncounterCardRoot original,
         EncounterCardRoot generated,
-        out string error)
+        out string error,bool reviewRequired=false)
     {
         if (generated?.MainStory == null ||
             generated.MainStory.Count != original.MainStory.Count)
@@ -325,18 +376,18 @@ public sealed class EncounterContentRepository
                 generatedCard.nextStoryPath != originalCard.nextStoryPath ||
                 JsonUtility.ToJson(generatedCard.guideAction) != JsonUtility.ToJson(originalCard.guideAction) ||
                 !ChoiceActionsEqual(generatedCard.choiceActions, originalCard.choiceActions) ||
-                !OptionsPreserveStructure(originalCard.options, generatedCard.options))
+                !OptionsPreserveStructure(originalCard.options, generatedCard.options,reviewRequired))
             {
                 error = $"{index}번째 카드의 대사/선택지 문구 외 구조가 원본과 다릅니다.";
                 return false;
             }
 
-            if (!HasSameImmutableCores(originalCard.text, generatedCard.text))
+            if (!reviewRequired && !HasSameImmutableCores(originalCard.text, generatedCard.text))
             {
                 error = $"{index}번째 카드의 {{ }} 핵심 문자열이 변경되었습니다.";
                 return false;
             }
-            if (!LocalStoryRewrite.ValidateCardWording(originalCard, generatedCard, out string wordingError))
+            if (!reviewRequired && !LocalStoryRewrite.ValidateCardWording(originalCard, generatedCard, out string wordingError))
             {
                 error = $"{index}번째 생성 대사: {wordingError}";
                 return false;
@@ -353,13 +404,13 @@ public sealed class EncounterContentRepository
         return true;
     }
 
-    private static bool OptionsPreserveStructure(string[] original, string[] generated)
+    private static bool OptionsPreserveStructure(string[] original, string[] generated,bool reviewRequired=false)
     {
         if (original == null) return generated == null;
         if (generated == null || generated.Length != original.Length) return false;
         for (int i = 0; i < original.Length; i++)
-            if (string.IsNullOrWhiteSpace(generated[i]) || generated[i].Length > 45 ||
-                !HasSameImmutableCores(original[i], generated[i])) return false;
+            if (string.IsNullOrWhiteSpace(generated[i]) || (!reviewRequired && (generated[i].Length > 45 ||
+                !HasSameImmutableCores(original[i], generated[i])))) return false;
         return true;
     }
 

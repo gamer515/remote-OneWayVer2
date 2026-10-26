@@ -40,6 +40,8 @@ public sealed class GuideProgress
     public int[] allocationStatsBefore;
     public int[] committedStats;
     public List<PlayedEncounterCardRecord> runHistory = new List<PlayedEncounterCardRecord>();
+    // One frozen scene, not the lifetime of generated variants. New encounters take the current ready version.
+    public EncounterDialogueSnapshot activeDialogue;
 }
 
 [Serializable]
@@ -62,6 +64,7 @@ public sealed class LocalStoryRevisionRequest
     public List<StoryEventRecord> events;
     public List<PlayedEncounterCardRecord> playedCards;
     public string[] earnedUnlocks;
+    public string[] ownedItemIds;
     public LocalStoryNpcContext[] npcContexts;
     public string generationError;
     public List<LocalStoryRuntimeResult> generationResults = new List<LocalStoryRuntimeResult>();
@@ -102,6 +105,7 @@ public sealed class StoryEventRecord
     public int quantity;
     public string direction;
     public string reason;
+    public string resultStoryPath;
 }
 
 public static class GuideAllocationRules

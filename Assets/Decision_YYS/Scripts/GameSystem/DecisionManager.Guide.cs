@@ -22,7 +22,6 @@ public partial class DecisionManager
         if (saveService == null || session == null || guideProgress == null || storyEvents == null) return;
         saveService.SaveStoryCheckpoint(guideProgress, storyEvents, session.PlayedEncounterHistory,
             coinDropController.RemainingCoins, storyVisit, endReason);
-        LocalStoryNotebook.Refresh(SaveIOService.Instance);
     }
 
     private StoryEventRecord NewStoryEvent(string key, string kind, Dialogue card)
@@ -30,7 +29,7 @@ public partial class DecisionManager
         string characterId = card.speakerId;
         if (string.IsNullOrWhiteSpace(characterId) && pendingEncounter.HasValue)
             characterId = pendingEncounter.Value.DisplayName;
-        TextAsset profile = Resources.Load<TextAsset>("Story_Json_Data/Characters/" + characterId);
+        TextAsset profile = ChapterContentCatalog.Asset("Story_Json_Data/Characters/" + characterId);
         StoryCharacter character = profile != null ? JsonUtility.FromJson<StoryCharacter>(profile.text) : null;
         string[] path = (currentScenarioPath ?? "").Split('/');
         return new StoryEventRecord

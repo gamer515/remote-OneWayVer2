@@ -25,7 +25,7 @@ public sealed class LocalStoryTestPanel : MonoBehaviour
     private Button generateButton, previousButton, nextButton;
     private UnityEngine.UI.Button inputButton;
     private UnityEngine.UI.Button modelButton;
-    private LocalStoryTestModel selectedModel = LocalStoryTestModel.Qwen;
+    private LocalStoryTestModel selectedModel = LocalStoryTestModel.Gemma;
     public LocalStoryTestModel SelectedModel => selectedModel;
     private volatile bool correcting;
     private UnityEngine.UI.Button savedResultsButton;
@@ -40,6 +40,8 @@ public sealed class LocalStoryTestPanel : MonoBehaviour
     private CancellationTokenSource cancellation;
     private Task job;
     private volatile string streamed;
+    private string generationPart;
+    private string generationPurpose;
     private double started;
     private bool inputWasEnabled, ownsInputLock;
     private JourneyBoardInput board;
@@ -64,7 +66,7 @@ public sealed class LocalStoryTestPanel : MonoBehaviour
         Stretch((RectTransform)panel.transform); panel.AddComponent<Image>().color = new Color(0.065f,0.075f,0.09f,0.99f);
         Text(panel.transform,"내장형 이야기 생성 테스트",50,28,1000,55,38);
         applyButton=MakeButton(panel.transform,"게임 확인용 적용",1100,28,260,55,OpenGameApply);
-        modelButton = MakeButton(panel.transform,"모델: Qwen",1390,28,280,55,CycleModel);
+        modelButton = MakeButton(panel.transform,"모델: "+selectedModel,1390,28,280,55,CycleModel);
         MakeButton(panel.transform,"닫기",1700,28,170,55,Close);
         previousButton = MakeButton(panel.transform,"이전 이야기",50,102,190,60,()=>Select(-1));
         pathLabel = Text(panel.transform,"",260,102,1320,60,28);
@@ -77,7 +79,7 @@ public sealed class LocalStoryTestPanel : MonoBehaviour
         generatedLabel = ScrollText(panel.transform,"Generated",1010,296,860,530);
         statusLabel = Text(panel.transform,"",50,844,1820,92,25);
         generateButton = MakeButton(panel.transform,"로컬 생성",50,952,230,58,Generate);
-        generateButton.GetComponentInChildren<TMP_Text>().text="생성 (Qwen)";
+        UpdateModelLabels();
         MakeButton(panel.transform,"취소",300,952,180,58,()=>cancellation?.Cancel());
         savedResultsButton = MakeButton(panel.transform,"저장 결과 보기",1100,952,420,58,()=>
         {
@@ -102,7 +104,7 @@ public sealed class LocalStoryTestPanel : MonoBehaviour
     }
     public static List<string> DiscoverPaths()
     {
-        var terrain = Resources.Load<TextAsset>("Story_Json_Data/Initial/Initial_01/Terrain");
+        var terrain = ChapterContentCatalog.Asset("Story_Json_Data/Initial/Initial_01/Terrain");
         var definition = terrain == null ? null : JsonUtility.FromJson<TerrainDefinitionRoot>(terrain.text);
         var queue = new Queue<string>((definition?.TerrainInfo?.places ?? Array.Empty<TerrainPlaceDefinition>()).Select(p=>p.connectStoryCards).Where(p=>!string.IsNullOrWhiteSpace(p)));
         var known = new HashSet<string>(); var result = new List<string>();
@@ -110,7 +112,7 @@ public sealed class LocalStoryTestPanel : MonoBehaviour
         {
             string path = queue.Dequeue();
             if (!known.Add(path) || !path.StartsWith("Initial/",StringComparison.Ordinal)) continue;
-            var asset = Resources.Load<TextAsset>("Story_Json_Data/"+path+"/Story");
+            var asset = ChapterContentCatalog.Asset("Story_Json_Data/"+path+"/Story");
             if (asset == null) continue;
             result.Add(path);
             var root = JsonUtility.FromJson<EncounterCardRoot>(asset.text);
@@ -157,14 +159,14 @@ public sealed class LocalStoryTestPanel : MonoBehaviour
         inputButton.GetComponentInChildren<TMP_Text>().text="입력: "+LocalStoryTestInputs.Name(inputScenario);
         inputButton.interactable=path==LocalStoryTestInputs.GuidePath;
         pathLabel.text = (selected+1)+" / "+paths.Count+"  "+path.Replace("Initial/Initial_01/Encounters/","");
-        original = JsonUtility.FromJson<EncounterCardRoot>(Resources.Load<TextAsset>("Story_Json_Data/"+path+"/Story").text);
+        original = JsonUtility.FromJson<EncounterCardRoot>(ChapterContentCatalog.Asset("Story_Json_Data/"+path+"/Story").text);
         originalLabel.text = Format(original); generatedLabel.text = "생성 버튼을 눌러 비교하세요.";
         Report = null;
         contextLabel.text = inputScenario>0?"테스트 전용: "+LocalStoryTestInputs.Name(inputScenario)+" / 가상 기억 사용 / 실제 선택/세이브 미변경":
             memory == null ? "실제 완료 회차 기록 없음 — 첫 만남 표현 테스트" :
             $"실제 기록: {memory.sourceRun} -> {memory.targetRun}회차 / {memory.chapterId} / 사건 {memory.events?.Count ?? 0}개 / 능력치 {string.Join("/", memory.finalStats ?? Array.Empty<int>())}";
         statusLabel.text = LocalStoryTestModels.Name(selectedModel)+" / 외부 통신 없음 / 모델 로딩 시간 포함\n"+
-            (selectedModel==LocalStoryTestModel.Gemma?"Gemma는 Editor 테스트 전용. 초안·교정 모두 Gemma 사용. 설치 파일 검증 시간 포함.":"초안·교정 모두 Qwen 사용.");
+            (selectedModel==LocalStoryTestModel.Gemma?"초안·교정 모두 Gemma 사용. Windows x64 Mono 빌드 지원. 모델 파일 검증 시간 포함.":"초안·교정 모두 Qwen 사용. 기본 Gemma 빌드에는 Qwen 모델을 포함하지 않습니다.");
     }
     private void UpdateModelLabels()
     {
@@ -191,79 +193,65 @@ public sealed class LocalStoryTestPanel : MonoBehaviour
     public void GenerateWithoutWritingExamplesForComparison() => GenerateInternal(false);
     private async void GenerateInternal(bool useWritingExamples)
     {
-          if (IsGenerating || LocalStoryRuntimeService.IsBusy || original == null || readingSaved) return;
+        if (IsGenerating || LocalStoryRuntimeService.IsBusy || original == null || readingSaved) return;
         cancellation?.Dispose(); cancellation = new CancellationTokenSource(); cancellation.CancelAfter(TimeSpan.FromMinutes(5));
-        Report = null; streamed = ""; correcting=false; generatedLabel.text = "초안 모델 로딩 중...";
+        Report = null; streamed = ""; generationPart="단락 계획 확인"; correcting=false; generatedLabel.text = "단락 생성 준비 중...";
         var runOriginal = JsonUtility.FromJson<EncounterCardRoot>(JsonUtility.ToJson(original));
-        string path = paths[selected], root = System.IO.Path.Combine(Application.streamingAssetsPath,"LocalStory");
-        var model=selectedModel; // Capture once: both passes must use the same selection.
+        string path = paths[selected];
+        var model=selectedModel; // Capture once for every section of this request.
         var report = new LocalStoryTestReport { storyPath = path, model=LocalStoryTestModels.Name(model), original = runOriginal, sourceRun = memory?.sourceRun ?? 1,
             targetRun = memory?.targetRun ?? 2, seed = 12345, createdUtc = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ") };
-        var sampling=LocalStorySampling.Comparison(); // Fixed conditions; only the model selection changes.
-        report.samplingProfile=sampling.Name; report.draftParameters=sampling.Parameters(report.seed);
-        string modelPath;
         try { if(useWritingExamples) report.examplePrompt = LocalStoryTestArchive.CaptureWritingExamples(path,out report.exampleSummary,out report.exampleSources);
             else { report.examplePrompt=""; report.exampleSources=Array.Empty<string>(); report.exampleSummary="수정 예시 미사용 대조 시험"; report.comparisonMode="NoWritingExamples"; }
-            report.prompt = LocalStoryTestModels.Messages(model,LocalStoryTestArchive.AttachWritingExamples(LocalStoryRewrite.Messages(path,runOriginal,memory),report.examplePrompt));
-            modelPath=LocalStoryTestModels.PathFor(root,model); }
+            LocalStoryPrompt.Plan(path,runOriginal); }
         catch(Exception e) { statusLabel.text="생성 입력 확인 실패: "+e.Message;
             LocalStoryLog.Write(LocalStoryLogStage.Failed,"테스트 / "+report.model+" / "+path+" / 입력 확인: "+e.Message); return; }
-        string writingPolicy=path==LocalStoryTestInputs.GuidePath?LocalStoryRewrite.WritingPolicy:"기존 일반 대화";
+        string writingPolicy=LocalStoryRewrite.WritingPolicy+" / "+LocalStorySections.PolicyVersion;
         report.testScenario=(inputScenario==0?"ActualRecord":"Synthetic / "+LocalStoryTestInputs.Name(inputScenario))+" / "+writingPolicy;
         if(!useWritingExamples) report.testScenario+=" / 수정 예시 제외 대조";
         report.writingPolicy=writingPolicy;
-        report.generationGrammar=LocalStoryRewrite.Grammar(runOriginal);
         report.interactionMemory=memory;
         report.interactionSource=inputScenario==0?"실제 플레이 기록을 입력으로 선택한 시험":"시험용 가상 기억 / "+LocalStoryTestInputs.Name(inputScenario);
         Report = report;
         started = Time.realtimeSinceStartupAsDouble;
         // Store the task so Play-stop/assembly reload can cancel and join native work safely.
-        job = RunGeneration(root,modelPath,model,runOriginal,report,cancellation.Token,sampling);
+        job = RunGeneration(report,cancellation.Token);
         SetBusy(true);
         try { await job; }
         finally { if (this != null) SetBusy(false); }
     }
-    private async Task RunGeneration(string root, string modelPath, LocalStoryTestModel model, EncounterCardRoot source, LocalStoryTestReport report, CancellationToken token, LocalStorySampling sampling)
+    // The visible test button and gameplay call the same section planner, prompts and repair policy.
+    public static Task GenerateSections(LocalStoryTestReport report, CancellationToken token,
+        Func<LocalStorySectionInput,bool,CancellationToken,Action<string>,Task<LocalStoryModelOutput>> infer=null)
+    {
+        report.allowFailedOutput=true;
+        return infer==null?LocalStoryRuntimePipeline.Infer(report,token):LocalStorySections.Generate(report,token,infer);
+    }
+
+    private async Task RunGeneration(LocalStoryTestReport report, CancellationToken token)
     {
         var watch = Stopwatch.StartNew();
-        LocalStoryLog.Write(LocalStoryLogStage.Working,"테스트 / "+report.model+" / "+report.storyPath+" / 초안 작성 시작 (게임 적용 아님)");
+        LocalStoryLog.Write(LocalStoryLogStage.Working,"테스트 / "+report.model+" / "+report.storyPath+" / Explanation 단락 생성 시작 (게임 적용 아님)");
         bool interrupted=false, failed=false;
+        report.sectionProgress=(start,count,index,total,phase)=>
+        {
+            correcting=phase=="교정 중";streamed="";
+            var guide=LocalStorySections.WritingGuide(report.storyPath);
+            var paragraph=LocalStoryPrompt.Paragraph(report.storyPath,report.original.MainStory[start],start);
+            generationPart="단락 "+(Array.IndexOf(guide.paragraphs,paragraph)+1)+"/"+guide.paragraphs.Length+" ("+paragraph.id+")"+
+                " / 요청 "+index+"/"+total+" / 카드 "+(start+1)+"~"+(start+count)+"/"+report.original.MainStory.Count+" / "+phase;
+            generationPurpose=paragraph.purpose;
+        };
         try
         {
-            var output = await LocalStoryInference.Generate(root,report.prompt,report.generationGrammar,report.seed,token,text=>streamed=text,sampling,modelPath);
-            report.draftSeconds = watch.Elapsed.TotalSeconds; report.backend=output.backend; report.fallback=output.fallback; report.rawOutput=output.json;
-            LocalStoryRewrite.EvaluateDraft(report, source, memory);
-            if(this == null) return;
-            ShowOutput(report);
-            if(report.storyPath==LocalStoryTestInputs.GuidePath)
-            {
-                try { report.correctionPrompt=LocalStoryTestModels.Messages(model,LocalStoryTestArchive.AttachWritingExamples(LocalStoryRewrite.CorrectionMessages(report.storyPath,source,memory,report.rawOutput),report.examplePrompt)); }
-                catch(Exception e) { report.correctionError=e.Message; }
-                if(report.correctionPrompt!=null)
-                {
-                    token.ThrowIfCancellationRequested();
-                    correcting=true; streamed=""; report.correctionAttempted=true;
-                    LocalStoryLog.Write(LocalStoryLogStage.Working,"테스트 / "+report.model+" / "+report.storyPath+" / 한국어 교정 시작");
-                    var correctionWatch=Stopwatch.StartNew();
-                    var preset=LocalStorySampling.Proofreading(); report.correctionParameters=preset.Parameters(report.seed);
-                    try
-                    {
-                        var correction=await LocalStoryInference.Generate(root,report.correctionPrompt,report.generationGrammar,report.seed,token,text=>streamed=text,preset,modelPath);
-                        report.correctionRawOutput=correction.json; report.correctionBackend=correction.backend; report.correctionFallback=correction.fallback;
-                        report.correctionValid=LocalStoryRewrite.TryBuild(correction.json,source,memory,out report.corrected,out report.correctionError);
-                    }
-                    catch(OperationCanceledException) { report.correctionError="교정 취소/5분 시간 제한"; throw; }
-                    catch(Exception e) { report.correctionError=e.Message; }
-                    finally { report.correctionSeconds=correctionWatch.Elapsed.TotalSeconds; }
-                }
-            }
-            statusLabel.text=$"{report.model} / 초안 {report.draftSeconds:F1}초 ({report.samplingProfile}) / 교정 {report.correctionSeconds:F1}초 / {report.backend}\n{report.exampleSummary} / 초안 검사: {(report.valid?"통과":report.error)} / 교정 검사: {(report.correctionValid?"통과":report.correctionError??"미실행")} / 의미·자연스러움은 직접 평가";
+            await GenerateSections(report,token);
+            if(this!=null) statusLabel.text=$"{report.model} / 요청 {report.sectionsGenerated}회 / 실패 구간 교정 {report.sectionsCorrected}회 / 합계 {watch.Elapsed.TotalSeconds:F1}초 / {report.backend}\n{report.exampleSummary} / 최종 검사: {(report.correctionAttempted?(report.correctionValid?"통과":report.correctionError):(report.valid?"통과":report.error))} / 의미·자연스러움은 직접 평가";
         }
         catch(OperationCanceledException)
         {
             interrupted=true;
-            if(correcting) report.correctionError="교정 취소/5분 시간 제한"; else report.error="초안 취소/5분 시간 제한";
-            if(this!=null) statusLabel.text=report.model+" 생성 취소. 초안/부분 교정 출력은 보관하고 원본은 유지합니다.";
+            if(correcting) report.correctionError="구간 교정 취소/5분 시간 제한"; else report.error="단락 생성 취소/5분 시간 제한";
+            if(this!=null) statusLabel.text=report.model+" 생성 취소. 완료 구간과 부분 출력은 보관하고 원본은 유지합니다.";
         }
         catch(Exception e)
         {
@@ -274,24 +262,21 @@ public sealed class LocalStoryTestPanel : MonoBehaviour
         finally
         {
             report.seconds=watch.Elapsed.TotalSeconds;
-            if(report.draftSeconds==0) report.draftSeconds=report.seconds;
-            // Keep even incomplete/failed output for inspection, never substitute the source in the comparison view.
-            if(correcting) { if(string.IsNullOrEmpty(report.correctionRawOutput)) report.correctionRawOutput=streamed; }
-            else if(string.IsNullOrEmpty(report.rawOutput) && !string.IsNullOrEmpty(streamed)) report.rawOutput=streamed;
-            if(this!=null) { ShowOutput(report); SaveIOService.Instance.SaveLocalStoryTest(report); }
-            bool valid=!failed && (report.correctionAttempted?report.correctionValid:report.valid);
+            if(this!=null) {ShowOutput(report);SaveIOService.Instance.SaveLocalStoryTest(report);}
+            bool valid=!failed && !interrupted && (report.correctionAttempted?report.correctionValid:report.valid);
             LocalStoryLog.Write(interrupted?LocalStoryLogStage.Deferred:valid?LocalStoryLogStage.Complete:LocalStoryLogStage.Failed,
-                "테스트 / "+report.model+" / "+report.storyPath+" / "+report.seconds.ToString("F1")+"초 / "+
-                (interrupted?"취소 또는 시간 제한":valid?"출력 검사 통과 (게임 적용 아님)":
-                    report.correctionError??report.error??"출력 검사 실패"));
+                "테스트 / "+report.model+" / "+report.storyPath+" / "+report.seconds.ToString("F1")+"초 / 요청 "+report.sectionsGenerated+" / 교정 "+report.sectionsCorrected+" / "+
+                (interrupted?"취소 또는 시간 제한":valid?"출력 검사 통과 (게임 적용 아님)":report.correctionError??report.error??"출력 검사 실패"));
         }
     }
     private void Update()
     {
         if(IsGenerating && panel != null && panel.activeSelf)
         {
-            statusLabel.text=$"{Report?.model} / {(correcting?"2/2 한국어 교정":"초안 작성")} 중... {Time.realtimeSinceStartupAsDouble-started:F1}초 / {Report?.exampleSummary} / 외부 통신 없음 / 취소 가능";
-            if(!string.IsNullOrEmpty(streamed)) generatedLabel.text=correcting?"[초안]\n"+FormatModelOutput(Report.rawOutput)+"\n\n[한국어 교정본 — 생성 중]\n"+FormatModelOutput(streamed):FormatModelOutput(streamed);
+            statusLabel.text=$"{Report?.model} / {generationPart} / {Time.realtimeSinceStartupAsDouble-started:F1}초\n{generationPurpose} / 취소 가능";
+            var current=Report?.sectionOutputs?.LastOrDefault();
+            streamed=correcting?current?.correctionRawOutput:current?.rawOutput;
+            generatedLabel.text="["+generationPart+"]\n"+(string.IsNullOrEmpty(streamed)?"생성 중...":FormatModelOutput(streamed));
         }
     }
     private void SetBusy(bool busy)
@@ -333,11 +318,11 @@ public sealed class LocalStoryTestPanel : MonoBehaviour
             string result=LocalStoryTestArchive.List().FirstOrDefault(f=>LocalStoryTestArchive.Load(f).archiveId==pendingApply.archiveId);
             if(result==null) throw new InvalidOperationException("저장 결과가 없습니다.");
             pendingStage=stage; pendingUseEdit=useEdit; pendingEditPath=LocalStoryTestArchive.EditPath(result);
-            var built=LocalStoryGameApply.Build(pendingApply,stage,useEdit,pendingEditPath);
+            var built=LocalStoryGameApply.Build(pendingApply,stage,useEdit,out string reviewError,pendingEditPath);
             pendingJson=JsonUtility.ToJson(built); pendingRun=LocalStoryGameApply.NextRun(pendingApply);
             applyPreview.text=$"#{pendingApply.archiveNumber:D4} / {pendingApply.model} / {(useEdit?"Edit":"AI")} {stage}\n"+
                 $"저장 대상: {pendingRun}회차 / {pendingApply.storyPath}\n"+
-                "자동 검사는 형식, 내부 표기, 숫자, 난독 정상복원 일부만 확인합니다. 사건 의미와 자연스러움을 직접 확인하세요.\n"+
+                (reviewError==null?"자동 검사 통과. 사건 의미와 자연스러움을 직접 확인하세요.":"검사 실패 문구를 확인용으로 반영합니다: "+reviewError)+"\n"+
                 "메인에서 이 회차가 시작되어 해당 NPC를 만나면 사용합니다. 회차를 강제로 넘기거나 현재 진행을 초기화하지 않습니다.\n\n"+Format(built);
             applyConfirm.GetComponentInChildren<TMP_Text>().text=pendingRun+"회차에 이 내용 저장";
             applyConfirm.interactable=true;
@@ -353,7 +338,7 @@ public sealed class LocalStoryTestPanel : MonoBehaviour
                 JsonUtility.ToJson(LocalStoryGameApply.Build(pendingApply,pendingStage,pendingUseEdit,pendingEditPath))!=pendingJson)
                 throw new InvalidOperationException("선택 후 원문/Edit/회차가 변경됐습니다. 다시 선택하고 확인하세요.");
             string saved=LocalStoryGameApply.Save(pendingApply,pendingStage,pendingUseEdit,pendingRun,SaveIOService.Instance,pendingEditPath);
-            applyPreview.text="게임 확인용 저장 완료: "+saved+"\n원문과 현재 진행은 그대로입니다. 기존 생성 파일이 있었다면 GeneratedContent/Recovery에 보관했습니다.";
+            applyPreview.text="게임 확인용 저장 완료: "+saved+"\n챕터 묶음에 저장했습니다. 교체 전 생성본 한 버전과 원문·플레이 기록·직접 수정한 Edit을 보존합니다.";
             pendingJson=null; applyConfirm.interactable=false;
         }
         catch(Exception e) { applyPreview.text="저장 실패: "+e.Message; applyConfirm.interactable=false; pendingJson=null; }
@@ -367,14 +352,32 @@ public sealed class LocalStoryTestPanel : MonoBehaviour
     }
     public static string DisplayOutput(LocalStoryTestReport report)
     {
+        string warning=report.reviewRequired?"[검사 실패 문구 포함 · 게임 확인 가능]\n"+report.reviewError+"\n":"";
+        string heading=warning+(report.sectionsGenerated>0 || report.sectionOutputs?.Count>0?
+            "[구간 합본 · 단락 "+report.paragraphsPlanned+"개 / 작성 요청 "+report.sectionsGenerated+"회 / 교정 "+report.sectionsCorrected+"회 · 모델 대상 "+(report.sectionInputs?.Sum(s=>s.count)??report.original?.MainStory?.Count??0)+"카드"+
+            (report.authoredCards>0?" / 이전 방식의 원문 유지 "+report.authoredCards+"카드":" / 전체 카드 생성")+" · 자연스러움은 직접 확인]\n":"");
         string draft=string.IsNullOrEmpty(report.rawOutput)?"모델이 출력한 내용이 없습니다.":LocalStoryTestArchive.DialogueText(report.rawOutput);
-        if(!report.correctionAttempted && string.IsNullOrEmpty(report.correctionError)) return draft;
-        return "[초안]\n"+draft+"\n\n[한국어 교정본]\n"+
+        if(!report.correctionAttempted && string.IsNullOrEmpty(report.correctionError)) return heading+draft;
+        return heading+"[초안]\n"+draft+"\n\n[한국어 교정본]\n"+
             (string.IsNullOrEmpty(report.correctionRawOutput)?"출력 없음":LocalStoryTestArchive.DialogueText(report.correctionRawOutput))+
             (report.correctionError==null?"":"\n\n교정 검사/실행 결과: "+report.correctionError);
     }
     public static string DisplayRawOutput(LocalStoryTestReport report)
     {
+        if(report.sectionOutputs?.Count>0)
+        {
+            var output=new StringBuilder("[구간별 실제 모델 원출력]\n");
+            foreach(var section in report.sectionOutputs)
+            {
+                output.Append("\n구간: "+section.sectionId+"\n");
+                if(section.count==0) {output.Append("원문 기준 사건/선택 사용 · 모델 호출 없음\n");continue;}
+                output.Append("초안:\n"+(section.rawOutput??"출력 없음")+"\n");
+                if(section.correctionAttempted) output.Append("교정:\n"+(section.correctionRawOutput??"출력 없음")+"\n");
+                if(!string.IsNullOrEmpty(section.error)) output.Append("초안 검사: "+section.error+"\n");
+                if(!string.IsNullOrEmpty(section.correctionError)) output.Append("교정 검사: "+section.correctionError+"\n");
+            }
+            return output.ToString();
+        }
         string draft=string.IsNullOrEmpty(report.rawOutput)?"모델이 출력한 내용이 없습니다.":FormatModelOutput(report.rawOutput);
         if(!report.correctionAttempted && string.IsNullOrEmpty(report.correctionError)) return draft;
         return "[초안]\n"+draft+"\n\n[한국어 교정본]\n"+

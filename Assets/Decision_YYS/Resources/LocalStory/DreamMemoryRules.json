@@ -21,13 +21,24 @@
       "impression": "꿈에서 이 여행자에게 불쾌감과 거리감을 느낀 듯하다. 실제 과거 만남이나 구체적인 사건으로 단정하지 않는다."
     },
     {
-      "ruleId": "loki_chaotic_insult",
-      "characterId": "Guide",
+      "ruleId": "neutral_relationship_choice",
+      "characterId": "*",
       "kind": "choice",
-      "choiceId": "loki_insult",
+      "choiceRole": "Neutral",
+      "requireRelationshipChoice": true,
       "enabled": true,
       "runCompletedOnly": false,
-      "impression": "꿈에서 여행자가 무례하게 행동해 불쾌했던 듯하다. 감정의 흔적만 있고 실제 만남이나 했던 말은 확신할 수 없다."
+      "impression": "꿈에서 이 여행자가 차분하고 중립적으로 반응한 듯하다. 친밀함이나 적대감으로 단정하지 않고 실제 만남이나 구체적인 말도 기억하지 않는다."
+    },
+    {
+      "ruleId": "unexpected_relationship_choice",
+      "characterId": "*",
+      "kind": "choice",
+      "choiceRole": "Chaotic",
+      "requireRelationshipChoice": true,
+      "enabled": true,
+      "runCompletedOnly": false,
+      "impression": "꿈에서 이 여행자가 예상 밖으로 반응해 인상에 남은 듯하다. 호감인지 불쾌감인지는 인물 성격과 현재 상황에 맞추고 무조건 부정적으로 단정하지 않는다. 실제 만남이나 구체적인 말은 기억하지 않는다."
     }
   ]
 }

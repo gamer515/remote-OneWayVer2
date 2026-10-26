@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System.Collections.Generic;
 using System.Text;
 
@@ -25,15 +25,9 @@ public class StoryRelayManager : MonoBehaviour
         int sourceRun,
         StoryInfluenceProfile fixedInfluence = null)
     {
-        StoryPacket packet = CreatePacket(trigger, currentFileName,
-            encounterHistory, stats, chapter, sourceRun, fixedInfluence);
-        // 런타임 외부 통신 금지: 내부 모델 연결 전까지 요청만 로컬에 보관합니다.
-        if (packet != null)
-        {
-            string safeName = "LocalPacket_" + currentFileName.Replace('/', '_');
-            SaveIOService.Instance.SaveRunCheckpoint(sourceRun, safeName, packet);
-            Debug.Log("[StoryRelay] 로컬 생성용 프롬프트 저장 (외부 API 호출 없음).", this);
-        }
+        // Dialogue completion owns generation work. Do not persist a second chapter prompt packet.
+        // CreateInfluenceProfile remains used by chapter progression.
+
     }
 
     private StoryPacket CreatePacket(

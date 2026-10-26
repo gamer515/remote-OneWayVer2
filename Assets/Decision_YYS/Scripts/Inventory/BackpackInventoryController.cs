@@ -48,13 +48,19 @@ public sealed class BackpackInventoryController : MonoBehaviour
     private readonly Dictionary<string, InventoryItemDefinition> definitions =
         new Dictionary<string, InventoryItemDefinition>(StringComparer.Ordinal);
 
-    private Action<IReadOnlyList<string>> saveInventory;
+    private readonly Dictionary<string, WorldInventoryItem> worldItems = new Dictionary<string, WorldInventoryItem>();
+    private readonly Dictionary<string, WorldInventoryItemState> worldStates = new Dictionary<string, WorldInventoryItemState>();
+    private Action<InventoryState> saveInventory;
+    private bool initialized;
+    private float nextPoseSave;
+    private string lastSavedInventory;
     private Sequence transition;
     private bool isOpen;
     private bool inputLocked;
     private int draggedSlotIndex = -1;
     private WorldInventoryItem draggedWorldItem;
     private Rigidbody draggedBody;
+    private bool draggedWasKinematic;
     private Vector3 draggedOriginalPosition;
     private Quaternion draggedOriginalRotation;
     private Plane dragPlane;
@@ -79,30 +85,117 @@ public sealed class BackpackInventoryController : MonoBehaviour
         transition?.Kill();
         transition = null;
         CancelWorldDrag();
+        SaveNow();
     }
+
+    private void OnApplicationPause(bool paused) { if (paused) SaveNow(); }
+    private void OnApplicationQuit() { CancelWorldDrag(); SaveNow(); }
 
     public void Initialize(
         IEnumerable<string> savedItemIds,
         Action<IReadOnlyList<string>> saveCallback)
     {
+        Initialize(new InventoryState { storedItemIds = new List<string>(savedItemIds ?? Array.Empty<string>()) },
+            saveCallback == null ? null : state => saveCallback(state.storedItemIds));
+    }
+
+    public void Initialize(InventoryState state, Action<InventoryState> saveCallback)
+    {
+        CancelWorldDrag();
+        state ??= new InventoryState();
         saveInventory = saveCallback;
         storedItemIds.Clear();
-        if (savedItemIds != null)
+        if (state.storedItemIds != null)
         {
-            foreach (string id in savedItemIds)
+            foreach (string id in state.storedItemIds)
             {
-                if (!string.IsNullOrWhiteSpace(id) && definitions.ContainsKey(id))
+                if (!string.IsNullOrWhiteSpace(id))
                     storedItemIds.Add(id);
-                else if (!string.IsNullOrWhiteSpace(id))
-                    Debug.LogWarning($"인벤토리 카탈로그에 없는 itemId를 건너뜁니다: {id}", this);
             }
         }
-
+        var wanted = new HashSet<string>();
+        foreach (var saved in state.worldItems ?? new List<WorldInventoryItemState>())
+        {
+            if (saved == null || string.IsNullOrWhiteSpace(saved.itemId)) continue;
+            string id = string.IsNullOrWhiteSpace(saved.instanceId) ? Guid.NewGuid().ToString("N") : saved.instanceId;
+            if (!wanted.Add(id)) continue;
+            worldStates[id] = new WorldInventoryItemState {instanceId=id,itemId=saved.itemId,
+                localPosition=saved.localPosition,localRotation=saved.localRotation};
+            if (worldItems.TryGetValue(id,out var existing) && existing != null && existing.Definition?.ItemId == saved.itemId) continue;
+            if (existing != null) DestroyItem(existing.gameObject);
+            worldItems.Remove(id);
+            if (!definitions.TryGetValue(saved.itemId,out var definition)) continue; // Retain unknown catalog IDs for later recovery.
+            Quaternion rotation = saved.localRotation;
+            if (rotation.x*rotation.x+rotation.y*rotation.y+rotation.z*rotation.z+rotation.w*rotation.w < .001f) rotation=Quaternion.identity;
+            var instance = Finite(saved.localPosition) && Finite(new Vector3(rotation.x,rotation.y,rotation.z)) && !float.IsNaN(rotation.w) && !float.IsInfinity(rotation.w) ?
+                Spawn(definition,InventoryAnchor.TransformPoint(saved.localPosition),InventoryAnchor.rotation*rotation.normalized) : null;
+            if (instance != null) worldItems[id]=instance;
+            else {storedItemIds.Add(saved.itemId);worldStates.Remove(id);wanted.Remove(id);}
+        }
+        foreach (string id in new List<string>(worldStates.Keys))
+            if (!wanted.Contains(id)) worldStates.Remove(id);
+        foreach (string id in new List<string>(worldItems.Keys))
+            if (!wanted.Contains(id)) {if(worldItems[id]!=null)DestroyItem(worldItems[id].gameObject);worldItems.Remove(id);}
+        initialized = true;
+        lastSavedInventory = JsonUtility.ToJson(state);
         RebuildSlots();
+    }
+
+    private Transform InventoryAnchor => boardDropArea != null ? boardDropArea.transform : transform;
+    private static bool Finite(Vector3 v) => !float.IsNaN(v.x) && !float.IsInfinity(v.x) &&
+        !float.IsNaN(v.y) && !float.IsInfinity(v.y) && !float.IsNaN(v.z) && !float.IsInfinity(v.z);
+    private static void DestroyItem(GameObject item)
+    {
+        if (Application.isPlaying) Destroy(item); else DestroyImmediate(item);
+    }
+    private WorldInventoryItem Spawn(InventoryItemDefinition definition, Vector3 position, Quaternion rotation)
+    {
+        if (definition.WorldPrefab == null || !Finite(position)) return null;
+        var instance = Instantiate(definition.WorldPrefab,position,rotation);
+        UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(instance,gameObject.scene);
+        var item = instance.GetComponent<WorldInventoryItem>();
+        if (item != null && item.Definition?.ItemId == definition.ItemId) return item;
+        DestroyItem(instance);
+        Debug.LogWarning("월드 아이템의 정의가 올바르지 않아 가방에 보존합니다: " + definition.ItemId,this);
+        return null;
+    }
+    public InventoryState CaptureState()
+    {
+        var state = new InventoryState {storedItemIds = new List<string>(storedItemIds)};
+        foreach (var pair in worldStates)
+        {
+            var saved = pair.Value;
+            if (worldItems.TryGetValue(pair.Key,out var item) && item != null)
+            {
+                Vector3 position = item == draggedWorldItem ? draggedOriginalPosition : item.transform.position;
+                Quaternion rotation = item == draggedWorldItem ? draggedOriginalRotation : item.transform.rotation;
+                if (Finite(position))
+                {
+                    saved.localPosition = InventoryAnchor.InverseTransformPoint(position);
+                    saved.localRotation = Quaternion.Inverse(InventoryAnchor.rotation)*rotation;
+                }
+            }
+            state.worldItems.Add(new WorldInventoryItemState {instanceId=saved.instanceId,itemId=saved.itemId,
+                localPosition=saved.localPosition,localRotation=saved.localRotation});
+        }
+        return state;
+    }
+    public bool SaveNow()
+    {
+        if (!initialized || saveInventory == null) return true;
+        var state=CaptureState(); string json=JsonUtility.ToJson(state);
+        if (json==lastSavedInventory) return true;
+        try {saveInventory(state);lastSavedInventory=json;return true;}
+        catch (Exception e) {Debug.LogWarning("아이템 저장 실패. 다음 저장에서 다시 시도합니다: "+e.Message,this);return false;}
     }
 
     private void Update()
     {
+        if (initialized && Time.unscaledTime >= nextPoseSave)
+        {
+            nextPoseSave=Time.unscaledTime+.5f;
+            SaveNow();
+        }
         ReadPointer(out Vector2 pointerPosition, out bool down, out bool held, out bool up);
 
         if (down && !inputLocked && !IsInsideInventory(pointerPosition) &&
@@ -200,21 +293,28 @@ public sealed class BackpackInventoryController : MonoBehaviour
             !TryRaycastBoard(screenPosition, out Vector3 spawnPosition))
             return;
 
+        TryDeploySlot(index,spawnPosition);
+    }
+
+    public bool TryDeploySlot(int index, Vector3 spawnPosition)
+    {
+        if (index < 0 || index >= storedItemIds.Count) return false;
         string itemId = storedItemIds[index];
         if (!definitions.TryGetValue(itemId, out InventoryItemDefinition definition) ||
             definition.WorldPrefab == null)
-            return;
-
-        GameObject instance = Instantiate(
-            definition.WorldPrefab,
-            spawnPosition,
-            Quaternion.identity);
-        WorldInventoryItem worldItem = instance.GetComponent<WorldInventoryItem>();
-        if (worldItem == null)
-            Debug.LogWarning($"{definition.WorldPrefab.name}에 WorldInventoryItem이 없습니다.", instance);
-
+            return false;
+        var item = Spawn(definition,spawnPosition,Quaternion.identity);
+        if (item == null) return false;
+        string id=Guid.NewGuid().ToString("N");
+        worldItems[id]=item;
+        worldStates[id]=new WorldInventoryItemState {instanceId=id,itemId=itemId,
+            localPosition=InventoryAnchor.InverseTransformPoint(spawnPosition),localRotation=Quaternion.Inverse(InventoryAnchor.rotation)};
         storedItemIds.RemoveAt(index);
-        SaveAndRefresh();
+        if (!SaveNow())
+        {
+            storedItemIds.Insert(index,itemId);worldItems.Remove(id);worldStates.Remove(id);DestroyItem(item.gameObject);return false;
+        }
+        RebuildSlots(); return true;
     }
 
     private void BeginWorldDrag(WorldInventoryItem item, Vector2 screenPosition)
@@ -225,6 +325,7 @@ public sealed class BackpackInventoryController : MonoBehaviour
         draggedBody = item.GetComponent<Rigidbody>();
         if (draggedBody != null)
         {
+            draggedWasKinematic = draggedBody.isKinematic;
             draggedBody.linearVelocity = Vector3.zero;
             draggedBody.angularVelocity = Vector3.zero;
             draggedBody.isKinematic = true;
@@ -247,17 +348,27 @@ public sealed class BackpackInventoryController : MonoBehaviour
 
     private void EndWorldDrag(Vector2 screenPosition)
     {
-        if (IsInsideInventory(screenPosition))
-        {
-            storedItemIds.Add(draggedWorldItem.Definition.ItemId);
-            Destroy(draggedWorldItem.gameObject);
-            draggedWorldItem = null;
-            draggedBody = null;
-            SaveAndRefresh();
-            return;
-        }
+        if (IsInsideInventory(screenPosition) && TryStoreWorldItem(draggedWorldItem)) return;
 
         CancelWorldDrag();
+    }
+
+    public bool TryStoreWorldItem(WorldInventoryItem item)
+    {
+        if (item == null || !item.gameObject.activeSelf || item.Definition == null || !definitions.ContainsKey(item.Definition.ItemId)) return false;
+        string id=null;
+        foreach (var pair in worldItems) if(pair.Value==item) {id=pair.Key;break;}
+        WorldInventoryItemState saved=id==null?null:worldStates[id];
+        if(id!=null) {worldItems.Remove(id);worldStates.Remove(id);}
+        storedItemIds.Add(item.Definition.ItemId);
+        if(!SaveNow())
+        {
+            storedItemIds.RemoveAt(storedItemIds.Count-1);
+            if(id!=null) {worldItems[id]=item;worldStates[id]=saved;}
+            return false;
+        }
+        if(draggedWorldItem==item) {draggedWorldItem=null;draggedBody=null;}
+        item.gameObject.SetActive(false);DestroyItem(item.gameObject);RebuildSlots();return true;
     }
 
     private void CancelWorldDrag()
@@ -266,22 +377,16 @@ public sealed class BackpackInventoryController : MonoBehaviour
         draggedWorldItem.transform.SetPositionAndRotation(
             draggedOriginalPosition, draggedOriginalRotation);
         if (draggedBody != null)
-            draggedBody.isKinematic = false;
+            draggedBody.isKinematic = draggedWasKinematic;
         draggedWorldItem = null;
         draggedBody = null;
-    }
-
-    private void SaveAndRefresh()
-    {
-        RebuildSlots();
-        saveInventory?.Invoke(storedItemIds);
     }
 
     private void RebuildSlots()
     {
         if (content == null || slotPrefab == null) return;
         for (int i = content.childCount - 1; i >= 0; i--)
-            Destroy(content.GetChild(i).gameObject);
+            DestroyItem(content.GetChild(i).gameObject);
 
         for (int i = 0; i < storedItemIds.Count; i++)
         {
@@ -322,8 +427,10 @@ public sealed class BackpackInventoryController : MonoBehaviour
     private void BuildCatalog()
     {
         definitions.Clear();
-        if (itemCatalog == null) return;
-        foreach (InventoryItemDefinition definition in itemCatalog)
+        // Authored resource items also work in existing scenes without another serialized catalog copy.
+        foreach (InventoryItemDefinition definition in Resources.LoadAll<InventoryItemDefinition>("Inventory"))
+            if (definition != null && !string.IsNullOrWhiteSpace(definition.ItemId)) definitions[definition.ItemId] = definition;
+        foreach (InventoryItemDefinition definition in itemCatalog ?? Array.Empty<InventoryItemDefinition>())
         {
             if (definition == null || string.IsNullOrWhiteSpace(definition.ItemId)) continue;
             definitions[definition.ItemId] = definition;

@@ -4,10 +4,12 @@
 public sealed class DecisionSaveService
 {
     private readonly SaveManager saveManager;
+    private readonly int inventoryRun;
 
     public DecisionSaveService(SaveManager saveManager)
     {
         this.saveManager = saveManager;
+        inventoryRun = saveManager.CurrentRun;
     }
 
     public void SaveProgress(DecisionSession session)
@@ -91,11 +93,6 @@ public sealed class DecisionSaveService
         System.Collections.Generic.List<PlayedEncounterCardRecord> history, int[] coins, int visit,
         string endReason = null) => saveManager.SaveStoryCheckpoint(guide, events, history, coins, visit, endReason);
 
-    public void SaveStoredItemIds(System.Collections.Generic.IReadOnlyList<string> itemIds)
-    {
-        saveManager.SaveStoredItemIds(itemIds);
-    }
-
     public bool HasAllUnlocks(System.Collections.Generic.IEnumerable<string> unlockIds)
     {
         return saveManager.HasAllUnlocks(unlockIds);
@@ -114,6 +111,21 @@ public sealed class DecisionSaveService
     public void MarkEncounterCompleted(string placeId)
     {
         saveManager.MarkEncounterCompleted(placeId);
+    }
+
+    public System.Collections.Generic.List<NarrativeInteractionRule> ApplyNarrativeInteractions(StoryEventRecord choice) =>
+        saveManager.ApplyNarrativeInteractions(choice);
+    public InventoryState LoadInventoryState() => saveManager.LoadInventoryState();
+    public void SaveInventoryState(InventoryState state)
+    {
+        // An old scene's shutdown must not carry its board into the newly started run.
+        if (saveManager.CurrentRun == inventoryRun) saveManager.SaveInventoryState(state);
+    }
+    public bool HasAllItems(string[] required)
+    {
+        var owned=saveManager.LoadInventoryState().OwnedItemIds();
+        foreach(string id in required??System.Array.Empty<string>()) if(!owned.Contains(id)) return false;
+        return true;
     }
 
     public void SaveInfluenceProfile(StoryInfluenceProfile profile)

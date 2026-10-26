@@ -1,0 +1,29 @@
+{
+  "id": "Normal",
+  "when": {
+    "speechMode": "normal"
+  },
+  "rules": [
+    "normal인 text와 options는 자연스러운 정상 한국어로 쓴다. 인물 설정의 말투를 유지한다."
+  ],
+  "examples": [
+    {
+      "input": {
+        "speaker": "뱃사공",
+        "listener": "여행자",
+        "actor": "뱃사공",
+        "target": "여행자",
+        "coreMeaning": "여행자에게 잠시 빌린 등불을 돌려준다"
+      },
+      "output": {
+        "cards": [
+          {
+            "index": 0,
+            "text": "빌려준 등불은 여기 있네. 덕분에 잘 썼어.",
+            "options": []
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -19,7 +19,8 @@
 /Assets/StreamingAssets/LocalStory/runtimes/
 /Assets/StreamingAssets/LocalStory/runtimes.meta
 
-# Optional comparison models remain outside Assets and game builds.
+# Locally installed comparison models and the Gemma build source stay outside Assets/Git.
+# The Windows build processor copies only the verified Gemma payload into the Player.
 /Tests/LocalStoryBenchmark/Models/
 
 # Local authoring and generated document artifacts

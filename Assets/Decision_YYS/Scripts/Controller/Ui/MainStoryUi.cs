@@ -72,6 +72,7 @@ public class MainStoryUi : ParentUi
     }
 
     public void AppendPlayerChoice(string text) => chatHistory?.AppendPlayerChoice(text);
+    public void AppendInteraction(string text, string speakerId) => chatHistory?.AppendDialogue(text, speakerId);
 
     private TextMeshProUGUI GetTextTarget(TextTarget target)
     {

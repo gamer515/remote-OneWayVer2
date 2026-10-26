@@ -43,7 +43,7 @@ public static class LocalStoryBenchmark
             string path = (string)scenario["storyPath"];
             Require(System.Text.RegularExpressions.Regex.IsMatch((string)scenario["id"]??"", @"^[a-z][a-z0-9-]{0,31}$"), "unsafe case id");
             Require(path==LocalStoryTestInputs.GuidePath || path==LocalStoryTestInputs.GuidePath+"/Redistribute", "v1 scope is Guide only");
-            var asset = Resources.Load<TextAsset>("Story_Json_Data/" + path + "/Story");
+            var asset = ChapterContentCatalog.Asset("Story_Json_Data/" + path + "/Story");
             Require(asset != null, "missing story: " + path);
             var original = JsonUtility.FromJson<EncounterCardRoot>(asset.text);
             var memory = LocalStoryTestInputs.Create((int)scenario["scenario"]);
@@ -77,7 +77,7 @@ public static class LocalStoryBenchmark
         foreach (JObject item in (JArray)snapshot["cases"])
         {
             string path=(string)item["storyPath"];
-            var current=Resources.Load<TextAsset>("Story_Json_Data/"+path+"/Story");
+            var current=ChapterContentCatalog.Asset("Story_Json_Data/"+path+"/Story");
             Require(current!=null && Hash(current.text)==(string)item["sourceSha256"],"source changed: "+path);
             var original=JsonUtility.FromJson<EncounterCardRoot>(item["original"].ToString(Formatting.None));
             var memory=item["memory"].Type==JTokenType.Null?null:JsonUtility.FromJson<LocalStoryRevisionRequest>(item["memory"].ToString(Formatting.None));
@@ -183,9 +183,9 @@ public static class LocalStoryBenchmark
         Require(FileHash(inputPath)==SessionState.GetString("LocalStoryBenchmark.InputHash",""),"snapshot changed");
         var snapshot=Read(inputPath); Verify(snapshot);
         string root=Path.Combine(Application.streamingAssetsPath,"LocalStory");
-        var manifest=Read(Path.Combine(root,"ModelManifest.json"));
+        var manifest=Read("BuildSupport/LocalStory/Qwen/ModelManifest.json");
         Require((string)manifest["file"]=="Qwen3-4B-Instruct-2507-Q4_K_M.gguf" && (string)manifest["model"]=="Qwen3-4B-Instruct-2507", "baseline runner is fixed to current Qwen model; do not relabel another model");
-        string modelPath=Path.Combine(root,(string)manifest["file"]);
+        string modelPath=LocalStoryTestModels.PathFor(root,LocalStoryTestModel.Qwen);
         Require(File.Exists(modelPath) && new FileInfo(modelPath).Length==(long)manifest["bytes"],"model missing/wrong size");
         Require(FileHash(modelPath)==(string)manifest["sha256"],"model hash mismatch");
         var runtimes=new JArray();
@@ -227,7 +227,8 @@ public static class LocalStoryBenchmark
                 try
                 {
                     var output=await LocalStoryInference.Generate(root,report.prompt,(string)item["grammar"],report.seed,request.Token,
-                        t=>report.rawOutput=t,LocalStorySampling.Recommended());
+                        t=>report.rawOutput=t,LocalStorySampling.Recommended(),reuseSession:false);
+                    report.RecordPerformance(output,false);
                     report.rawOutput=output.json; report.backend=output.backend; report.fallback=output.fallback;
                     LocalStoryRewrite.EvaluateDraft(report,source,memory);
                 }
@@ -311,7 +312,7 @@ public static class LocalStoryBenchmark
     {
         // UI and benchmark share the same gate, native lifetime, GPU/CPU fallback, and installed model.
         string root=Path.Combine(Application.streamingAssetsPath,"LocalStory");
-        return LocalStoryInference.Generate(root,messages,grammar,seed,token,progress,LocalStorySampling.Recommended(),modelPath);
+        return LocalStoryInference.Generate(root,messages,grammar,seed,token,progress,LocalStorySampling.Recommended(),modelPath,reuseSession:false);
     }
     public static async Task<string> SmokeGemma(string modelPath,bool userConfirmedTerms=false)
     {
@@ -372,6 +373,7 @@ public static class LocalStoryBenchmark
                 try
                 {
                     var output=await GenerateGemma(modelPath,report.prompt,(string)item["grammar"],report.seed,request.Token,t=>report.rawOutput=t);
+                    report.RecordPerformance(output,false);
                     report.rawOutput=output.json; report.backend=output.backend; report.fallback=output.fallback; LocalStoryRewrite.EvaluateDraft(report,source,memory);
                 }
                 catch(OperationCanceledException) { cancelled=true; report.error="취소 또는 240초 제한 — 부분 출력 보관"; }

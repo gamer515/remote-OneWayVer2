@@ -13,7 +13,7 @@ public static class LocalStoryCoreCheck
     public static string Regression()
     {
         string path=LocalStoryTestInputs.GuidePath;
-        var original=JsonUtility.FromJson<EncounterCardRoot>(Resources.Load<TextAsset>("Story_Json_Data/"+path+"/Story").text);
+        var original=JsonUtility.FromJson<EncounterCardRoot>(ChapterContentCatalog.Asset("Story_Json_Data/"+path+"/Story").text);
         string source=JsonUtility.ToJson(original);
         Check(original.storyFrame?.worldFacts?.Length>0 && original.MainStory.Count(c=>!string.IsNullOrEmpty(c.coreMeaning))==6,"core frame missing");
         Check(string.IsNullOrEmpty(original.MainStory[0].coreMeaning)&&string.IsNullOrEmpty(original.MainStory[2].coreMeaning),"chatter constrained");
@@ -50,7 +50,8 @@ public static class LocalStoryCoreCheck
             Check(cards.MainStory[7].coreMeaning==original.MainStory[7].coreMeaning,"runtime core lost");
             Check(new EncounterContentRepository(1).TryLoadCards(path,out var first,out error)&&first.MainStory[0].text==original.MainStory[0].text,"current run changed");
             LocalStoryGameApply.Save(report,"draft",false,2,isolated);
-            Check(Directory.GetFiles(Path.Combine(temp,"GeneratedContent","Recovery")).Length==1,"prior story recovery missing");
+            var chapter=JsonUtility.FromJson<NarrativeChapterSave>(File.ReadAllText(isolated.NarrativeChapterPath("Initial")));
+            Check(chapter.stories.Count==1 && !string.IsNullOrEmpty(chapter.stories[0].previousContentJson),"prior story recovery missing");
             string edit=Path.Combine(temp,"Edit.json");
             var lines=new JArray(changed.MainStory.Select(c=>new JObject{["speaker"]="로키",["text"]=c.text,["options"]=new JArray(c.options??Array.Empty<string>())}));
             File.WriteAllText(edit,new JObject{["draft"]=lines}.ToString());
@@ -71,7 +72,7 @@ public static class LocalStoryCoreCheck
     {
         int checks=0;
         string path=LocalStoryTestInputs.GuidePath;
-        var source=JsonUtility.FromJson<EncounterCardRoot>(Resources.Load<TextAsset>("Story_Json_Data/"+path+"/Story").text);
+        var source=JsonUtility.FromJson<EncounterCardRoot>(ChapterContentCatalog.Asset("Story_Json_Data/"+path+"/Story").text);
         string baseline=JsonUtility.ToJson(source);
         string messages=LocalStoryRewrite.Messages(path,source,null);
         string input=(string)JArray.Parse(messages)[1]["content"];
@@ -106,7 +107,7 @@ public static class LocalStoryCoreCheck
     public static string SceneExamplesRegression()
     {
         string path=LocalStoryTestInputs.GuidePath;
-        var source=JsonUtility.FromJson<EncounterCardRoot>(Resources.Load<TextAsset>("Story_Json_Data/"+path+"/Story").text);
+        var source=JsonUtility.FromJson<EncounterCardRoot>(ChapterContentCatalog.Asset("Story_Json_Data/"+path+"/Story").text);
         var referenceResult=LocalStoryTestArchive.List().Single(f=>LocalStoryTestArchive.Load(f).archiveNumber==14);
         string authored=File.ReadAllText(LocalStoryTestArchive.EditPath(referenceResult));
         var lines=(JArray)JObject.Parse(authored)["correction"];

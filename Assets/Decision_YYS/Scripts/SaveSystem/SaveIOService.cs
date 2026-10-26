@@ -1,10 +1,10 @@
-﻿using System.IO;
+using System.IO;
 using UnityEngine;
 
 /// <summary>
 /// 파일 데이터 직렬화 처리.
 /// </summary>
-public class SaveIOService
+public partial class SaveIOService
 {
     private static SaveIOService _instance;
 
@@ -43,6 +43,7 @@ public class SaveIOService
     /// </summary>
     public ProfileData LoadOrCreateProfile()
     {
+        EnsureChapterLayout();
         if (File.Exists(ProfilePath))
         {
             ProfileData loadedProfile = ReadJson<ProfileData>(ProfilePath);
@@ -78,13 +79,15 @@ public class SaveIOService
         Directory.CreateDirectory(directoryPath);
 
         string path = Path.Combine(directoryPath, $"{fileName}.json");
-        File.WriteAllText(path, JsonUtility.ToJson(data, true));
+        WriteJsonAtomically(path,data);
         Debug.Log($"[SaveIO] {Mathf.Max(1, runNumber)}회차 데이터 저장 성공: {path}");
     }
 
     // The comparison test reads existing saves without creating a profile or advancing a run.
     public LocalStoryRevisionRequest LoadLatestLocalStoryRevision()
     {
+        var dialogue = LoadLatestNarrativeRequest();
+        if (dialogue != null) return dialogue;
         string runs = Path.Combine(BasePath, "Runs");
         if (!Directory.Exists(runs)) return null;
         string[] directories = Directory.GetDirectories(runs, "Run_*");
@@ -111,6 +114,7 @@ public class SaveIOService
 
     public string SaveLocalStoryTest(LocalStoryTestReport report)
     {
+        if(!LocalStoryPrompt.SaveDiagnosticReports) return null;
         try
         {
             var document = Newtonsoft.Json.Linq.JObject.Parse(JsonUtility.ToJson(report));
@@ -164,7 +168,7 @@ public class SaveIOService
         string resourcePath = string.IsNullOrEmpty(resourcesSubFolder)
             ? fileName
             : $"{resourcesSubFolder}/{fileName}";
-        TextAsset textAsset = Resources.Load<TextAsset>(resourcePath);
+        TextAsset textAsset = ChapterContentCatalog.Asset(resourcePath);
         if (textAsset == null)
         {
             Debug.LogError($"[SaveIO] 원본 JSON을 찾을 수 없습니다: {resourcePath}");
@@ -183,6 +187,8 @@ public class SaveIOService
         string relativePath,
         T data)
     {
+        if (IsNarrativeKey(runNumber, contentType, relativePath))
+            return SaveNarrativeContent(runNumber, relativePath, data, false);
         if (ReferenceEquals(data, null) ||
             !TryGetGeneratedContentPath(runNumber, contentType, relativePath, out string path))
             return false;
@@ -203,6 +209,8 @@ public class SaveIOService
     // User-triggered test promotion: retain a recoverable prior generated story before replacement.
     public bool SaveGeneratedContentForTest<T>(int runNumber,string contentType,string relativePath,T data)
     {
+        if (IsNarrativeKey(runNumber, contentType, relativePath))
+            return SaveNarrativeContent(runNumber, relativePath, data, true);
         if(!TryGetGeneratedContentPath(runNumber,contentType,relativePath,out string path)) return false;
         try
         {
@@ -217,6 +225,12 @@ public class SaveIOService
         catch(System.Exception e) { Debug.LogWarning("[LocalStory] 적용 저장 실패: "+e.Message); return false; }
     }
 
+    public bool SaveGeneratedContentForReview<T>(int runNumber,string contentType,string relativePath,T data,string reason,bool manual=false)
+    {
+        return IsNarrativeKey(runNumber,contentType,relativePath) &&
+            SaveNarrativeContent(runNumber,relativePath,data,manual,true,reason??"생성 검사 실패 문구 확인 필요");
+    }
+
     public void UpdateGeneratedEpisodeStatus(
         int sourceRun,
         int targetRun,
@@ -226,11 +240,13 @@ public class SaveIOService
     {
         if (sourceRun < 1 || targetRun <= sourceRun || string.IsNullOrWhiteSpace(scenarioPath))
             return;
+        // Encounter work and its status are owned by the chapter document now.
+        if (NarrativeInteractions.StorySource(scenarioPath) != null) return;
 
         string manifestPath = Path.Combine(
             BasePath,
             "GeneratedContent",
-            $"For_Run_{targetRun:D4}",
+            $"For_Run_{targetRun:D2}",
             "manifest.json");
         try
         {
@@ -270,6 +286,8 @@ public class SaveIOService
         out T data)
     {
         data = default;
+        if (IsNarrativeKey(runNumber, contentType, relativePath))
+            return TryLoadNarrativeContent(runNumber, relativePath, out data);
         if (!TryGetGeneratedContentPath(
             runNumber,
             contentType,
@@ -306,7 +324,7 @@ public class SaveIOService
         string contentRoot = Path.GetFullPath(Path.Combine(
             BasePath,
             "GeneratedContent",
-            $"For_Run_{runNumber:D4}",
+            $"For_Run_{runNumber:D2}",
             contentType));
         string normalizedRelativePath = relativePath.Replace('/', Path.DirectorySeparatorChar);
         string candidatePath = Path.GetFullPath(
@@ -326,7 +344,7 @@ public class SaveIOService
         string directoryPath = Path.GetDirectoryName(path);
         Directory.CreateDirectory(directoryPath);
         string temporaryPath = path + ".tmp";
-        File.WriteAllText(temporaryPath, JsonUtility.ToJson(data, true));
+        File.WriteAllText(temporaryPath, data is GameProgress progress ? ProgressDocument.Encode(path,progress) : JsonUtility.ToJson(data, true));
 
         if (File.Exists(path))
         {
@@ -345,7 +363,7 @@ public class SaveIOService
     private string GetRunDirectory(int runNumber)
     {
         int safeRunNumber = Mathf.Max(1, runNumber);
-        return Path.Combine(BasePath, "Runs", $"Run_{safeRunNumber:D4}");
+        return EnsureRunDirectory(safeRunNumber);
     }
 
     private string GetRunDataPath(int runNumber, string fileName)
@@ -355,6 +373,7 @@ public class SaveIOService
 
     private static T ReadJson<T>(string path)
     {
+        if(typeof(T)==typeof(GameProgress)) return (T)(object)ProgressDocument.Read(path);
         return JsonUtility.FromJson<T>(File.ReadAllText(path));
     }
 

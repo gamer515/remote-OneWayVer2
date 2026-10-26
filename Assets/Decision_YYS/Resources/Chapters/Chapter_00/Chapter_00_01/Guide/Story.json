@@ -1,0 +1,138 @@
+﻿{
+  "guide": {
+    "MainStory": [
+      {
+        "ID": -1708769854,
+        "type": "Next",
+        "eventIDstable": "loki_intro_1",
+        "speakID": "Guide",
+        "Text": "어이, 자네. 여기 있으면 안 돼."
+      },
+      {
+        "ID": -1691992235,
+        "type": "Next",
+        "eventIDstable": "loki_intro_2",
+        "speakID": "Guide",
+        "Text": "여기는 왕국 전용 광산이라고."
+      },
+      {
+        "ID": -1742325092,
+        "type": "Next",
+        "eventIDstable": "loki_intro_3",
+        "speakID": "Guide",
+        "Text": "꼴을 보아하니 아무것도 모른 채 들어온 모양이구만."
+      },
+      {
+        "ID": -1725547473,
+        "type": "Next",
+        "eventIDstable": "loki_take_knowledge",
+        "speakID": "Guide",
+        "Text": "내가 인생을 좀 알려줘야 하나?",
+        "guideAction": {
+          "kind": "take_knowledge",
+          "amount": 5
+        }
+      },
+      {
+        "ID": -1775880330,
+        "type": "Choice",
+        "eventIDstable": "loki_garbled_question",
+        "choiceKind": "Mechanic",
+        "speakID": "Guide",
+        "Text": "아라드찌 모 라게찌?",
+        "options": [
+          "무라아구?",
+          "쥐엥에잔?",
+          "시이이부라랄",
+          "자즈나! 다씨 되돌려"
+        ],
+        "choiceActions": [
+          {
+            "choiceID": "loki_garbled_confused",
+            "action": "continue"
+          },
+          {
+            "choiceID": "loki_garbled_guess",
+            "action": "continue"
+          },
+          {
+            "choiceID": "loki_garbled_mumble",
+            "action": "continue"
+          },
+          {
+            "choiceID": "loki_garbled_restore",
+            "action": "continue"
+          }
+        ]
+      },
+      {
+        "ID": -1759102711,
+        "type": "Next",
+        "eventIDstable": "loki_return_knowledge",
+        "speakID": "Guide",
+        "Text": "뭐라는 거야, 하하. 자, 어때. 이제 체감이 오나?",
+        "guideAction": {
+          "kind": "return_knowledge"
+        }
+      },
+      {
+        "ID": -1809435568,
+        "type": "Next",
+        "eventIDstable": "loki_identity_question",
+        "speakID": "Guide",
+        "Text": "내가 누구냐고?"
+      },
+      {
+        "ID": -1792657949,
+        "type": "Next",
+        "eventIDstable": "loki_identity",
+        "speakID": "Guide",
+        "Text": "나는 장난의 신 로키이지. 적적하게 왕국의 광산을 걷고 있었어."
+      },
+      {
+        "ID": -1574548902,
+        "type": "Choice",
+        "eventIDstable": "loki_identity_choice",
+        "choiceKind": "Attitude",
+        "speakID": "Guide",
+        "Text": "자, 이제 무슨 말을 할 텐가?",
+        "options": [
+          "진짜 신이구나. 신기하네!",
+          "왜 이 광산에 있는 거야?",
+          "관심없어.",
+          "꺼져!"
+        ],
+        "choiceActions": [
+          {
+            "choiceID": "loki_question_god",
+            "action": "story",
+            "storyPath": "Initial/Initial_01/Encounters/guide/QuestionGod",
+            "relationship": "Guide",
+            "relationshipDelta": 1
+          },
+          {
+            "choiceID": "loki_question_place",
+            "action": "story",
+            "storyPath": "Initial/Initial_01/Encounters/guide/QuestionPlace",
+            "relationship": "Guide",
+            "relationshipDelta": 1
+          },
+          {
+            "choiceID": "loki_dismiss",
+            "action": "story",
+            "storyPath": "Initial/Initial_01/Encounters/guide/Dismiss",
+            "relationship": "Guide",
+            "relationshipDelta": -1
+          },
+          {
+            "choiceID": "loki_insult",
+            "action": "story",
+            "storyPath": "Initial/Initial_01/Encounters/guide/Insult",
+            "relationship": "Guide",
+            "relationshipDelta": -2
+          }
+        ]
+      }
+    ]
+  }
+}

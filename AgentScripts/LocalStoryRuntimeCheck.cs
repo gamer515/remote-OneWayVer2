@@ -62,15 +62,14 @@ public static class LocalStoryRuntimeCheck
         Check(LocalStoryNotebook.ResolveOpeningPath(store,"Guide",path)==path,"empty condition opened");
         int calls=0;
         Func<LocalStoryTestReport,CancellationToken,Task> fake=(report,token) => {
-            calls++; Check(report.prompt.Contains("꺼져!") && report.prompt.Contains("실제 해금된"),"real choice/context not in prompt");
+            calls++; Check(report.prompt.Contains("꺼져!") && report.prompt.Contains("해금 조건을 통과한"),"real choice/context not in prompt");
             var changed=JsonUtility.FromJson<EncounterCardRoot>(JsonUtility.ToJson(report.original));
             changed.MainStory[0].text="자네, 지난번 그 무례한 말은 잊지 않았네. 잠깐 멈춰 보게.";
-            changed.MainStory[3].text="내가 세상 돌아가는 이치를 좀 알려줄까?";
             report.rawOutput=Patch(changed); LocalStoryRewrite.EvaluateDraft(report,report.original,report.interactionMemory);
             Check(report.valid,report.error); return Task.CompletedTask;
         };
         var field=typeof(SaveIOService).GetField("_instance",BindingFlags.NonPublic|BindingFlags.Static); var previous=field.GetValue(null);
-        string original=Resources.Load<TextAsset>("Story_Json_Data/"+path+"/Story").text;
+        string original=ChapterContentCatalog.Asset("Story_Json_Data/"+path+"/Story").text;
         try
         {
             field.SetValue(null,store);
@@ -79,15 +78,14 @@ public static class LocalStoryRuntimeCheck
             Check(saved.status=="Ready" && saved.generationResults.Count==1,"run status wrong");
             Check(saved.generationResults[0].reportPath!=null && File.Exists(saved.generationResults[0].reportPath),"raw report missing");
             Check(new EncounterContentRepository(2).TryLoadCards(path,out var cards,out var error),error);
-            Check(cards.MainStory[0].text.Contains("무례") && cards.MainStory[3].text.Contains("이치"),"new dialogue not used / core locked to original");
+            Check(cards.MainStory[0].text.Contains("무례") && cards.MainStory[3].text==JsonUtility.FromJson<EncounterCardRoot>(original).MainStory[3].text,"new dialogue not used / authored knowledge event changed");
             Check(cards.MainStory[3].guideAction.amount==5 && cards.MainStory[7].coreMeaning!=null,"action/core metadata changed");
             Check(new EncounterContentRepository(1).TryLoadCards(path,out var first,out error) && !first.MainStory[0].text.Contains("무례"),"current/source run changed");
             LocalStoryRuntimePipeline.Execute(request,store,fake,CancellationToken.None).GetAwaiter().GetResult();
             Check(calls==1,"existing game application overwritten");
-            string content=Path.Combine(root,"GeneratedContent/For_Run_0002/Encounters",path,"Story.json");
-            File.Move(content,Path.Combine(Path.GetDirectoryName(content),"Story.disabled.json"));
+            Check(store.SetNarrativeContentEnabled(2,path,false),"disable failed");
             LocalStoryRuntimePipeline.Execute(request,store,fake,CancellationToken.None).GetAwaiter().GetResult();
-            Check(calls==1 && !File.Exists(content),"disabled restoration ignored");
+            Check(calls==1 && !store.TryLoadGeneratedContent(2,"Encounters",path+"/Story",out EncounterCardRoot disabled),"disabled restoration ignored");
             Check(new EncounterContentRepository(2).TryLoadCards(path,out var restored,out error) && restored.MainStory[0].text==first.MainStory[0].text,"original restore failed");
             // Exercise failure separately. Never apply failed raw output or fabricate a successful review.
             var failedStore=Storage(root+"_failed"); failedStore.SaveProfile(new ProfileData {currentRun=2});
@@ -102,7 +100,7 @@ public static class LocalStoryRuntimeCheck
                 LocalStoryRewrite.EvaluateDraft(report,report.original,report.interactionMemory);
                 report.correctionAttempted=true; report.correctionError="invalid correction fixture"; return Task.CompletedTask;},CancellationToken.None).GetAwaiter().GetResult();
             Check(!correctionStore.TryLoadGeneratedContent(2,"Encounters",path+"/Story",out EncounterCardRoot badCorrection),"failed correction replaced with draft in game");
-            Check(Resources.Load<TextAsset>("Story_Json_Data/"+path+"/Story").text==original,"canonical JSON changed");
+            Check(ChapterContentCatalog.Asset("Story_Json_Data/"+path+"/Story").text==original,"canonical JSON changed");
         }
         finally {field.SetValue(null,previous);}
         return checks+" checks passed. Isolated simulated completion + fake inference; NOT a real playthrough/model quality test. Kept fixtures: "+root;

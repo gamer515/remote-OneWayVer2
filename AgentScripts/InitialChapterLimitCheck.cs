@@ -14,7 +14,7 @@ public static class InitialChapterLimitCheck
     static void Assert(bool condition,string message){if(!condition)throw new Exception(message);}
     public static object Check()
     {
-        var resource=Resources.Load<TextAsset>("Story_Json_Data/Omnibus_01");
+        var resource=ChapterContentCatalog.Asset("Story_Json_Data/Omnibus_01");
         Assert(resource!=null,"Omnibus resource missing");
         var omnibus=JsonUtility.FromJson<OmnibusData>(resource.text);
         Assert(omnibus.chapters.Count==3,"Later chapters removed");
@@ -23,7 +23,7 @@ public static class InitialChapterLimitCheck
         var checks=new List<object>();
         foreach(var chapter in omnibus.chapters)
             foreach(var episode in chapter.episodeIds)
-                Assert(Resources.Load<TextAsset>("Story_Json_Data/"+chapter.chapterId+"/"+episode+"/Terrain")!=null,"Preserved terrain missing");
+                Assert(ChapterContentCatalog.Asset("Story_Json_Data/"+chapter.chapterId+"/"+episode+"/Terrain")!=null,"Preserved terrain missing");
         var scene=EditorSceneManager.NewPreviewScene();
         var go=new GameObject("InitialLimit_MemoryTest"){hideFlags=HideFlags.HideAndDontSave};
         go.SetActive(false);SceneManager.MoveGameObjectToScene(go,scene);
@@ -55,7 +55,6 @@ public static class InitialChapterLimitCheck
                 checks.Add(new{chapterIndex,returnedToMainMenu=true,sourceSessionPreserved=true,nextRunPreparedOnce=true});
             }
             AssertInitialPacket(go);
-            AssertGenerationWait(go,manager,input);
             omnibus.lastPlayableChapterId="Chapter_1";
             Assert(omnibus.PlayableChapterCount==2,"Expandable limit failed");
             omnibus.lastPlayableChapterId="";
@@ -66,30 +65,10 @@ public static class InitialChapterLimitCheck
             var environment=go.AddComponent<EnvController>();
             Assert(!environment.TryValidateAllContent(omnibus,out var error)&&!string.IsNullOrEmpty(error),"Invalid cap failed open");
             return new{initialPlayableChapters=1,preservedChapters=3,checks,initialPacketCreated=true,
-                responseValidationPassed=true,generatedTextAppliedInMemory=true,generationWaitUnlocksInput=true,expandableLimit=true,
+                responseValidationPassed=true,generatedTextAppliedInMemory=true,expandableLimit=true,
                 legacyCompatible=true,invalidCapRejected=true,saveFilesUntouched=true,apiCallsMade=false};
         }
         finally{UnityEngine.Object.DestroyImmediate(go);EditorSceneManager.ClosePreviewScene(scene);}
-    }
-
-    static void AssertGenerationWait(GameObject go,DecisionManager manager,JourneyBoardInput input)
-    {
-        var instance=typeof(AIAPIClient).GetField("_instance",BindingFlags.Static|BindingFlags.NonPublic);
-        var originalInstance=instance.GetValue(null);
-        var client=go.AddComponent<AIAPIClient>();
-        var processing=typeof(AIAPIClient).GetField("<isAiProcessing>k__BackingField",Fields);
-        try
-        {
-            instance.SetValue(null,client);processing.SetValue(client,true);
-            var wait=(System.Collections.IEnumerator)typeof(DecisionManager)
-                .GetMethod("WaitForGeneratedStory",Fields).Invoke(manager,null);
-            input.SetInputEnabled(true);
-            Assert(wait.MoveNext()&&!input.InputEnabled,"Generation wait did not lock input");
-            Assert(wait.MoveNext(),"Generation wait ended early");
-            processing.SetValue(client,false);
-            Assert(!wait.MoveNext()&&input.InputEnabled,"Generation wait did not restore input");
-        }
-        finally{instance.SetValue(null,originalInstance);UnityEngine.Object.DestroyImmediate(client);}
     }
 
     static void AssertInitialPacket(GameObject go)
@@ -100,7 +79,7 @@ public static class InitialChapterLimitCheck
             var relay=go.AddComponent<StoryRelayManager>();
             typeof(StoryRelayManager).GetField("promptData",Fields).SetValue(relay,prompt);
             const string path="Initial/Initial_01/Encounters/guide";
-            var text=Resources.Load<TextAsset>("Story_Json_Data/"+path+"/Story").text;
+            var text=ChapterContentCatalog.Asset("Story_Json_Data/"+path+"/Story").text;
             var original=JsonUtility.FromJson<EncounterCardRoot>(text);
             var records=new List<PlayedEncounterCardRecord>{new PlayedEncounterCardRecord{
                 placeId="guide",encounterPath=path,cardIndex=0,

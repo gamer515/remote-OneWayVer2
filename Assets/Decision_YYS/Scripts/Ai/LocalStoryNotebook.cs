@@ -11,20 +11,18 @@ using UnityEngine;
     public string characterId, name, role, personality, publicFacts, revealedPast;
     public bool autoGenerate;
     public string model;
+    public int[] stats;
+    public string[] unlockedIds;
 }
 
-/// <summary>Editable NPC/rule sheets are author inputs; recorded sheets only mirror real saves.</summary>
-public static class LocalStoryNotebook
+/// <summary>NPC controls and JSON-derived unlock/reward views. Play and generation state stay in JSON.</summary>
+public static partial class LocalStoryNotebook
 {
     private static readonly XNamespace Ns = "http://schemas.openxmlformats.org/spreadsheetml/2006/main";
-    public static string PathFor(SaveIOService storage) => Path.Combine(storage.StorageRoot, "Narrative", "NpcStoryData.xlsx");
+    public static string PathFor(SaveIOService storage) => ChapterPath(storage,"Initial");
     private static void Ensure(SaveIOService storage)
     {
-        string file = PathFor(storage);
-        if (File.Exists(file)) return;
-        string template = Path.Combine(Application.streamingAssetsPath, "LocalStory", "NpcStoryData.xlsx");
-        Directory.CreateDirectory(Path.GetDirectoryName(file));
-        File.Copy(template, file, false);
+        EnsureChapterBooks(storage);
     }
     private static XDocument Read(ZipArchive zip, string path)
     {
@@ -69,132 +67,71 @@ public static class LocalStoryNotebook
     }
     public static string[] EarnedUnlocks(SaveIOService storage, int throughRun = int.MaxValue) =>
         ProgressFiles(storage).Where(p => RunNumber(p) <= throughRun).SelectMany(p =>
-            JsonUtility.FromJson<GameProgress>(File.ReadAllText(p)).unlockedIds ?? new List<string>()).Distinct().OrderBy(s => s).ToArray();
+            CachedProgress(p).unlockedIds ?? new List<string>()).Distinct().OrderBy(s => s).ToArray();
     private static string[] ProgressFiles(SaveIOService storage)
     {
         string runs = Path.Combine(storage.StorageRoot,"Runs");
         return Directory.Exists(runs) ? Directory.GetFiles(runs,"Progress.json",SearchOption.AllDirectories).OrderBy(RunNumber).ToArray() : Array.Empty<string>();
     }
     private static int RunNumber(string file) => int.TryParse(Path.GetFileName(Path.GetDirectoryName(file)).Replace("Run_",""),out int run) ? run : 0;
-    private static string[] Ids(string text) => (text ?? "").Split(new[]{';',','},StringSplitOptions.RemoveEmptyEntries).Select(v => v.Trim()).Where(v => v.Length > 0).ToArray();
+    private static string[] Ids(string text) => (text ?? "").Split(new[]{';',',','\n','\r'},StringSplitOptions.RemoveEmptyEntries)
+        .Select(v => System.Text.RegularExpressions.Regex.Replace(v.Trim(),@"^\d+[.)]\s*","")).Where(v => v.Length > 0).ToArray();
+    public static string Numbered(string text) => Numbered((text??"").Split(new[]{'\n','\r'},StringSplitOptions.RemoveEmptyEntries));
+    public static string Numbered(IEnumerable<string> values) => string.Join("\n",values.Where(v=>!string.IsNullOrWhiteSpace(v))
+        .Select(v=>System.Text.RegularExpressions.Regex.Replace(v.Trim(),@"^\d+[.)]\s*","")).Select((v,i)=>(i+1)+". "+v));
     public static LocalStoryNpcContext[] Contexts(SaveIOService storage, string[] earned)
     {
-        Ensure(storage);
-        using var stream = File.Open(PathFor(storage),FileMode.Open,FileAccess.Read,FileShare.ReadWrite);
-        using var zip = new ZipArchive(stream,ZipArchiveMode.Read);
-        var result = new List<LocalStoryNpcContext>();
-        foreach (var r in Rows(zip,"NPC설정").Where(r => !string.IsNullOrWhiteSpace(r[0])))
-        {
-            if (result.Any(c => c.characterId == r[0]) || Resources.Load<TextAsset>("Story_Json_Data/Characters/"+r[0]) == null)
-                throw new InvalidDataException("알 수 없거나 중복된 NPC_ID: "+r[0]);
-            if (r[7] != "0" && r[7] != "1") throw new InvalidDataException("자동생성은 0 또는 1: "+r[0]);
-            if (r[8] != "Gemma" && r[8] != "Qwen") throw new InvalidDataException("모델은 Gemma 또는 Qwen: "+r[0]);
-            string[] needs = Ids(r[6]);
-            result.Add(new LocalStoryNpcContext {characterId=r[0],name=r[1],role=r[2],personality=r[3],publicFacts=r[4],
-                revealedPast=needs.Length > 0 && needs.All(id => earned.Contains(id)) ? r[5] : "",autoGenerate=r[7]=="1",model=r[8]});
-        }
-        foreach (var r in Rows(zip,"해금규칙").Where(r => r[6]=="1" && !string.IsNullOrWhiteSpace(r[0])))
-        {
-            var npc=result.FirstOrDefault(c => c.characterId==r[1]);
-            string[] needs=Ids(r[3]);
-            if(npc==null || needs.Length==0 || !needs.All(id => earned.Contains(id))) continue;
-            if(IsStoryPath(r[2]) && IsStoryPath(r[4]) && r[4].StartsWith(r[2]+"/",StringComparison.Ordinal) && !r[4].Contains("/Variants/"))
-                npc.publicFacts+=(string.IsNullOrWhiteSpace(r[5])?"":"\n"+r[5]);
-        }
-        return result.ToArray();
+        return ConfiguredContexts(storage,earned);
+    }
+    public static LocalStoryNpcContext[] ReadContexts(string file, string[] earned)
+    {
+        return ReadChapterContexts(file,earned);
     }
     public static string ResolveOpeningPath(SaveIOService storage, string npc, string original)
     {
-        try
-        {
-            Ensure(storage);
-            using var stream = File.Open(PathFor(storage),FileMode.Open,FileAccess.Read,FileShare.ReadWrite);
-            using var zip = new ZipArchive(stream,ZipArchiveMode.Read);
-            string[] earned = EarnedUnlocks(storage);
-            foreach (var r in Rows(zip,"해금규칙").Where(r => r[6]=="1" && r[1]==npc && r[2]==original))
-            {
-                string[] needs = Ids(r[3]);
-                if (string.IsNullOrWhiteSpace(r[0]) || needs.Length==0 || !needs.All(id => earned.Contains(id))) continue;
-                string target = r[4];
-                if (!IsStoryPath(target) || !target.StartsWith(original+"/",StringComparison.Ordinal) || target.Contains("/Variants/"))
-                    throw new InvalidDataException("해금 이야기는 기존 NPC 폴더 아래의 원문 경로여야 합니다: "+target);
-                Debug.Log("[Story] Excel 해금 "+r[0]+" → "+target);
-                return target; // First matching authored row wins, no model-defined branches.
-            }
-        }
-        catch(Exception e) { Debug.LogWarning("[Story] Excel 해금 확인 실패, 기본 이야기 유지: "+e.Message); }
-        return original;
+        return original; // Authored JSON owns story routing.
     }
     public static bool IsStoryPath(string path) => !string.IsNullOrWhiteSpace(path) && path.IndexOfAny(new[]{'.','\\',':'}) < 0 &&
-        Resources.Load<TextAsset>("Story_Json_Data/"+path+"/Story") != null;
+        NarrativeInteractions.StorySource(path) != null;
     public static string PromptContext(LocalStoryRevisionRequest request, string npc)
     {
         var c = request.npcContexts?.FirstOrDefault(p => p.characterId == npc);
         if (c == null) return "";
         var facts=new Newtonsoft.Json.Linq.JObject { ["name"]=c.name,["role"]=c.role,["personality"]=c.personality,["publicFacts"]=c.publicFacts,["revealedPast"]=c.revealedPast };
-        return "\n[Excel 인물 설정 — 대사에 그대로 출력하지 않을 참고 자료]\n"+facts.ToString(Newtonsoft.Json.Formatting.Indented)+
-            "\n실제 해금된 ID: "+string.Join(", ",request.earnedUnlocks??Array.Empty<string>())+
+        return "\n[인물 설정 — 대사에 그대로 출력하지 않을 참고 자료]\n"+facts.ToString(Newtonsoft.Json.Formatting.Indented)+
+            "\n해금 조건을 통과한 설정만 포함했다. 내부 해금 ID를 추측하거나 대사로 읽지 않는다."+
             "\n핵심 대사도 같은 사건 의미로 새로 표현한다. 게임 기능/보상/분기는 만들거나 변경하지 않는다.";
     }
     public static void Refresh(SaveIOService storage)
     {
-        try
-        {
-            Ensure(storage);
-            string file = PathFor(storage), temp = file+".tmp";
-            var history = new List<string[]>();
-            var generation = new List<string[]>();
-            foreach (string progressFile in ProgressFiles(storage))
-            {
-                int run = RunNumber(progressFile);
-                var progress = JsonUtility.FromJson<GameProgress>(File.ReadAllText(progressFile));
-                foreach (var e in progress.storyEvents ?? new List<StoryEventRecord>())
-                    history.Add(new[]{run.ToString(),e.sequence.ToString(),e.characterId,e.characterName,e.terrainName,e.storyPath,e.kind,e.choiceId,
-                        e.displayedText,e.reason,e.relationshipDelta.ToString(),Stats(e.statsBefore),Stats(e.statsAfter),Stats(e.coinsBefore),Stats(e.coinsAfter),
-                        e.itemId,e.quantity.ToString(),e.direction,string.Join(";",e.grantsUnlocks??Array.Empty<string>()),e.eventKey});
-                // Stored actual displayed dialogue, separate from the player's choice/event rows.
-                int observation=0;
-                foreach (var c in progress.guideProgress?.runHistory ?? new List<PlayedEncounterCardRecord>())
-                {
-                    observation++;
-                    if(c?.card == null) continue;
-                    var known=progress.storyEvents?.FirstOrDefault(e => e.characterId==c.card.speakerId && e.placeId==c.placeId);
-                    history.Add(new[]{run.ToString(),"",c.card.speakerId,known?.characterName,known?.terrainName,c.encounterPath,"dialogue","",c.card.text,"","","","","","","","","","",
-                        "observed:"+observation+":"+c.placeId+":"+c.encounterPath+":"+c.cardIndex});
-                }
-                var request = storage.LoadRunData<LocalStoryRevisionRequest>(run,"LocalStoryRevisionRequest");
-                if(request != null)
-                {
-                    var results=request.generationResults??new List<LocalStoryRuntimeResult>();
-                    if(results.Count==0) generation.Add(new[]{request.sourceRun.ToString(),request.targetRun.ToString(),request.chapterId,"","",request.status,request.generationError,request.reason,"LocalStoryTests/Index.html"});
-                    foreach(var r in results) generation.Add(new[]{request.sourceRun.ToString(),request.targetRun.ToString(),request.chapterId,r.storyPath,r.model,r.status,r.error,request.reason,r.reportPath});
-                }
-            }
-            // Copy-on-write keeps all editable sheets, styles and other author content intact.
-            File.Copy(file,temp,true);
-            using (var zip = ZipFile.Open(temp,ZipArchiveMode.Update))
-            { ReplaceRows(zip,"플레이기록",history); ReplaceRows(zip,"생성기록",generation); }
-            File.Replace(temp,file,null);
-        }
-        catch(Exception e) { Debug.LogWarning("[Story] Excel 갱신 보류 (게임 JSON은 유지): "+e.Message); }
+        EnsureChapterBooks(storage);
     }
-    private static string Stats(int[] values) => values==null ? "" : string.Join(" / ",values);
     private static string Column(int index) { string value=""; for(index++;index>0;index=(index-1)/26) value=(char)('A'+(index-1)%26)+value; return value; }
     private static void ReplaceRows(ZipArchive zip, string name, List<string[]> rows)
     {
         string path=SheetPath(zip,name);
         var document=Read(zip,path); var data=document.Root.Element(Ns+"sheetData");
+        var shared=zip.GetEntry("xl/sharedStrings.xml")==null?Array.Empty<string>():Read(zip,"xl/sharedStrings.xml").Descendants(Ns+"si").Select(s=>string.Concat(s.Descendants(Ns+"t").Select(t=>t.Value))).ToArray();
+        var headers=data.Elements(Ns+"row").First().Elements(Ns+"c").Select(c=>(string)c.Attribute("t")=="s"?shared[(int)c.Element(Ns+"v")]:
+            (string)c.Attribute("t")=="inlineStr"?string.Concat(c.Descendants(Ns+"t").Select(t=>t.Value)):(string)c.Element(Ns+"v")??"").ToArray();
+        var numeric=new HashSet<string>(new[]{"자동생성","해금상태","번호","회차","순서","이전회차","다음회차","청크","체력","속도","지능","매력","관계변화","수량"});
         var style=data.Elements(Ns+"row").FirstOrDefault(r => (int?)r.Attribute("r")==2)?.Elements(Ns+"c").Select(c => (string)c.Attribute("s")??"0").ToArray()??Array.Empty<string>();
         data.Elements(Ns+"row").Where(r => (int?)r.Attribute("r")!=1).Remove();
         for(int i=0;i<rows.Count;i++)
         {
-            var row=new XElement(Ns+"row",new XAttribute("r",i+2),new XAttribute("ht",54),new XAttribute("customHeight",1));
-            for(int j=0;j<rows[i].Length;j++) row.Add(new XElement(Ns+"c",new XAttribute("r",Column(j)+(i+2)),
-                new XAttribute("s",j<style.Length?style[j]:"0"),new XAttribute("t","inlineStr"),
-                new XElement(Ns+"is",new XElement(Ns+"t",new XAttribute(XNamespace.Xml+"space","preserve"),rows[i][j]??""))));
+            double Width(int column)=>(double?)document.Root.Element(Ns+"cols")?.Elements(Ns+"col").FirstOrDefault(c=>(int)c.Attribute("min")<=column+1&&(int)c.Attribute("max")>=column+1)?.Attribute("width")??25;
+            int lines=rows[i].Select((v,j)=>(v??"").Split('\n').Sum(line=>Math.Max(1,(int)Math.Ceiling(line.Sum(c=>c>255?2.0:1.0)/Math.Max(8,Width(j)-4))))).DefaultIfEmpty(1).Max();
+            var row=new XElement(Ns+"row",new XAttribute("r",i+2),new XAttribute("ht",Math.Min(409,Math.Max(44,lines*18+20))),new XAttribute("customHeight",1));
+            for(int j=0;j<rows[i].Length;j++)
+            {
+                var cell=new XElement(Ns+"c",new XAttribute("r",Column(j)+(i+2)),new XAttribute("s",j<style.Length?style[j]:"0"));
+                if(j<headers.Length && numeric.Contains(headers[j]) && int.TryParse(rows[i][j],out int value)) cell.Add(new XElement(Ns+"v",value));
+                else {cell.SetAttributeValue("t","inlineStr");cell.Add(new XElement(Ns+"is",new XElement(Ns+"t",new XAttribute(XNamespace.Xml+"space","preserve"),rows[i][j]??"")));}
+                row.Add(cell);
+            }
             data.Add(row);
         }
-        string range="A1:"+Column(rows.Count>0?rows[0].Length-1:name=="플레이기록"?19:8)+Math.Max(2,rows.Count+1);
+        string range="A1:"+Column(rows.Count>0?rows[0].Length-1:data.Elements(Ns+"row").First().Elements(Ns+"c").Count()-1)+Math.Max(2,rows.Count+1);
         document.Root.Element(Ns+"dimension")?.SetAttributeValue("ref",range);
         var filter=document.Root.Element(Ns+"autoFilter");
         if(filter==null) data.AddAfterSelf(new XElement(Ns+"autoFilter",new XAttribute("ref",range)));

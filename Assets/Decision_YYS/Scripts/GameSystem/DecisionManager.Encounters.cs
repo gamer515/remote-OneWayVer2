@@ -65,6 +65,7 @@ public partial class DecisionManager
 
     private void BeginExploration()
     {
+        if (guideProgress != null) guideProgress.activeDialogue = null;
         pendingEncounter = null;
         activePlaceId = null;
         activeEncounterPath = null;
@@ -144,7 +145,9 @@ public partial class DecisionManager
             return false;
         }
         StoryChoiceAction choice = card.choiceActions[selectedGearIndex];
-        if (!saveService.HasAllUnlocks(choice.requiresUnlocks))
+        // A restored, confirmed exchange must continue even after its required item was consumed.
+        bool confirmed=storyEvents.Exists(e=>e.eventKey=="choice:"+storyVisit && e.choiceSlot==selectedGearIndex);
+        if (!confirmed && (!saveService.HasAllUnlocks(choice.requiresUnlocks) || !saveService.HasAllItems(choice.requiresItems)))
         {
             RenderEncounterOptions();
             return true;
@@ -155,11 +158,19 @@ public partial class DecisionManager
         saveService.ApplyEncounterEffect(
             $"visit:{storyVisit}:choice:{selectedGearIndex}",
             choice.grantsUnlocks, choice.relationshipId, relationshipDelta);
-        LocalStoryNotebook.Refresh(SaveIOService.Instance);
+        var selected = storyEvents.FindLast(e => e.eventKey == "choice:" + storyVisit);
+        var interactions = saveService.ApplyNarrativeInteractions(selected);
+        if (interactions.Count > 0)
+        {
+            backpackInventory?.Initialize(saveService.LoadInventoryState(), saveService.SaveInventoryState);
+            foreach (var interaction in interactions) presentationController.ShowInteraction(interaction.notice, selected.characterId);
+        }
         switch (choice.action)
         {
             case "skip": ResolveEncounter(); return true;
-            case "story": OpenStoryBranch(choice.storyPath); return true;
+            case "story":
+                string nextPath=storyEvents.FindLast(e=>e.eventKey=="choice:"+storyVisit)?.resultStoryPath;
+                OpenStoryBranch(string.IsNullOrEmpty(nextPath)?choice.storyPath:nextPath); return true;
             default: return false;
         }
     }
@@ -225,17 +236,20 @@ public partial class DecisionManager
         activeEncounterPath = string.IsNullOrWhiteSpace(storyPath) ? encounter.ContentPath : storyPath;
         if (string.IsNullOrWhiteSpace(storyPath))
             activeEncounterPath = LocalStoryNotebook.ResolveOpeningPath(SaveIOService.Instance,encounter.DisplayName,activeEncounterPath);
+        activeEncounterPath=ChapterContentCatalog.ResolveStoryPath(activeEncounterPath,session.RunNumber);
         int[] stats = statContainer.stats;
         bool isGuide = encounter.DisplayName == "Guide";
+        var pinned = restoringStoryCard && guideProgress?.activeDialogue?.placeId == activePlaceId ? guideProgress.activeDialogue : null;
         if (!encounterContent.TryLoadCards(activeEncounterPath, out activeCards, out string error,
                 !isGuide && stats.Length == 4 && stats[2] == 0,
-                !isGuide && stats.Length == 4 && stats[3] == 0) ||
+                !isGuide && stats.Length == 4 && stats[3] == 0, pinned) ||
             activeCards.MainStory.Count == 0)
         {
             Debug.LogError($"[조우 카드] {encounter.PlaceId}: {error}", this);
             ResolveEncounter();
             return;
         }
+        guideProgress.activeDialogue = encounterContent.Capture(activePlaceId, activeEncounterPath, activeCards);
         activeCardIndex = Mathf.Clamp(index, 0, activeCards.MainStory.Count - 1);
         PresentEncounterCard();
     }
@@ -331,7 +345,7 @@ public partial class DecisionManager
         string[] options = (string[])card.options.Clone();
         if (card.choiceActions != null && card.choiceActions.Length == 4)
             for (int index = 0; index < 4; index++)
-                if (!saveService.HasAllUnlocks(card.choiceActions[index].requiresUnlocks))
+                if (!saveService.HasAllUnlocks(card.choiceActions[index].requiresUnlocks) || !saveService.HasAllItems(card.choiceActions[index].requiresItems))
                     options[index] += " (잠김)";
         presentationController.ShowOptions(options, selectedGearIndex);
     }
@@ -347,6 +361,7 @@ public partial class DecisionManager
             saveService?.MarkEncounterCompleted(activePlaceId);
         }
         BeginExploration();
+        LocalStoryNotebook.Refresh(SaveIOService.Instance);
         if(finishedEncounter.HasValue)
         {
             var finished=finishedEncounter.Value;

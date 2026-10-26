@@ -62,6 +62,7 @@ public sealed class StoryChoiceAction
     public string action;
     public string storyPath;
     public string[] requiresUnlocks;
+    public string[] requiresItems;
     public string[] grantsUnlocks;
     public string relationshipId;
     public int relationshipDelta;

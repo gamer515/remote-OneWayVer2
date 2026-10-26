@@ -14,12 +14,12 @@ using Debug = UnityEngine.Debug;
     public string storyPath, model, status, error, reportPath;
 }
 
-public enum LocalStoryLogStage { Request, Working, Complete, Failed, Deferred }
+public enum LocalStoryLogStage { Request, Working, Complete, Failed, Deferred, Review }
 
 /// <summary>Colour is presentation only; stage labels remain searchable in plain player logs.</summary>
 public static class LocalStoryLog
 {
-    public static string Format(LocalStoryLogStage stage, string message)
+    public static string Format(LocalStoryLogStage stage, string message,string activity="생성")
     {
         string label, colour;
         switch(stage)
@@ -28,8 +28,10 @@ public static class LocalStoryLog
             case LocalStoryLogStage.Working: label="생성 중"; colour="#55D9FF"; break;
             case LocalStoryLogStage.Complete: label="생성 완료"; colour="#74E892"; break;
             case LocalStoryLogStage.Failed: label="생성 실패"; colour="#FF7777"; break;
+            case LocalStoryLogStage.Review: label="생성 확인 필요"; colour="#FFD166"; break;
             default: label="생성 보류"; colour="#FFD166"; break;
         }
+        label=activity+label.Substring(2);
         string text="[LocalStory]["+label+"] "+message;
 #if UNITY_EDITOR
         // NPC/model/error text must not inject rich-text tags that hide or recolour the stage.
@@ -38,10 +40,10 @@ public static class LocalStoryLog
         return text;
 #endif
     }
-    public static void Write(LocalStoryLogStage stage, string message, UnityEngine.Object context=null)
+    public static void Write(LocalStoryLogStage stage, string message, UnityEngine.Object context=null,string activity="생성")
     {
-        string text=Format(stage,message);
-        if(stage==LocalStoryLogStage.Failed) Debug.LogWarning(text,context);
+        string text=Format(stage,message,activity);
+        if(stage==LocalStoryLogStage.Failed||stage==LocalStoryLogStage.Review) Debug.LogWarning(text,context);
         else Debug.Log(text,context);
     }
 }
@@ -51,27 +53,57 @@ public sealed class LocalStoryRuntimeService : MonoBehaviour
 {
     private static LocalStoryRuntimeService instance;
     private CancellationTokenSource cancellation;
+    private CancellationTokenSource preparation;
     public static bool IsBusy => instance != null && instance.cancellation != null;
-    public static bool BlocksCurrentRun => LocalStoryDialogueQueue.BlocksRun(SaveIOService.Instance,
-        SaveIOService.Instance.LoadOrCreateProfile().currentRun);
+    public static bool IsPreparing => instance != null && instance.preparation != null;
+    public static string PreparationStatus { get; private set; } = "미검사";
+    public static LocalStoryModelVerification LastPreparation { get; private set; }
     public static string Status { get; private set; } = "";
+    private void Update()
+    {
+        if (!IsBusy) LocalStoryInference.ReleaseIfIdle(TimeSpan.FromSeconds((int)LocalStoryPrompt.Policy["inference"]["idleSeconds"]));
+    }
+    public static void PrepareConfiguredModel()
+    {
+        if (IsPreparing || !Application.isPlaying) return;
+        try
+        {
+            var storage = SaveIOService.Instance;
+            string root = Path.Combine(Application.streamingAssetsPath,"LocalStory");
+            bool needed = LocalStoryNotebook.ConfiguredContexts(storage,Array.Empty<string>(),false).Any(n=>n.autoGenerate && n.model=="Gemma");
+            if (!needed) { PreparationStatus="Gemma 자동 생성 꺼짐"; LastPreparation=null; return; }
+            EnsureInstance();
+            instance.Prepare(LocalStoryTestModels.PathFor(root,LocalStoryTestModel.Gemma));
+        }
+        catch(Exception e) { PreparationStatus="검사 보류"; LocalStoryLog.Write(LocalStoryLogStage.Deferred,"Gemma 사전 검사: "+e.Message,activity:"모델 검사"); }
+    }
+    private async void Prepare(string modelPath)
+    {
+        preparation = new CancellationTokenSource();
+        PreparationStatus="Gemma 파일 검사 중"; LastPreparation=null;
+        LocalStoryLog.Write(LocalStoryLogStage.Working,"Gemma 사전 검사 시작 / 입력은 계속 가능",activity:"모델 검사");
+        try
+        {
+            LastPreparation=await LocalStoryInference.PrepareGemma(modelPath,preparation.Token);
+            PreparationStatus="Gemma 파일 검사 완료";
+            LocalStoryLog.Write(LocalStoryLogStage.Complete,"Gemma 사전 검사 / "+LastPreparation.seconds.ToString("F2")+
+                "초 / "+LastPreparation.provider+" / "+(LastPreparation.cached?"같은 파일 검사 재사용":LastPreparation.bytesHashed+" bytes 전체 검사")+" / 모델 메모리 적재는 생성 시 수행",activity:"모델 검사");
+        }
+        catch(OperationCanceledException) { PreparationStatus="검사 중단"; }
+        catch(Exception e) { PreparationStatus="검사 실패 — 원문으로 플레이 가능"; LocalStoryLog.Write(LocalStoryLogStage.Deferred,"Gemma 사전 검사: "+e.Message,activity:"모델 검사"); }
+        finally { preparation.Dispose(); preparation=null; }
+    }
     public static void TryResumePending()
     {
         if (IsBusy || !Application.isPlaying) return;
-        var storage = SaveIOService.Instance;
-        if(LocalStoryDialogueQueue.Next(storage)!=null)
+        try
         {
+            var storage = SaveIOService.Instance;
+            if(LocalStoryDialogueQueue.Next(storage)==null) return;
             EnsureInstance();
             instance.Pump(storage);
-            return;
         }
-        var request = storage.LoadLatestLocalStoryRevision();
-        // Old completed-run requests are legacy only; dialogue queues own all new requests.
-        if(request?.generationTrigger=="DialogueEnded") return;
-        if (request == null || (request.status != "PendingLocalModel" && request.status != "Generating")) return;
-        if (!LocalStoryRuntimePipeline.CanProcess(request,storage)) return;
-        EnsureInstance();
-        instance.Begin(request,storage);
+        catch(Exception e) { LocalStoryLog.Write(LocalStoryLogStage.Deferred,"저장된 생성 요청 재개 보류: "+e.Message); }
     }
     private static void EnsureInstance()
     {
@@ -102,25 +134,9 @@ public sealed class LocalStoryRuntimeService : MonoBehaviour
             LocalStoryNotebook.Refresh(storage);
         }
     }
-    private async void Begin(LocalStoryRevisionRequest request, SaveIOService storage)
-    {
-        cancellation = new CancellationTokenSource();
-        Status = request.sourceRun+" → "+request.targetRun+"회차 이야기 생성 중";
-        LocalStoryLog.Write(LocalStoryLogStage.Working,Status+". 실제 플레이 기록 / 내부 모델 / 다음 회차만 적용.");
-        try { await LocalStoryRuntimePipeline.Execute(request,storage,LocalStoryRuntimePipeline.Infer,cancellation.Token); }
-        catch(Exception e) { LocalStoryLog.Write(LocalStoryLogStage.Failed,"생성 중단: "+e.Message); }
-        finally
-        {
-            var finished = storage.LoadRunData<LocalStoryRevisionRequest>(request.sourceRun,"LocalStoryRevisionRequest") ?? request;
-            Status = "이야기 생성: "+finished.status+(string.IsNullOrEmpty(finished.generationError)?"":" / "+finished.generationError);
-            cancellation.Dispose(); cancellation=null;
-            var stage=finished.status=="Failed"?LocalStoryLogStage.Failed:
-                finished.status=="Ready"?LocalStoryLogStage.Complete:LocalStoryLogStage.Deferred;
-            LocalStoryLog.Write(stage,request.sourceRun+"회차 기록 → "+request.targetRun+"회차용 / "+Status);
-        }
-    }
-    private void OnDestroy() { cancellation?.Cancel(); if(instance==this) instance=null; }
-    private void OnApplicationQuit() => cancellation?.Cancel();
+    private void Cancel() { cancellation?.Cancel(); preparation?.Cancel(); }
+    private void OnDestroy() { Cancel(); if(instance==this) instance=null; }
+    private void OnApplicationQuit() => Cancel();
 }
 
 public static class LocalStoryRuntimePipeline
@@ -148,23 +164,28 @@ public static class LocalStoryRuntimePipeline
             if(request.npcContexts==null || request.npcContexts.Length==0)
                 request.npcContexts=LocalStoryNotebook.Contexts(storage,request.earnedUnlocks);
             request.generationResults ??= new List<LocalStoryRuntimeResult>();
-            // First live pilot: the existing Guide introduction. Other NPCs are journalled, not silently enabled.
-            string path=LocalStoryTestInputs.GuidePath;
-            var npc=request.npcContexts.FirstOrDefault(c => c.characterId=="Guide" && c.autoGenerate);
-            bool encountered=(request.events??new List<StoryEventRecord>()).Any(e => e.characterId=="Guide") ||
-                (request.playedCards??new List<PlayedEncounterCardRecord>()).Any(c => c.encounterPath==path);
-            if(npc != null && encountered && (request.scenarioPaths??Array.Empty<string>()).Any(p => path.StartsWith(p+"/",StringComparison.Ordinal)))
+            bool encountered=false;
+            foreach(var npc in request.npcContexts.Where(c=>c.autoGenerate))
             {
-                // Resume only unfinished work. Manual applications/disabled generated files are never overwritten.
-                string directory=Path.Combine(storage.StorageRoot,"GeneratedContent","For_Run_"+request.targetRun.ToString("D4"),"Encounters",path.Replace('/',Path.DirectorySeparatorChar));
-                if(!request.generationResults.Any(r => r.storyPath==path && r.status=="Ready") &&
-                    !File.Exists(Path.Combine(directory,"Story.json")) && !File.Exists(Path.Combine(directory,"Story.disabled.json")))
-                    await Produce(request,npc,path,storage,generate,token);
-                else if(!request.generationResults.Any(r => r.storyPath==path))
-                    request.generationResults.Add(new LocalStoryRuntimeResult {storyPath=path,model=npc.model,status="Preserved",error="기존 적용/disabled 파일 보존"});
+                var played=(request.playedCards??new List<PlayedEncounterCardRecord>()).Select(c=>c.encounterPath)
+                    .Concat((request.events??new List<StoryEventRecord>()).Where(e=>e.characterId==npc.characterId).Select(e=>e.storyPath)).Where(p=>!string.IsNullOrEmpty(p)).ToHashSet();
+                var paths=ChapterContentCatalog.Stories.Where(s=>(string)s["characterId"]==npc.characterId &&
+                    (request.scenarioPaths??Array.Empty<string>()).Any(p=>((string)s["path"]).StartsWith(p+"/",StringComparison.Ordinal)) &&
+                    (played.Contains((string)s["path"]) || (played.Count==0 && !((string)s["key"]).Contains('/') &&
+                        (request.events??new List<StoryEventRecord>()).Any(e=>e.characterId==npc.characterId)))).Select(s=>(string)s["path"]).ToArray();
+                if(played.Count==0 && paths.Length>1)paths=Array.Empty<string>();
+                foreach(string path in paths)
+                {
+                    encountered=true;
+                    if(!request.generationResults.Any(r=>r.storyPath==path&&r.status=="Ready")&&!storage.HasNarrativeContent(request.targetRun,path))
+                        await Produce(request,npc,path,storage,generate,token);
+                    else if(!request.generationResults.Any(r=>r.storyPath==path))
+                        request.generationResults.Add(new LocalStoryRuntimeResult {storyPath=path,model=npc.model,status="Preserved",error="기존 적용/비활성 생성본 보존"});
+                }
             }
-            request.status=request.generationResults.Any(r => r.status=="Failed")?"Failed":npc==null || !encountered?"Skipped":"Ready";
-            request.generationError=string.Join(" / ",request.generationResults.Where(r => r.status=="Failed").Select(r => r.error));
+            request.status=request.generationResults.Any(r => r.status=="Failed")?"Failed":!encountered?"Skipped":
+                request.generationResults.Any(r=>r.status=="ReviewRequired")?"ReviewRequired":"Ready";
+            request.generationError=string.Join(" / ",request.generationResults.Where(r => r.status=="Failed"||r.status=="ReviewRequired").Select(r => r.error));
         }
         catch(OperationCanceledException) { request.status="PendingLocalModel"; request.generationError="중단됨 — 다음 실행에서 재개"; }
         catch(Exception e) { request.status="Failed"; request.generationError=e.Message; }
@@ -182,14 +203,14 @@ public static class LocalStoryRuntimePipeline
     {
         var report=new LocalStoryTestReport {storyPath=path,sourceRun=request.sourceRun,targetRun=request.targetRun,
             interactionMemory=request,interactionSource="실제 완료 회차의 선택·만남·해금 기록",testScenario="ActualGameplay / 회차-"+request.sourceRun+"-다음-"+request.targetRun,
-            createdUtc=DateTime.UtcNow.ToString("o"),seed=12345+request.sourceRun,writingPolicy=LocalStoryRewrite.WritingPolicy};
+            createdUtc=DateTime.UtcNow.ToString("o"),seed=12345+request.sourceRun,writingPolicy=LocalStoryRewrite.WritingPolicy,allowFailedOutput=LocalStoryPrompt.AllowFailedOutput};
         var result=new LocalStoryRuntimeResult {storyPath=path,model=npc.model,status="Failed"};
         var watch=Stopwatch.StartNew();
         canCommit ??= ()=>CanProcess(request,storage);
         if(request.generationTrigger=="DialogueEnded")
         {
             report.interactionSource="실제 대화 종료 기록(감사 자료) / 조건으로 선별된 꿈 인상만 모델에 전달";
-            report.testScenario="ActualGameplay / DialogueEnded / 개정-"+request.dialogueRevision;
+            report.testScenario="ActualGameplay / DialogueEnded / "+request.sourceRun+"→"+request.targetRun;
         }
         string logTarget=request.sourceRun+"회차 기록 → "+request.targetRun+"회차용 / "+npc.name+" / "+npc.model+" / "+path;
         LocalStoryLog.Write(LocalStoryLogStage.Working,logTarget+" / 모델 로딩·초안 작성 시작");
@@ -197,10 +218,38 @@ public static class LocalStoryRuntimePipeline
         {
             if(!Enum.TryParse(npc.model,out LocalStoryTestModel model)) throw new InvalidOperationException("알 수 없는 모델");
             report.model=LocalStoryTestModels.Name(model);
-            var asset=Resources.Load<TextAsset>("Story_Json_Data/"+path+"/Story");
-            report.original=JsonUtility.FromJson<EncounterCardRoot>(asset.text);
-            report.examplePrompt=RuntimeExamples(path,storage,out report.exampleSummary,out report.exampleSources);
-            string messages=AttachContext(LocalStoryRewrite.Messages(path,report.original,request),LocalStoryNotebook.PromptContext(request,npc.characterId),request.memoryMode=="Dream");
+            string source=NarrativeInteractions.StorySource(path)??throw new InvalidDataException("원문 이야기가 없습니다: "+path);
+            report.original=JsonUtility.FromJson<EncounterCardRoot>(source);
+            report.examplePrompt=RuntimeExamples(path,storage,out report.exampleSummary,out report.exampleSources,report.seed);
+            if(request.generationTrigger=="DialogueEnded")
+            {
+                report.sectionCheckpoint=LocalStoryDialogueQueue.Load(storage,request.sourceRun)?.jobs
+                    .FirstOrDefault(j=>j.storyPath==path && j.revision==request.dialogueRevision)?.sectionCheckpoint;
+                report.sectionStillCurrent=canCommit;
+                report.sectionProgress=(start,count,index,total,phase)=>
+                {
+                    if(!canCommit()) return;
+                    var queue=LocalStoryDialogueQueue.Load(storage,request.sourceRun);
+                    var current=queue?.jobs.FirstOrDefault(j=>j.storyPath==path && j.revision==request.dialogueRevision);
+                    if(current==null) return;
+                    string events=string.Join(", ",report.original.MainStory.Skip(start).Take(count).Select(c=>c.eventIdStable));
+                    var guide=LocalStorySections.WritingGuide(path);
+                    string parts=string.Join(" / ",report.original.MainStory.Skip(start).Take(count).Select(c=>
+                        guide?.frames?.FirstOrDefault(f=>f.eventId==c.eventIdStable)?.purpose ?? c.coreMeaning ?? c.text));
+                    current.generationPart=index+"/"+total+" 구간 / 카드 "+(start+1)+"~"+(start+count)+" / "+phase+" / "+parts+" ("+events+")";
+                    LocalStoryDialogueQueue.Save(storage,queue);
+                };
+                report.saveSectionCheckpoint=checkpointState=>
+                {
+                    if(!canCommit()) return;
+                    var queue=LocalStoryDialogueQueue.Load(storage,request.sourceRun);
+                    var current=queue?.jobs.FirstOrDefault(j=>j.storyPath==path && j.revision==request.dialogueRevision);
+                    if(current==null) return;
+                    current.sectionCheckpoint=checkpointState;
+                    LocalStoryDialogueQueue.Save(storage,queue);
+                };
+            }
+            string messages=LocalStoryRewrite.Messages(path,report.original,request);
             report.prompt=LocalStoryTestModels.Messages(model,LocalStoryTestArchive.AttachWritingExamples(messages,report.examplePrompt));
             report.generationGrammar=LocalStoryRewrite.Grammar(report.original);
             using var budget=CancellationTokenSource.CreateLinkedTokenSource(token);
@@ -208,9 +257,14 @@ public static class LocalStoryRuntimePipeline
             await generate(report,budget.Token);
             token.ThrowIfCancellationRequested();
             var built=report.correctionAttempted ? (report.correctionValid?report.corrected:null) : (report.valid?report.generated:null);
+            if(built==null && report.allowFailedOutput)
+            {
+                try{built=LocalStoryGameApply.BuildFailedPreview(report,out report.reviewError);report.reviewRequired=true;}
+                catch(FormatException){} // Broken structure stays in the report rather than replacing game actions.
+            }
             if(built==null) throw new InvalidDataException(report.correctionError??report.error??"적용 검사 실패");
             // Wording is new; core meaning/actions stay attached to cloned canonical source cards.
-            report.runtimeStage=report.correctionValid?"correction":"draft";
+            report.runtimeStage=report.reviewRequired?"failed-output":report.correctionValid?"correction":"draft";
             report.verbatimReferenceLines=ReferenceCopies(report.examplePrompt,built);
             if(!canCommit())
             {
@@ -219,48 +273,42 @@ public static class LocalStoryRuntimePipeline
             }
             report.seconds=watch.Elapsed.TotalSeconds;
             result.reportPath=storage.SaveLocalStoryTest(report);
-            if(result.reportPath==null) throw new IOException("원출력/입력 기록을 저장하지 못해 게임 적용을 보류합니다.");
-            if(!storage.SaveGeneratedContent(request.targetRun,"Encounters",path+"/Story",built)) throw new IOException("다음 회차 저장 실패");
-            report.saved=true; result.status="Ready";
-            storage.UpdateGeneratedEpisodeStatus(request.sourceRun,request.targetRun,path,ContentGenerationStatus.Ready);
+            if(LocalStoryPrompt.SaveDiagnosticReports && result.reportPath==null) throw new IOException("원출력/입력 기록을 저장하지 못해 게임 적용을 보류합니다.");
+            bool saved=report.reviewRequired?storage.SaveGeneratedContentForReview(request.targetRun,"Encounters",path+"/Story",built,report.reviewError):
+                storage.SaveGeneratedContent(request.targetRun,"Encounters",path+"/Story",built);
+            if(!saved) throw new IOException("다음 회차 저장 실패");
+            report.saved=true; result.status=report.reviewRequired?"ReviewRequired":"Ready";result.error=report.reviewError;
+            storage.UpdateGeneratedEpisodeStatus(request.sourceRun,request.targetRun,path,report.reviewRequired?ContentGenerationStatus.ReviewRequired:ContentGenerationStatus.Ready,result.error);
         }
         catch(OperationCanceledException) { report.runtimeError=token.IsCancellationRequested?"생성 취소":"네이티브 취소 또는 5분 시간 제한"; result.error=report.runtimeError; }
         catch(Exception e) { report.runtimeError=e.Message; report.runtimeFailureDetails=e.ToString(); result.error=e.Message; }
         finally
         {
             report.seconds=watch.Elapsed.TotalSeconds;
-            if(result.reportPath==null) result.reportPath=storage.SaveLocalStoryTest(report);
-            else LocalStoryTestArchive.RecordRuntimeApplication(Path.Combine(storage.StorageRoot,"LocalStoryTests"),result.reportPath,report);
+            if(LocalStoryPrompt.SaveDiagnosticReports)
+            {
+                if(result.reportPath==null) result.reportPath=storage.SaveLocalStoryTest(report);
+                else LocalStoryTestArchive.RecordRuntimeApplication(Path.Combine(storage.StorageRoot,"LocalStoryTests"),result.reportPath,report);
+            }
             request.generationResults.RemoveAll(r => r.storyPath==path);
             request.generationResults.Add(result);
-            if(result.status!="Ready" && canCommit()) storage.UpdateGeneratedEpisodeStatus(request.sourceRun,request.targetRun,path,ContentGenerationStatus.Failed,result.error);
+            if(result.status!="Ready" && result.status!="ReviewRequired" && canCommit()) storage.UpdateGeneratedEpisodeStatus(request.sourceRun,request.targetRun,path,ContentGenerationStatus.Failed,result.error);
             if(checkpoint) storage.SaveRunCheckpoint(request.sourceRun,"LocalStoryRevisionRequest",request);
-            LocalStoryLog.Write(result.status=="Ready"?LocalStoryLogStage.Complete:
+            LocalStoryLog.Write(result.status=="ReviewRequired"?LocalStoryLogStage.Review:result.status=="Ready"?LocalStoryLogStage.Complete:
                 token.IsCancellationRequested || result.status=="Preserved"?LocalStoryLogStage.Deferred:LocalStoryLogStage.Failed,
                 logTarget+" / "+report.seconds.ToString("F1")+"초 / "+
-                (result.status=="Ready"?"다음 회차 저장 완료":result.error??"완료하지 못함")+
-                " / 결과: "+(result.reportPath??"저장되지 않음"));
+                (result.status=="Ready"?"다음 회차 저장 완료":result.status=="ReviewRequired"?"검사 실패본 저장·다음 회차 반영 / "+result.error:result.error??"완료하지 못함")+
+                (LocalStoryPrompt.SaveDiagnosticReports?" / 결과: "+(result.reportPath??"저장되지 않음"):""));
         }
         return result;
     }
-    private static string AttachContext(string messages,string context,bool dream=false)
+    // Runtime can use a partially edited scene, after validating the whole file's source/speaker/action bindings.
+    public static string RuntimeExamples(string path,SaveIOService storage,out string summary,out string[] sources,int? seed=null)
     {
-        var parsed=JArray.Parse(messages);
-        parsed.Last["content"]=((string)parsed.Last["content"]).Replace("현재 능력치(체력/민첩/지식/매력):",
-            dream?"생성 요청 시점 능력치(체력/민첩/지식/매력):":"지난 회차 종료 능력치(체력/민첩/지식/매력):")+
-            context+"\n기록된 능력치는 과거 자료이며 다음 회차의 현재 수치로 단정하지 않는다.";
-        return parsed.ToString(Newtonsoft.Json.Formatting.None);
-    }
-    // Keep the established human reference, but don't hand the model a complete nine-slot answer to copy.
-    public static string RuntimeExamples(string path,SaveIOService storage,out string summary,out string[] sources)
-    {
-        string captured=LocalStoryTestArchive.CaptureWritingExamples(path,out summary,out sources,Path.Combine(storage.StorageRoot,"LocalStoryTests"));
-        int start=captured.LastIndexOf("{\"cards\":",StringComparison.Ordinal);
-        if(start<0) return captured;
-        var cards=(JArray)JObject.Parse(captured.Substring(start))["cards"];
-        var examples=new JArray(cards.Where(c => ((int)c["index"])!=4).Take(3).Select(c => new JObject {["text"]=c["text"].DeepClone()}));
-        summary="저장된 Edit 말투 참고 "+examples.Count+"문장 / 완성 답안으로 대체하지 않음";
-        return "사람이 수정한 직접 대사의 말투/맞춤법 참고다. 과거 사실이나 이번 대사 정답이 아니다. 그대로 복사하지 말고 현재 기억과 핵심 사건에 맞게 새로 쓴다.\n"+examples.ToString(Newtonsoft.Json.Formatting.Indented);
+        if((bool?)LocalStoryPrompt.Policy["composition"]["useEditedExamples"]!=true)
+        {summary="JSON 모듈 예시 사용";sources=Array.Empty<string>();return "";}
+        return LocalStoryTestArchive.CaptureRuntimeWritingExamples(path,out summary,out sources,
+            Path.Combine(storage.StorageRoot,"LocalStoryTests"),seed);
     }
     private static int ReferenceCopies(string examples,EncounterCardRoot built)
     {
@@ -272,32 +320,14 @@ public static class LocalStoryRuntimePipeline
     {
         string root=Path.Combine(Application.streamingAssetsPath,"LocalStory");
         var model=report.model.Contains("Gemma")?LocalStoryTestModel.Gemma:LocalStoryTestModel.Qwen;
-        string modelPath=LocalStoryTestModels.PathFor(root,model);
-        report.modelPath=Path.GetFullPath(modelPath);
+        string modelPath=null;
         report.runtimePath=Path.GetFullPath(Path.Combine(root,"runtimes","win-x64","native"));
-        string partial=""; var watch=Stopwatch.StartNew();
-        var sampling=LocalStorySampling.Comparison(); report.samplingProfile=sampling.Name; report.draftParameters=sampling.Parameters(report.seed);
-        try
+        report.samplingProfile="짧은 구간 작성 / 필요한 구간만 교정";
+        await LocalStorySections.Generate(report,token,(input,correction,ct,progress) =>
         {
-            var draft=await LocalStoryInference.Generate(root,report.prompt,report.generationGrammar,report.seed,token,s => partial=s,sampling,modelPath);
-            report.rawOutput=draft.json; report.backend=draft.backend; report.fallback=draft.fallback;
-            LocalStoryRewrite.EvaluateDraft(report,report.original,report.interactionMemory);
-        }
-        finally { report.draftSeconds=watch.Elapsed.TotalSeconds; report.rawOutput??=partial; }
-        report.correctionAttempted=true; partial=""; watch.Restart();
-        LocalStoryLog.Write(LocalStoryLogStage.Working,report.targetRun+"회차용 / "+report.model+" / "+report.storyPath+" / 한국어 교정 시작");
-        report.correctionPrompt=LocalStoryTestModels.Messages(model,LocalStoryTestArchive.AttachWritingExamples(
-            AttachContext(LocalStoryRewrite.CorrectionMessages(report.storyPath,report.original,report.interactionMemory,report.rawOutput),
-                LocalStoryNotebook.PromptContext(report.interactionMemory,report.interactionMemory.characterId??"Guide"),
-                report.interactionMemory.memoryMode=="Dream"),report.examplePrompt));
-        var proofreading=LocalStorySampling.Proofreading(); report.correctionParameters=proofreading.Parameters(report.seed);
-        try
-        {
-            var correction=await LocalStoryInference.Generate(root,report.correctionPrompt,report.generationGrammar,report.seed,token,s => partial=s,proofreading,modelPath);
-            report.correctionRawOutput=correction.json; report.correctionBackend=correction.backend; report.correctionFallback=correction.fallback;
-            report.correctionValid=LocalStoryRewrite.TryBuild(correction.json,report.original,report.interactionMemory,out report.corrected,out report.correctionError);
-        }
-        catch(Exception e) { report.correctionError=e.Message; if(e is OperationCanceledException) throw; }
-        finally { report.correctionSeconds=watch.Elapsed.TotalSeconds; report.correctionRawOutput??=partial; }
+            if(modelPath==null) {modelPath=LocalStoryTestModels.PathFor(root,model);report.modelPath=Path.GetFullPath(modelPath);}
+            return LocalStoryInference.Generate(root,correction?input.correctionPrompt:input.prompt,input.grammar,input.seed,ct,progress,
+                (correction?LocalStorySampling.Proofreading():LocalStorySampling.Comparison()).WithTokenLimit(input.maxTokens),modelPath);
+        });
     }
 }

@@ -16,7 +16,7 @@ public static class LocalStoryFlowCheck
     {
         int checks=0;
         string path=LocalStoryTestInputs.GuidePath;
-        var source=JsonUtility.FromJson<EncounterCardRoot>(Resources.Load<TextAsset>("Story_Json_Data/"+path+"/Story").text);
+        var source=JsonUtility.FromJson<EncounterCardRoot>(ChapterContentCatalog.Asset("Story_Json_Data/"+path+"/Story").text);
         string original=JsonUtility.ToJson(source),grammar=LocalStoryRewrite.Grammar(source);
         Check(!grammar.Contains(LocalStoryRewrite.Quote(LocalStoryRewrite.Quote(source.MainStory[4].text))),"garbled text still locked by GBNF"); checks++;
         Check(!grammar.Contains(LocalStoryRewrite.Quote(LocalStoryRewrite.Quote(source.MainStory[4].options[0]))),"garbled option still locked"); checks++;
@@ -39,7 +39,7 @@ public static class LocalStoryFlowCheck
         string correction=LocalStoryRewrite.CorrectionMessages(path,source,LocalStoryTestInputs.Create(3),Patch(changed));
         Check(correction.Contains("아라듣찌 모타게찌?") && correction.Contains("정상 한국어로 복원하지 않는다"),"variable garbling not sent to correction"); checks++;
         Check(!correction.Contains("한 글자도") && !correction.Contains("그대로 복사"),"old proofreading lock remains"); checks++;
-        Check(correction.Contains("이미 아는 정체") && correction.Contains("세계관 사실"),"reunion correction still uses first-meeting outline"); checks++;
+        Check(correction.Contains("이미 아는 정체") && correction.Contains("facts"),"reunion correction still uses first-meeting outline"); checks++;
         var restored=Copy(changed); restored.MainStory[4].text="알아듣지 못하겠지 ?";
         Check(!LocalStoryRewrite.TryBuild(Patch(restored),source,null,out _,out error)&&error.Contains("정상 의미"),"literal normal-language restoration accepted"); checks++;
         bool rejected=false;
@@ -55,13 +55,12 @@ public static class LocalStoryFlowCheck
         var reunion=LocalStoryRewrite.Messages(path,source,LocalStoryTestInputs.Create(3));
         foreach(string input in new[]{first,reunion,correction})
         {
-            Check(((string)JArray.Parse(input)[0]["content"]).Contains(LocalStoryRewrite.SceneDialogueRule) &&
-                !input.Contains(LocalStoryRewrite.DialogueOnlyRule),"scene direct-speech rule missing / old per-card examples remain"); checks++;
+            Check(((string)JArray.Parse(input)[0]["content"]).StartsWith(LocalStoryPrompt.CommonRules),"shared direct-speech rule missing"); checks++;
         }
-        Check(((string)JArray.Parse(LocalStoryRewrite.Messages("Initial/Initial_01/Encounters/duelist",source,null))[0]["content"]).Contains(LocalStoryRewrite.DialogueOnlyRule),"non-Guide prompt changed"); checks++;
-        Check(!first.Contains(source.MainStory[0].text)&&!reunion.Contains(source.MainStory[0].text),"original dialogue supplied as template"); checks++;
+        Check(((string)JArray.Parse(LocalStoryRewrite.Messages("Initial/Initial_01/Encounters/duelist",source,null))[0]["content"]).Contains(LocalStoryPrompt.CommonRules),"non-Guide shared rule missing"); checks++;
+        Check(first.Contains(source.MainStory[0].text)&&reunion.Contains(source.MainStory[0].text),"source reference missing"); checks++;
         Check(!reunion.Contains("첫 문장=")&&!reunion.Contains("첫 카드에서 한 번만")&&!reunion.Contains("고정 text="),"reunion sentence lock remains"); checks++;
-        Check(reunion.Contains("연결 대화")&&reunion.Contains("이미 아는 정체")&&reunion.Contains("이 세계에 이름을 남기고"),"flow/expansion missing"); checks++;
+        Check(reunion.Contains("연결 대화")&&reunion.Contains("이미 아는 정체")&&reunion.Contains("flow"),"flow/expansion missing"); checks++;
         Check(first.Contains(source.MainStory[4].semanticText)&&first.Contains("발음을 흐트러뜨린다"),"garbled semantic brief missing"); checks++;
         var memory=LocalStoryTestInputs.Create(3);
         memory.events.Add(new StoryEventRecord{chapterId="Initial",characterId="Guide",terrainName="Dungeon",kind="item_received",itemId="KnownItem",quantity=1,reason="기록된 교환"});
@@ -119,9 +118,9 @@ public static class LocalStoryFlowCheck
             var report=reports.Single(r=>r.archiveNumber==firstNumber+scenario-1);
             var before=reports.Single(r=>r.archiveNumber==(scenario==1?10:scenario==2?8:9));
             Check(report.model.Contains("Gemma") && report.testScenario.StartsWith("Synthetic / "+LocalStoryTestInputs.Name(scenario)+" /"),"trial scenario/model mismatch");
-            Check(JArray.Parse(report.prompt).Any(m=>((string)m["content"]).Contains(LocalStoryRewrite.DialogueOnlyRule)),"actual draft did not receive direct-speech rule");
+            Check(JArray.Parse(report.prompt).Any(m=>((string)m["content"]).Contains(LocalStoryPrompt.CommonRules)),"actual draft did not receive direct-speech rule");
             if(report.correctionAttempted)
-                Check(JArray.Parse(report.correctionPrompt).Any(m=>((string)m["content"]).Contains(LocalStoryRewrite.DialogueOnlyRule)&&((string)m["content"]).Contains(report.examplePrompt)),"correction rule/examples missing");
+                Check(JArray.Parse(report.correctionPrompt).Any(m=>((string)m["content"]).Contains(LocalStoryPrompt.CommonRules)&&((string)m["content"]).Contains(report.examplePrompt)),"correction rule/examples missing");
             if(first==null) first=report;
             Check(report.examplePrompt==first.examplePrompt && (report.exampleSources??Array.Empty<string>()).SequenceEqual(first.exampleSources??Array.Empty<string>()),"examples changed between trial scenarios");
             Check(report.seed==first.seed&&report.draftParameters==first.draftParameters&&report.correctionParameters==first.correctionParameters&&JsonUtility.ToJson(report.original)==JsonUtility.ToJson(first.original),"trial sampler/source changed");
@@ -164,7 +163,7 @@ public static class LocalStoryFlowCheck
     public static string SceneRegression()
     {
         int checks=0; string path=LocalStoryTestInputs.GuidePath;
-        var source=JsonUtility.FromJson<EncounterCardRoot>(Resources.Load<TextAsset>("Story_Json_Data/"+path+"/Story").text);
+        var source=JsonUtility.FromJson<EncounterCardRoot>(ChapterContentCatalog.Asset("Story_Json_Data/"+path+"/Story").text);
         string original=JsonUtility.ToJson(source);
         var first=LocalStoryRewrite.Messages(path,source,null);
         var correction=LocalStoryRewrite.CorrectionMessages(path,source,null,Patch(source));

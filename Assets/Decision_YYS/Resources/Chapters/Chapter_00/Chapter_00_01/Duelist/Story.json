@@ -1,0 +1,202 @@
+{
+  "duelist": {
+    "MainStory": [
+      {
+        "ID": -1255577364,
+        "type": "Next",
+        "Text": "우선 보드 가운데에 자네를 대신할 연습용 기사를 세워두지.",
+        "speakID": "Duelist"
+      },
+      {
+        "ID": -1238799745,
+        "type": "Next",
+        "Text": "저 기사를 자네 몸이라 생각하게. 검이 어디로 들어오는지 잘 살펴보라고.",
+        "speakID": "Duelist"
+      },
+      {
+        "ID": -1222022126,
+        "type": "Choice",
+        "choiceKind": "Mechanic",
+        "Text": "준비됐으면 어디 한번 덤벼 보라고.",
+        "options": [
+          "대련을 시작한다",
+          "방어 자세를 살핀다",
+          "설명을 먼저 듣는다",
+          "이번에는 지나간다"
+        ],
+        "choiceActions": [
+          {
+            "action": "story",
+            "storyPath": "Initial/Initial_01/Encounters/duelist/Duel/Start",
+            "choiceID": "-1222022126_choice_0"
+          },
+          {
+            "action": "story",
+            "storyPath": "Initial/Initial_01/Encounters/duelist/Duel/Start",
+            "choiceID": "-1222022126_choice_1"
+          },
+          {
+            "action": "story",
+            "storyPath": "Initial/Initial_01/Encounters/duelist",
+            "choiceID": "-1222022126_choice_2"
+          },
+          {
+            "action": "skip",
+            "choiceID": "-1222022126_choice_3"
+          }
+        ],
+        "speakID": "Duelist"
+      }
+    ]
+  },
+  "duelist/Variants/CharmZero": {
+    "MainStory": [
+      {
+        "ID": 1911495915,
+        "type": "Next",
+        "Text": "인상부터 못마땅하군. 가운데 세운 기사로 연습해.",
+        "speakID": "Duelist"
+      },
+      {
+        "ID": 1894718296,
+        "type": "Next",
+        "Text": "오래 설명할 생각은 없다. 기사와 검을 잘 봐.",
+        "speakID": "Duelist"
+      },
+      {
+        "ID": 1945051153,
+        "type": "Choice",
+        "choiceKind": "Mechanic",
+        "Text": "할 건가, 말 건가? 빨리 골라.",
+        "options": [
+          "대련을 시작한다",
+          "방어 자세를 살핀다",
+          "설명을 먼저 듣는다",
+          "이번에는 지나간다"
+        ],
+        "choiceActions": [
+          {
+            "action": "story",
+            "storyPath": "Initial/Initial_01/Encounters/duelist/Duel/Start",
+            "choiceID": "1945051153_choice_0"
+          },
+          {
+            "action": "story",
+            "storyPath": "Initial/Initial_01/Encounters/duelist/Duel/Start",
+            "choiceID": "1945051153_choice_1"
+          },
+          {
+            "action": "story",
+            "storyPath": "Initial/Initial_01/Encounters/duelist",
+            "choiceID": "1945051153_choice_2"
+          },
+          {
+            "action": "skip",
+            "choiceID": "1945051153_choice_3"
+          }
+        ],
+        "speakID": "Duelist"
+      }
+    ]
+  },
+  "duelist/Variants/KnowledgeCharmZero": {
+    "MainStory": [
+      {
+        "ID": 1661138031,
+        "type": "Next",
+        "Text": "꼴, 못마땅하군. 가운데 기사, 련습해.",
+        "speakID": "Duelist"
+      },
+      {
+        "ID": 1644360412,
+        "type": "Next",
+        "Text": "길게 안 말해. 기사, 칼, 잘 봐.",
+        "speakID": "Duelist"
+      },
+      {
+        "ID": 1694693269,
+        "type": "Choice",
+        "choiceKind": "Mechanic",
+        "Text": "할꺼야? 빨리 골라.",
+        "options": [
+          "싸움 한다",
+          "막는거 본다",
+          "다시 말해",
+          "그냥 간다"
+        ],
+        "choiceActions": [
+          {
+            "action": "story",
+            "storyPath": "Initial/Initial_01/Encounters/duelist/Duel/Start",
+            "choiceID": "1694693269_choice_0"
+          },
+          {
+            "action": "story",
+            "storyPath": "Initial/Initial_01/Encounters/duelist/Duel/Start",
+            "choiceID": "1694693269_choice_1"
+          },
+          {
+            "action": "story",
+            "storyPath": "Initial/Initial_01/Encounters/duelist",
+            "choiceID": "1694693269_choice_2"
+          },
+          {
+            "action": "skip",
+            "choiceID": "1694693269_choice_3"
+          }
+        ],
+        "speakID": "Duelist"
+      }
+    ]
+  },
+  "duelist/Variants/KnowledgeZero": {
+    "MainStory": [
+      {
+        "ID": 538860294,
+        "type": "Next",
+        "Text": "보드 가운데, 자네 대신 기사 세우지.",
+        "speakID": "Duelist"
+      },
+      {
+        "ID": 555637913,
+        "type": "Next",
+        "Text": "저 기사로 련습 하라구. 칼, 잘 보라구.",
+        "speakID": "Duelist"
+      },
+      {
+        "ID": 505305056,
+        "type": "Choice",
+        "choiceKind": "Mechanic",
+        "Text": "준비 돼써? 덤벼 보라구.",
+        "options": [
+          "싸움 한다",
+          "막는거 본다",
+          "다시 말해",
+          "그냥 간다"
+        ],
+        "choiceActions": [
+          {
+            "action": "story",
+            "storyPath": "Initial/Initial_01/Encounters/duelist/Duel/Start",
+            "choiceID": "505305056_choice_0"
+          },
+          {
+            "action": "story",
+            "storyPath": "Initial/Initial_01/Encounters/duelist/Duel/Start",
+            "choiceID": "505305056_choice_1"
+          },
+          {
+            "action": "story",
+            "storyPath": "Initial/Initial_01/Encounters/duelist",
+            "choiceID": "505305056_choice_2"
+          },
+          {
+            "action": "skip",
+            "choiceID": "505305056_choice_3"
+          }
+        ],
+        "speakID": "Duelist"
+      }
+    ]
+  }
+}
