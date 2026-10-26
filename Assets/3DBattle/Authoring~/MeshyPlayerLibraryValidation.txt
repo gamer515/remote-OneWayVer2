@@ -1,0 +1,12 @@
+Blender frame ranges at 30 FPS; frame 1 = source time 0; frame 0 holds first pose. Output samples at 60 FPS.
+Root horizontal travel removed; movement remains controlled by gameplay code. Ground roll corrects body/helmet/shoulder armour; sword excluded from ground solver.
+MeshyWeaponCombo_Player: Blender 0..75 -> 2.5000s; bindings OK; state=AttackNew
+MeshyDoubleComboAttack_Player: Blender 30..45 -> 0.5000s; bindings OK; state=MeshyDoubleComboAttack_Player
+MeshyAttack_Player: Blender 22..85 -> 2.1000s; bindings OK; state=MeshyAttack_Player
+MeshyCrouchPick_Player: Blender 0..60 -> 2.0000s; bindings OK; state=MeshyCrouchPick_Player
+MeshyRun_Player: Blender 1..25 -> 0.8000s; bindings OK; state=MeshyRun_Player
+Shield local upper-arm range: left=57.53728 degrees; right=0 degrees (sword guard retained).
+MeshyShieldPushLeft_Player: Blender 1..71 -> 2.3333s; bindings OK; state=MeshyShieldPushLeft_Player
+Roll: source Blender 57..104; 0.4s left-leading stance-to-crouch added; maximum vertical correction=0.6462m at authoring scale.
+Roll validation: minimum body/armour Y=0.01158; initial left-foot lead=0.3600
+MeshyGroundRoll_Player: Blender 57..104 -> 1.9667s; bindings OK; state=MeshyGroundRoll_Player
