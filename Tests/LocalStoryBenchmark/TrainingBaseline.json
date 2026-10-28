@@ -1,0 +1,565 @@
+{
+  "schemaVersion": 1,
+  "baselineId": "presentation-frozen-20261029",
+  "baseCommit": "628561d48991110dfd39443d1a9ebe74c0072aa9",
+  "remoteMainCommit": "628561d48991110dfd39443d1a9ebe74c0072aa9",
+  "branch": "feature/ai-training",
+  "createdDateSeoul": "2026-10-29",
+  "scope": "Freeze current presentation configuration; no runtime or prompt changes",
+  "modelManifest": {
+    "model": "Gemma 3 4B IT QAT",
+    "modelId": "Gemma",
+    "quantization": "Q4_0",
+    "file": "gemma-3-4b-it-q4_0.gguf",
+    "bytes": 3155051328,
+    "sha256": "76aed0a8285b83102f18b5d60e53c70d09eb4e9917a20ce8956bd546452b56e2",
+    "revision": "15f73f5eee9c28f53afefef5723e29680c2fc78a",
+    "modelSource": "https://huggingface.co/google/gemma-3-4b-it-qat-q4_0-gguf",
+    "runtime": "LlamaLib 2.0.5",
+    "runtimeSource": "https://github.com/undreamai/LlamaLib/releases/tag/v2.0.5",
+    "runtimeArchiveSha256": "f3d85b2d6fbaa12839173f4438a7a2c7124bf6b25708d8be23348de2dec1156b",
+    "platform": "Windows x64 Mono",
+    "externalInferenceNetwork": false,
+    "licenses": [
+      "Gemma/Notice.txt",
+      "Gemma/GemmaTerms.html",
+      "Gemma/GemmaProhibitedUsePolicy.html",
+      "LICENSE",
+      "third_party_licenses/llama.cpp.LICENSE.txt"
+    ],
+    "inferenceSettingsResource": "LocalStory/PromptPolicy"
+  },
+  "modelPayloadVerification": "Manifest identity frozen; installed payload hash not rechecked in this step",
+  "policySnapshot": {
+    "version": "modules-v2",
+    "modules": [
+      "LocalStory/PromptModules/Common",
+      "LocalStory/PromptModules/Choice",
+      "LocalStory/PromptModules/Normal",
+      "LocalStory/PromptModules/Garbled",
+      "LocalStory/PromptModules/MemoryNone",
+      "LocalStory/PromptModules/MemoryCurrent",
+      "LocalStory/PromptModules/MemoryDream",
+      "LocalStory/PromptModules/Unlocked",
+      "LocalStory/PromptModules/Fixed",
+      "LocalStory/PromptModules/Correction",
+      "LocalStory/PromptModules/Output"
+    ],
+    "participants": {
+      "player": {
+        "id": "Player",
+        "name": "여행자",
+        "role": "플레이어"
+      }
+    },
+    "composition": {
+      "rejectExampleCopies": true,
+      "exampleCopyMinChars": 12,
+      "maxExamples": 2,
+      "useEditedExamples": false,
+      "editedExamplesInstruction": "사람이 수정한 문장은 말투 참고다. 이번 사건의 사실이나 정답으로 복사하지 않는다.",
+      "previousDialogueCards": 2,
+      "previousEvents": 2,
+      "includeSceneFlow": false,
+      "tokenBudget": {
+        "base": 96,
+        "perCard": 256,
+        "perOption": 80
+      },
+      "editedExamplesHeading": "[말투 참고 — 위 사실과 규칙 우선]",
+      "sceneExamplesInstruction": "사람이 수정한 완성 대화는 카드 순서와 직접 발화 형식의 참고다. 이번 사건이나 기억으로 가져오지 않는다. 현재 집필 조건을 우선한다."
+    },
+    "validation": {
+      "invalidOutputPatterns": [
+        {
+          "code": "schema-label",
+          "pattern": "^(?:index|text|intent|options|speaker|listener|reference|semanticText|coreMeaning|speakerId|choiceId)(?:_\\d+)?$"
+        },
+        {
+          "code": "json-fragment",
+          "pattern": "^[{}\\[\\]]+$"
+        }
+      ]
+    },
+    "runtime": {
+      "allowFailedOutput": true,
+      "saveDiagnosticReports": false,
+      "maxCorrectionsPerSection": 0
+    },
+    "inference": {
+      "cpuThreads": 6,
+      "gpuLayers": 99,
+      "contextSize": 4096,
+      "batchSize": 256,
+      "flashAttention": "off",
+      "idleSeconds": 60
+    },
+    "limits": {
+      "maxCards": 3,
+      "textMaxChars": 160,
+      "optionMaxChars": 45,
+      "maxOutputTokens": 1400
+    }
+  },
+  "timing": {
+    "targetSeconds": 180,
+    "unit": "one complete requested scene, all sections, final structural validation and next-run save",
+    "start": "generation request accepted, including queue wait",
+    "cold": "include model verification and loading; report separately",
+    "warm": "resident model; report separately",
+    "qualityIndependent": true,
+    "failedOrPartialOutputCountsAsSuccess": false,
+    "existingRuntimeTimeoutSeconds": 300,
+    "existingSuiteTimeoutSeconds": 150,
+    "runtimeTimeoutChanged": false,
+    "newMeasurements": [],
+    "notes": "Existing limits preserved. Do not interpret 150-second suite cancellation or 300-second runtime cancellation as the 180-second success target. Measure queue, verification, load, generation, repair, validation and save separately when available; unavailable values remain null."
+  },
+  "hardware": {
+    "gpuQuery": "NVIDIA GeForce GTX 1660 SUPER, 6144 MiB, 610.88",
+    "cpu": null,
+    "ramBytes": null,
+    "notes": "CPU/RAM CIM access denied; do not infer. Other devices remain unmeasured."
+  },
+  "evaluation": {
+    "suite": "Tests/LocalStoryBenchmark/CompositionCases.json",
+    "seeds": [
+      12345,
+      67890
+    ],
+    "maxExamples": 2,
+    "runtimeCorrections": 0,
+    "profile": "baseDirect",
+    "historicalComparisonProfilesAreNotCurrentBaseline": true,
+    "developmentCases": [
+      "intro-first-meeting",
+      "mark-dream-impression"
+    ],
+    "leakageGroup": "NPC encounter family, including branches, memory variants and paraphrases",
+    "finalHoldoutScenes": [],
+    "finalHoldoutStatus": "pending selection before training; exclude both reviewed Guide families and their related variants",
+    "axes": [
+      "speaker/listener",
+      "actor/target",
+      "choice intent",
+      "before/after state",
+      "garbled speech",
+      "dream versus actual memory",
+      "repetition/example copying",
+      "invented facts",
+      "Korean naturalness"
+    ],
+    "semanticApproval": "human review required; automatic structural pass is insufficient"
+  },
+  "moduleSources": {
+    "composition": "LocalStoryPrompt.cs / LocalStoryPromptModules.cs",
+    "generation": "LocalStorySections.cs / LocalStoryNative.cs",
+    "storage": "LocalStoryNotebook.cs / LocalStoryTestArchive.cs / LocalStoryDialogueQueue.cs",
+    "gameApply": "LocalStoryGameApply.cs / EncounterContentRepository.cs",
+    "npcSceneData": "Resources/Chapters/**/Characters.json and *Explanation.json",
+    "policy": "Resources/LocalStory/PromptPolicy.json"
+  },
+  "review": {
+    "draftFile": "Tests/LocalStoryBenchmark/AnswerReviewDrafts.json",
+    "approvedCount": 0,
+    "autoTrainingImport": false
+  },
+  "frozenFiles": [
+    {
+      "path": "AgentScripts/PretrainingStructureCheck.cs",
+      "sha256": "3f13d67f9f650f0fadf8ac6f4a8cf7c87eff6466dcd694329fab80bc77239202"
+    },
+    {
+      "path": "AgentScripts/PromptConditionComparison.cs",
+      "sha256": "104fb9a0f9ce657d46fb51141d76c3494e955bfc36c4c1168b55ff8badd4dae6"
+    },
+    {
+      "path": "Assets/Decision_YYS/Resources/LocalStory/PromptPolicy.json",
+      "sha256": "34649f6d7be733c44b38f5856a4fd9d560e3a2fc12c0b122db8dc8ede1a49194"
+    },
+    {
+      "path": "Assets/Decision_YYS/Scripts/Controller/Decision/EncounterContentRepository.cs",
+      "sha256": "b62da94f0869359f9f3716344a30a8eb473206b427b2501010bd956e305eba8c"
+    },
+    {
+      "path": "Assets/Decision_YYS/Scripts/Controller/Ui/LocalStoryTestPanel.cs",
+      "sha256": "c365ea92b56c201d688d9c09d7b623bbfee86158cfba7c0b32c95c0012d38c7c"
+    },
+    {
+      "path": "BuildSupport/LocalStory/Gemma/ModelManifest.json",
+      "sha256": "3e071fce80c5021d764ff1f267c4b6d04646205aae3283d730a2217161ca4b05"
+    },
+    {
+      "path": "Assets/Decision_YYS/Resources/Chapters/Catalog.json",
+      "sha256": "3283d1e21a3e07b2fc9ed57e4335d781d06ee2d45b898f2cd896a3fa3641881a"
+    },
+    {
+      "path": "Assets/Decision_YYS/Resources/Chapters/Chapter_00/Chapter_00_01/Duelist/Branches/Duel/Error.Explanation.json",
+      "sha256": "f84a9665ba465c10a7cfc316b51b42140332b9d2effcf10d2fa16d5efb2b4703"
+    },
+    {
+      "path": "Assets/Decision_YYS/Resources/Chapters/Chapter_00/Chapter_00_01/Duelist/Branches/Duel/Error.Story.json",
+      "sha256": "1fbe502d08992a0190a2703d3b0ab564d2acf824918125aca1b748afbbc36384"
+    },
+    {
+      "path": "Assets/Decision_YYS/Resources/Chapters/Chapter_00/Chapter_00_01/Duelist/Branches/Duel/Lose.Explanation.json",
+      "sha256": "f57416fa26b03b392c2f5f549631097ea341c7c6c7d8a7ebb797706e4f446055"
+    },
+    {
+      "path": "Assets/Decision_YYS/Resources/Chapters/Chapter_00/Chapter_00_01/Duelist/Branches/Duel/Lose.Story.json",
+      "sha256": "ca0bb100941ba0fcce6a12512b6164308b48de0406ab296cbd93be5d8930be84"
+    },
+    {
+      "path": "Assets/Decision_YYS/Resources/Chapters/Chapter_00/Chapter_00_01/Duelist/Branches/Duel/Start.Explanation.json",
+      "sha256": "b2144931493e491d3611bd6e74130d118043810f19ca10500f35e264b4d2c5a4"
+    },
+    {
+      "path": "Assets/Decision_YYS/Resources/Chapters/Chapter_00/Chapter_00_01/Duelist/Branches/Duel/Start.Story.json",
+      "sha256": "f880b04a1b6fdb01d1534cc0e9ce407d7f9e470f55f5d0717c667a2618919a64"
+    },
+    {
+      "path": "Assets/Decision_YYS/Resources/Chapters/Chapter_00/Chapter_00_01/Duelist/Branches/Duel/Win.Explanation.json",
+      "sha256": "e77a000e549a3a743ef49136e0202fd788cb09a5e3004d2689c0a0361dfee1bc"
+    },
+    {
+      "path": "Assets/Decision_YYS/Resources/Chapters/Chapter_00/Chapter_00_01/Duelist/Branches/Duel/Win.Story.json",
+      "sha256": "7f75d2754f8d6420dff7a15109246830da3782a41bf1addd3a14574a44239546"
+    },
+    {
+      "path": "Assets/Decision_YYS/Resources/Chapters/Chapter_00/Chapter_00_01/Duelist/Explanation.json",
+      "sha256": "fb90d48e08db7e8c2ec5c3c4db9d10884151c15f7633a204ad5f4130409a8419"
+    },
+    {
+      "path": "Assets/Decision_YYS/Resources/Chapters/Chapter_00/Chapter_00_01/Duelist/Story.json",
+      "sha256": "e2da48fe50f3426c5e3abf587c4290c288d1014ec7f95f61d0d7f284fcf3d451"
+    },
+    {
+      "path": "Assets/Decision_YYS/Resources/Chapters/Chapter_00/Chapter_00_01/Gambler/Branches/Coin/Error.Explanation.json",
+      "sha256": "18c3f4b8f36b37fe31fb4a00df73de9ff1ffd944431ff722165e63571e4cc147"
+    },
+    {
+      "path": "Assets/Decision_YYS/Resources/Chapters/Chapter_00/Chapter_00_01/Gambler/Branches/Coin/Error.Story.json",
+      "sha256": "709f71eaed2e61cb8841114f143d1f9c1e8f69b4673b0615948705f15a0e1c6f"
+    },
+    {
+      "path": "Assets/Decision_YYS/Resources/Chapters/Chapter_00/Chapter_00_01/Gambler/Branches/Coin/Heads.Explanation.json",
+      "sha256": "3e13c215b7afccd075b53da83523d0f97876a5d0108ad0c482769b5fedaa2ae1"
+    },
+    {
+      "path": "Assets/Decision_YYS/Resources/Chapters/Chapter_00/Chapter_00_01/Gambler/Branches/Coin/Heads.Story.json",
+      "sha256": "0c6e75d0181b06eb74173314f2ab241d82a97e0179ad89fba3ba695b5c575e2e"
+    },
+    {
+      "path": "Assets/Decision_YYS/Resources/Chapters/Chapter_00/Chapter_00_01/Gambler/Branches/Coin/HeadsLose.Explanation.json",
+      "sha256": "ca7b6631e6b023b554e5c79daca678ba12b926ab893d814acc8a958c084a07aa"
+    },
+    {
+      "path": "Assets/Decision_YYS/Resources/Chapters/Chapter_00/Chapter_00_01/Gambler/Branches/Coin/HeadsLose.Story.json",
+      "sha256": "47cec47ab2af5e9806b34dc99a85c5c3093c8885993034e5d8d8a00770b5155d"
+    },
+    {
+      "path": "Assets/Decision_YYS/Resources/Chapters/Chapter_00/Chapter_00_01/Gambler/Branches/Coin/HeadsWin.Explanation.json",
+      "sha256": "919f0f814b3095157a4ed8fd769965ccef5536fb989202873d14f784bb25ee09"
+    },
+    {
+      "path": "Assets/Decision_YYS/Resources/Chapters/Chapter_00/Chapter_00_01/Gambler/Branches/Coin/HeadsWin.Story.json",
+      "sha256": "a48ea000981932d83e6b45efd787c1292bc3931791676ddd979288197bdc8f6d"
+    },
+    {
+      "path": "Assets/Decision_YYS/Resources/Chapters/Chapter_00/Chapter_00_01/Gambler/Branches/Coin/Tails.Explanation.json",
+      "sha256": "41a5ea441f4bd67672cdc50558d9bc61082afd321af938cfd985520b998b4fba"
+    },
+    {
+      "path": "Assets/Decision_YYS/Resources/Chapters/Chapter_00/Chapter_00_01/Gambler/Branches/Coin/Tails.Story.json",
+      "sha256": "65c1b7872bac7ab0b659a5e5e016f18a0662cc68c9977e3ac7eca4351a3c1000"
+    },
+    {
+      "path": "Assets/Decision_YYS/Resources/Chapters/Chapter_00/Chapter_00_01/Gambler/Branches/Coin/TailsLose.Explanation.json",
+      "sha256": "71e3e799c69807d11cef11e8ae2f50ae018bd87f13a701ede442fc33fa1128ab"
+    },
+    {
+      "path": "Assets/Decision_YYS/Resources/Chapters/Chapter_00/Chapter_00_01/Gambler/Branches/Coin/TailsLose.Story.json",
+      "sha256": "10d2b7c7c78a0bfef4b21dee2adad97f0735200773caf11b7ce36f4049d70ee9"
+    },
+    {
+      "path": "Assets/Decision_YYS/Resources/Chapters/Chapter_00/Chapter_00_01/Gambler/Branches/Coin/TailsWin.Explanation.json",
+      "sha256": "18320cfbf075b18fdca7ac05058fa1b866aaccbdc4ce1fd6beae5c3a1cd38e34"
+    },
+    {
+      "path": "Assets/Decision_YYS/Resources/Chapters/Chapter_00/Chapter_00_01/Gambler/Branches/Coin/TailsWin.Story.json",
+      "sha256": "297893573fb8f41b839d4ece81b8b7870cfc8856826cfe38bfe2dd3d996f3a24"
+    },
+    {
+      "path": "Assets/Decision_YYS/Resources/Chapters/Chapter_00/Chapter_00_01/Gambler/Explanation.json",
+      "sha256": "163df9ea563ba94686d92b4b143baa54a1495a77b6799281f69851e1d7d075af"
+    },
+    {
+      "path": "Assets/Decision_YYS/Resources/Chapters/Chapter_00/Chapter_00_01/Gambler/Story.json",
+      "sha256": "15ea9a4337fd7b25d7da2b44b7dd5fd85a86884c58f0cc2ff48b8beef914cf31"
+    },
+    {
+      "path": "Assets/Decision_YYS/Resources/Chapters/Chapter_00/Chapter_00_01/Guide/Branches/Dismiss.Explanation.json",
+      "sha256": "1acb5d23d94fe94ae7d1c9c778984b6273ae7a26233878e19bc8e49ff089e74d"
+    },
+    {
+      "path": "Assets/Decision_YYS/Resources/Chapters/Chapter_00/Chapter_00_01/Guide/Branches/Dismiss.Story.json",
+      "sha256": "0c954c23440a755a3ee8e974839dcfa9b80f444c9202ab7ac8d9668fa04ba5bf"
+    },
+    {
+      "path": "Assets/Decision_YYS/Resources/Chapters/Chapter_00/Chapter_00_01/Guide/Branches/Farewell.Explanation.json",
+      "sha256": "f0defe2d51fc246dc544d1c6f07207270ecc150324d92436337832eeba4c708d"
+    },
+    {
+      "path": "Assets/Decision_YYS/Resources/Chapters/Chapter_00/Chapter_00_01/Guide/Branches/Farewell.Story.json",
+      "sha256": "5872f897615af54f9f12247af56af2f9a3b4ba59f83861deffd8ce285d739709"
+    },
+    {
+      "path": "Assets/Decision_YYS/Resources/Chapters/Chapter_00/Chapter_00_01/Guide/Branches/Insult.Explanation.json",
+      "sha256": "3aba0a0bb74af20fb3b18d2607e884de1261ad33e0fdfb2bf02f8335efc57fa6"
+    },
+    {
+      "path": "Assets/Decision_YYS/Resources/Chapters/Chapter_00/Chapter_00_01/Guide/Branches/Insult.Story.json",
+      "sha256": "87aefe64a1f96f53ff1b37a57902a2cba91f0f5e8247850a880aec547f4e7167"
+    },
+    {
+      "path": "Assets/Decision_YYS/Resources/Chapters/Chapter_00/Chapter_00_01/Guide/Branches/QuestionGod.Explanation.json",
+      "sha256": "ed4dbabd90ff31f449e5d9152a461bd0afcbccb60393a89bc1c2ac6c076dbb30"
+    },
+    {
+      "path": "Assets/Decision_YYS/Resources/Chapters/Chapter_00/Chapter_00_01/Guide/Branches/QuestionGod.Story.json",
+      "sha256": "68f6199f7ea1252089104a084d357ac551ad6126290c9b52fc3bf624f543b556"
+    },
+    {
+      "path": "Assets/Decision_YYS/Resources/Chapters/Chapter_00/Chapter_00_01/Guide/Branches/QuestionPlace.Explanation.json",
+      "sha256": "fc8c2f949bc544db6b38f21129789beffd534a18ff10feeeb568a866867f83c5"
+    },
+    {
+      "path": "Assets/Decision_YYS/Resources/Chapters/Chapter_00/Chapter_00_01/Guide/Branches/QuestionPlace.Story.json",
+      "sha256": "2129192ed8eeabe7ba79aa3ed31b426a643e377d645df2ccbc4418fd79b2154a"
+    },
+    {
+      "path": "Assets/Decision_YYS/Resources/Chapters/Chapter_00/Chapter_00_01/Guide/Branches/Redistribute.Explanation.json",
+      "sha256": "5bcf93fb8a0ead746ae3ee36e92740b38ecbc62d4246253f894cb5ebb98769cf"
+    },
+    {
+      "path": "Assets/Decision_YYS/Resources/Chapters/Chapter_00/Chapter_00_01/Guide/Branches/Redistribute.Story.json",
+      "sha256": "3e83074af4babca2f77ff6bbddd059bf6681ad5fc59c0616872ebd632d7df8e5"
+    },
+    {
+      "path": "Assets/Decision_YYS/Resources/Chapters/Chapter_00/Chapter_00_01/Guide/Branches/Retry.Explanation.json",
+      "sha256": "a924e9c7325eda7299f47059d05f0499aeb368e32a00dd2083880315b625cb56"
+    },
+    {
+      "path": "Assets/Decision_YYS/Resources/Chapters/Chapter_00/Chapter_00_01/Guide/Branches/Retry.Story.json",
+      "sha256": "c815211d22c4de55354358e4e98a62965f6f44139e1b47cfe7ca23a2489f76bd"
+    },
+    {
+      "path": "Assets/Decision_YYS/Resources/Chapters/Chapter_00/Chapter_00_01/Guide/Explanation.json",
+      "sha256": "548c5092ae3cc9ebe0f34b305961a02fca96d9d9d81152622c199d7212f92c62"
+    },
+    {
+      "path": "Assets/Decision_YYS/Resources/Chapters/Chapter_00/Chapter_00_01/Guide/Hidden.Explanation.json",
+      "sha256": "54a85cbccbf18e42dd8ea18f2a0c2e9fc98b8bbb49143cebf0adee9c8df636c2"
+    },
+    {
+      "path": "Assets/Decision_YYS/Resources/Chapters/Chapter_00/Chapter_00_01/Guide/Hidden.Story.json",
+      "sha256": "681dc9eae935ba19a1db8773fe3f5d7fc8bbd8617ab0b4316e19d1dabac329b7"
+    },
+    {
+      "path": "Assets/Decision_YYS/Resources/Chapters/Chapter_00/Chapter_00_01/Guide/Story.json",
+      "sha256": "069210ab10357e7461d61692d4cad6377d700e55e39a67e3b4cdd956d1ac20d7"
+    },
+    {
+      "path": "Assets/Decision_YYS/Resources/Chapters/Chapter_00/Characters.json",
+      "sha256": "9ea299846f8ddf2c5bae8d3f6d1e5974d4de0476cab17c7358b684747eff2ca1"
+    },
+    {
+      "path": "Assets/Decision_YYS/Resources/Chapters/Chapter_00/Terrain.json",
+      "sha256": "7f27a9fcc3374190b4b19b64ba9e85389384f115686e4093df7e984601969640"
+    },
+    {
+      "path": "Assets/Decision_YYS/Resources/Chapters/Chapter_00/Transform.json",
+      "sha256": "1ad13edc1dee31a26cf12dd1dfbb0f04c4361d3bcd070fc79e1ba38c1f662072"
+    },
+    {
+      "path": "Assets/Decision_YYS/Resources/Chapters/Chapter_01/Chapter_01_01/Instructor/Explanation.json",
+      "sha256": "1b6fe618c5d3ed4e44a040e6b44e45017377093525dd45f8f80e2c1a35cf3dfa"
+    },
+    {
+      "path": "Assets/Decision_YYS/Resources/Chapters/Chapter_01/Chapter_01_01/Instructor/Story.json",
+      "sha256": "f415a20049efa3dc658b8f90329a1f015f6dec2f128daddc7205f6fcc2058318"
+    },
+    {
+      "path": "Assets/Decision_YYS/Resources/Chapters/Chapter_01/Characters.json",
+      "sha256": "c0bbd4b1fdc43975531615393b07187002950ffb0adc5d2e13ba20461cd5197c"
+    },
+    {
+      "path": "Assets/Decision_YYS/Resources/Chapters/Chapter_01/Terrain.json",
+      "sha256": "9a06fc550cd45fa215ff04fd355c3f6c9b6fbdb716ae9fa13821d5f67c149684"
+    },
+    {
+      "path": "Assets/Decision_YYS/Resources/Chapters/Chapter_01/Transform.json",
+      "sha256": "a182780d20e897ebacf623cc0a3e8cbc923494ba36941cb4e60f53fd5c06df4d"
+    },
+    {
+      "path": "Assets/Decision_YYS/Resources/Chapters/Chapter_02/Chapter_02_01/Sage/Explanation.json",
+      "sha256": "6edad86b6fa7a9f062059decf853738dfa04063764d9b6bd34115627a19fdcc2"
+    },
+    {
+      "path": "Assets/Decision_YYS/Resources/Chapters/Chapter_02/Chapter_02_01/Sage/Story.json",
+      "sha256": "ba9001a467e8dd0b24f03e8e17d5794f50777b99e8ba969b6d65854d5c7643f2"
+    },
+    {
+      "path": "Assets/Decision_YYS/Resources/Chapters/Chapter_02/Characters.json",
+      "sha256": "aed877417579c1e14f3d8ab299fb11ea3e8ba447ce848602a1f56e25630bf460"
+    },
+    {
+      "path": "Assets/Decision_YYS/Resources/Chapters/Chapter_02/Terrain.json",
+      "sha256": "679171aaf4ee02fc6c1385fe1b7ffac8720f5b66ebdee0999eb293de7ff0a60d"
+    },
+    {
+      "path": "Assets/Decision_YYS/Resources/Chapters/Chapter_02/Transform.json",
+      "sha256": "3a2f3c22d0a7c37fee2b95dc20a7115b374f08459ad965d3af395bf91d6ab1e7"
+    },
+    {
+      "path": "Assets/Decision_YYS/Resources/Chapters/Omnibus.json",
+      "sha256": "fd39e141f80f13d2e45b07ffb9006b78410840ae47ef2d235e1c87a7a1b325f7"
+    },
+    {
+      "path": "Assets/Decision_YYS/Resources/LocalStory/PromptModules/Choice.json",
+      "sha256": "34527477f9edecb8816a9e5b12338a127376adb85482a5b04688c8a40885a854"
+    },
+    {
+      "path": "Assets/Decision_YYS/Resources/LocalStory/PromptModules/Common.json",
+      "sha256": "9437668c3ef26c3d4ecfc3c1730ea5eeaf27fdd881f89c452ef580322d8d3ffd"
+    },
+    {
+      "path": "Assets/Decision_YYS/Resources/LocalStory/PromptModules/Correction.json",
+      "sha256": "9b45cec061fc286a2dcd6264f18f83c5ebc3dc18edec5fdb71ec1e19867fb548"
+    },
+    {
+      "path": "Assets/Decision_YYS/Resources/LocalStory/PromptModules/Fixed.json",
+      "sha256": "0fdb6a0ca9d3e7124c869fc902ba5f508612e93b2e76acb3fb4d78a9119be328"
+    },
+    {
+      "path": "Assets/Decision_YYS/Resources/LocalStory/PromptModules/Garbled.json",
+      "sha256": "ceb202719d773807d785c3171ecdd1a91621ae4ad8e583d5a9bae1513ed1d1da"
+    },
+    {
+      "path": "Assets/Decision_YYS/Resources/LocalStory/PromptModules/MemoryCurrent.json",
+      "sha256": "227fdac32107457ba2629aff1ab212a1d9a9e769323f4f3b3726d30c4871e6d3"
+    },
+    {
+      "path": "Assets/Decision_YYS/Resources/LocalStory/PromptModules/MemoryDream.json",
+      "sha256": "19f3a0633f618ac86d424a6e8b15dd3aedbd244ecd8e373eeba531979a8bf8b4"
+    },
+    {
+      "path": "Assets/Decision_YYS/Resources/LocalStory/PromptModules/MemoryNone.json",
+      "sha256": "ae8d39e7a48e82cfafcfc20eb2d09a7ebbb3f0c812c5a603da21b8736598a22f"
+    },
+    {
+      "path": "Assets/Decision_YYS/Resources/LocalStory/PromptModules/Normal.json",
+      "sha256": "4ca87acc1cb0dc5869e98663a8806057dfbaf6e2037906abda651d419a7f5791"
+    },
+    {
+      "path": "Assets/Decision_YYS/Resources/LocalStory/PromptModules/Output.json",
+      "sha256": "2a741f8e82171b545905f44fe398b09f404bd365078cc566a41a4560a4c51ccf"
+    },
+    {
+      "path": "Assets/Decision_YYS/Resources/LocalStory/PromptModules/Unlocked.json",
+      "sha256": "991782c56a939f50611f30bf54b6115a6c641789c53f50cce424cf6190f5ccd2"
+    },
+    {
+      "path": "Assets/Decision_YYS/Scripts/Ai/AIAPIClient.cs",
+      "sha256": "4cfa79c44afae8b87f1541cd09288228ad587ea52e43b23c1eb872aa21c32034"
+    },
+    {
+      "path": "Assets/Decision_YYS/Scripts/Ai/LocalStoryDialogueQueue.cs",
+      "sha256": "83f1997cc8360007eac5e5bd4a37d5d6e078cee996acfcaba93b457dee998e48"
+    },
+    {
+      "path": "Assets/Decision_YYS/Scripts/Ai/LocalStoryGameApply.cs",
+      "sha256": "12259aa4a52c2cb39867ab3b957fac5c2c61993569e4efaf13257510a3ed663d"
+    },
+    {
+      "path": "Assets/Decision_YYS/Scripts/Ai/LocalStoryModelHash.cs",
+      "sha256": "92fc412529e440682ab1e1d2ee86ccd50a03c85265f428423288d65049254edb"
+    },
+    {
+      "path": "Assets/Decision_YYS/Scripts/Ai/LocalStoryNative.cs",
+      "sha256": "1b3fa986741c347321e501e2a483aa8e540ccaf22ba0f4e29a28471b130f8f53"
+    },
+    {
+      "path": "Assets/Decision_YYS/Scripts/Ai/LocalStoryNotebook.Chapters.cs",
+      "sha256": "86e262301c7d1ff81f1c4911cb7f869f42e51b4284a0b4f4f97fc78dfa745cb4"
+    },
+    {
+      "path": "Assets/Decision_YYS/Scripts/Ai/LocalStoryNotebook.cs",
+      "sha256": "aa1eef9c687a207104f221cd5540b5c5a47b52901add4ab4ae1650bb15919f72"
+    },
+    {
+      "path": "Assets/Decision_YYS/Scripts/Ai/LocalStoryPlayerSmoke.cs",
+      "sha256": "aab309ac3f493b14f04964cf278b6cf5d113467805ce135cb390cd6a29f085d9"
+    },
+    {
+      "path": "Assets/Decision_YYS/Scripts/Ai/LocalStoryPrompt.cs",
+      "sha256": "f7016f65e77d1554684ee4940bef84cf8cb54c1061a6e73e9fe80350ac195e1a"
+    },
+    {
+      "path": "Assets/Decision_YYS/Scripts/Ai/LocalStoryPromptModules.cs",
+      "sha256": "fd500951ba8d5d4f50cdee8e116327b75b1d4d3f32b8c3205d302b74dcef6142"
+    },
+    {
+      "path": "Assets/Decision_YYS/Scripts/Ai/LocalStoryRewrite.cs",
+      "sha256": "692b3e2c14e52fef32dd4d900617a21e4021080d24159dc0f96b345289f77dca"
+    },
+    {
+      "path": "Assets/Decision_YYS/Scripts/Ai/LocalStoryRuntimeService.cs",
+      "sha256": "22e29af5865cfca953732f323fd024393d5df25e97bd3bab6e39521f9abc98e3"
+    },
+    {
+      "path": "Assets/Decision_YYS/Scripts/Ai/LocalStorySections.cs",
+      "sha256": "e08f37b2b7c6252f893a5ed13fbdf6d575fb08b64e7219bbb4243dc74721b9f2"
+    },
+    {
+      "path": "Assets/Decision_YYS/Scripts/Ai/LocalStoryTestArchive.cs",
+      "sha256": "6917363928edbcffba9eecc860decb227a768dd8f2d2bb46f81085252f2ae527"
+    },
+    {
+      "path": "Assets/Decision_YYS/Scripts/Ai/LocalStoryTestArchive.Grouped.cs",
+      "sha256": "568fe01865a07c8a431f7b29040b4cdfd928df1dbc5291f616c7cc78497b55f4"
+    },
+    {
+      "path": "Assets/Decision_YYS/Scripts/Ai/OmniRouteFreeStackConverter.cs",
+      "sha256": "b5f5fb25549fc30474bd7407752655a5b78a6a91945e7fad7ec09b2e4411ef86"
+    },
+    {
+      "path": "Assets/Decision_YYS/Scripts/Ai/StoryGenerationRace.cs",
+      "sha256": "ea8c50a7c81876a52ba9ebc81efa618c637ae656637662667cfc7887f6876c73"
+    },
+    {
+      "path": "Docs/CurrentLLMPrompt.md",
+      "sha256": "28cb34718757360ee1ce39f8b56a8455ecdc669b7830704c21e01e6b505fac37"
+    },
+    {
+      "path": "Packages/manifest.json",
+      "sha256": "1da62c4e6ba764b297629c7a648731095b7e839fb9f682f9d602b2e23431b27c"
+    },
+    {
+      "path": "Packages/packages-lock.json",
+      "sha256": "5f766b3ab9425a91e2e66d36b10bd58ff42fa73da9ee9af0ebf4ac27dacd9ae6"
+    },
+    {
+      "path": "ProjectSettings/ProjectVersion.txt",
+      "sha256": "70e266daf6ad5b087c9049a310ed206451c993191bbf45559cb52367f53ea530"
+    },
+    {
+      "path": "Tests/LocalStoryBenchmark/CompositionCases.json",
+      "sha256": "80a76aaacc3b201ba0b778d8bc716fe214277bcfc2e6e2d97604ab4a4a137c2d"
+    },
+    {
+      "path": "Tests/LocalStoryBenchmark/Suite.json",
+      "sha256": "732435a7831ab4d396a2d909930beabe66131496e09aa508892bca3016fab38e"
+    }
+  ]
+}

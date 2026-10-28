@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "evaluationId": "input-separation-validation-v1",
+  "status": "completed_no_demonstrated_improvement",
+  "reviewer": "Codex",
+  "humanApproved": null,
+  "generations": 8,
+  "adapterEnabled": false,
+  "newTrainingExecuted": false,
+  "local180SecondTargetMeasured": false,
+  "inputSha256": "8defd1a507dedee443b17979eb1d9fd3dd7360e3eb0eb7d7a7f009cac13135d5",
+  "strictStructurePass": {"current": "0/4", "separated": "0/4"},
+  "observations": [
+    "All eight raw outputs contain Markdown code fences; no game GBNF was used",
+    "Both arms, both seeds: introduction requires two cards without choices but returns one card with invented choices",
+    "Separated introduction still omits gear/front-back/yellow-button instructions and board/coin/result explanation",
+    "Both arms, both seeds: choice output contains the same four strings as the authored source; no observed new style transformation",
+    "Input separation adds 150 tokens to introduction and 158 tokens to choice prompt",
+    "Cloud generation spans 8.15 to 11.74 seconds, excluding model loading; not local full-scene timing"
+  ],
+  "recommendation": "Keep presentation configuration unchanged; do not adopt this variant on these results. Build reviewed multi-card and intent-preserving rewrite examples alongside correction data before retraining.",
+  "publicData": "Source registry and review-only importer prepared; no public corpus downloaded or included in training",
+  "artifacts": {"rawLocal": "outputs/AiTraining/InputComparison.json", "reportLocal": "outputs/AiTraining/InputComparison.html", "drivePath": "MyDrive/OneWayTraining/experiment-001/evaluation/input-separation-validation-v1/InputComparison.json"}
+}

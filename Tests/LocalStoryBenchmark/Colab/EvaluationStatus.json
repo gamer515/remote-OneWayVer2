@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "dateSeoul": "2026-10-29",
+  "evaluationId": "unseen-npc-lora-ab-v1",
+  "status": "completed_exploratory_review_recommendation_do_not_adopt",
+  "dataTransferAndExecutionApprovedByUser": true,
+  "plannedRequests": 16,
+  "sceneFamilies": [
+    "gambler-family",
+    "duelist-family"
+  ],
+  "trainingSceneFamilyExcluded": "guide-family",
+  "seeds": [
+    12345,
+    67890
+  ],
+  "arms": [
+    "base",
+    "adapter"
+  ],
+  "meaningCoverageComplete": false,
+  "scoringBasis": "Existing Explanation where present; exact authored Story text/options displayed as provisional reference for missing meaning labels",
+  "humanQualityAccepted": null,
+  "gameModelChanged": false,
+  "local180SecondTargetMeasured": false,
+  "completedRequests": 16,
+  "rawStructurePasses": {
+    "base": 0,
+    "adapter": 1,
+    "perArm": 8,
+    "runtimeGBNFUsed": false
+  },
+  "comparisonSha256": "e5d284a457b21cfff567dce427ef95b20a7dd5ba74cf9ce2611a10d23bd98cc7",
+  "artifacts": {
+    "localComparison": "outputs/AiTraining/Comparison.json",
+    "localReviewedHtml": "outputs/AiTraining/ComparisonReviewed.html",
+    "driveFolder": "https://drive.google.com/drive/folders/1RFJuS2z0T0O06tWgRQ0BNpLpyX1LxgdC",
+    "originalHtml": "https://drive.google.com/file/d/1LOGOcD5duatJ_Od0A7-5oo66YeaK_JlP/view",
+    "review": "Tests/LocalStoryBenchmark/Colab/EvaluationReview.json"
+  },
+  "testFamilyOutputsDisclosed": true
+}

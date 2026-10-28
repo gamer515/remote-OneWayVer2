@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "sourceRecord": "https://zenodo.org/records/16908784",
+  "sourceSha256": "d848bac8095bf4280e9c8f6bb7ef2733434cf0eb2c2977d34fd4a0eb6c061ed4",
+  "licenseMetadata": "gpl-3.0-or-later",
+  "reviewer": "Codex",
+  "humanApproved": null,
+  "trainingEligible": false,
+  "reviewScope": "First 32 consensus/minimal-edit candidates, checked for residual awkwardness and meaning preservation without inventing corrected targets",
+  "selectedSourceIds": ["kolla-v2-0695", "kolla-v2-0019", "kolla-v2-0483", "kolla-v2-0509", "kolla-v2-0724", "kolla-v2-1302", "kolla-v2-0092", "kolla-v2-0859", "kolla-v2-0002", "kolla-v2-0168", "kolla-v2-0008", "kolla-v2-0496", "kolla-v2-0341"],
+  "heldForContextReview": ["kolla-v2-0957", "kolla-v2-0866", "kolla-v2-0920", "kolla-v2-1365", "kolla-v2-1190", "kolla-v2-0506", "kolla-v2-1362", "kolla-v2-0584", "kolla-v2-1049", "kolla-v2-0062", "kolla-v2-0779", "kolla-v2-0573", "kolla-v2-0528", "kolla-v2-0311", "kolla-v2-0247", "kolla-v2-0370", "kolla-v2-0580", "kolla-v2-0627", "kolla-v2-0467"],
+  "excludedExamplesOutsidePilot": [
+    {"sourceBlock": 6, "reason": "One reference inserts an unsupported nine-hour duration; other reference does not"},
+    {"sourceBlock": 5, "reason": "One reference inserts ten o'clock absent from the source"}
+  ],
+  "nextRequirements": ["Review selected pairs before training inclusion", "Recover original essay grouping before splitting this corpus", "Retain GPL notice, source and reconstruction change record", "Evaluate spelling/grammar independently from game choice/meaning retention"],
+  "newTrainingExecuted": false,
+  "publicDataUploadedToColab": false
+}

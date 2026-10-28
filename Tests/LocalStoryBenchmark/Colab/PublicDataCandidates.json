@@ -1,0 +1,68 @@
+{
+  "schemaVersion": 1,
+  "reviewDateSeoul": "2026-10-29",
+  "automaticTrainingInclusion": false,
+  "sources": [
+    {
+      "id": "aihub-korean-correction-71477",
+      "url": "https://aihub.or.kr/aihubdata/data/view.do?currMenu=115&dataSetSn=71477",
+      "purpose": "spelling_and_grammar_correction",
+      "priority": 1,
+      "sourceFields": {
+        "input": "ko",
+        "target": "corrected",
+        "errorAnnotations": "error"
+      },
+      "status": "candidate_metadata_only",
+      "downloaded": false,
+      "trainingEligible": false,
+      "access": "AI Hub application required; verify applicable usage terms before importing",
+      "selection": "051-1 Korean spelling/grammar subset; no automatic use of speech-recognition or overcorrection subsets",
+      "policyUrl": "https://aihub.or.kr/intrcn/guid/usagepolicy.do?currMenu=151&topMenu=105",
+      "cloudUploadStatus": "not_allowed_without_resolving_required_overseas_transfer_agreement",
+      "policyReviewed": true
+    },
+    {
+      "id": "modu-dialogue",
+      "url": "https://kli.korean.go.kr/m/main/requestMain.do",
+      "purpose": "natural_dialogue_reference",
+      "priority": 2,
+      "status": "candidate_metadata_only",
+      "downloaded": false,
+      "trainingEligible": false,
+      "access": "Select exact corpus/version and verify its application and usage conditions",
+      "selection": "Dialogue text is not an approved meaning-preserving rewrite pair by itself"
+    },
+    {
+      "id": "smilestyle",
+      "url": "https://github.com/smilegate-ai/korean_smile_style_dataset",
+      "purpose": "parallel_style_transfer_reference",
+      "priority": 3,
+      "license": "CC-BY-NC-4.0",
+      "status": "excluded_from_training_pending_use_permission_and_quality_review",
+      "downloaded": false,
+      "trainingEligible": false,
+      "access": "Publisher requests contact for commercial use",
+      "selection": "Publisher warns of typos and style conversion errors; never automatically import"
+    },
+    {
+      "id": "kolla-v2-16908784",
+      "url": "https://zenodo.org/records/16908784",
+      "license": "GPL-3.0-or-later (Zenodo API metadata)",
+      "downloaded": true,
+      "trainingEligible": false,
+      "status": "1418_sentence_blocks_reconstructed_13_pairs_selected_for_review",
+      "sourceSha256": "d848bac8095bf4280e9c8f6bb7ef2733434cf0eb2c2977d34fd4a0eb6c061ed4",
+      "cloudUploaded": false
+    }
+  ],
+  "importRequirements": [
+    "Record source URL, exact release, row identifier, file hash and applicable license/terms",
+    "Retain original and corrected text; reject semantic changes and unsupported additions",
+    "Keep aligned styles, paraphrases and dialogue families in one split",
+    "Mark candidates unapproved until reviewed; never mix failed generations into targets",
+    "Keep NPC style separate from player response intent",
+    "Do not apply ordinary spelling correction to intentionally garbled game speech",
+    "Game examples must retain Explanation meaning, actor, target, states, speechMode and semanticText"
+  ]
+}

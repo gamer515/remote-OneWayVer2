@@ -1,0 +1,10 @@
+{
+  "evaluationId": "short-style-general-v1",
+  "sourceCaseId": "synthetic-non-game-diagnostic",
+  "sourceText": "내일 오후 세 시에 도서관 앞에서 만나자.",
+  "seeds": [12345, 67890],
+  "sampling": {"temperature": 0.7, "top_p": 0.8, "top_k": 20, "min_p": 0.0},
+  "maxNewTokens": 128,
+  "messages": [{"role":"user","content":"다음 문장을 뜻과 약속 조건을 그대로 유지하면서 정중한 존댓말로 바꿔줘. 바꾼 문장만 출력해.\n문장: 내일 오후 세 시에 도서관 앞에서 만나자."}],
+  "purpose": "Synthetic everyday sentence for diagnosis only; not game facts or training labels"
+}

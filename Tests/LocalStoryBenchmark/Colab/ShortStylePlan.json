@@ -1,0 +1,23 @@
+{
+  "evaluationId": "short-style-diagnostic-v1",
+  "sourceCaseId": "gambler-main/0",
+  "sourceText": "기어로 앞면이나 뒷면을 선택한 뒤 노란 버튼을 누르게.",
+  "seeds": [
+    12345,
+    67890
+  ],
+  "sampling": {
+    "temperature": 0.7,
+    "top_p": 0.8,
+    "top_k": 20,
+    "min_p": 0.0
+  },
+  "maxNewTokens": 128,
+  "messages": [
+    {
+      "role": "user",
+      "content": "다음 문장을 뜻과 행동 순서를 그대로 유지하면서 정중한 존댓말로 바꿔줘. 바꾼 문장만 출력해.\n문장: 기어로 앞면이나 뒷면을 선택한 뒤 노란 버튼을 누르게."
+    }
+  ],
+  "purpose": "Diagnostic only; no training labels"
+}

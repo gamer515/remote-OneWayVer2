@@ -1,0 +1,137 @@
+{
+  "schemaVersion": 1,
+  "observedDateSeoul": "2026-10-29",
+  "source": "Observed Google Colab notebook UI and cell output",
+  "notebookUrl": "https://colab.research.google.com/drive/1zjUGxs-9laG_FGhoQIVEoFCjGWP0l7am",
+  "uploadApprovedByUser": true,
+  "uploadCompleted": true,
+  "gpuRuntimeConnected": true,
+  "gpu": "Tesla T4",
+  "totalVramMiB": 15360,
+  "freeVramMiBAtCheck": 14913,
+  "pythonMajorMinor": "3.13",
+  "torch": "2.11.0+cu130",
+  "pinnedTrainingStackDependenciesChecked": true,
+  "trainingStackImportPassed": true,
+  "cudaForwardBackwardTestPassed": true,
+  "driveConnectionApprovedByUser": true,
+  "driveMounted": true,
+  "hfSecretAvailableAtLastAttempt": true,
+  "userWillRegisterSecretDirectly": true,
+  "baseRevisionLocked": true,
+  "modelWeightsDownloaded": true,
+  "trainingExecuted": true,
+  "status": "trial_completed_quality_and_game_validation_pending",
+  "failure": null,
+  "globalDependencyConflicts": [
+    "ipython requires jedi, not installed",
+    "Colab Gradio/gradio-client/diffusers require newer huggingface-hub than this experiment",
+    "Colab diffusers requires newer safetensors than this experiment"
+  ],
+  "conflictHandling": "Global pip-check report retained; exact training-root versions, direct dependencies and actual Gemma3/PEFT/bitsandbytes imports checked separately. Unrelated Colab applications are not used for this experiment.",
+  "nextAction": "Prepare source-grounded unseen-scene quality evaluation; compare untrained base conversion control before GGUF/Unity adoption",
+  "gameConfigurationChanged": false,
+  "modelRevision": "093f9f388b31de276ce2de164bdc2081324b9767",
+  "tokenLengths": [
+    {
+      "id": "knowledge-take",
+      "inputTokens": 1153,
+      "answerTokens": 43,
+      "totalTokens": 1196
+    },
+    {
+      "id": "garbled-listener",
+      "inputTokens": 1496,
+      "answerTokens": 75,
+      "totalTokens": 1571
+    },
+    {
+      "id": "knowledge-return",
+      "inputTokens": 1239,
+      "answerTokens": 42,
+      "totalTokens": 1281
+    },
+    {
+      "id": "identity-choice",
+      "inputTokens": 1501,
+      "answerTokens": 73,
+      "totalTokens": 1574
+    },
+    {
+      "id": "mark-no-invented-effect",
+      "inputTokens": 775,
+      "answerTokens": 36,
+      "totalTokens": 811
+    },
+    {
+      "id": "mark-choice-intents",
+      "inputTokens": 1232,
+      "answerTokens": 69,
+      "totalTokens": 1301
+    }
+  ],
+  "smokeResult": {
+    "mode": "smoke",
+    "optimizerSteps": 2,
+    "adapterReloaded": true,
+    "secondsIncludingLoadSave": 204.88232313799995,
+    "peakAllocatedBytes": 11542249984,
+    "peakReservedBytes": 14963179520,
+    "metrics": {
+      "train_runtime": 65.2523,
+      "train_samples_per_second": 0.061,
+      "train_steps_per_second": 0.031,
+      "total_flos": 122323587000768,
+      "train_loss": 4.1227867603302,
+      "epoch": 0.6666666666666666
+    },
+    "bundleFiles": {
+      "TrainingPairs.jsonl": "721487698aa37d54fde387cc039d8b6fbabe829687acff5e7236105c3223a00e",
+      "CurrentInputCandidates.json": "d8b32cca11c1dde74d9d4e94fe34bff2a18520a0096a71baa7dfcecbe866dd04",
+      "DatasetSplitPlan.json": "190075ba85ca83d23db0b2a36307eb79415a5c70bfbcb6763cd1b5cd8796a199",
+      "TrainingBaseline.json": "6e375f55b4bfad925b17527fd1fc4bd387a1c129801dc821c681f2cf576066f2",
+      "train.py": "3b762d2740a5a520699507a571e72d9921ab131f5c74b4372470e80fb3e353dc",
+      "experiment.json": "2b4138a23dc91aef828aa573a57a04e86ee856261fe5d53af81e5aee186a2d2e",
+      "requirements.txt": "c52fc05ca1aabccbeda9f0384e491d498dfd8760046dc6365b8c87f8f9c4f102"
+    },
+    "qualityAccepted": false,
+    "local180SecondTargetMeasured": false
+  },
+  "trialResult": {
+    "mode": "train",
+    "optimizerSteps": 12,
+    "adapterReloaded": true,
+    "secondsIncludingLoadSave": 426.36536638300004,
+    "peakAllocatedBytes": 11551162880,
+    "peakReservedBytes": 14963179520,
+    "metrics": {
+      "train_runtime": 389.5044,
+      "train_samples_per_second": 0.062,
+      "train_steps_per_second": 0.031,
+      "total_flos": 673106098800384,
+      "train_loss": 2.6247276663780212,
+      "epoch": 4
+    },
+    "bundleFiles": {
+      "TrainingPairs.jsonl": "721487698aa37d54fde387cc039d8b6fbabe829687acff5e7236105c3223a00e",
+      "CurrentInputCandidates.json": "d8b32cca11c1dde74d9d4e94fe34bff2a18520a0096a71baa7dfcecbe866dd04",
+      "DatasetSplitPlan.json": "190075ba85ca83d23db0b2a36307eb79415a5c70bfbcb6763cd1b5cd8796a199",
+      "TrainingBaseline.json": "6e375f55b4bfad925b17527fd1fc4bd387a1c129801dc821c681f2cf576066f2",
+      "train.py": "3b762d2740a5a520699507a571e72d9921ab131f5c74b4372470e80fb3e353dc",
+      "experiment.json": "2b4138a23dc91aef828aa573a57a04e86ee856261fe5d53af81e5aee186a2d2e",
+      "requirements.txt": "c52fc05ca1aabccbeda9f0384e491d498dfd8760046dc6365b8c87f8f9c4f102"
+    },
+    "qualityAccepted": false,
+    "local180SecondTargetMeasured": false
+  },
+  "cloudArtifacts": {
+    "experiment": "https://drive.google.com/drive/folders/12M4KS7P9nCnCulrf0TinWjLYgdX5BbCZ",
+    "trial": "https://drive.google.com/drive/folders/1qZp-z6eoY3KFA-a-_R8llwDh6HCq5-_A",
+    "adapter": "https://drive.google.com/drive/folders/1X1Z2-hJxTzYxDq_ialx25ALA_kzvYzOD",
+    "checkpoint12": "https://drive.google.com/drive/folders/1tMrRVKbR8yUKNLK3PAgIWMml_4hoxH5d",
+    "checkpoint10": "https://drive.google.com/drive/folders/1h6zMsKzxa1DNC8moX-MAxPRUOQfT6jyt",
+    "adapterBytes": 8932856,
+    "resumeFilesVerifiedPresent": true,
+    "resumeExecutionTested": false
+  }
+}

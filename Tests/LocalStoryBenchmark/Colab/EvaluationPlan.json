@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "evaluationId": "unseen-npc-lora-ab-v1",
+  "baselineId": "presentation-frozen-20261029",
+  "seeds": [12345, 67890],
+  "cases": [
+    {"id":"gambler-main","storyPath":"Initial/Initial_01/Encounters/gambler","splitGroup":"gambler-family","memory":{"chapterId":"Initial","memoryMode":"None"}},
+    {"id":"duelist-main","storyPath":"Initial/Initial_01/Encounters/duelist","splitGroup":"duelist-family","memory":{"chapterId":"Initial","memoryMode":"None"}}
+  ],
+  "sampling": {"temperature":0.7,"top_p":0.8,"top_k":20,"min_p":0.0},
+  "maxGenerationSecondsPerRequest": 180,
+  "comparison": "Same pinned HF base, NF4 precision, tokenizer, inputs and seeds; adapter disabled versus enabled",
+  "grammarMode": "raw HF generation without runtime GBNF on both arms; structural JSON checked afterward",
+  "limitations": [
+    "Not a comparison against the installed QAT GGUF runtime",
+    "Not a measurement of the local 180-second generation target",
+    "Detailed Explanation meaning labels are incomplete; preserve and display missing values, never invent them",
+    "Two scenes and two seeds are an exploratory comparison, not final generalization acceptance",
+    "Do not use test outputs to train or repeatedly select hyperparameters on this final family"
+  ]
+}

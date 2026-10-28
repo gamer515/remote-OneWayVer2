@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "baselineId": "presentation-frozen-20261029",
+  "status": "scene_family_assignments_frozen_labels_incomplete",
+  "grouping": "All branches, paraphrases and memory variants under the same NPC source folder stay together.",
+  "groups": [
+    {"id":"guide-family","sourceFolder":"Chapter_00/Chapter_00_01/Guide/","role":"train","labels":"six aligned answers; garbled understanding response reused verbatim from Explanation","finalEvaluationEligible":false},
+    {"id":"gambler-family","sourceFolder":"Chapter_00/Chapter_00_01/Gambler/","role":"validation","labels":"pending; empty Explanation meaning fields must not be invented","finalEvaluationEligible":false},
+    {"id":"duelist-family","sourceFolder":"Chapter_00/Chapter_00_01/Duelist/","role":"test","labels":"pending; empty Explanation meaning fields must not be invented","finalEvaluationEligible":true},
+    {"id":"instructor-family","sourceFolder":"Chapter_01/Chapter_01_01/Instructor/","role":"reserved","labels":"pending; not available for training","finalEvaluationEligible":false},
+    {"id":"sage-family","sourceFolder":"Chapter_02/Chapter_02_01/Sage/","role":"reserved","labels":"pending; not available for training","finalEvaluationEligible":false}
+  ],
+  "rules": [
+    "Never split individual cards, seeds or paraphrases randomly across roles.",
+    "Never train on a validation, test or reserved family.",
+    "No claim of generalization until unseen scene labels and rubric have been established and evaluated.",
+    "Existing source dialogue may be inspected to define rubric; generated test outputs must remain unused for training and tuning.",
+    "Final evaluation eligibility here reserves a family; it does not assert complete labels or a passing score."
+  ]
+}

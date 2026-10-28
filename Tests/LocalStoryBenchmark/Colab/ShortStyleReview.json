@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "reviewer": "Codex",
+  "humanApproved": null,
+  "modelId": "google/gemma-3-4b-it",
+  "modelRevision": "093f9f388b31de276ce2de164bdc2081324b9767",
+  "adapterEnabled": false,
+  "newTrainingExecuted": false,
+  "generalSentence": {
+    "syntheticNonGameDiagnostic": true,
+    "source": "내일 오후 세 시에 도서관 앞에서 만나자.",
+    "observedOutputBothSeeds": "내일 오후 3시에 도서관 앞에서 뵙겠습니다.",
+    "toneChanged": true,
+    "timePlacePreserved": true,
+    "inputTokens": 54,
+    "seconds": [2.92003636000004, 1.8981335120001859]
+  },
+  "gameSentence": {
+    "sourceCase": "gambler-main/0",
+    "source": "기어로 앞면이나 뒷면을 선택한 뒤 노란 버튼을 누르게.",
+    "inputTokens": 59,
+    "outputs": [
+      {"seed":12345,"raw":"기어의 앞면 또는 뒷면을 선택하신 후, 노란색 버튼을 누르시면 됩니다.","review":"Tone changed, but 'using the gear' became 'the gear's front/back'; meaning preservation failed"},
+      {"seed":67890,"raw":"기기를 선택한 후 노란 버튼을 누르시면 됩니다.","review":"Front/back omitted; gear became device; meaning preservation failed"}
+    ]
+  },
+  "conclusion": "Basic everyday Korean tone conversion works on this one sentence; short prompts still fail game-specific meaning. Prompt length alone is not established as the cause.",
+  "limitations": ["Two seeds per sentence are exploratory", "One-sentence plain text differs from multi-card JSON generation in more than length", "HF NF4 is not the installed QAT GGUF", "No conclusion about local full-scene 180-second generation"],
+  "nextControlledComparison": "Keep sentence, requested style and output format fixed; vary only context/instruction load, and separately measure game-term context support. Do not change presentation prompts."
+}
