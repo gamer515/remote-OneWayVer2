@@ -1,0 +1,230 @@
+{
+  "modelId": "google/gemma-3-4b-it",
+  "modelRevision": "093f9f388b31de276ce2de164bdc2081324b9767",
+  "sourceApprovedPairs": 6,
+  "derivedTasks": 21,
+  "taskKinds": {
+    "npc_line": 6,
+    "player_options": 3,
+    "player_option": 12
+  },
+  "newIndependentScenes": 0,
+  "trainingGroups": [
+    "guide-family"
+  ],
+  "validationGroupsExcluded": [
+    "gambler-family"
+  ],
+  "finalTestGroupsExcluded": [
+    "duelist-family"
+  ],
+  "draftsExcluded": 0,
+  "approvedNormalAuxiliaryTasks": 5,
+  "draftsAutoApprove": false,
+  "trainingExecuted": false,
+  "presentationChanged": false,
+  "frozenFilesVerified": 99,
+  "sourceFiles": {
+    "CurrentInputCandidates.json": "e5becf29374a4e6e1451198f0f4a2f61f7a6c202245a30de5bdacbed806a5e56",
+    "TrainingPairs.jsonl": "f298b69171262ad97e050ce260cffbb6071f68714c7ec1bf6b5375fc1eb874e4",
+    "DatasetSplitPlan.json": "b39c15fbf79300cb47b6e9ca7f4cdfed3ed1c095236a372814a4b88a4c04f7d2"
+  },
+  "sourceOutputSha256": "fed211c8f7e63783be548392aefbed435089dc1b00e6c1fe7c10b1e951dbfa7b",
+  "records": [
+    {
+      "id": "knowledge-take/npc",
+      "sourceId": "knowledge-take",
+      "answerField": "/cards/0/text",
+      "approval": "existing_user_approved_answer_exact_projection",
+      "taskKind": "npc_line",
+      "expectedOutput": "그럼 잠깐 자네 지식을 빌려 보겠네. 말뜻을 알아듣는 게 얼마나 중요한지 느껴 보게.",
+      "trainingEligible": true
+    },
+    {
+      "id": "garbled-listener/npc",
+      "sourceId": "garbled-listener",
+      "answerField": "/cards/0/text",
+      "approval": "existing_user_approved_answer_exact_projection",
+      "taskKind": "npc_line",
+      "expectedOutput": "내에 마알이 무우슨 뜨신지 모오르겠지이?",
+      "trainingEligible": true
+    },
+    {
+      "id": "garbled-listener/options",
+      "sourceId": "garbled-listener",
+      "answerField": "/cards/0/options",
+      "approval": "existing_user_approved_answer_exact_projection",
+      "taskKind": "player_options",
+      "expectedOutput": "[\"무어라아구우?\",\"으응, 아라써어!\",\"으라부루라아!\",\"자앙난 그마안! 지시익 도올려줘어!\"]",
+      "trainingEligible": true
+    },
+    {
+      "id": "garbled-listener/option-0",
+      "sourceId": "garbled-listener",
+      "answerField": "/cards/0/options/0",
+      "approval": "existing_user_approved_answer_exact_projection",
+      "taskKind": "player_option",
+      "expectedOutput": "무어라아구우?",
+      "trainingEligible": true
+    },
+    {
+      "id": "garbled-listener/option-1",
+      "sourceId": "garbled-listener",
+      "answerField": "/cards/0/options/1",
+      "approval": "existing_user_approved_answer_exact_projection",
+      "taskKind": "player_option",
+      "expectedOutput": "으응, 아라써어!",
+      "trainingEligible": true
+    },
+    {
+      "id": "garbled-listener/option-2",
+      "sourceId": "garbled-listener",
+      "answerField": "/cards/0/options/2",
+      "approval": "existing_user_approved_answer_exact_projection",
+      "taskKind": "player_option",
+      "expectedOutput": "으라부루라아!",
+      "trainingEligible": true
+    },
+    {
+      "id": "garbled-listener/option-3",
+      "sourceId": "garbled-listener",
+      "answerField": "/cards/0/options/3",
+      "approval": "existing_user_approved_answer_exact_projection",
+      "taskKind": "player_option",
+      "expectedOutput": "자앙난 그마안! 지시익 도올려줘어!",
+      "trainingEligible": true
+    },
+    {
+      "id": "knowledge-return/npc",
+      "sourceId": "knowledge-return",
+      "answerField": "/cards/0/text",
+      "approval": "existing_user_approved_answer_exact_projection",
+      "taskKind": "npc_line",
+      "expectedOutput": "자, 빼앗은 지식은 돌려줬네. 아까와 지금, 내 말이 다르게 들리나?",
+      "trainingEligible": true
+    },
+    {
+      "id": "identity-choice/npc",
+      "sourceId": "identity-choice",
+      "answerField": "/cards/0/text",
+      "approval": "existing_user_approved_answer_exact_projection",
+      "taskKind": "npc_line",
+      "expectedOutput": "장난의 신을 마주한 소감이 어떤가, 자네?",
+      "trainingEligible": true
+    },
+    {
+      "id": "identity-choice/options",
+      "sourceId": "identity-choice",
+      "answerField": "/cards/0/options",
+      "approval": "existing_user_approved_answer_exact_projection",
+      "taskKind": "player_options",
+      "expectedOutput": "[\"정말 장난의 신이야? 어떤 신인데?\",\"이 광산에는 무슨 일로 온 거야?\",\"네 이야기에는 흥미 없어.\",\"신이라는 작자가 참 한심하네.\"]",
+      "trainingEligible": true
+    },
+    {
+      "id": "identity-choice/option-0",
+      "sourceId": "identity-choice",
+      "answerField": "/cards/0/options/0",
+      "approval": "existing_user_approved_answer_exact_projection",
+      "taskKind": "player_option",
+      "expectedOutput": "정말 장난의 신이야? 어떤 신인데?",
+      "trainingEligible": true
+    },
+    {
+      "id": "identity-choice/option-1",
+      "sourceId": "identity-choice",
+      "answerField": "/cards/0/options/1",
+      "approval": "existing_user_approved_answer_exact_projection",
+      "taskKind": "player_option",
+      "expectedOutput": "이 광산에는 무슨 일로 온 거야?",
+      "trainingEligible": true
+    },
+    {
+      "id": "identity-choice/option-2",
+      "sourceId": "identity-choice",
+      "answerField": "/cards/0/options/2",
+      "approval": "existing_user_approved_answer_exact_projection",
+      "taskKind": "player_option",
+      "expectedOutput": "네 이야기에는 흥미 없어.",
+      "trainingEligible": true
+    },
+    {
+      "id": "identity-choice/option-3",
+      "sourceId": "identity-choice",
+      "answerField": "/cards/0/options/3",
+      "approval": "existing_user_approved_answer_exact_projection",
+      "taskKind": "player_option",
+      "expectedOutput": "신이라는 작자가 참 한심하네.",
+      "trainingEligible": true
+    },
+    {
+      "id": "mark-no-invented-effect/npc",
+      "sourceId": "mark-no-invented-effect",
+      "answerField": "/cards/0/text",
+      "approval": "existing_user_approved_answer_exact_projection",
+      "taskKind": "npc_line",
+      "expectedOutput": "방금 준 표식은 잘 챙겨 두게. 잃어버리지 말고.",
+      "trainingEligible": true
+    },
+    {
+      "id": "mark-choice-intents/npc",
+      "sourceId": "mark-choice-intents",
+      "answerField": "/cards/0/text",
+      "approval": "existing_user_approved_answer_exact_projection",
+      "taskKind": "npc_line",
+      "expectedOutput": "자, 더 물어보고 싶은 게 있나?",
+      "trainingEligible": true
+    },
+    {
+      "id": "mark-choice-intents/options",
+      "sourceId": "mark-choice-intents",
+      "answerField": "/cards/0/options",
+      "approval": "existing_user_approved_answer_exact_projection",
+      "taskKind": "player_options",
+      "expectedOutput": "[\"이 표식은 무슨 용도야?\",\"이건 네게 돌려줄게.\",\"너에 대해 더 알고 싶은데.\",\"선물은 챙겼어. 다음 이야기를 해 줘.\"]",
+      "trainingEligible": true
+    },
+    {
+      "id": "mark-choice-intents/option-0",
+      "sourceId": "mark-choice-intents",
+      "answerField": "/cards/0/options/0",
+      "approval": "existing_user_approved_answer_exact_projection",
+      "taskKind": "player_option",
+      "expectedOutput": "이 표식은 무슨 용도야?",
+      "trainingEligible": true
+    },
+    {
+      "id": "mark-choice-intents/option-1",
+      "sourceId": "mark-choice-intents",
+      "answerField": "/cards/0/options/1",
+      "approval": "existing_user_approved_answer_exact_projection",
+      "taskKind": "player_option",
+      "expectedOutput": "이건 네게 돌려줄게.",
+      "trainingEligible": true
+    },
+    {
+      "id": "mark-choice-intents/option-2",
+      "sourceId": "mark-choice-intents",
+      "answerField": "/cards/0/options/2",
+      "approval": "existing_user_approved_answer_exact_projection",
+      "taskKind": "player_option",
+      "expectedOutput": "너에 대해 더 알고 싶은데.",
+      "trainingEligible": true
+    },
+    {
+      "id": "mark-choice-intents/option-3",
+      "sourceId": "mark-choice-intents",
+      "answerField": "/cards/0/options/3",
+      "approval": "existing_user_approved_answer_exact_projection",
+      "taskKind": "player_option",
+      "expectedOutput": "선물은 챙겼어. 다음 이야기를 해 줘.",
+      "trainingEligible": true
+    }
+  ],
+  "risks": [
+    "One training scene family only",
+    "Single-choice tasks are auxiliary; retain four-choice array tasks",
+    "Normal rendering drafts are not actual-game state changes",
+    "No new quality or local-180-second claim"
+  ]
+}

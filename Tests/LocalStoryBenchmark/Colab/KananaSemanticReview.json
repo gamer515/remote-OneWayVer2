@@ -1,0 +1,152 @@
+{
+  "rubricVersion": 1,
+  "provenance": {
+    "outputs\\AiTraining\\CandidateComparison-kanana-1.5-2.1b.json": "838b0d93d41c05ca7492c846dfeb047307a6642c81089cba141de51d748fead8",
+    "Tests\\LocalStoryBenchmark\\Colab\\KananaAnswerReviewDrafts.json": "fc05db3bcc3e7bd5f7ac7caba0668b2bd11cecf085d5fe0e063d7229f5c5a928",
+    "Tests\\LocalStoryBenchmark\\Colab\\KananaValidationRubric.json": "738f57db476fca96621979c6c611eb63648a44aabc539f0b917548b58862fb61"
+  },
+  "reviewer": "Codex",
+  "userReviewedRatings": false,
+  "freshGenerationExecuted": false,
+  "trainingAdded": 0,
+  "presentationChanged": false,
+  "local180SecondTargetMeasured": false,
+  "rows": [
+    {
+      "caseId": "gambler-main/0",
+      "seed": 12345,
+      "arm": "base",
+      "formatPassed": false,
+      "formatError": "Expected one cards object",
+      "reviewerFailedChecks": [
+        "instruction",
+        "resultRule",
+        "scope",
+        "expression"
+      ],
+      "reviewerNote": "인물·장면 입력 메타데이터만 출력해 요청된 대사가 없다.",
+      "accepted": false,
+      "rawSha256": "5b4260a7a77c66d3e340eaba84823db4c5d0f32d9ffce37ccb1c0e3d856ad69d"
+    },
+    {
+      "caseId": "gambler-main/0",
+      "seed": 12345,
+      "arm": "adapter",
+      "formatPassed": false,
+      "formatError": "Extra data: line 3 column 1 (char 85)",
+      "reviewerFailedChecks": [
+        "instruction",
+        "resultRule",
+        "scope"
+      ],
+      "reviewerNote": "무관한 등불 반환과 자유로운 여행을 추가했다. 기어·노란 버튼·정지 시 결과 조건이 빠졌다.",
+      "accepted": false,
+      "rawSha256": "12b051f35bab9951b990e20fad126b804861d1b36ea99af373a1ae90107aee19"
+    },
+    {
+      "caseId": "gambler-main/0",
+      "seed": 67890,
+      "arm": "adapter",
+      "formatPassed": false,
+      "formatError": "Extra data: line 3 column 1 (char 87)",
+      "reviewerFailedChecks": [
+        "instruction",
+        "resultRule",
+        "scope",
+        "expression"
+      ],
+      "reviewerNote": "등불 예시를 복사하고 NPC의 삼인칭 행동 설명을 출력했다. 위쪽 면이라는 조건은 일부 남지만 정지 조건과 조작 안내가 빠졌다.",
+      "accepted": false,
+      "rawSha256": "0b1ba27f0cbd96b76c1519f882c10f3ca5c1617309699b9fc318250899b6d32c"
+    },
+    {
+      "caseId": "gambler-main/0",
+      "seed": 67890,
+      "arm": "base",
+      "formatPassed": false,
+      "formatError": "Extra data: line 3 column 1 (char 165)",
+      "reviewerFailedChecks": [
+        "instruction",
+        "resultRule",
+        "scope",
+        "expression"
+      ],
+      "reviewerNote": "입력과 예시를 대량 재출력하고 승률 우위를 추가했다. NPC가 조작하는 서술과 미완성 문장도 있다.",
+      "accepted": false,
+      "rawSha256": "b58cb20df85b2718bd84826b0fdc18b8b21541ad0333c60669aecaf396292646"
+    },
+    {
+      "caseId": "gambler-main/2",
+      "seed": 12345,
+      "arm": "adapter",
+      "formatPassed": false,
+      "formatError": "Option count mismatch",
+      "reviewerFailedChecks": [
+        "choiceQuestion",
+        "playerChoices",
+        "scope",
+        "expression"
+      ],
+      "reviewerNote": "‘직접 대사’라는 틀 문구뿐이며 질문과 네 응답이 없다.",
+      "accepted": false,
+      "rawSha256": "1b380bafdb70263d38beb4b67aa130a68b575fbaf9271c251a91f1952ec8b4d7"
+    },
+    {
+      "caseId": "gambler-main/2",
+      "seed": 12345,
+      "arm": "base",
+      "formatPassed": false,
+      "formatError": "Extra data: line 3 column 1 (char 53)",
+      "reviewerFailedChecks": [
+        "playerChoices",
+        "scope",
+        "expression"
+      ],
+      "reviewerNote": "여러 JSON으로 앞 카드와 ‘직접 대사’ 틀 문구를 반복했다. 마지막에 선택 질문은 있지만 네 응답이 없다.",
+      "accepted": false,
+      "rawSha256": "cd1fa87a19222c19f9c7ae4827dfbe5df8a14f0963f41c749507252d07d6a5c3"
+    },
+    {
+      "caseId": "gambler-main/2",
+      "seed": 67890,
+      "arm": "base",
+      "formatPassed": false,
+      "formatError": "Card count mismatch",
+      "reviewerFailedChecks": [
+        "choiceQuestion",
+        "playerChoices",
+        "scope"
+      ],
+      "reviewerNote": "규칙 질문과 거절 문구는 남았지만 선택지가 객체다. 앞 두 응답은 버튼을 이미 눌렀다는 사건을 추가했고 NPC는 질문 대신 안내를 반복했다.",
+      "accepted": false,
+      "rawSha256": "1c4079a925067fa361155ba36bd47b044a6b17b8a53066bab72ecad8f415af6a"
+    },
+    {
+      "caseId": "gambler-main/2",
+      "seed": 67890,
+      "arm": "adapter",
+      "formatPassed": false,
+      "formatError": "Option type/length mismatch",
+      "reviewerFailedChecks": [
+        "choiceQuestion",
+        "playerChoices",
+        "scope"
+      ],
+      "reviewerNote": "네 의도 명세의 순서는 남았지만 실제 플레이어 응답을 생성하지 않고 명세를 복사했다. NPC도 앞선 조작 안내를 반복했다.",
+      "accepted": false,
+      "rawSha256": "0aeb40f1938a6d6a78a17c854805a9ad3c3d1462b8f427bb6405531d32dda7c5"
+    }
+  ],
+  "summary": {
+    "base": {
+      "requests": 4,
+      "formatPassed": 0,
+      "accepted": 0
+    },
+    "adapter": {
+      "requests": 4,
+      "formatPassed": 0,
+      "accepted": 0
+    }
+  }
+}

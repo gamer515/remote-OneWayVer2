@@ -1,0 +1,192 @@
+{
+  "reviewer": "Codex",
+  "reviewedDateSeoul": "2026-11-01",
+  "userReviewedRatings": false,
+  "sourceSha256": "fed211c8f7e63783be548392aefbed435089dc1b00e6c1fe7c10b1e951dbfa7b",
+  "rows": [
+    {
+      "id": "knowledge-take/0-npc",
+      "arm": "base",
+      "basicFormatPassed": true,
+      "meaningAndStatePassed": false,
+      "fullRequestPassed": false,
+      "note": "NPC 자신이 기억을 잃은 듯 말해 주체가 바뀌었다. 로키가 여행자의 지식을 잠시 회수하는 사건도 빠졌다."
+    },
+    {
+      "id": "garbled-listener/0-npc",
+      "arm": "base",
+      "basicFormatPassed": true,
+      "meaningAndStatePassed": false,
+      "fullRequestPassed": false,
+      "note": "알아듣지 못하느냐는 뜻은 대체로 남았지만 의도적인 난독 발음을 잃었다."
+    },
+    {
+      "id": "garbled-listener/0-options",
+      "arm": "base",
+      "basicFormatPassed": false,
+      "meaningAndStatePassed": false,
+      "fullRequestPassed": false,
+      "note": "코드 울타리와 speaker/speech 객체 배열을 출력했다. 알아들었다는 반응·뜻 없는 중얼거림·지식 반환 요구가 다른 말로 바뀌었고 난독도 없다."
+    },
+    {
+      "id": "identity-choice/0-npc",
+      "arm": "base",
+      "basicFormatPassed": true,
+      "meaningAndStatePassed": false,
+      "fullRequestPassed": false,
+      "note": "신을 만난 반응 대신 지난 지식 회수 경험을 물었다. 여행자의 지식이 신의 지식으로도 바뀌었다."
+    },
+    {
+      "id": "identity-choice/0-options",
+      "arm": "base",
+      "basicFormatPassed": false,
+      "meaningAndStatePassed": false,
+      "fullRequestPassed": false,
+      "note": "객체 배열·코드 울타리로 형식 실패. 첫 정체 질문과 무관심·모욕은 일부 남았지만 광산 질문의 대상이 흐려졌다."
+    },
+    {
+      "id": "gambler-main/0/0-npc",
+      "arm": "base",
+      "basicFormatPassed": true,
+      "meaningAndStatePassed": false,
+      "fullRequestPassed": false,
+      "note": "운명의 장난이라는 일반 표현으로 대체하면서 기어로 면 선택 후 노란 버튼을 누르는 절차가 모두 빠졌다."
+    },
+    {
+      "id": "gambler-main/0/1-npc",
+      "arm": "base",
+      "basicFormatPassed": true,
+      "meaningAndStatePassed": false,
+      "fullRequestPassed": false,
+      "note": "동전이 멈춘다는 말은 있지만 보드 위에서 돌다가 바닥에 닿아 멈추며 위를 향한 면이 결과라는 규칙을 설명하지 않았다."
+    },
+    {
+      "id": "gambler-main/2/0-npc",
+      "arm": "base",
+      "basicFormatPassed": true,
+      "meaningAndStatePassed": true,
+      "fullRequestPassed": true,
+      "note": "어느 면에 걸지 묻는 선택 유도는 유지했다. 구체적 규칙이나 보상을 새로 만들지는 않았다."
+    },
+    {
+      "id": "gambler-main/2/0-options",
+      "arm": "base",
+      "basicFormatPassed": false,
+      "meaningAndStatePassed": false,
+      "fullRequestPassed": false,
+      "note": "응답 문자열 대신 객체 배열·코드 울타리이며 앞면·뒷면 선택과 도박 거절이 사라졌다."
+    },
+    {
+      "id": "knowledge-take/0-npc",
+      "arm": "trained",
+      "basicFormatPassed": true,
+      "meaningAndStatePassed": false,
+      "fullRequestPassed": false,
+      "note": "지식을 빼앗는 사건 대신 광산에서 질문에 답하라는 새 요구로 바뀌었다. 형식만 통과했다."
+    },
+    {
+      "id": "garbled-listener/0-npc",
+      "arm": "trained",
+      "basicFormatPassed": true,
+      "meaningAndStatePassed": false,
+      "fullRequestPassed": false,
+      "note": "이해할 수 없겠지?라는 뜻은 유지했다. 다만 정상 문장이라 난독 발음 조건은 실패했다."
+    },
+    {
+      "id": "garbled-listener/0-options",
+      "arm": "trained",
+      "basicFormatPassed": true,
+      "meaningAndStatePassed": false,
+      "fullRequestPassed": false,
+      "note": "네 문자열 형식은 배웠지만 첫 응답에 NPC 질문을 넣었다. 이해했다는 반응과 뜻 없는 중얼거림이 사라졌고 마지막 지식 반환 요구도 빠졌다. 난독 발음도 없다."
+    },
+    {
+      "id": "identity-choice/0-npc",
+      "arm": "trained",
+      "basicFormatPassed": true,
+      "meaningAndStatePassed": true,
+      "fullRequestPassed": true,
+      "note": "신을 만난 경험에 대한 반응을 묻는 기능은 유지했다. 다만 로키가 자신의 만남을 남의 일처럼 말하는 첫 문장은 다소 어색해 표현 보완이 필요하다."
+    },
+    {
+      "id": "identity-choice/0-options",
+      "arm": "trained",
+      "basicFormatPassed": true,
+      "meaningAndStatePassed": false,
+      "fullRequestPassed": false,
+      "note": "문자열 배열과 앞의 정체 질문·광산 질문·무관심은 유지했다. 마지막 응답은 말이 듣기 싫다는 거절로 약해져 로키를 모욕하는 의도를 보존하지 못했다."
+    },
+    {
+      "id": "gambler-main/0/0-npc",
+      "arm": "trained",
+      "basicFormatPassed": true,
+      "meaningAndStatePassed": false,
+      "fullRequestPassed": false,
+      "note": "운명을 결정하는 게임이라는 설명으로 바뀌어 기어·면 선택·노란 버튼·행동 순서가 빠졌다."
+    },
+    {
+      "id": "gambler-main/0/1-npc",
+      "arm": "trained",
+      "basicFormatPassed": true,
+      "meaningAndStatePassed": false,
+      "fullRequestPassed": false,
+      "note": "일반적인 운명 비유로 바뀌어 동전의 움직임·멈춤·위를 향한 면의 결과 규칙이 빠졌다."
+    },
+    {
+      "id": "gambler-main/2/0-npc",
+      "arm": "trained",
+      "basicFormatPassed": true,
+      "meaningAndStatePassed": true,
+      "fullRequestPassed": true,
+      "note": "걸고 싶은 면을 물어 선택 유도를 유지했다. 새 규칙·배당·보상은 추가하지 않았다."
+    },
+    {
+      "id": "gambler-main/2/0-options",
+      "arm": "trained",
+      "basicFormatPassed": true,
+      "meaningAndStatePassed": false,
+      "fullRequestPassed": false,
+      "note": "문자열 네 개로 형식은 개선됐지만 앞면이 사라지고 뒷면이 두 번 나왔다. 규칙 질문과 거절의 위치도 바뀌었으며 직접 대사 대신 행동 설명을 복사했다."
+    }
+  ],
+  "summary": {
+    "base": {
+      "npcBasicFormatPassed": 6,
+      "npcCount": 6,
+      "optionsFormatPassed": 0,
+      "optionsCount": 3,
+      "guideMeaningPassed": 0,
+      "guideCount": 5,
+      "gamblerMeaningPassed": 1,
+      "gamblerCount": 4,
+      "generationSecondsColabT4": 78.08,
+      "tokenLimitReachedCount": 0
+    },
+    "trained": {
+      "npcBasicFormatPassed": 6,
+      "npcCount": 6,
+      "optionsFormatPassed": 3,
+      "optionsCount": 3,
+      "guideMeaningPassed": 1,
+      "guideCount": 5,
+      "gamblerMeaningPassed": 1,
+      "gamblerCount": 4,
+      "generationSecondsColabT4": 44.44,
+      "tokenLimitReachedCount": 0
+    },
+    "training": {
+      "optimizerSteps": 36,
+      "adapterReloaded": true,
+      "secondsIncludingLoadSave": 362.2453128269999,
+      "peakAllocatedBytes": 8207914496,
+      "peakReservedBytes": 10521411584,
+      "actualTrainerEpoch": 7.222222222222222
+    }
+  },
+  "conclusionKorean": "사용자 기준대로 Gemma를 유지하고 승인 게임 자료를 분리 요청 형식으로 실제 집중 학습했다. 선택지 문자열 배열 형식은 0/3에서 3/3으로 개선됐다. 의미·상태 보존은 학습 장면 0/5→1/5, 학습 제외 도박꾼 장면 1/4→1/4로 충분히 개선되지 않았다. 형식 학습 효과는 확인했지만 의미 보존·난독·선택 의도는 미해결이어서 게임 적용은 보류한다. 모델 후보 탐색을 재개하지 않고 Gemma 기준으로 조건별 의미 보존 자료 보완에 집중한다.",
+  "presentationChanged": false,
+  "gameApplied": false,
+  "local180SecondTargetMeasured": false,
+  "generatedFailuresAddedToTraining": false,
+  "nextAction": "Gemma 유지. 난독/정상, 회수/반환, 질문/모욕/거절처럼 조건별로 달라져야 하는 정답 자료를 기존 모듈의 Explanation에 근거해 검토·승인받아 보강. 이번 학습 장면 성공을 일반화로 주장하지 않음."
+}

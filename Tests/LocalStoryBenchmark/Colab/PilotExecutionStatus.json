@@ -1,0 +1,80 @@
+{
+  "updatedAt": "2026-10-29T15:05:34.377049+00:00",
+  "completedStages": [
+    1,
+    2,
+    3,
+    4
+  ],
+  "stage5": "held_before_conversion_due_to_quality",
+  "reviewer": "Codex",
+  "humanQualityAccepted": null,
+  "gameQualityAccepted": false,
+  "publicOnlyMetrics": {
+    "base": {
+      "count": 25,
+      "exactTargetCount": 5,
+      "totalTargetEditDistance": 95
+    },
+    "adapter": {
+      "count": 25,
+      "exactTargetCount": 8,
+      "totalTargetEditDistance": 52
+    }
+  },
+  "mixedPublicMetrics": {
+    "base": {
+      "count": 25,
+      "exactTargetCount": 5,
+      "totalTargetEditDistance": 95
+    },
+    "adapter": {
+      "count": 25,
+      "exactTargetCount": 10,
+      "totalTargetEditDistance": 44
+    }
+  },
+  "gameStructureMetrics": {
+    "base": {
+      "requests": 4,
+      "strictRawJsonPass": 0,
+      "afterRemovingCodeFenceDiagnosticPass": 2
+    },
+    "adapter": {
+      "requests": 4,
+      "strictRawJsonPass": 0,
+      "afterRemovingCodeFenceDiagnosticPass": 2
+    }
+  },
+  "findings": [
+    "Public correction targets match more often; this is not a grammar accuracy score because correct variants can differ",
+    "Mixed model still collapses the two introductory cards into one and invents choices",
+    "Mixed model invents a payout of two times for heads and one time for tails at seed 67890",
+    "Choice scene still copies descriptions instead of writing direct player responses",
+    "Examples-only removal did not fix the task; pure prompt-length causation is not established",
+    "Mixed correction regresses 전심→점심 on kolla-v2-0282 despite some particle/ending improvements"
+  ],
+  "wordingApproval": "새 문구 승인; Explanation semanticText and four choices preserved; Unity export validation 6/6 passed",
+  "training": {
+    "publicPairs": 66,
+    "approvedGamePairs": 6,
+    "steps": 36,
+    "epochs": 1,
+    "peakAllocatedGiB": 10.76,
+    "adapterReloaded": true
+  },
+  "frozenFilesVerified": 99,
+  "frozenFilesChanged": [],
+  "modelConverted": false,
+  "gameApplied": false,
+  "local180SecondTargetMeasured": false,
+  "publicFinalTestEvaluated": false,
+  "gameFinalTestEvaluatedThisPilot": false,
+  "limits": [
+    "Gambler scenes are exploratory validation already inspected in earlier experiments",
+    "HF NF4 raw generation lacks Unity GBNF and differs from installed QAT GGUF",
+    "Full save/next-run branch application and local full-scene timing remain untested"
+  ],
+  "nextDecision": "Compare a different suitable base model on the same validation cases before expanding the corpus; keep presentation configuration frozen",
+  "driveAdapterFolder": "MyDrive/OneWayTraining/public-game-correction-v1/trial/adapter"
+}

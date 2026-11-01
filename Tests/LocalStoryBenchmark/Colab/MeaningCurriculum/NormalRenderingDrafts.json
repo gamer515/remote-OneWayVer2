@@ -1,0 +1,125 @@
+{
+  "reviewRequired": false,
+  "records": [
+    {
+      "id": "garbled-listener/normal-npc",
+      "splitGroup": "guide-family",
+      "messages": [
+        {
+          "role": "user",
+          "content": "실제 게임 사건을 진행하지 않는 표현 연습이다. meaningText의 뜻과 발화 역할을 유지하여 representation으로 지정한 표기 방식의 대사 한 줄만 쓴다. normal은 일반 표기, garbled는 뜻을 눈치챌 수 있는 난독 발음이다. 해설·이름 접두사는 쓰지 않는다.\n{\"kind\":\"surface_realization\",\"speaker\":\"로키\",\"listener\":\"여행자\",\"meaningText\":\"알아듣지 못하겠지?\",\"representation\":\"normal\"}"
+        },
+        {
+          "role": "assistant",
+          "content": "알아듣지 못하겠지?"
+        }
+      ],
+      "normal": "알아듣지 못하겠지?",
+      "approvedGarbled": "내에 마알이 무우슨 뜨신지 모오르겠지이?",
+      "sourceFile": "Assets/Decision_YYS/Resources/Chapters/Chapter_00/Chapter_00_01/Guide/Explanation.json",
+      "sourceSha256": "548c5092ae3cc9ebe0f34b305961a02fca96d9d9d81152622c199d7212f92c62",
+      "normalJsonPointer": "/guide/coreMeaning/-1775880330/semanticText",
+      "sourceApprovedAnswer": "garbled-listener/cards/0/text",
+      "status": "user_approved_auxiliary_task",
+      "answerApprovedByUser": true,
+      "trainingEligible": true,
+      "scope": "Auxiliary surface rendering only; actual garbled game event and choice order unchanged"
+    },
+    {
+      "id": "garbled-listener/normal-option-0",
+      "splitGroup": "guide-family",
+      "messages": [
+        {
+          "role": "user",
+          "content": "실제 게임 사건을 진행하지 않는 표현 연습이다. meaningText의 뜻과 발화 역할을 유지하여 representation으로 지정한 표기 방식의 대사 한 줄만 쓴다. normal은 일반 표기, garbled는 뜻을 눈치챌 수 있는 난독 발음이다. 해설·이름 접두사는 쓰지 않는다.\n{\"kind\":\"surface_realization\",\"speaker\":\"여행자\",\"listener\":\"로키\",\"meaningText\":\"뭐라고?\",\"representation\":\"normal\"}"
+        },
+        {
+          "role": "assistant",
+          "content": "뭐라고?"
+        }
+      ],
+      "normal": "뭐라고?",
+      "approvedGarbled": "무어라아구우?",
+      "sourceFile": "Assets/Decision_YYS/Resources/Chapters/Chapter_00/Chapter_00_01/Guide/Explanation.json",
+      "sourceSha256": "548c5092ae3cc9ebe0f34b305961a02fca96d9d9d81152622c199d7212f92c62",
+      "normalJsonPointer": "/guide/coreMeaning/-1775880330/choices/loki_garbled_confused/text",
+      "sourceApprovedAnswer": "garbled-listener/cards/0/options/0",
+      "status": "user_approved_auxiliary_task",
+      "answerApprovedByUser": true,
+      "trainingEligible": true,
+      "scope": "Auxiliary surface rendering only; actual garbled game event and choice order unchanged"
+    },
+    {
+      "id": "garbled-listener/normal-option-1",
+      "splitGroup": "guide-family",
+      "messages": [
+        {
+          "role": "user",
+          "content": "실제 게임 사건을 진행하지 않는 표현 연습이다. meaningText의 뜻과 발화 역할을 유지하여 representation으로 지정한 표기 방식의 대사 한 줄만 쓴다. normal은 일반 표기, garbled는 뜻을 눈치챌 수 있는 난독 발음이다. 해설·이름 접두사는 쓰지 않는다.\n{\"kind\":\"surface_realization\",\"speaker\":\"여행자\",\"listener\":\"로키\",\"meaningText\":\"아, 알겠어!\",\"representation\":\"normal\"}"
+        },
+        {
+          "role": "assistant",
+          "content": "아, 알겠어!"
+        }
+      ],
+      "normal": "아, 알겠어!",
+      "approvedGarbled": "으응, 아라써어!",
+      "sourceFile": "Assets/Decision_YYS/Resources/Chapters/Chapter_00/Chapter_00_01/Guide/Explanation.json",
+      "sourceSha256": "548c5092ae3cc9ebe0f34b305961a02fca96d9d9d81152622c199d7212f92c62",
+      "normalJsonPointer": "/guide/coreMeaning/-1775880330/choices/loki_garbled_guess/text",
+      "sourceApprovedAnswer": "garbled-listener/cards/0/options/1",
+      "status": "user_approved_auxiliary_task",
+      "answerApprovedByUser": true,
+      "trainingEligible": true,
+      "scope": "Auxiliary surface rendering only; actual garbled game event and choice order unchanged"
+    },
+    {
+      "id": "garbled-listener/normal-option-2",
+      "splitGroup": "guide-family",
+      "messages": [
+        {
+          "role": "user",
+          "content": "실제 게임 사건을 진행하지 않는 표현 연습이다. meaningText의 뜻과 발화 역할을 유지하여 representation으로 지정한 표기 방식의 대사 한 줄만 쓴다. normal은 일반 표기, garbled는 뜻을 눈치챌 수 있는 난독 발음이다. 해설·이름 접두사는 쓰지 않는다.\n{\"kind\":\"surface_realization\",\"speaker\":\"여행자\",\"listener\":\"로키\",\"meaningText\":\"으라부라라!\",\"representation\":\"normal\"}"
+        },
+        {
+          "role": "assistant",
+          "content": "으라부라라!"
+        }
+      ],
+      "normal": "으라부라라!",
+      "approvedGarbled": "으라부루라아!",
+      "sourceFile": "Assets/Decision_YYS/Resources/Chapters/Chapter_00/Chapter_00_01/Guide/Explanation.json",
+      "sourceSha256": "548c5092ae3cc9ebe0f34b305961a02fca96d9d9d81152622c199d7212f92c62",
+      "normalJsonPointer": "/guide/coreMeaning/-1775880330/choices/loki_garbled_mumble/text",
+      "sourceApprovedAnswer": "garbled-listener/cards/0/options/2",
+      "status": "user_approved_auxiliary_task",
+      "answerApprovedByUser": true,
+      "trainingEligible": true,
+      "scope": "Auxiliary surface rendering only; actual garbled game event and choice order unchanged"
+    },
+    {
+      "id": "garbled-listener/normal-option-3",
+      "splitGroup": "guide-family",
+      "messages": [
+        {
+          "role": "user",
+          "content": "실제 게임 사건을 진행하지 않는 표현 연습이다. meaningText의 뜻과 발화 역할을 유지하여 representation으로 지정한 표기 방식의 대사 한 줄만 쓴다. normal은 일반 표기, garbled는 뜻을 눈치챌 수 있는 난독 발음이다. 해설·이름 접두사는 쓰지 않는다.\n{\"kind\":\"surface_realization\",\"speaker\":\"여행자\",\"listener\":\"로키\",\"meaningText\":\"장난 그만하고 다시 돌려줘!\",\"representation\":\"normal\"}"
+        },
+        {
+          "role": "assistant",
+          "content": "장난 그만하고 다시 돌려줘!"
+        }
+      ],
+      "normal": "장난 그만하고 다시 돌려줘!",
+      "approvedGarbled": "자앙난 그마안! 지시익 도올려줘어!",
+      "sourceFile": "Assets/Decision_YYS/Resources/Chapters/Chapter_00/Chapter_00_01/Guide/Explanation.json",
+      "sourceSha256": "548c5092ae3cc9ebe0f34b305961a02fca96d9d9d81152622c199d7212f92c62",
+      "normalJsonPointer": "/guide/coreMeaning/-1775880330/choices/loki_garbled_restore/text",
+      "sourceApprovedAnswer": "garbled-listener/cards/0/options/3",
+      "status": "user_approved_auxiliary_task",
+      "answerApprovedByUser": true,
+      "trainingEligible": true,
+      "scope": "Auxiliary surface rendering only; actual garbled game event and choice order unchanged"
+    }
+  ]
+}

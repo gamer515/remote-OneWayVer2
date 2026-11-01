@@ -101,7 +101,7 @@ def run(bundle, run_dir):
         raise ValueError("Existing evaluation has different conditions; use a new evaluationId")
     write(lock_file, eval_lock)
     import torch
-    from transformers import AutoTokenizer, BitsAndBytesConfig, Gemma3ForConditionalGeneration, set_seed
+    from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig, Gemma3ForConditionalGeneration, set_seed
     from peft import PeftModel
     if not torch.cuda.is_available():
         raise RuntimeError("No CUDA GPU; stop without CPU fallback")
@@ -110,7 +110,9 @@ def run(bundle, run_dir):
         raise ValueError("Evaluation compute precision differs from training")
     tokenizer = AutoTokenizer.from_pretrained(run_dir / "tokenizer")
     quant = BitsAndBytesConfig(load_in_4bit=True, bnb_4bit_quant_type="nf4", bnb_4bit_use_double_quant=True, bnb_4bit_compute_dtype=dtype)
-    base = Gemma3ForConditionalGeneration.from_pretrained(lock["modelId"], revision=lock["modelRevision"],
+    loaders = {"Gemma3ForConditionalGeneration": Gemma3ForConditionalGeneration, "AutoModelForCausalLM": AutoModelForCausalLM}
+    loader = loaders[lock["config"].get("modelLoader", "Gemma3ForConditionalGeneration")]
+    base = loader.from_pretrained(lock["modelId"], revision=lock["modelRevision"],
         quantization_config=quant, torch_dtype=dtype, device_map={"": 0}, attn_implementation="eager")
     model = PeftModel.from_pretrained(base, run_dir / "trial/adapter", is_trainable=False)
     model.eval()

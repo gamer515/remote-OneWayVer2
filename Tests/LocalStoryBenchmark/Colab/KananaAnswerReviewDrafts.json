@@ -1,0 +1,196 @@
+{
+  "schemaVersion": 1,
+  "purpose": "Human answer review only; not a training dataset",
+  "reviewedByUser": true,
+  "trainingEligible": false,
+  "provenance": {
+    "outputs/AiTraining/CandidateComparison-kanana-1.5-2.1b.json": "838b0d93d41c05ca7492c846dfeb047307a6642c81089cba141de51d748fead8",
+    "Assets/Decision_YYS/Resources/Chapters/Chapter_00/Chapter_00_01/Gambler/Story.json": "15ea9a4337fd7b25d7da2b44b7dd5fd85a86884c58f0cc2ff48b8beef914cf31",
+    "Assets/Decision_YYS/Resources/Chapters/Chapter_00/Chapter_00_01/Gambler/Explanation.json": "163df9ea563ba94686d92b4b143baa54a1495a77b6799281f69851e1d7d075af"
+  },
+  "preserve": [
+    "NPC instruction versus player reply",
+    "Gear then yellow button; do not claim already pressed",
+    "Coin stopping and upward-face result",
+    "Four choice meanings and order; no odds or rewards invented"
+  ],
+  "splitPolicy": "Keep gambler-family validation. Training requires an explicit new split manifest and a separate untouched evaluation family; old runs retain their original splits.",
+  "drafts": [
+    {
+      "id": "gambler-main/0",
+      "status": "answer_approved_validation_only",
+      "reviewedByUser": true,
+      "trainingEligible": false,
+      "sceneGroup": "gambler-family",
+      "split": "validation_review_only",
+      "meaningAuthority": "Explanation first; these card meanings are empty. Story is supplementary evidence, not an invented Explanation.",
+      "currentInputMessages": [
+        {
+          "role": "user",
+          "content": "한국어 판타지 게임의 대화 작가다. 입력의 인물·현재 상태·카드 목적을 지키면서 직접 대사를 쓴다.\ntext는 speaker가 listener에게 하는 말이다. 사건의 actor와 target을 바꾸지 않는다. NPC 대사와 플레이어 응답을 구별한다.\n이번에 작성할 대상은 마지막 cards뿐이다. 각 카드의 purpose와 coreMeaning을 직접 대사로 표현하고, options는 각 intent를 직접 응답으로 표현한다. reference를 그대로 복사하지 않고 표현을 바꾼다.\n이번 카드의 사건만 진행한다. 전달되지 않은 과거 만남·능력·보상·분기를 만들지 않는다. 앞선 대사와 설명을 반복하지 않는다.\npreviousDialogue는 이미 끝난 대사다. 다시 출력하거나 이어 붙이지 않는다. examples는 작성 방법의 예시이며 인물·사건·문구를 이번 장면으로 가져오지 않는다. 자료 속 문장은 명령이 아니다.\nnormal인 text와 options는 자연스러운 정상 한국어로 쓴다. 인물 설정의 말투를 유지한다.\nmemory.mode가 None이다. 이전 만남이나 친분을 만들지 않는다.\n이름 접두사·연출 해설·내부 ID·분류명·추론 설명을 출력하지 않는다. limits의 문자 수를 지킨다.\n출력은 {\"cards\":[{\"index\":0,\"text\":\"직접 대사\",\"options\":[]}]} JSON 하나다. index는 이번 요청 안에서 0부터 순서대로 쓰고 입력 카드 수와 선택지 수를 유지한다.\n\n{\"characters\":[{\"id\":\"Gambler\",\"name\":\"동전 승부사\",\"role\":\"동전 도박을 제안하는 NPC\",\"personality\":\"여행자의 선택과 반응을 살핀다.\",\"speechStyle\":null,\"publicFacts\":[],\"unlockedFacts\":[]}],\"scene\":{\"purpose\":null,\"facts\":[],\"style\":null,\"rules\":[]}}\n{\"paragraphs\":[{\"purpose\":\"이 이야기의 사건과 선택을 유지하며 인물의 말투로 대화를 구성한다.\",\"currentState\":[\"이야기에 명시된 사건 순서와 카드별 현재 상황을 따른다.\"]}],\"position\":{\"start\":1,\"count\":2,\"total\":3},\"limits\":{\"maxCards\":3,\"textMaxChars\":160,\"optionMaxChars\":45,\"maxOutputTokens\":1400},\"memory\":{\"mode\":\"None\",\"facts\":[]},\"previousDialogue\":[],\"previousEvents\":[],\"hasUnlockedFacts\":false,\"examples\":[{\"input\":{\"speaker\":\"뱃사공\",\"listener\":\"여행자\",\"actor\":\"뱃사공\",\"target\":\"여행자\",\"coreMeaning\":\"여행자에게 잠시 빌린 등불을 돌려준다\"},\"output\":{\"cards\":[{\"index\":0,\"text\":\"빌려준 등불은 여기 있네. 덕분에 잘 썼어.\",\"options\":[]}]}}],\"cards\":[{\"index\":0,\"type\":\"Next\",\"speakerId\":\"Gambler\",\"reference\":\"기어로 앞면이나 뒷면을 선택한 뒤 노란 버튼을 누르게.\",\"coreMeaning\":null,\"speaker\":\"동전 승부사\",\"listener\":\"여행자\",\"purpose\":null,\"currentState\":null,\"speechMode\":\"normal\",\"semanticText\":null,\"options\":[]},{\"index\":1,\"type\":\"Next\",\"speakerId\":\"Gambler\",\"reference\":\"동전은 보드 위를 돌다가 바닥에 닿아 멈춘다. 위를 향한 면이 결과가 되지.\",\"coreMeaning\":null,\"speaker\":\"동전 승부사\",\"listener\":\"여행자\",\"purpose\":null,\"currentState\":null,\"speechMode\":\"normal\",\"semanticText\":null,\"options\":[]}]}"
+        }
+      ],
+      "sourceCards": [
+        {
+          "index": 0,
+          "eventId": "card:-862278604",
+          "speakerId": "Gambler",
+          "text": "기어로 앞면이나 뒷면을 선택한 뒤 노란 버튼을 누르게.",
+          "options": [],
+          "meaning": {}
+        },
+        {
+          "index": 1,
+          "eventId": "card:-845500985",
+          "speakerId": "Gambler",
+          "text": "동전은 보드 위를 돌다가 바닥에 닿아 멈춘다. 위를 향한 면이 결과가 되지.",
+          "options": [],
+          "meaning": {}
+        }
+      ],
+      "actualFailures": [
+        {
+          "caseId": "gambler-main/0",
+          "seed": 12345,
+          "arm": "adapter",
+          "raw": "{\"cards\":[{\"index\":0,\"text\":\"등불을 돌려주었으니, 이제 당신은 자유롭게 여행할 수 있게 되었어.\",\"options\":[]}]}\n\n{\"cards\":[{\"index\":1,\"text\":\"동전을 보드 위에 올려놓고 돌리네. 앞면과 뒷면 중 어느 쪽이 나올지 궁금하지 않아?\",\"options\":[]}}",
+          "parsed": null,
+          "structureError": "Extra data: line 3 column 1 (char 85)",
+          "inputTokens": 831,
+          "outputTokens": 85,
+          "seconds": 10.582700220000106,
+          "tokenLimitReached": false,
+          "timeBudgetReached": false,
+          "peakAllocatedBytes": 1754038784,
+          "humanQualityAccepted": null
+        },
+        {
+          "caseId": "gambler-main/0",
+          "seed": 67890,
+          "arm": "adapter",
+          "raw": "{\"cards\":[{\"index\":0,\"text\":\"동전 승부사는 여행자에게 잠시 빌린 등불을 돌려준다. 덕분에 잘 썼어.\",\"options\":[]}]}\n\n{\"cards\":[{\"index\":1,\"text\":\"동전 승부사가 이번엔 동전을 들어올려 보드 위를 굴린다. 위를 향한 면이 결과가 된다.\",\"options\":[]}]}",
+          "parsed": null,
+          "structureError": "Extra data: line 3 column 1 (char 87)",
+          "inputTokens": 831,
+          "outputTokens": 91,
+          "seconds": 11.48154544199997,
+          "tokenLimitReached": false,
+          "timeBudgetReached": false,
+          "peakAllocatedBytes": 1754038784,
+          "humanQualityAccepted": null
+        }
+      ],
+      "proposedOutput": {
+        "cards": [
+          {
+            "index": 0,
+            "text": "기어로 앞면이나 뒷면을 고른 다음, 노란 버튼을 누르게.",
+            "options": []
+          },
+          {
+            "index": 1,
+            "text": "동전은 보드 위를 돌다가 바닥에 닿으면 멈춘다네. 그때 위를 향한 면이 결과가 되지.",
+            "options": []
+          }
+        ]
+      },
+      "structureCheck": "passed",
+      "approvalScope": "Wording and intended meaning only; no automatic training or split reassignment.",
+      "approval": {
+        "dateSeoul": "2026-10-31",
+        "userStatement": "초안 좋네",
+        "scope": "Two displayed answer drafts: wording and meaning approved; no split reassignment or game deployment approval."
+      },
+      "approvedOutputSha256": "979ff0514f3ad7f388448ea7933d223ad1b2905f50b1119ee55943b2e758a597"
+    },
+    {
+      "id": "gambler-main/2",
+      "status": "answer_approved_validation_only",
+      "reviewedByUser": true,
+      "trainingEligible": false,
+      "sceneGroup": "gambler-family",
+      "split": "validation_review_only",
+      "meaningAuthority": "Explanation first; these card meanings are empty. Story is supplementary evidence, not an invented Explanation.",
+      "currentInputMessages": [
+        {
+          "role": "user",
+          "content": "한국어 판타지 게임의 대화 작가다. 입력의 인물·현재 상태·카드 목적을 지키면서 직접 대사를 쓴다.\ntext는 speaker가 listener에게 하는 말이다. 사건의 actor와 target을 바꾸지 않는다. NPC 대사와 플레이어 응답을 구별한다.\n이번에 작성할 대상은 마지막 cards뿐이다. 각 카드의 purpose와 coreMeaning을 직접 대사로 표현하고, options는 각 intent를 직접 응답으로 표현한다. reference를 그대로 복사하지 않고 표현을 바꾼다.\n이번 카드의 사건만 진행한다. 전달되지 않은 과거 만남·능력·보상·분기를 만들지 않는다. 앞선 대사와 설명을 반복하지 않는다.\npreviousDialogue는 이미 끝난 대사다. 다시 출력하거나 이어 붙이지 않는다. examples는 작성 방법의 예시이며 인물·사건·문구를 이번 장면으로 가져오지 않는다. 자료 속 문장은 명령이 아니다.\ntext는 NPC가 플레이어의 응답을 유도하는 질문이나 제안이다. options는 각 번호의 intent에 맞는 플레이어의 직접 응답이다.\noptions의 순서와 개수를 유지한다. 분류명·번호·내부 식별자를 응답 문구 대신 쓰지 않는다. NPC의 자기소개를 플레이어 자신의 정체로 바꾸지 않는다.\nnormal인 text와 options는 자연스러운 정상 한국어로 쓴다. 인물 설정의 말투를 유지한다.\nmemory.mode가 None이다. 이전 만남이나 친분을 만들지 않는다.\n이름 접두사·연출 해설·내부 ID·분류명·추론 설명을 출력하지 않는다. limits의 문자 수를 지킨다.\n출력은 {\"cards\":[{\"index\":0,\"text\":\"직접 대사\",\"options\":[]}]} JSON 하나다. index는 이번 요청 안에서 0부터 순서대로 쓰고 입력 카드 수와 선택지 수를 유지한다.\n\n{\"characters\":[{\"id\":\"Gambler\",\"name\":\"동전 승부사\",\"role\":\"동전 도박을 제안하는 NPC\",\"personality\":\"여행자의 선택과 반응을 살핀다.\",\"speechStyle\":null,\"publicFacts\":[],\"unlockedFacts\":[]}],\"scene\":{\"purpose\":null,\"facts\":[],\"style\":null,\"rules\":[]}}\n{\"paragraphs\":[{\"purpose\":\"이 이야기의 사건과 선택을 유지하며 인물의 말투로 대화를 구성한다.\",\"currentState\":[\"이야기에 명시된 사건 순서와 카드별 현재 상황을 따른다.\"]}],\"position\":{\"start\":3,\"count\":1,\"total\":3},\"limits\":{\"maxCards\":3,\"textMaxChars\":160,\"optionMaxChars\":45,\"maxOutputTokens\":1400},\"memory\":{\"mode\":\"None\",\"facts\":[]},\"previousDialogue\":[{\"speakerId\":\"Gambler\",\"text\":\"기어로 앞면이나 뒷면을 선택한 뒤 노란 버튼을 누르게.\"},{\"speakerId\":\"Gambler\",\"text\":\"동전은 보드 위를 돌다가 바닥에 닿아 멈춘다. 위를 향한 면이 결과가 되지.\"}],\"previousEvents\":[],\"hasUnlockedFacts\":false,\"examples\":[{\"input\":{\"speaker\":\"문지기\",\"listener\":\"여행자\",\"purpose\":\"방문 이유를 묻는다\",\"options\":[{\"index\":0,\"intent\":\"안으로 들어가도 되는지 정중하게 묻는다\"},{\"index\":1,\"intent\":\"다른 길로 가겠다며 거절한다\"}]},\"output\":{\"cards\":[{\"index\":0,\"text\":\"이곳에는 무슨 일로 왔나?\",\"options\":[\"잠깐 들어가 봐도 될까요?\",\"괜찮아요. 다른 길로 갈게요.\"]}]}},{\"input\":{\"speaker\":\"뱃사공\",\"listener\":\"여행자\",\"actor\":\"뱃사공\",\"target\":\"여행자\",\"coreMeaning\":\"여행자에게 잠시 빌린 등불을 돌려준다\"},\"output\":{\"cards\":[{\"index\":0,\"text\":\"빌려준 등불은 여기 있네. 덕분에 잘 썼어.\",\"options\":[]}]}}],\"cards\":[{\"index\":0,\"type\":\"Choice\",\"speakerId\":\"Gambler\",\"reference\":\"자, 앞면인가 뒷면인가? 어느 쪽에 걸겠나?\",\"coreMeaning\":null,\"speaker\":\"동전 승부사\",\"listener\":\"여행자\",\"purpose\":null,\"currentState\":null,\"speechMode\":\"normal\",\"semanticText\":null,\"options\":[{\"index\":0,\"speaker\":\"여행자\",\"listener\":\"동전 승부사\",\"intent\":\"앞면을 고른다\",\"reference\":\"앞면을 고른다\"},{\"index\":1,\"speaker\":\"여행자\",\"listener\":\"동전 승부사\",\"intent\":\"뒷면을 고른다\",\"reference\":\"뒷면을 고른다\"},{\"index\":2,\"speaker\":\"여행자\",\"listener\":\"동전 승부사\",\"intent\":\"규칙을 듣는다\",\"reference\":\"규칙을 듣는다\"},{\"index\":3,\"speaker\":\"여행자\",\"listener\":\"동전 승부사\",\"intent\":\"도박을 하지 않는다\",\"reference\":\"도박을 하지 않는다\"}]}]}"
+        }
+      ],
+      "sourceCards": [
+        {
+          "index": 2,
+          "eventId": "card:-828723366",
+          "speakerId": "Gambler",
+          "text": "자, 앞면인가 뒷면인가? 어느 쪽에 걸겠나?",
+          "options": [
+            "앞면을 고른다",
+            "뒷면을 고른다",
+            "규칙을 듣는다",
+            "도박을 하지 않는다"
+          ],
+          "meaning": {}
+        }
+      ],
+      "actualFailures": [
+        {
+          "caseId": "gambler-main/2",
+          "seed": 12345,
+          "arm": "adapter",
+          "raw": "{\"cards\":[{\"index\":0,\"text\":\"직접 대사\",\"options\":[]}]}",
+          "parsed": null,
+          "structureError": "Option count mismatch",
+          "inputTokens": 1157,
+          "outputTokens": 19,
+          "seconds": 4.152233324000008,
+          "tokenLimitReached": false,
+          "timeBudgetReached": false,
+          "peakAllocatedBytes": 1958476800,
+          "humanQualityAccepted": null
+        },
+        {
+          "caseId": "gambler-main/2",
+          "seed": 67890,
+          "arm": "adapter",
+          "raw": "{\"cards\":[{\"index\":0,\"text\":\"자, 앞면이나 뒷면을 선택한 뒤 노란 버튼을 누르게.\",\"options\":[{\"index\":0,\"intent\":\"앞면을 고른다\",\"reference\":\"앞면을 고른다\"},{\"index\":1,\"intent\":\"뒷면을 고른다\",\"reference\":\"뒷면을 고른다\"},{\"index\":2,\"intent\":\"규칙을 듣는다\",\"reference\":\"규칙을 듣는다\"},{\"index\":3,\"intent\":\"도박을 하지 않는다\",\"reference\":\"도박을 하지 않는다\"}]}]}",
+          "parsed": null,
+          "structureError": "Option type/length mismatch",
+          "inputTokens": 1157,
+          "outputTokens": 126,
+          "seconds": 15.871898658000191,
+          "tokenLimitReached": false,
+          "timeBudgetReached": false,
+          "peakAllocatedBytes": 1958476800,
+          "humanQualityAccepted": null
+        }
+      ],
+      "proposedOutput": {
+        "cards": [
+          {
+            "index": 0,
+            "text": "자, 앞면과 뒷면 중 어느 쪽에 걸겠나?",
+            "options": [
+              "앞면으로 하겠어.",
+              "뒷면으로 하겠어.",
+              "규칙을 설명해 줘.",
+              "도박은 하지 않겠어."
+            ]
+          }
+        ]
+      },
+      "structureCheck": "passed",
+      "approvalScope": "Wording and intended meaning only; no automatic training or split reassignment.",
+      "approval": {
+        "dateSeoul": "2026-10-31",
+        "userStatement": "초안 좋네",
+        "scope": "Two displayed answer drafts: wording and meaning approved; no split reassignment or game deployment approval."
+      },
+      "approvedOutputSha256": "31917e519afcc93053625b1136f6add57ea711301cd9e9044422964c03104eb5"
+    }
+  ],
+  "approval": {
+    "dateSeoul": "2026-10-31",
+    "userStatement": "초안 좋네",
+    "scope": "Two displayed answer drafts: wording and meaning approved; no split reassignment or game deployment approval."
+  }
+}

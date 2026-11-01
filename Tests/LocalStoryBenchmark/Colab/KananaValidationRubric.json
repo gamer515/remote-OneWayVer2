@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "sceneGroup": "gambler-family",
+  "split": "validation",
+  "authority": "User-approved answers derived from Story. Detailed Explanation card meanings remain empty and are not overwritten.",
+  "checks": [
+    {
+      "id": "format",
+      "method": "existing evaluate.structure",
+      "pass": "One JSON object; exact card count and local indexes; text strings; exact option count; option strings; existing length limits."
+    },
+    {
+      "id": "instruction",
+      "caseId": "gambler-main/0",
+      "method": "reviewer",
+      "pass": "NPC instructs player: choose heads or tails with gear, then press yellow button. Do not claim already done or switch actor."
+    },
+    {
+      "id": "resultRule",
+      "caseId": "gambler-main/0",
+      "method": "reviewer",
+      "pass": "Coin spins on board, stops on contact with floor, upward face determines result. Preserve sequence; invent no odds."
+    },
+    {
+      "id": "choiceQuestion",
+      "caseId": "gambler-main/2",
+      "method": "reviewer",
+      "pass": "NPC asks player to choose heads versus tails for wager; not a repeated instruction or placeholder."
+    },
+    {
+      "id": "playerChoices",
+      "caseId": "gambler-main/2",
+      "method": "reviewer",
+      "pass": "Four actual player replies, ordered heads, tails, request rules, refuse gambling. Metadata intent/reference does not count as a reply. No completed button action."
+    },
+    {
+      "id": "scope",
+      "method": "reviewer",
+      "pass": "Only requested cards; NPC direct speech; no borrowed lamp scene, narration, copied input, new rewards, or new probabilities."
+    },
+    {
+      "id": "expression",
+      "method": "reviewer",
+      "pass": "Natural understandable Korean, no role prefixes or literal schema placeholders; approved exact wording is not mandatory."
+    }
+  ],
+  "aggregation": "All applicable checks must pass for acceptance. Partial readable fragments may be described but cannot repair invalid JSON or replace missing responses.",
+  "limits": "This is retrospective exploratory review, not blind final evaluation. No fresh generations, training, runtime grammar, or local timing measurement.",
+  "reviewer": "Codex; rubric operationalizes approved meaning, individual ratings have not been user-reviewed."
+}

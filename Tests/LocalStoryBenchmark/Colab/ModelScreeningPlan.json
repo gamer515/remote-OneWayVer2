@@ -1,0 +1,21 @@
+{
+  "experimentId": "model-screening-20261031",
+  "deadlineSeoul": "2026-11-10",
+  "stage": "2/5",
+  "maxSequenceLength": 4096,
+  "perModelWallSeconds": 900,
+  "candidates": [
+    {"id":"lfm2-2.6b","modelId":"LiquidAI/LFM2-2.6B","revision":"36ed799f7024ef169ba92ffe184821835e15cc66","officialSource":"https://huggingface.co/LiquidAI/LFM2-2.6B","license":"LFM Open License v1.0; retain terms, distribution review before adoption"},
+    {"id":"kanana-1.5-2.1b","modelId":"kakaocorp/kanana-1.5-2.1b-instruct-2505","revision":"7df4bc35ccd610e451809d7106e1c3cf82bfd44c","officialSource":"https://huggingface.co/kakaocorp/kanana-1.5-2.1b-instruct-2505","license":"Apache-2.0 per official metadata"}
+  ],
+  "approvedDiagnosticIds": ["knowledge-take","garbled-listener","knowledge-return","identity-choice"],
+  "stages": [
+    {"number":1,"task":"미평가 후보 최대 2개와 고정 입력 확정","target":"2026-10-31","status":"complete"},
+    {"number":2,"task":"추가 학습 없는 한국어·의미·선택지 비교","target":"2026-11-02","status":"ready_to_execute"},
+    {"number":3,"task":"현재 내장 런타임 호환·로컬 3분 확인 및 후보 결정","target":"2026-11-03","status":"pending"},
+    {"number":4,"task":"필요한 경우만 승인 자료로 1회 보완 학습 후 모델·설정 고정","target":"2026-11-07","status":"pending"},
+    {"number":5,"task":"Unity 저장·다음 회차·실패 처리·분기 회귀 확인","target":"2026-11-09","status":"pending"}
+  ],
+  "bufferDate":"2026-11-10",
+  "rules":["Do not rerun previously rejected Qwen3-4B-Instruct-2507 without a new reason","Keep presentation model/prompts/runtime and project structure unchanged","Reuse original messages, schema validator, seeds and sampling; only native model tokenizer/chat template differs","No training, no game application, no final test examples in this screening","HF NF4 timing does not verify local Q4 GGUF full-scene 180 seconds","Model-specific recommended sampling, if needed later, is a separately locked experiment","Inspect raw reasoning and formatting failures; never hide failure by extracting a convenient answer","If no candidate passes, retain presentation configuration; do not deploy to meet a date"]
+}

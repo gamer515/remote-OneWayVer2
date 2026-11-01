@@ -1,0 +1,15 @@
+{
+  "dateSeoul": "2026-10-31",
+  "selectedFor": "small_training_experiment_only",
+  "candidateId": "kanana-1.5-2.1b",
+  "modelId": "kakaocorp/kanana-1.5-2.1b-instruct-2505",
+  "modelRevision": "7df4bc35ccd610e451809d7106e1c3cf82bfd44c",
+  "authorization": "User requested selecting a candidate as quickly as possible and proceeding through training; existing approved public/game data are reused",
+  "screeningScope": {"lfm2Completed":41,"kananaCompleted":6,"kananaPlanned":41,"kananaStopped":"two_consecutive_generation_limits"},
+  "reason": "Limited Kanana outputs contain direct Korean player questions/refusals closer to the authored choice intents. LFM2 displays unrelated example copying, actor confusion and severe option-format failures. Choose Kanana for one bounded learning experiment, not as an already accepted game model.",
+  "remainingProblems": ["Neither candidate passes the game quality gate", "Kanana copies large portions of input and produces multiple JSON objects", "Some choices introduce an action already performed instead of only selecting an intent", "Kanana public correction accuracy was not measured during the interrupted screening; paired base/adapter correction evaluation will measure it", "No claim that Kanana is generally superior based on the incomplete screening"],
+  "training": {"publishedCorrectionPairs":66,"userApprovedGamePairs":6,"smokeSteps":2,"trialSteps":36,"epochs":1,"modelLoader":"AutoModelForCausalLM","loraTargets":"q_proj/v_proj attention modules, checked on the actual model before training"},
+  "gameApplied": false,
+  "modelAcceptedForDeployment": false,
+  "local180SecondTargetMeasured": false
+}

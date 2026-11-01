@@ -1,0 +1,38 @@
+{
+  "stage": "1/5",
+  "status": "published_corrections_curated_and_group_splits_fixed",
+  "reviewedCandidates": 176,
+  "acceptedBeforeEssayMatch": 115,
+  "matchedCandidates": 110,
+  "essayCount": 64,
+  "mergedGroupCount": 64,
+  "splitCounts": {
+    "train": 66,
+    "validation": 25,
+    "test": 19
+  },
+  "splitSeed": 12345,
+  "splitRatio": [
+    0.6,
+    0.2,
+    0.2
+  ],
+  "unmatched": [
+    "kolla-v2-0321",
+    "kolla-v2-0365",
+    "kolla-v2-0890",
+    "kolla-v2-0895"
+  ],
+  "ambiguous": [
+    "kolla-v2-0952"
+  ],
+  "trainingEligible": 0,
+  "newTrainingExecuted": false,
+  "authorization": "User requested public corpus curation and execution; public_train validates published consensus and agent review. Per-pair user approval is not claimed. Game answer drafts keep their existing approval gate.",
+  "sourceSha256": "d848bac8095bf4280e9c8f6bb7ef2733434cf0eb2c2977d34fd4a0eb6c061ed4",
+  "originalArchiveSha256": "dca9c56fc08705317e19f5b1cf5f5fe66e8becd1c9b38d73a504668b876a1191",
+  "reviewedDatasetSha256": "0e1b64315d7f33ba153da6c14c11f70a7900fd8c7efa6f2dd1de49f268791791",
+  "license": "GPL-3.0-or-later per Zenodo metadata; original archive includes GPLv3 and corpus copyright notice",
+  "heldOutRule": "Keep full original essays and all references together; duplicate source/target across essays merged. Do not use final test for training or hyperparameter selection.",
+  "limitation": "Exact duplicate check does not prove no paraphrases across independently authored essays; game/learner domains differ"
+}

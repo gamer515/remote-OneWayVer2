@@ -1,0 +1,139 @@
+[
+  {
+    "sourceId": "knowledge-take",
+    "sourceEventId": "loki_take_knowledge",
+    "trainingTaskIds": [
+      "knowledge-take/npc"
+    ],
+    "meaning": {
+      "coreMeaning": "로키가 이해력의 영향을 체험시키려 장난을 시작한다. 플레이어의 지식을 잠시 빼앗는 사건이지 코인을 주거나 심부름을 시키는 사건이 아니다. 코인의 개수는 대사로 설명하지 않는다.",
+      "actor": "로키",
+      "target": "여행자",
+      "stateBefore": {
+        "여행자": "정상적으로 알아듣는다",
+        "로키": "정상적으로 말하고 이해한다"
+      },
+      "stateAfter": {
+        "여행자": "지식을 잃어 말이 흐트러져 들린다",
+        "로키": "정상적으로 말하고 이해한다"
+      },
+      "dialogueTiming": "지식을 빼앗는 사건에 맞추어 말한다"
+    },
+    "approvedNpc": "그럼 잠깐 자네 지식을 빌려 보겠네. 말뜻을 알아듣는 게 얼마나 중요한지 느껴 보게.",
+    "approvedOptions": []
+  },
+  {
+    "sourceId": "garbled-listener",
+    "sourceEventId": "loki_garbled_question",
+    "trainingTaskIds": [
+      "garbled-listener/npc",
+      "garbled-listener/options",
+      "garbled-listener/option-0",
+      "garbled-listener/option-1",
+      "garbled-listener/option-2",
+      "garbled-listener/option-3"
+    ],
+    "meaning": {
+      "coreMeaning": "지식을 잃은 플레이어에게 로키가 알아듣지 못하겠느냐고 묻는다. 로키가 이해력을 잃은 것은 아니다. 플레이어가 듣는 말과 자신의 선택지 모두 발음이 흐트러지지만 뜻을 눈치챌 수 있다.",
+      "semanticText": "알아듣지 못하겠지?",
+      "actor": "로키",
+      "target": "여행자",
+      "stateBefore": {
+        "여행자": "지식을 잃어 말이 흐트러져 들린다",
+        "로키": "정상적으로 말하고 이해한다"
+      },
+      "stateAfter": {
+        "여행자": "지식을 잃은 상태가 유지된다",
+        "로키": "정상적으로 말하고 이해한다"
+      },
+      "dialogueTiming": "지식을 잃은 동안 묻는다"
+    },
+    "approvedNpc": "내에 마알이 무우슨 뜨신지 모오르겠지이?",
+    "approvedOptions": [
+      "무어라아구우?",
+      "으응, 아라써어!",
+      "으라부루라아!",
+      "자앙난 그마안! 지시익 도올려줘어!"
+    ]
+  },
+  {
+    "sourceId": "knowledge-return",
+    "sourceEventId": "loki_return_knowledge",
+    "trainingTaskIds": [
+      "knowledge-return/npc"
+    ],
+    "meaning": {
+      "coreMeaning": "로키가 빼앗은 지식을 돌려준 뒤 플레이어에게 이해력이 달라지는 경험을 체감했는지 묻는다.",
+      "actor": "로키",
+      "target": "여행자",
+      "stateBefore": {
+        "여행자": "지식을 잃어 말이 흐트러져 들린다",
+        "로키": "정상적으로 말하고 이해한다"
+      },
+      "stateAfter": {
+        "여행자": "지식을 돌려받아 정상적으로 알아듣는다",
+        "로키": "정상적으로 말하고 이해한다"
+      },
+      "dialogueTiming": "지식을 돌려준 뒤 체감한 차이를 묻는다"
+    },
+    "approvedNpc": "자, 빼앗은 지식은 돌려줬네. 아까와 지금, 내 말이 다르게 들리나?",
+    "approvedOptions": []
+  },
+  {
+    "sourceId": "identity-choice",
+    "sourceEventId": "loki_identity_choice",
+    "trainingTaskIds": [
+      "identity-choice/npc",
+      "identity-choice/options",
+      "identity-choice/option-0",
+      "identity-choice/option-1",
+      "identity-choice/option-2",
+      "identity-choice/option-3"
+    ],
+    "meaning": {
+      "coreMeaning": "로키가 플레이어의 반응을 기다린다. 신을 만난 신기함, 광산에 온 이유에 대한 질문, 무관심, 무모한 모욕이라는 각 선택 ID의 의미와 연결을 유지한다. 의도 분류는 choices의 선택 ID별 설명을 따른다.",
+      "currentState": "플레이어는 로키의 정체를 들었다. 각 선택 ID에 연결된 행동 의미와 분기를 유지한다. 태도를 버튼 위치로 추측하지 않는다."
+    },
+    "approvedNpc": "장난의 신을 마주한 소감이 어떤가, 자네?",
+    "approvedOptions": [
+      "정말 장난의 신이야? 어떤 신인데?",
+      "이 광산에는 무슨 일로 온 거야?",
+      "네 이야기에는 흥미 없어.",
+      "신이라는 작자가 참 한심하네."
+    ]
+  },
+  {
+    "sourceId": "mark-no-invented-effect",
+    "sourceEventId": "prototype_mark_intro",
+    "trainingTaskIds": [
+      "mark-no-invented-effect/npc"
+    ],
+    "meaning": {
+      "coreMeaning": "로키는 방금 준 표식을 잘 챙겨 두라고 말한다. 구체적인 용도는 아직 설명하지 않는다. 표식의 기능이나 설정을 새로 만들지 않으며 추가 아이템이나 능력도 지급하지 않는다."
+    },
+    "approvedNpc": "방금 준 표식은 잘 챙겨 두게. 잃어버리지 말고.",
+    "approvedOptions": []
+  },
+  {
+    "sourceId": "mark-choice-intents",
+    "sourceEventId": "prototype_mark_choice",
+    "trainingTaskIds": [
+      "mark-choice-intents/npc",
+      "mark-choice-intents/options",
+      "mark-choice-intents/option-0",
+      "mark-choice-intents/option-1",
+      "mark-choice-intents/option-2",
+      "mark-choice-intents/option-3"
+    ],
+    "meaning": {
+      "coreMeaning": "플레이어는 표식의 용도를 묻기, 표식을 돌려주기, 로키에 관한 질문으로 돌아가기, 선물을 간직하고 다음 설명으로 넘어가기 중 하나를 고른다. 표식이 없는 경우 앞의 두 행동은 사용할 수 없다."
+    },
+    "approvedNpc": "자, 더 물어보고 싶은 게 있나?",
+    "approvedOptions": [
+      "이 표식은 무슨 용도야?",
+      "이건 네게 돌려줄게.",
+      "너에 대해 더 알고 싶은데.",
+      "선물은 챙겼어. 다음 이야기를 해 줘."
+    ]
+  }
+]

@@ -1,0 +1,34 @@
+{
+  "stage": "2/5",
+  "reviewer": "Codex",
+  "humanReviewed": false,
+  "trainingPairs": 66,
+  "optimizerSteps": 33,
+  "epochs": 1,
+  "validationPairs": 25,
+  "requests": 50,
+  "exactTargetCount": {"base": 5, "adapter": 8},
+  "totalCharacterEditDistance": {"base": 95, "adapter": 52},
+  "interpretation": "Partial reduction of unnecessary wording/register changes; not evidence of broad Korean grammar or game meaning improvement",
+  "newExactMatches": [
+    {"id": "kolla-v2-0272", "finding": "Both fix weekday and particle; adapter preserves 해요 instead of changing to 합니다"},
+    {"id": "kolla-v2-0282", "finding": "Both fix 점심; adapter preserves 먹어요 instead of changing to 먹습니다"},
+    {"id": "kolla-v2-0986", "finding": "Both fix 위해; adapter preserves 해요 instead of changing to 합니다"}
+  ],
+  "remainingFailures": [
+    {"id": "kolla-v2-0061", "finding": "Both retain awkward 저 시간이 and duplicate subject"},
+    {"id": "kolla-v2-0339", "finding": "Neither produces the intended 찍어 보내세요 construction"},
+    {"id": "kolla-v2-0537", "finding": "Both leave the incorrect object/topic particle"},
+    {"id": "kolla-v2-0830", "finding": "Both retain misspellings 켐파스 and 좋용"},
+    {"id": "kolla-v2-0979", "finding": "Both change 자려면 into 자면, weakening the purpose/condition relation"},
+    {"id": "kolla-v2-1015", "finding": "Both fail to recover 왼손잡이/오른손잡이 and produce unintelligible wording"},
+    {"id": "kolla-v2-1088", "finding": "Base invents a suggestion; adapter avoids the suggestion but leaves an incorrect location particle"},
+    {"id": "kolla-v2-1281", "finding": "Both leave 새상 instead of 세상"},
+    {"id": "kolla-v2-1354", "finding": "Both change finding Korean identity into feeling Korean identity"}
+  ],
+  "acceptableAlternatives": ["여자 동생→여동생", "두 시→2시", "책상하고 책꽂이가 있어요→책상도 있고 책꽂이도 있어요"],
+  "qualityAcceptedForGame": false,
+  "finalTestEvaluated": false,
+  "local180SecondTargetMeasured": false,
+  "nextAction": "Keep presentation frozen; isolate prompt context causes before proposing game-specific reviewed training; do not automatically add failed outputs"
+}

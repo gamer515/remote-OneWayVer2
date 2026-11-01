@@ -121,7 +121,7 @@ def train(folder, run, mode, checkpoint=None, adapter=None):
     parent_revision = read_json(Path(adapter) / "provenance.json")["modelRevision"] if adapter else None
     config, lock, tokenizer, encoded = prepare(folder, run, revision_override=parent_revision)
     import torch
-    from transformers import BitsAndBytesConfig, Gemma3ForConditionalGeneration, Trainer, TrainerCallback, TrainingArguments, set_seed
+    from transformers import AutoModelForCausalLM, BitsAndBytesConfig, Gemma3ForConditionalGeneration, Trainer, TrainerCallback, TrainingArguments, set_seed
     from peft import LoraConfig, PeftModel, get_peft_model, prepare_model_for_kbit_training
 
     if not torch.cuda.is_available():
@@ -166,7 +166,9 @@ def train(folder, run, mode, checkpoint=None, adapter=None):
     torch.cuda.reset_peak_memory_stats()
     started = time.perf_counter()
     quant = BitsAndBytesConfig(load_in_4bit=True, bnb_4bit_quant_type="nf4", bnb_4bit_use_double_quant=True, bnb_4bit_compute_dtype=dtype)
-    model = Gemma3ForConditionalGeneration.from_pretrained(lock["modelId"], revision=lock["modelRevision"],
+    loaders = {"Gemma3ForConditionalGeneration": Gemma3ForConditionalGeneration, "AutoModelForCausalLM": AutoModelForCausalLM}
+    loader = loaders[config.get("modelLoader", "Gemma3ForConditionalGeneration")]
+    model = loader.from_pretrained(lock["modelId"], revision=lock["modelRevision"],
         quantization_config=quant, torch_dtype=dtype, device_map={"": 0}, attn_implementation="eager")
     model.config.use_cache = False
     model = prepare_model_for_kbit_training(model, use_gradient_checkpointing=True,

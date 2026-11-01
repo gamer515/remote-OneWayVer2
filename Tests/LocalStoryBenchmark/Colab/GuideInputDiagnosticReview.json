@@ -1,0 +1,125 @@
+{
+  "experimentId": "guide-input-diagnostic-20261031-v1",
+  "sourceSha256": "638d352b1dddc1ba27ca69d45aa2a7c7a97cbf45450fcb0712d173cbaf1a354e",
+  "reviewer": "Codex",
+  "userReviewedRatings": false,
+  "rows": [
+    {
+      "caseId": "knowledge-take",
+      "seed": 12345,
+      "variant": "original",
+      "structurePassed": false,
+      "allRequirementsPassed": false,
+      "reviewerNote": "입력·앞 대사·등불 예시를 복사하고 지식 반환까지 임의 진행한다. 여러 JSON과 미완성 출력."
+    },
+    {
+      "caseId": "knowledge-take",
+      "seed": 12345,
+      "variant": "compact",
+      "structurePassed": false,
+      "allRequirementsPassed": false,
+      "reviewerNote": "지식 회수 대신 광산과 목적을 묻고 원래 없는 선택지 세 개를 만든다."
+    },
+    {
+      "caseId": "knowledge-take",
+      "seed": 67890,
+      "variant": "original",
+      "structurePassed": false,
+      "allRequirementsPassed": false,
+      "reviewerNote": "지식 회수를 로키가 여행자에게 지식을 빌려주는 사건으로 바꾸고 삼인칭 서술을 반복한다."
+    },
+    {
+      "caseId": "knowledge-take",
+      "seed": 67890,
+      "variant": "compact",
+      "structurePassed": false,
+      "allRequirementsPassed": false,
+      "reviewerNote": "지식 회수 표현은 일부 있으나 사건과 말투가 불안정하고 원래 없는 선택지 세 개를 만든다."
+    },
+    {
+      "caseId": "garbled-listener",
+      "seed": 12345,
+      "variant": "original",
+      "structurePassed": false,
+      "allRequirementsPassed": false,
+      "reviewerNote": "뜻이 알아듣지 못하겠지에서 들리느냐는 질문으로 달라지고 네 선택지를 한 개로 줄인다."
+    },
+    {
+      "caseId": "garbled-listener",
+      "seed": 12345,
+      "variant": "compact",
+      "structurePassed": true,
+      "allRequirementsPassed": false,
+      "reviewerNote": "semanticText 알아듣지 못하겠지?의 뜻과 네 문자열 선택지는 유지하지만 NPC 대사를 정상 문장으로 출력해 의도적 난독을 잃는다. 반환 요청에서 장난 중단과 지식 대상을 명시하는 정도도 약해졌다."
+    },
+    {
+      "caseId": "garbled-listener",
+      "seed": 67890,
+      "variant": "original",
+      "structurePassed": false,
+      "allRequirementsPassed": false,
+      "reviewerNote": "뜻이 알아듣지 못하겠지에서 들리느냐는 질문으로 달라지고 네 선택지를 한 개로 줄인다."
+    },
+    {
+      "caseId": "garbled-listener",
+      "seed": 67890,
+      "variant": "compact",
+      "structurePassed": true,
+      "allRequirementsPassed": false,
+      "reviewerNote": "semanticText 알아듣지 못하겠지?의 뜻과 네 문자열 선택지는 유지하지만 NPC 대사를 정상 문장으로 출력해 의도적 난독을 잃는다. 반환 요청에서 장난 중단과 지식 대상을 명시하는 정도도 약해졌다."
+    },
+    {
+      "caseId": "identity-choice",
+      "seed": 12345,
+      "variant": "original",
+      "structurePassed": false,
+      "allRequirementsPassed": false,
+      "reviewerNote": "NPC 질문이 바뀌고 정체 질문을 감탄으로, 신에 대한 모욕을 단순 퇴거 요구로 바꾼다. JSON 문법도 실패."
+    },
+    {
+      "caseId": "identity-choice",
+      "seed": 12345,
+      "variant": "compact",
+      "structurePassed": false,
+      "allRequirementsPassed": false,
+      "reviewerNote": "플레이어 반응을 NPC text로 출력하고 카드 세 개를 만든다. 선택 순서가 바뀌고 원래 질문과 모욕 의도도 달라진다."
+    },
+    {
+      "caseId": "identity-choice",
+      "seed": 67890,
+      "variant": "original",
+      "structurePassed": false,
+      "allRequirementsPassed": false,
+      "reviewerNote": "NPC가 여행자의 방문 목적을 묻는 다른 사건으로 바뀐다. 정체 질문·모욕 의도도 바뀌고 JSON 문법이 실패한다."
+    },
+    {
+      "caseId": "identity-choice",
+      "seed": 67890,
+      "variant": "compact",
+      "structurePassed": false,
+      "allRequirementsPassed": false,
+      "reviewerNote": "선택지 원문을 슬래시로 이어 NPC 대사와 단일 선택지로 복사한다. NPC 질문·네 선택지 수와 의도를 지키지 못한다."
+    }
+  ],
+  "summary": {
+    "original": {
+      "formatPassed": 0,
+      "allRequirementsPassed": 0,
+      "count": 6
+    },
+    "compact": {
+      "formatPassed": 2,
+      "allRequirementsPassed": 0,
+      "count": 6
+    }
+  },
+  "decision": "Do not apply compact prompt or adapter to presentation. Input simplification alone did not meet task requirements. Preserve garbled meaning and deliberate pronunciation together.",
+  "limitations": [
+    "Guide was used in training: diagnostic only, not generalization",
+    "Combined instruction shortening, context removal and option field renaming; cannot isolate length causality",
+    "No runtime GBNF and no local scene timing measurement"
+  ],
+  "trainingAdded": 0,
+  "frozenFilesVerified": 99,
+  "presentationChanged": false
+}

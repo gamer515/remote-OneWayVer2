@@ -1,0 +1,144 @@
+{
+  "modelId": "K-intelligence/Midm-2.0-Mini-Instruct",
+  "modelRevision": "383eb221c52a32278f1985257b264ade8d982e60",
+  "adapter": "none",
+  "seeds": [
+    12345,
+    67890
+  ],
+  "sampling": {
+    "temperature": 0.7,
+    "top_p": 0.8,
+    "top_k": 20,
+    "min_p": 0.0
+  },
+  "experimentId": "midm-role-split-20261101-v2",
+  "variants": [
+    "separated"
+  ],
+  "cases": [
+    {
+      "id": "knowledge-take-npc",
+      "sourceId": "knowledge-take",
+      "task": "npc",
+      "outputKind": "npcText",
+      "limits": {
+        "maxCards": 3,
+        "textMaxChars": 160,
+        "optionMaxChars": 45,
+        "maxOutputTokens": 1400
+      },
+      "maxNewTokens": 352,
+      "separatedMessages": [
+        {
+          "role": "user",
+          "content": "NPC 대사 한 문장만 바꿔 써라. reference와 Explanation 의미를 보존하고 인물 말투를 유지한다. actor와 target, 사건 전후 상태를 바꾸거나 이번 사건 다음으로 진행하지 않는다. 선택지·JSON·해설·이름 접두사를 출력하지 말고 실제 대사만 출력한다. 새 설정이나 보상을 추가하지 않는다. speechMode가 garbled면 semanticText의 뜻을 그대로 유지하면서 눈치챌 수 있는 난독 발음으로 쓴다. 로키는 정상이고 말을 이해하지 못하는 사람은 여행자다.\n{\"characters\":[{\"id\":\"Guide\",\"name\":\"로키\",\"role\":\"장난의 신 / 첫 안내자\",\"personality\":\"장난스럽고 신의 위엄을 내세운다. 모욕을 기억하며 같은 지형에서 여러 번 모습을 드러낼 수 있다.\",\"speechStyle\":\"여행자를 자네라고 부르며 자연스러운 반말 또는 하게체를 쓴다.\",\"publicFacts\":[],\"unlockedFacts\":[]}],\"scene\":{\"purpose\":\"왕국 광산에서 로키와 대화하며 지식이 이해력에 미치는 영향을 직접 체험하고, 로키의 정체를 들은 뒤 플레이어가 반응한다.\",\"facts\":[\"장소는 왕국 전용 광산이다. 자유로운 출입이 허용된 곳은 아니다.\",\"로키는 장난의 신이며 플레이어는 여행자다.\",\"로키는 적적해서 왕국 광산을 거닐다 플레이어를 만났다.\",\"이번 사건은 지식을 잠시 빼앗았다 돌려주는 장난이다. 실제 새 능력이나 보상의 지급은 이 장면에 없다.\"],\"style\":\"로키는 능청스럽고 장난스럽다. 플레이어를 자네라고 부른다. 자연스러운 반말 또는 하게체를 쓴다. 로키는 광산과 자신의 정체를 알고 있다.\",\"rules\":[\"말하는 로키의 이해력은 정상이다. 지식 장난으로 말을 못 알아듣는 쪽은 듣는 플레이어다. 난독은 플레이어 귀에 들리는 발음이다.\"]},\"memory\":{\"mode\":\"None\",\"facts\":[]},\"previousEvents\":[\"현재 장소는 왕국 전용 광산이며 플레이어의 자유로운 출입이 허용되지 않는다.\"],\"npc_line\":{\"coreMeaning\":\"로키가 이해력의 영향을 체험시키려 장난을 시작한다. 플레이어의 지식을 잠시 빼앗는 사건이지 코인을 주거나 심부름을 시키는 사건이 아니다. 코인의 개수는 대사로 설명하지 않는다.\",\"speaker\":\"로키\",\"listener\":\"여행자\",\"purpose\":\"로키가 여행자를 놀리며 이해력의 차이를 직접 겪게 하는 장난을 시작한다. 같은 사건을 새 대사로 표현한다.\",\"speechMode\":\"normal\",\"semanticText\":null,\"actor\":\"로키\",\"target\":\"여행자\",\"stateBefore\":{\"여행자\":\"정상적으로 알아듣는다\",\"로키\":\"정상적으로 말하고 이해한다\"},\"stateAfter\":{\"여행자\":\"지식을 잃어 말이 흐트러져 들린다\",\"로키\":\"정상적으로 말하고 이해한다\"},\"dialogueTiming\":\"지식을 빼앗는 사건에 맞추어 말한다\",\"reference\":\"그럼 잠깐 자네 지식을 빌려 보겠네. 말뜻을 알아듣는 게 얼마나 중요한지 느껴 보게.\"}}"
+        }
+      ],
+      "approvedReference": "그럼 잠깐 자네 지식을 빌려 보겠네. 말뜻을 알아듣는 게 얼마나 중요한지 느껴 보게."
+    },
+    {
+      "id": "garbled-listener-npc",
+      "sourceId": "garbled-listener",
+      "task": "npc",
+      "outputKind": "npcText",
+      "limits": {
+        "maxCards": 3,
+        "textMaxChars": 160,
+        "optionMaxChars": 45,
+        "maxOutputTokens": 1400
+      },
+      "maxNewTokens": 672,
+      "separatedMessages": [
+        {
+          "role": "user",
+          "content": "NPC 대사 한 문장만 바꿔 써라. reference와 Explanation 의미를 보존하고 인물 말투를 유지한다. actor와 target, 사건 전후 상태를 바꾸거나 이번 사건 다음으로 진행하지 않는다. 선택지·JSON·해설·이름 접두사를 출력하지 말고 실제 대사만 출력한다. 새 설정이나 보상을 추가하지 않는다. speechMode가 garbled면 semanticText의 뜻을 그대로 유지하면서 눈치챌 수 있는 난독 발음으로 쓴다. 로키는 정상이고 말을 이해하지 못하는 사람은 여행자다.\n{\"characters\":[{\"id\":\"Guide\",\"name\":\"로키\",\"role\":\"장난의 신 / 첫 안내자\",\"personality\":\"장난스럽고 신의 위엄을 내세운다. 모욕을 기억하며 같은 지형에서 여러 번 모습을 드러낼 수 있다.\",\"speechStyle\":\"여행자를 자네라고 부르며 자연스러운 반말 또는 하게체를 쓴다.\",\"publicFacts\":[],\"unlockedFacts\":[]}],\"scene\":{\"purpose\":\"왕국 광산에서 로키와 대화하며 지식이 이해력에 미치는 영향을 직접 체험하고, 로키의 정체를 들은 뒤 플레이어가 반응한다.\",\"facts\":[\"장소는 왕국 전용 광산이다. 자유로운 출입이 허용된 곳은 아니다.\",\"로키는 장난의 신이며 플레이어는 여행자다.\",\"로키는 적적해서 왕국 광산을 거닐다 플레이어를 만났다.\",\"이번 사건은 지식을 잠시 빼앗았다 돌려주는 장난이다. 실제 새 능력이나 보상의 지급은 이 장면에 없다.\"],\"style\":\"로키는 능청스럽고 장난스럽다. 플레이어를 자네라고 부른다. 자연스러운 반말 또는 하게체를 쓴다. 로키는 광산과 자신의 정체를 알고 있다.\",\"rules\":[\"말하는 로키의 이해력은 정상이다. 지식 장난으로 말을 못 알아듣는 쪽은 듣는 플레이어다. 난독은 플레이어 귀에 들리는 발음이다.\"]},\"memory\":{\"mode\":\"None\",\"facts\":[]},\"previousEvents\":[\"현재 장소는 왕국 전용 광산이며 플레이어의 자유로운 출입이 허용되지 않는다.\",\"로키가 이해력의 영향을 체험시키려 장난을 시작한다. 플레이어의 지식을 잠시 빼앗는 사건이지 코인을 주거나 심부름을 시키는 사건이 아니다. 코인의 개수는 대사로 설명하지 않는다.\"],\"npc_line\":{\"coreMeaning\":\"지식을 잃은 플레이어에게 로키가 알아듣지 못하겠느냐고 묻는다. 로키가 이해력을 잃은 것은 아니다. 플레이어가 듣는 말과 자신의 선택지 모두 발음이 흐트러지지만 뜻을 눈치챌 수 있다.\",\"speaker\":\"로키\",\"listener\":\"여행자\",\"purpose\":\"알아듣지 못하겠느냐는 로키의 질문과 플레이어의 네 반응을 눈치챌 수 있는 새로운 난독 발음으로 쓴다.\",\"speechMode\":\"garbled\",\"semanticText\":\"알아듣지 못하겠지?\",\"actor\":\"로키\",\"target\":\"여행자\",\"stateBefore\":{\"여행자\":\"지식을 잃어 말이 흐트러져 들린다\",\"로키\":\"정상적으로 말하고 이해한다\"},\"stateAfter\":{\"여행자\":\"지식을 잃은 상태가 유지된다\",\"로키\":\"정상적으로 말하고 이해한다\"},\"dialogueTiming\":\"지식을 잃은 동안 묻는다\",\"reference\":\"내에 마알이 무우슨 뜨신지 모오르겠지이?\"}}"
+        }
+      ],
+      "approvedReference": "내에 마알이 무우슨 뜨신지 모오르겠지이?"
+    },
+    {
+      "id": "garbled-listener-options",
+      "sourceId": "garbled-listener",
+      "task": "options",
+      "outputKind": "playerOptions",
+      "optionCount": 4,
+      "limits": {
+        "maxCards": 3,
+        "textMaxChars": 160,
+        "optionMaxChars": 45,
+        "maxOutputTokens": 1400
+      },
+      "maxNewTokens": 672,
+      "separatedMessages": [
+        {
+          "role": "user",
+          "content": "플레이어 여행자가 로키에게 하는 응답 네 개만 바꿔 써라. player_response_specs의 intent와 순서를 유지한다. reference가 intent와 다르게 읽히면 intent를 따른다. 질문·이해·무관심·모욕·거절을 서로 바꾸지 않는다. NPC 대사나 해설을 쓰지 않는다. 출력은 실제 응답 문자열 네 개의 JSON 배열 하나다. 명세 객체와 분류명은 출력하지 않는다. 새 사건·행동 완료·보상은 추가하지 않는다. speechMode가 garbled면 선택지 뜻을 알아볼 수 있는 난독 발음으로 쓰고, 뜻 없는 중얼거림 의도는 그대로 보존한다.\n{\"characters\":[{\"id\":\"Guide\",\"name\":\"로키\",\"role\":\"장난의 신 / 첫 안내자\",\"personality\":\"장난스럽고 신의 위엄을 내세운다. 모욕을 기억하며 같은 지형에서 여러 번 모습을 드러낼 수 있다.\",\"speechStyle\":\"여행자를 자네라고 부르며 자연스러운 반말 또는 하게체를 쓴다.\",\"publicFacts\":[],\"unlockedFacts\":[]}],\"scene\":{\"purpose\":\"왕국 광산에서 로키와 대화하며 지식이 이해력에 미치는 영향을 직접 체험하고, 로키의 정체를 들은 뒤 플레이어가 반응한다.\",\"facts\":[\"장소는 왕국 전용 광산이다. 자유로운 출입이 허용된 곳은 아니다.\",\"로키는 장난의 신이며 플레이어는 여행자다.\",\"로키는 적적해서 왕국 광산을 거닐다 플레이어를 만났다.\",\"이번 사건은 지식을 잠시 빼앗았다 돌려주는 장난이다. 실제 새 능력이나 보상의 지급은 이 장면에 없다.\"],\"style\":\"로키는 능청스럽고 장난스럽다. 플레이어를 자네라고 부른다. 자연스러운 반말 또는 하게체를 쓴다. 로키는 광산과 자신의 정체를 알고 있다.\",\"rules\":[\"말하는 로키의 이해력은 정상이다. 지식 장난으로 말을 못 알아듣는 쪽은 듣는 플레이어다. 난독은 플레이어 귀에 들리는 발음이다.\"]},\"memory\":{\"mode\":\"None\",\"facts\":[]},\"previousEvents\":[\"현재 장소는 왕국 전용 광산이며 플레이어의 자유로운 출입이 허용되지 않는다.\",\"로키가 이해력의 영향을 체험시키려 장난을 시작한다. 플레이어의 지식을 잠시 빼앗는 사건이지 코인을 주거나 심부름을 시키는 사건이 아니다. 코인의 개수는 대사로 설명하지 않는다.\"],\"context\":{\"coreMeaning\":\"지식을 잃은 플레이어에게 로키가 알아듣지 못하겠느냐고 묻는다. 로키가 이해력을 잃은 것은 아니다. 플레이어가 듣는 말과 자신의 선택지 모두 발음이 흐트러지지만 뜻을 눈치챌 수 있다.\",\"speaker\":\"로키\",\"listener\":\"여행자\",\"purpose\":\"알아듣지 못하겠느냐는 로키의 질문과 플레이어의 네 반응을 눈치챌 수 있는 새로운 난독 발음으로 쓴다.\",\"speechMode\":\"garbled\",\"semanticText\":\"알아듣지 못하겠지?\",\"actor\":\"로키\",\"target\":\"여행자\",\"stateBefore\":{\"여행자\":\"지식을 잃어 말이 흐트러져 들린다\",\"로키\":\"정상적으로 말하고 이해한다\"},\"stateAfter\":{\"여행자\":\"지식을 잃은 상태가 유지된다\",\"로키\":\"정상적으로 말하고 이해한다\"},\"dialogueTiming\":\"지식을 잃은 동안 묻는다\"},\"player_response_specs\":[{\"index\":0,\"speaker\":\"여행자\",\"listener\":\"로키\",\"intent\":\"무슨 말인지 모르겠다고 되묻는다\",\"reference\":\"머라구우?\"},{\"index\":1,\"speaker\":\"여행자\",\"listener\":\"로키\",\"intent\":\"뜻을 알겠다는 반응을 보인다\",\"reference\":\"으응, 아라써어!\"},{\"index\":2,\"speaker\":\"여행자\",\"listener\":\"로키\",\"intent\":\"뜻을 알 수 없는 중얼거림으로 반응한다\",\"reference\":\"우라부루루!\"},{\"index\":3,\"speaker\":\"여행자\",\"listener\":\"로키\",\"intent\":\"장난을 그만하고 빼앗은 지식을 돌려달라고 요구한다\",\"reference\":\"그마안! 다씨 도려주우!\"}]}"
+        }
+      ],
+      "approvedReference": [
+        "무어라아구우?",
+        "으응, 아라써어!",
+        "으라부루라아!",
+        "자앙난 그마안! 지시익 도올려줘어!"
+      ]
+    },
+    {
+      "id": "identity-choice-npc",
+      "sourceId": "identity-choice",
+      "task": "npc",
+      "outputKind": "npcText",
+      "limits": {
+        "maxCards": 3,
+        "textMaxChars": 160,
+        "optionMaxChars": 45,
+        "maxOutputTokens": 1400
+      },
+      "maxNewTokens": 672,
+      "separatedMessages": [
+        {
+          "role": "user",
+          "content": "NPC 대사 한 문장만 바꿔 써라. reference와 Explanation 의미를 보존하고 인물 말투를 유지한다. actor와 target, 사건 전후 상태를 바꾸거나 이번 사건 다음으로 진행하지 않는다. 선택지·JSON·해설·이름 접두사를 출력하지 말고 실제 대사만 출력한다. 새 설정이나 보상을 추가하지 않는다. speechMode가 garbled면 semanticText의 뜻을 그대로 유지하면서 눈치챌 수 있는 난독 발음으로 쓴다. 로키는 정상이고 말을 이해하지 못하는 사람은 여행자다.\n{\"characters\":[{\"id\":\"Guide\",\"name\":\"로키\",\"role\":\"장난의 신 / 첫 안내자\",\"personality\":\"장난스럽고 신의 위엄을 내세운다. 모욕을 기억하며 같은 지형에서 여러 번 모습을 드러낼 수 있다.\",\"speechStyle\":\"여행자를 자네라고 부르며 자연스러운 반말 또는 하게체를 쓴다.\",\"publicFacts\":[],\"unlockedFacts\":[]}],\"scene\":{\"purpose\":\"왕국 광산에서 로키와 대화하며 지식이 이해력에 미치는 영향을 직접 체험하고, 로키의 정체를 들은 뒤 플레이어가 반응한다.\",\"facts\":[\"장소는 왕국 전용 광산이다. 자유로운 출입이 허용된 곳은 아니다.\",\"로키는 장난의 신이며 플레이어는 여행자다.\",\"로키는 적적해서 왕국 광산을 거닐다 플레이어를 만났다.\",\"이번 사건은 지식을 잠시 빼앗았다 돌려주는 장난이다. 실제 새 능력이나 보상의 지급은 이 장면에 없다.\"],\"style\":\"로키는 능청스럽고 장난스럽다. 플레이어를 자네라고 부른다. 자연스러운 반말 또는 하게체를 쓴다. 로키는 광산과 자신의 정체를 알고 있다.\",\"rules\":[\"말하는 로키의 이해력은 정상이다. 지식 장난으로 말을 못 알아듣는 쪽은 듣는 플레이어다. 난독은 플레이어 귀에 들리는 발음이다.\"]},\"memory\":{\"mode\":\"None\",\"facts\":[]},\"previousEvents\":[\"로키가 빼앗은 지식을 돌려준 뒤 플레이어에게 이해력이 달라지는 경험을 체감했는지 묻는다.\",\"로키는 장난의 신이며 적적해서 왕국의 광산을 거닐고 있었다. 첫 만남에는 정체를 밝히고 재회에는 이미 알려진 정체를 자연스럽게 상기시킨다.\"],\"npc_line\":{\"coreMeaning\":\"로키가 플레이어의 반응을 기다린다. 신을 만난 신기함, 광산에 온 이유에 대한 질문, 무관심, 무모한 모욕이라는 각 선택 ID의 의미와 연결을 유지한다. 의도 분류는 choices의 선택 ID별 설명을 따른다.\",\"speaker\":\"로키\",\"listener\":\"여행자\",\"purpose\":\"로키가 반응을 기다리는 대사와 각 선택 ID에 설명된 의도를 표현하는 새 응답을 쓴다. 분류명은 실제 선택지에 붙이지 않는다.\",\"currentState\":\"플레이어는 로키의 정체를 들었다. 각 선택 ID에 연결된 행동 의미와 분기를 유지한다. 태도를 버튼 위치로 추측하지 않는다.\",\"speechMode\":\"normal\",\"semanticText\":null,\"reference\":\"장난의 신을 마주한 소감이 어떤가, 자네?\"}}"
+        }
+      ],
+      "approvedReference": "장난의 신을 마주한 소감이 어떤가, 자네?"
+    },
+    {
+      "id": "identity-choice-options",
+      "sourceId": "identity-choice",
+      "task": "options",
+      "outputKind": "playerOptions",
+      "optionCount": 4,
+      "limits": {
+        "maxCards": 3,
+        "textMaxChars": 160,
+        "optionMaxChars": 45,
+        "maxOutputTokens": 1400
+      },
+      "maxNewTokens": 672,
+      "separatedMessages": [
+        {
+          "role": "user",
+          "content": "플레이어 여행자가 로키에게 하는 응답 네 개만 바꿔 써라. player_response_specs의 intent와 순서를 유지한다. reference가 intent와 다르게 읽히면 intent를 따른다. 질문·이해·무관심·모욕·거절을 서로 바꾸지 않는다. NPC 대사나 해설을 쓰지 않는다. 출력은 실제 응답 문자열 네 개의 JSON 배열 하나다. 명세 객체와 분류명은 출력하지 않는다. 새 사건·행동 완료·보상은 추가하지 않는다. speechMode가 garbled면 선택지 뜻을 알아볼 수 있는 난독 발음으로 쓰고, 뜻 없는 중얼거림 의도는 그대로 보존한다.\n{\"characters\":[{\"id\":\"Guide\",\"name\":\"로키\",\"role\":\"장난의 신 / 첫 안내자\",\"personality\":\"장난스럽고 신의 위엄을 내세운다. 모욕을 기억하며 같은 지형에서 여러 번 모습을 드러낼 수 있다.\",\"speechStyle\":\"여행자를 자네라고 부르며 자연스러운 반말 또는 하게체를 쓴다.\",\"publicFacts\":[],\"unlockedFacts\":[]}],\"scene\":{\"purpose\":\"왕국 광산에서 로키와 대화하며 지식이 이해력에 미치는 영향을 직접 체험하고, 로키의 정체를 들은 뒤 플레이어가 반응한다.\",\"facts\":[\"장소는 왕국 전용 광산이다. 자유로운 출입이 허용된 곳은 아니다.\",\"로키는 장난의 신이며 플레이어는 여행자다.\",\"로키는 적적해서 왕국 광산을 거닐다 플레이어를 만났다.\",\"이번 사건은 지식을 잠시 빼앗았다 돌려주는 장난이다. 실제 새 능력이나 보상의 지급은 이 장면에 없다.\"],\"style\":\"로키는 능청스럽고 장난스럽다. 플레이어를 자네라고 부른다. 자연스러운 반말 또는 하게체를 쓴다. 로키는 광산과 자신의 정체를 알고 있다.\",\"rules\":[\"말하는 로키의 이해력은 정상이다. 지식 장난으로 말을 못 알아듣는 쪽은 듣는 플레이어다. 난독은 플레이어 귀에 들리는 발음이다.\"]},\"memory\":{\"mode\":\"None\",\"facts\":[]},\"previousEvents\":[\"로키가 빼앗은 지식을 돌려준 뒤 플레이어에게 이해력이 달라지는 경험을 체감했는지 묻는다.\",\"로키는 장난의 신이며 적적해서 왕국의 광산을 거닐고 있었다. 첫 만남에는 정체를 밝히고 재회에는 이미 알려진 정체를 자연스럽게 상기시킨다.\"],\"context\":{\"coreMeaning\":\"로키가 플레이어의 반응을 기다린다. 신을 만난 신기함, 광산에 온 이유에 대한 질문, 무관심, 무모한 모욕이라는 각 선택 ID의 의미와 연결을 유지한다. 의도 분류는 choices의 선택 ID별 설명을 따른다.\",\"speaker\":\"로키\",\"listener\":\"여행자\",\"purpose\":\"로키가 반응을 기다리는 대사와 각 선택 ID에 설명된 의도를 표현하는 새 응답을 쓴다. 분류명은 실제 선택지에 붙이지 않는다.\",\"currentState\":\"플레이어는 로키의 정체를 들었다. 각 선택 ID에 연결된 행동 의미와 분기를 유지한다. 태도를 버튼 위치로 추측하지 않는다.\",\"speechMode\":\"normal\",\"semanticText\":null},\"player_response_specs\":[{\"index\":0,\"speaker\":\"여행자\",\"listener\":\"로키\",\"intent\":\"로키가 장난의 신이라는 설명에 관심을 보이며 정체를 더 묻는다\",\"reference\":\"진짜 신이구나. 신기하네!\"},{\"index\":1,\"speaker\":\"여행자\",\"listener\":\"로키\",\"intent\":\"현재 장소인 광산에 관해 묻는다\",\"reference\":\"왜 이 광산에 있는 거야?\"},{\"index\":2,\"speaker\":\"여행자\",\"listener\":\"로키\",\"intent\":\"로키의 설명에 관심 없다는 태도로 응답한다\",\"reference\":\"관심없어.\"},{\"index\":3,\"speaker\":\"여행자\",\"listener\":\"로키\",\"intent\":\"로키를 모욕하는 응답을 한다\",\"reference\":\"꺼져!\"}]}"
+        }
+      ],
+      "approvedReference": [
+        "정말 장난의 신이야? 어떤 신인데?",
+        "이 광산에는 무슨 일로 온 거야?",
+        "네 이야기에는 흥미 없어.",
+        "신이라는 작자가 참 한심하네."
+      ]
+    }
+  ],
+  "limitations": [
+    "Guide is already trained: diagnostic only",
+    "Different output tasks: plain NPC line versus four-string JSON; format rate not directly comparable to combined cards",
+    "Source meaning/state and model/adapter/sampling unchanged; instruction and context differ",
+    "No additional training, runtime GBNF, or local whole-scene timing"
+  ],
+  "adapterEnabled": false,
+  "sameBaseAsRun": false,
+  "license": "MIT",
+  "officialSource": "https://huggingface.co/K-intelligence/Midm-2.0-Mini-Instruct",
+  "compatibilityAdjustment": "Do not request unused token_type_ids; same rendered prompt and token IDs. v1 stopped before generation."
+}

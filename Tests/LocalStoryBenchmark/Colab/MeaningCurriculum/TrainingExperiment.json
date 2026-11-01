@@ -1,0 +1,36 @@
+{
+  "experimentId": "gemma-meaning-curriculum-20261101-v1",
+  "modelId": "google/gemma-3-4b-it",
+  "modelRevision": "093f9f388b31de276ce2de164bdc2081324b9767",
+  "existingSourcePairs": 6,
+  "approvedNormalRenderings": 5,
+  "tasks": 31,
+  "taskBreakdown": {
+    "approvedSourceProjections": 21,
+    "approvedNormalSurfaceTasks": 5,
+    "approvedGarbledSurfaceCompanions": 5
+  },
+  "newPhrasesInvented": 0,
+  "independentTrainingSceneGroups": 1,
+  "trainingGroups": [
+    "guide-family"
+  ],
+  "sceneHeldoutValidationTasks": 4,
+  "finalTestGroupExcluded": "duelist-family",
+  "trialOptimizerSteps": 64,
+  "checkpointSelection": "Use actually retained intermediate and final checkpoints; record exact steps with result",
+  "parentAdapter": "gemma-role-task-training-20261101-v1/trial/adapter",
+  "continuation": "warmstart: new optimizer; not exact resume",
+  "selectionRule": "Prefer heldout meaning/event/intent preservation; reject regressions. Shape alone does not qualify. No new model candidates.",
+  "trainingExecuted": true,
+  "presentationChanged": false,
+  "gameApplied": false,
+  "local180SecondTargetMeasured": false,
+  "executionStatus": "Gemma warmstart running; passed step 32/64",
+  "plannedCheckpointSelection": [
+    32,
+    64
+  ],
+  "checkpointRetention": 2,
+  "checkpointSelectionReason": "Inherited saveTotalLimit=2 retains only the latest two; do not claim checkpoint 32 was evaluated if it has been deleted"
+}

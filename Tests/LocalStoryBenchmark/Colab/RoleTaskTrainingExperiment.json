@@ -1,0 +1,39 @@
+{
+  "experimentId": "gemma-role-task-training-20261101-v1",
+  "originalApprovedPairs": 6,
+  "derivedTrainingTasks": 9,
+  "independentTrainingSceneGroups": 1,
+  "trainingGroups": [
+    "guide-family"
+  ],
+  "heldOutValidationTasks": 4,
+  "heldOutValidationGroups": [
+    "gambler-family"
+  ],
+  "finalTestGroupUntouched": "duelist-family",
+  "optimizerSteps": 36,
+  "modelId": "google/gemma-3-4b-it",
+  "modelRevision": "093f9f388b31de276ce2de164bdc2081324b9767",
+  "modelSource": "Existing Gemma MixedComparison.json; no new candidate selection",
+  "freshAdapterFromPinnedGemmaBase": true,
+  "publicCorrectionTrainingInThisExperiment": false,
+  "sourceFiles": {
+    "TrainingPairs.jsonl": "f298b69171262ad97e050ce260cffbb6071f68714c7ec1bf6b5375fc1eb874e4",
+    "CurrentInputCandidates.json": "e5becf29374a4e6e1451198f0f4a2f61f7a6c202245a30de5bdacbed806a5e56",
+    "DatasetSplitPlan.json": "b39c15fbf79300cb47b6e9ca7f4cdfed3ed1c095236a372814a4b88a4c04f7d2",
+    "TrainingBaseline.json": "6e375f55b4bfad925b17527fd1fc4bd387a1c129801dc821c681f2cf576066f2",
+    "experiment.json": "a92e470dfdef06022e472ac0776d8ac657f1a89fb39a3721c4ff93618f097eeb"
+  },
+  "answerTransformation": "Extract exactly approved text or JSON-serialize exactly approved options, no rewriting",
+  "inputTransformation": "Remove examples, reference answers and unrelated full-scene fields; preserve supplied meaning/actor/state/intents/memory/previousEvents. Empty Explanation retains Story reference.",
+  "comparisonScope": "One deterministic base/adapter check of 5 known training tasks and 4 scene-heldout validation tasks, not candidate ranking or final test",
+  "presentationChanged": false,
+  "generatedFailuresAddedToTraining": false,
+  "modelChoiceAuthority": "User: Gemma currently performs best; retain it",
+  "candidateScreeningContinues": false,
+  "kananaRetrainingExecuted": false,
+  "executionStatus": "Gemma training and 18 base/adapter requests completed; format improved, meaning gate not passed",
+  "actualTrainerEpoch": 7.222222222222222,
+  "actualOptimizerSteps": 36,
+  "gameApplied": false
+}

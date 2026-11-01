@@ -1,0 +1,39 @@
+{
+  "experimentId": "model-screening-20261031",
+  "updatedAt": "2026-11-01T08:13:47.753046+00:00",
+  "deadlineSeoul": "2026-11-10",
+  "priority": "후보를 최대한 빨리 정하고 학습까지 진행; 달력상 목표일까지 대기하지 않음",
+  "currentStage": 4,
+  "detail": "Mi:dm 2.0 Mini 원본 동일 분리 요청 10회 완료. 전체 요구 통과 0/10, 선택지 형식 0/4. 입력 JSON 복사·질문 의미 변경으로 추가 학습 보류. 다음은 짧은 평문과 JSON 입력 전달 진단. 발표용 99개 파일 유지; 미학습·GGUF·Unity·로컬 180초 검증 대기.",
+  "stages": [
+    {
+      "number": 1,
+      "title": "미평가 후보 2개·기준 입력 고정",
+      "status": "완료"
+    },
+    {
+      "number": 2,
+      "title": "기본 성능 비교 후 학습 후보 즉시 선정",
+      "status": "완료"
+    },
+    {
+      "number": 3,
+      "title": "선정 모델 72쌍 소규모 학습",
+      "status": "완료"
+    },
+    {
+      "number": 4,
+      "title": "학습 전후 의미 평가·GGUF·로컬 호환 확인",
+      "status": "진행 중"
+    },
+    {
+      "number": 5,
+      "title": "Unity 저장·분기·로컬 장면 전체 3분 검증",
+      "status": "대기"
+    }
+  ],
+  "presentationChanged": false,
+  "local180SecondTargetMeasured": false,
+  "currentWorkflow": "Gemma improvement training; candidate screening stopped by user correction",
+  "supersededBy": "RoleTaskTrainingExperiment.json"
+}

@@ -1,0 +1,134 @@
+{
+  "experimentId": "guide-role-split-20261031-v1",
+  "reviewedDateSeoul": "2026-11-01",
+  "sourceSha256": "46282bf90dc67c9a07e368a3f97dc29260932d649a0f01e29c759521e0ee9d2b",
+  "reviewer": "Codex",
+  "userReviewedRatings": false,
+  "rows": [
+    {
+      "caseId": "knowledge-take-npc",
+      "seed": 12345,
+      "task": "npc",
+      "formatPassed": true,
+      "meaningAndStatePassed": true,
+      "referenceCopiedVerbatim": true,
+      "newWordingSuccess": false,
+      "note": "지식 회수의 주체·대상과 사건 의미는 유지했다. 입력 reference의 승인 대사를 그대로 복사했으므로 새로운 표현 변환 성공으로 세지 않는다."
+    },
+    {
+      "caseId": "knowledge-take-npc",
+      "seed": 67890,
+      "task": "npc",
+      "formatPassed": true,
+      "meaningAndStatePassed": true,
+      "referenceCopiedVerbatim": true,
+      "newWordingSuccess": false,
+      "note": "지식 회수의 주체·대상과 사건 의미는 유지했다. 입력 reference의 승인 대사를 그대로 복사했으므로 새로운 표현 변환 성공으로 세지 않는다."
+    },
+    {
+      "caseId": "garbled-listener-npc",
+      "seed": 12345,
+      "task": "npc",
+      "formatPassed": true,
+      "meaningAndStatePassed": false,
+      "referenceCopiedVerbatim": false,
+      "newWordingSuccess": false,
+      "note": "알아듣지 못하겠지?라는 뜻은 유지했지만 정상 한국어로 출력해 의도적인 난독 발음을 잃었다."
+    },
+    {
+      "caseId": "garbled-listener-npc",
+      "seed": 67890,
+      "task": "npc",
+      "formatPassed": true,
+      "meaningAndStatePassed": false,
+      "referenceCopiedVerbatim": false,
+      "newWordingSuccess": false,
+      "note": "알아듣지 못하겠지?라는 뜻은 유지했지만 정상 한국어로 출력해 의도적인 난독 발음을 잃었다."
+    },
+    {
+      "caseId": "garbled-listener-options",
+      "seed": 12345,
+      "task": "options",
+      "formatPassed": false,
+      "meaningAndStatePassed": false,
+      "referenceCopiedVerbatim": false,
+      "newWordingSuccess": false,
+      "note": "선택지 명세의 speaker/listener/intent/reference 객체를 복사했다. 네 실제 플레이어 응답 문자열을 생성하지 않았다."
+    },
+    {
+      "caseId": "garbled-listener-options",
+      "seed": 67890,
+      "task": "options",
+      "formatPassed": false,
+      "meaningAndStatePassed": false,
+      "referenceCopiedVerbatim": false,
+      "newWordingSuccess": false,
+      "note": "선택지 명세의 speaker/listener/intent/reference 객체를 복사했다. 네 실제 플레이어 응답 문자열을 생성하지 않았다."
+    },
+    {
+      "caseId": "identity-choice-npc",
+      "seed": 12345,
+      "task": "npc",
+      "formatPassed": true,
+      "meaningAndStatePassed": false,
+      "referenceCopiedVerbatim": false,
+      "newWordingSuccess": false,
+      "note": "반응 질문은 남았으나 앞에 로키가 플레이어의 반응을 기다린다는 삼인칭 해설을 추가해 직접 대사만 쓰라는 요구를 어겼다."
+    },
+    {
+      "caseId": "identity-choice-npc",
+      "seed": 67890,
+      "task": "npc",
+      "formatPassed": true,
+      "meaningAndStatePassed": false,
+      "referenceCopiedVerbatim": false,
+      "newWordingSuccess": false,
+      "note": "반응 질문은 남았으나 앞에 로키가 플레이어의 반응을 기다린다는 삼인칭 해설을 추가해 직접 대사만 쓰라는 요구를 어겼다."
+    },
+    {
+      "caseId": "identity-choice-options",
+      "seed": 12345,
+      "task": "options",
+      "formatPassed": false,
+      "meaningAndStatePassed": false,
+      "referenceCopiedVerbatim": false,
+      "newWordingSuccess": false,
+      "note": "선택지 명세 객체 복사 또는 네 원문을 슬래시로 합친 단일 문자열 출력. 네 응답의 형식·질문 의도·순서를 충족하지 못했다."
+    },
+    {
+      "caseId": "identity-choice-options",
+      "seed": 67890,
+      "task": "options",
+      "formatPassed": false,
+      "meaningAndStatePassed": false,
+      "referenceCopiedVerbatim": false,
+      "newWordingSuccess": false,
+      "note": "선택지 명세 객체 복사 또는 네 원문을 슬래시로 합친 단일 문자열 출력. 네 응답의 형식·질문 의도·순서를 충족하지 못했다."
+    }
+  ],
+  "summary": {
+    "npc": {
+      "count": 6,
+      "formatPassed": 6,
+      "meaningAndStatePassed": 2,
+      "newWordingSuccess": 0
+    },
+    "options": {
+      "count": 4,
+      "formatPassed": 0,
+      "meaningAndStatePassed": 0,
+      "newWordingSuccess": 0
+    }
+  },
+  "conclusion": "Role separation alone is insufficient for this trained adapter. The only meaning/state successes are two identical copies of one supplied approved line. Do not start more training or adopt the prompt based on this result.",
+  "nextDiagnostic": "If continuing model diagnosis, disable the same adapter and compare the exact separated requests to distinguish base-model behavior from adapter effects; preserve this run unchanged.",
+  "limitations": [
+    "Guide is already trained: diagnostic only",
+    "Different output tasks: plain NPC line versus four-string JSON; format rate not directly comparable to combined cards",
+    "Source meaning/state and model/adapter/sampling unchanged; instruction and context differ",
+    "No additional training, runtime GBNF, or local whole-scene timing"
+  ],
+  "trainingAdded": 0,
+  "presentationChanged": false,
+  "local180SecondTargetMeasured": false
+}
