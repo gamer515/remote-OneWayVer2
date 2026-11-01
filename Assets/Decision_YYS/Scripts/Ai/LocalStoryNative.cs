@@ -22,9 +22,16 @@ public static class LocalStoryTestModels
         "Qwen3-4B-Instruct-2507 Q4_K_M" : model == LocalStoryTestModel.Gemma ? "Gemma 3 4B IT QAT Q4_0" :
         model == LocalStoryTestModel.OmniRoute ? "OmniRoute / " + StoryGenerationSettings.Read().combo :
         throw new ArgumentOutOfRangeException(nameof(model));
-    public static LocalStoryTestModel ModelFor(LocalStoryTestReport report) =>
-        report.model.StartsWith("OmniRoute", StringComparison.OrdinalIgnoreCase) ? LocalStoryTestModel.OmniRoute :
-        report.model.IndexOf("Gemma", StringComparison.OrdinalIgnoreCase) >= 0 ? LocalStoryTestModel.Gemma : LocalStoryTestModel.Qwen;
+    // Keep historical Qwen reports readable, but never interpret an unknown name as Qwen.
+    public static LocalStoryTestModel ModelFor(LocalStoryTestReport report)
+    {
+        string name=report?.model;
+        if(string.IsNullOrWhiteSpace(name)) throw new ArgumentException("생성 모델을 명시하세요.",nameof(report));
+        if(name.StartsWith("OmniRoute",StringComparison.OrdinalIgnoreCase)) return LocalStoryTestModel.OmniRoute;
+        if(name.IndexOf("Gemma",StringComparison.OrdinalIgnoreCase)>=0) return LocalStoryTestModel.Gemma;
+        if(name.StartsWith("Qwen",StringComparison.OrdinalIgnoreCase)) return LocalStoryTestModel.Qwen;
+        throw new ArgumentException("알 수 없는 생성 모델: "+name,nameof(report));
+    }
     public static string PathFor(string root, LocalStoryTestModel model)
     {
         if (model != LocalStoryTestModel.Gemma && model!=LocalStoryTestModel.Qwen) throw new ArgumentOutOfRangeException(nameof(model));
@@ -304,8 +311,8 @@ public static class LocalStoryInference
     public static async Task<LocalStoryModelOutput> Generate(string root, string messages, string grammar,
         int seed, CancellationToken token, Action<string> progress, LocalStorySampling sampling = null, string modelPath = null, bool reuseSession = true)
     {
-        // Existing callers keep Qwen. Only explicitly selected test callers supply another installed model.
-        string selectedModel = modelPath ?? Path.Combine(root, LocalStoryTestModels.QwenFile);
+        // Legacy comparison tools must supply their model explicitly. Game callers default to Gemma.
+        string selectedModel = modelPath ?? LocalStoryTestModels.PathFor(root, LocalStoryTestModel.Gemma);
         // Load Unity Resources on the caller thread, before entering native/background work.
         var inference=(JObject)LocalStoryPrompt.Policy["inference"].DeepClone();
         using var local = CancellationTokenSource.CreateLinkedTokenSource(token);

@@ -17,7 +17,7 @@ using UnityEngine;
 [Serializable] public sealed class LocalStoryChoiceReference { public string choiceId, text, heardText; }
 [Serializable] public sealed class LocalStoryTestReport
 {
-    public string storyPath, model = "Qwen3-4B-Instruct-2507 Q4_K_M", backend, fallback, prompt, rawOutput, testScenario;
+    public string storyPath, model = "Gemma 3 4B IT QAT Q4_0", backend, fallback, prompt, rawOutput, testScenario;
     public string archiveId, archiveOrigin;
     public string generationIdentity, generationWinner;
     public string[] generationFailures;

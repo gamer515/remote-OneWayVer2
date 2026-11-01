@@ -40,6 +40,7 @@ public sealed class LocalStoryTestPanel : MonoBehaviour
     private CancellationTokenSource cancellation;
     private Task job;
     private volatile string streamed;
+    private string displayedStream, displayedPart;
     private string generationPart;
     private string generationPurpose;
     private double started;
@@ -104,27 +105,9 @@ public sealed class LocalStoryTestPanel : MonoBehaviour
     }
     public static List<string> DiscoverPaths()
     {
-        var terrain = ChapterContentCatalog.Asset("Story_Json_Data/Initial/Initial_01/Terrain");
-        var definition = terrain == null ? null : JsonUtility.FromJson<TerrainDefinitionRoot>(terrain.text);
-        var queue = new Queue<string>((definition?.TerrainInfo?.places ?? Array.Empty<TerrainPlaceDefinition>()).Select(p=>p.connectStoryCards).Where(p=>!string.IsNullOrWhiteSpace(p)));
-        var known = new HashSet<string>(); var result = new List<string>();
-        while (queue.Count > 0)
-        {
-            string path = queue.Dequeue();
-            if (!known.Add(path) || !path.StartsWith("Initial/",StringComparison.Ordinal)) continue;
-            var asset = ChapterContentCatalog.Asset("Story_Json_Data/"+path+"/Story");
-            if (asset == null) continue;
-            result.Add(path);
-            var root = JsonUtility.FromJson<EncounterCardRoot>(asset.text);
-            foreach (var c in root.MainStory)
-            {
-                foreach (string branch in new[] {c.nextStoryPath,c.winStoryPath,c.loseStoryPath,c.errorStoryPath,c.guideAction?.readyStoryPath,c.guideAction?.retryStoryPath,c.guideAction?.charmZeroStoryPath})
-                    if (!string.IsNullOrWhiteSpace(branch)) queue.Enqueue(branch);
-                foreach (var a in c.choiceActions ?? Array.Empty<StoryChoiceAction>()) if (!string.IsNullOrWhiteSpace(a.storyPath)) queue.Enqueue(a.storyPath);
-            }
-            if (!path.Contains("/Variants/")) foreach (string v in new[] {"KnowledgeZero","CharmZero","KnowledgeCharmZero"}) queue.Enqueue(path+"/Variants/"+v);
-        }
-        result.Sort(StringComparer.Ordinal); return result;
+        return ChapterContentCatalog.Stories.Select(s=>(string)s["path"])
+            .Where(p=>!string.IsNullOrWhiteSpace(p) && ChapterContentCatalog.Story(p)!=null)
+            .Distinct(StringComparer.Ordinal).OrderBy(p=>p,StringComparer.Ordinal).ToList();
     }
     public void Open()
     {
@@ -152,13 +135,13 @@ public sealed class LocalStoryTestPanel : MonoBehaviour
     private void ShowSelected()
     {
         UpdateModelLabels();
-        if (paths.Count == 0) { statusLabel.text = "테스트할 Initial Story가 없습니다."; generateButton.interactable = false; return; }
+        if (paths.Count == 0) { statusLabel.text = "테스트할 이야기가 카탈로그에 없습니다."; generateButton.interactable = false; return; }
         string path = paths[selected];
         if(path!=LocalStoryTestInputs.GuidePath) inputScenario=0;
         memory=inputScenario==0?SaveIOService.Instance.LoadLatestLocalStoryRevision():LocalStoryTestInputs.Create(inputScenario);
         inputButton.GetComponentInChildren<TMP_Text>().text="입력: "+LocalStoryTestInputs.Name(inputScenario);
         inputButton.interactable=path==LocalStoryTestInputs.GuidePath;
-        pathLabel.text = (selected+1)+" / "+paths.Count+"  "+path.Replace("Initial/Initial_01/Encounters/","");
+        pathLabel.text = (selected+1)+" / "+paths.Count+"  "+path;
         original = JsonUtility.FromJson<EncounterCardRoot>(ChapterContentCatalog.Asset("Story_Json_Data/"+path+"/Story").text);
         originalLabel.text = Format(original); generatedLabel.text = "생성 버튼을 눌러 비교하세요.";
         Report = null;
@@ -168,7 +151,7 @@ public sealed class LocalStoryTestPanel : MonoBehaviour
         statusLabel.text = selectedModel==LocalStoryTestModel.OmniRoute?
             LocalStoryTestModels.Name(selectedModel)+" / OmniRoute HTTP / 공통 프롬프트·검사 사용":
             LocalStoryTestModels.Name(selectedModel)+" / 외부 통신 없음 / 모델 로딩 시간 포함\n"+
-            (selectedModel==LocalStoryTestModel.Gemma?"초안·교정 모두 Gemma 사용. Windows x64 Mono 빌드 지원. 모델 파일 검증 시간 포함.":"초안·교정 모두 Qwen 사용. 기본 Gemma 빌드에는 Qwen 모델을 포함하지 않습니다.");
+            "초안·교정 모두 Gemma 사용. Windows x64 Mono 빌드 지원. 모델 파일 검증 시간 포함.";
     }
     private void UpdateModelLabels()
     {
@@ -182,13 +165,13 @@ public sealed class LocalStoryTestPanel : MonoBehaviour
     private void CycleModel()
     {
         if(IsGenerating || readingSaved) return;
-        selectedModel=(LocalStoryTestModel)(((int)selectedModel+1)%Enum.GetValues(typeof(LocalStoryTestModel)).Length);
+        selectedModel=selectedModel==LocalStoryTestModel.Gemma?LocalStoryTestModel.OmniRoute:LocalStoryTestModel.Gemma;
         ShowSelected(); SetBusy(false);
     }
     private void CycleInput()
     {
         if(readingSaved && !IsGenerating) { rawView=!rawView; ShowSavedSelected(); return; }
-        if(IsGenerating || paths[selected]!=LocalStoryTestInputs.GuidePath) return;
+        if(IsGenerating || paths.Count==0 || paths[selected]!=LocalStoryTestInputs.GuidePath) return;
         inputScenario=(inputScenario+1)%4; ShowSelected();
     }
     public void Generate() => GenerateInternal(true);
@@ -198,7 +181,7 @@ public sealed class LocalStoryTestPanel : MonoBehaviour
     {
         if (IsGenerating || LocalStoryRuntimeService.IsBusy || original == null || readingSaved) return;
         cancellation?.Dispose(); cancellation = new CancellationTokenSource(); cancellation.CancelAfter(TimeSpan.FromMinutes(5));
-        Report = null; streamed = ""; generationPart="단락 계획 확인"; correcting=false; generatedLabel.text = "단락 생성 준비 중...";
+        Report = null; streamed = ""; displayedStream=null; displayedPart=null; generationPart="단락 계획 확인"; correcting=false; generatedLabel.text = "단락 생성 준비 중...";
         var runOriginal = JsonUtility.FromJson<EncounterCardRoot>(JsonUtility.ToJson(original));
         string path = paths[selected];
         var model=selectedModel; // Capture once for every section of this request.
@@ -279,7 +262,11 @@ public sealed class LocalStoryTestPanel : MonoBehaviour
             statusLabel.text=$"{Report?.model} / {generationPart} / {Time.realtimeSinceStartupAsDouble-started:F1}초\n{generationPurpose} / 취소 가능";
             var current=Report?.sectionOutputs?.LastOrDefault();
             streamed=correcting?current?.correctionRawOutput:current?.rawOutput;
-            generatedLabel.text="["+generationPart+"]\n"+(string.IsNullOrEmpty(streamed)?"생성 중...":FormatModelOutput(streamed));
+            if(streamed!=displayedStream || generationPart!=displayedPart)
+            {
+                displayedStream=streamed;displayedPart=generationPart;
+                generatedLabel.text="["+generationPart+"]\n"+(string.IsNullOrEmpty(streamed)?"생성 중...":FormatModelOutput(streamed));
+            }
         }
     }
     private void SetBusy(bool busy)

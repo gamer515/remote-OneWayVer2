@@ -56,7 +56,7 @@ public static class InitialChapterLimitCheck
                 Assert(calls.Count==1,"Repeated journey completion re-entered battle");
                 checks.Add(new{chapterIndex,enteredBattle=true,sourceSessionPreserved=true,nextRunDeferredUntilBattle=true});
             }
-            AssertInitialPacket(go);
+
             omnibus.lastPlayableChapterId="Chapter_1";
             Assert(omnibus.PlayableChapterCount==2,"Expandable limit failed");
             omnibus.lastPlayableChapterId="";
@@ -73,49 +73,4 @@ public static class InitialChapterLimitCheck
         finally{UnityEngine.Object.DestroyImmediate(go);EditorSceneManager.ClosePreviewScene(scene);}
     }
 
-    static void AssertInitialPacket(GameObject go)
-    {
-        var prompt=ScriptableObject.CreateInstance<PromptData>();
-        try
-        {
-            var relay=go.AddComponent<StoryRelayManager>();
-            typeof(StoryRelayManager).GetField("promptData",Fields).SetValue(relay,prompt);
-            const string path="Initial/Initial_01/Encounters/guide";
-            var text=ChapterContentCatalog.Asset("Story_Json_Data/"+path+"/Story").text;
-            var original=JsonUtility.FromJson<EncounterCardRoot>(text);
-            var records=new List<PlayedEncounterCardRecord>{new PlayedEncounterCardRecord{
-                placeId="guide",encounterPath=path,cardIndex=0,
-                card=new Dialogue{id=1,type="Next",text=original.MainStory[0].text}}};
-            var build=typeof(StoryRelayManager).GetMethod("CreatePacket",Fields);
-            var packet=(StoryPacket)build.Invoke(relay,new object[]{StoryRelayTrigger.EpisodeEnd,
-                "Initial/Initial_01",records,
-                new[]{10,10,10,10},0,5,null});
-            Assert(packet!=null&&packet.sourceRun==5&&packet.targetRun==6,"Initial excluded or target run wrong");
-            Assert(packet.encounterHistory.Count==1&&packet.encounterHistory[0].encounterPath==path,"Initial card missing");
-            var items=new[]{new AIAPIClient.AIModifiedData{encounterPath=path,cardIndex=0,text="어이, 낯선 여행자. 여기에는 또 어쩐 일이야?"}};
-            var validate=typeof(AIAPIClient).GetMethod("TryValidateModifiedItems",BindingFlags.Static|BindingFlags.NonPublic);
-            var args=new object[]{packet,items,null};
-            Assert((bool)validate.Invoke(null,args),"Valid Initial AI response rejected: "+args[2]);
-            var generated=JsonUtility.FromJson<EncounterCardRoot>(text);
-            generated.MainStory[0].text=items[0].text;
-            var apply=typeof(EncounterContentRepository).GetMethod("TryApplyGeneratedText",BindingFlags.Static|BindingFlags.NonPublic);
-            args=new object[]{original,generated,null,false};
-            Assert((bool)apply.Invoke(null,args)&&original.MainStory[0].text==items[0].text,"Initial generated text not applied");
-            items[0].encounterPath="Chapter_2/unrequested";
-            args=new object[]{packet,items,null};
-            Assert(!(bool)validate.Invoke(null,args),"Unrequested chapter accepted");
-            generated.MainStory[0].type="End";
-            args=new object[]{original,generated,null,false};
-            Assert(!(bool)apply.Invoke(null,args),"Generated response changed card structure");
-            records[0].card.text="{안개 광산}에서 조심하라.";
-            items[0].encounterPath=path;items[0].text="다른 광산이다.";
-            args=new object[]{packet,items,null};
-            Assert(!(bool)validate.Invoke(null,args),"Immutable core changed");
-            var noPacket=(StoryPacket)build.Invoke(relay,new object[]{StoryRelayTrigger.EpisodeEnd,
-                "Initial/Initial_01",new List<PlayedEncounterCardRecord>(),
-                new[]{10,10,10,10},0,5,null});
-            Assert(noPacket==null,"Empty history queued AI request");
-        }
-        finally{UnityEngine.Object.DestroyImmediate(prompt);}
-    }
 }

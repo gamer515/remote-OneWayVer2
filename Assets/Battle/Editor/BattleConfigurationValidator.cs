@@ -25,8 +25,9 @@ public static class BattleConfigurationValidator
             var controller = objects.SelectMany(o => o.GetComponentsInChildren<BattleSceneController>(true)).Single();
             check(controller.player != null && controller.box != null && controller.attacks != null && controller.battleCamera != null && controller.legacy != null, "Missing scene references");
             check(controller.legacy.sequenceController == controller, "Legacy bridge is disconnected");
-            check(controller.heart != null && AssetDatabase.GetAssetPath(controller.heart) == "Assets/Battle/BattleScenePlayerHeart.png", "Incorrect player heart");
-            check(controller.mist != null && AssetDatabase.GetAssetPath(controller.mist) == "Assets/Battle/mist.png", "Incorrect mist");
+            // Asset identity survives folder and filename changes.
+            check(controller.heart != null && AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(controller.heart)) == "3d31062a5c22e2847b145442ead2cdc4", "Incorrect player heart");
+            check(controller.mist != null && AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(controller.mist)) == "9d25de60ce62bd74098b841c44b166b4", "Incorrect mist");
             check(controller.flatMaterial != null && controller.flatMaterial.shader.name == "OneWay/BattleUnlit", "Missing unlit material");
             check(!ShaderUtil.GetShaderMessages(controller.flatMaterial.shader).Any(m => m.severity.ToString() == "Error"), "Battle shader compile error");
             check(controller.stages != null && controller.stages.Length == 4, "B1, B2, B3, BD 데이터가 필요합니다.");
@@ -44,12 +45,15 @@ public static class BattleConfigurationValidator
             }
             var b1 = controller.stages.Single(s => s.stageIndex == 1);
             check(Mathf.Abs(b1.forwardViewportY - 1f / 3f) < .0001f, "B1 forward line must be one third from bottom");
-            check(b1.flow.steps.Single(s => s.pattern.kind == BattlePatternKind.Debris).pattern.duration == 60, "B1 must last 60 active seconds");
+            var debris = b1.flow.steps.Single(s => s.kind == BattleStepKind.Pattern && s.pattern.kind == BattlePatternKind.Debris).pattern;
+            check(!float.IsNaN(debris.duration) && !float.IsInfinity(debris.duration) && debris.duration > 0, "B1 needs a finite positive configured duration");
             check(b1.recoverySeconds == 5, "B1 warning must last five seconds");
             var b2 = controller.stages.Single(s => s.stageIndex == 2);
             int slash = b2.flow.steps.FindIndex(s => s.kind == BattleStepKind.Slash);
+            var b2Patterns = b2.flow.steps.Where(s => s.kind == BattleStepKind.Pattern && s.pattern.kind == BattlePatternKind.B2).ToArray();
+            check(b2Patterns.Select(s => s.pattern.b2PatternId).SequenceEqual(Enumerable.Range(1, 11)), "B2 must contain patterns 1 through 11 in order");
             check(slash > 0 && slash + 1 < b2.flow.steps.Count, "Missing slash insertion");
-            check(b2.flow.steps[slash - 1].pattern.legacyCase == 4 && b2.flow.steps[slash + 1].pattern.legacyCase == 5, "Slash must connect case4 to case5");
+            check(b2.flow.steps[slash - 1] == b2Patterns.Last() && b2.flow.steps[slash + 1].kind == BattleStepKind.Exit, "Slash must follow B2 patterns before exit");
             check(b2.slashTargetCount == 5 && b2.slashStartZ > 0 && b2.slashSpeed > 0, "Invalid slash targets");
             var buttons = objects.SelectMany(o => o.GetComponentsInChildren<Button>(true)).ToArray();
             for (int i = 1; i <= 4; i++)

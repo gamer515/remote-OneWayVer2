@@ -144,7 +144,7 @@ public static class StoryCleanupAudit
                 {
                     missingScripts += GameObjectUtility.GetMonoBehavioursWithMissingScriptCount(transform.gameObject);
                     foreach (var behaviour in transform.GetComponents<MonoBehaviour>())
-                        if (behaviour != null && (behaviour is AIAPIClient || behaviour is DecisionMiniGameTestLauncher || behaviour is TempDualMiniGame))
+                        if (behaviour != null && (behaviour.GetType().Name == "AIAPIClient" || behaviour is DecisionMiniGameTestLauncher || behaviour.GetType().Name == "TempDualMiniGame"))
                             liveTools.Add(new { objectName = transform.name, component = behaviour.GetType().Name, enabled = behaviour.enabled, active = transform.gameObject.activeInHierarchy });
                 }
         return new { enabledScenes, resourcesRootCount = resourceRoots.Length, targets = targetRows, groups,

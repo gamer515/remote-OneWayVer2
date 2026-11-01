@@ -1,88 +1,10 @@
 using UnityEngine;
 using System.Collections.Generic;
-using System.Text;
 
-public enum StoryRelayTrigger
-{
-    EpisodeEnd,
-    MidTransition,
-    ChapterEnd
-}
-
+/// <summary>Builds deterministic chapter influence records from player stats.</summary>
 public class StoryRelayManager : MonoBehaviour
 {
     [SerializeField] private PromptData promptData;
-
-    /// <summary>
-    /// 이야기 데이터를 필터링하고 요약하여 로컬 생성 요청으로 저장합니다.
-    /// </summary>
-    public void Relay(
-        StoryRelayTrigger trigger,
-        string currentFileName,
-        List<PlayedEncounterCardRecord> encounterHistory,
-        int[] stats,
-        int chapter,
-        int sourceRun,
-        StoryInfluenceProfile fixedInfluence = null)
-    {
-        // Dialogue completion owns generation work. Do not persist a second chapter prompt packet.
-        // CreateInfluenceProfile remains used by chapter progression.
-
-    }
-
-    private StoryPacket CreatePacket(
-        StoryRelayTrigger trigger, string currentFileName,
-        List<PlayedEncounterCardRecord> encounterHistory,
-        int[] stats, int chapter,
-        int sourceRun, StoryInfluenceProfile fixedInfluence)
-    {
-        if (promptData == null)
-        {
-            Debug.LogError("StoryRelayManager에 PromptData가 연결되지 않았습니다.", this);
-            return null;
-        }
-
-        // 실제로 플레이한 Encounter 카드만 경로 및 카드 순번과 함께 전달합니다.
-        List<PlayedEncounterCardRecord> filteredEncounters = encounterHistory != null
-            ? encounterHistory.FindAll(record =>
-                record != null && record.card != null &&
-                !string.IsNullOrWhiteSpace(record.encounterPath))
-            : new List<PlayedEncounterCardRecord>();
-        List<Dialogue> filtered = filteredEncounters.ConvertAll(record => record.card);
-
-        // Initial도 포함하되, 실제로 읽은 지문이 없을 때만 AI 요청을 생략합니다.
-        if (filtered.Count == 0)
-        {
-            Debug.Log("[StoryRelay] 변경 대상 지문이 없어 AI 요청을 생략합니다.", this);
-            return null;
-        }
-        
-        int[] statsSnapshot = stats != null ? (int[])stats.Clone() : new int[0];
-        StoryInfluenceProfile influence = fixedInfluence ??
-            CreateInfluenceProfile(statsSnapshot, chapter, sourceRun);
-        string summary = BuildSummary(filteredEncounters);
-        string atmosphere = DetermineAtmosphere(influence.intensity);
-
-        string template = trigger == StoryRelayTrigger.EpisodeEnd
-            ? promptData.episodeEndTemplate
-            : trigger == StoryRelayTrigger.MidTransition
-                ? promptData.midTransitionTemplate
-                : promptData.chapterEndTemplate;
-            
-        string finalPrompt = string.Format(
-            template,
-            summary,
-            atmosphere,
-            promptData.responseFormatTemplateV2);
-        finalPrompt += BuildInfluenceInstruction(influence, statsSnapshot);
-        
-        return new StoryPacket(
-            currentFileName,
-            finalPrompt,
-            filtered,
-            filteredEncounters,
-            sourceRun);
-    }
 
     public StoryInfluenceProfile CreateInfluenceProfile(
         int[] stats,
@@ -161,60 +83,6 @@ public class StoryRelayManager : MonoBehaviour
     {
         double difference = Mathf.Max(1, primaryScore + 1 - weaknessScore);
         return difference * difference;
-    }
-
-    private string DetermineAtmosphere(StoryChangeIntensity intensity)
-    {
-        if (promptData == null) return "알 수 없는 분위기";
-
-        if (intensity == StoryChangeIntensity.Strong)
-            return promptData.highStatAtmosphere;
-        if (intensity == StoryChangeIntensity.Moderate)
-            return promptData.midStatAtmosphere;
-        return promptData.lowStatAtmosphere;
-    }
-
-    private string BuildSummary(
-        List<PlayedEncounterCardRecord> encounterCards)
-    {
-        if (encounterCards == null || encounterCards.Count == 0) return "(기록 없음)";
-
-        
-        StringBuilder sb = new StringBuilder();
-        foreach (PlayedEncounterCardRecord record in encounterCards)
-        {
-            Dialogue d = record.card;
-            sb.AppendLine(
-                $"- [ID: {d.id}] [Encounter: {record.encounterPath}] [CardIndex: {record.cardIndex}] " +
-                $"[Place: {record.placeId}] {d.text}");
-        }
-        return sb.ToString();
-    }
-
-    private string BuildInfluenceInstruction(
-        StoryInfluenceProfile influence,
-        int[] stats)
-    {
-        string instruction;
-        if (influence.intensity == StoryChangeIntensity.Strong)
-            instruction = promptData.strongChangeInstruction;
-        else if (influence.intensity == StoryChangeIntensity.Moderate)
-            instruction = promptData.moderateChangeInstruction;
-        else
-            instruction = promptData.subtleChangeInstruction;
-
-        return
-            $"\n\n[플레이 결과]\n" +
-            $"전체 수치: [{string.Join(", ", stats)}]\n" +
-            $"전체 합계: {influence.totalStatValue}\n" +
-            $"중립값 대비 변화량: {influence.changeMagnitude}\n" +
-            $"주요 약점: {influence.majorWeaknessName} ({influence.majorWeaknessValue})\n" +
-            $"보조 약점: {influence.minorWeaknessName} ({influence.minorWeaknessValue})\n" +
-            $"변경 강도: {influence.intensity}\n" +
-            $"변경 지침: {instruction}\n" +
-            "주요 약점은 갈등과 실수에 강하게, 보조 약점은 불안 요소에 약하게 반영하세요.\n" +
-            "encounterPath와 cardIndex, 이야기 순서는 변경하지 마세요.\n" +
-            "원문에서 { }로 감싼 문자열은 괄호를 포함해 한 글자도 변경하지 마세요.";
     }
 
     private static string GetStatName(int chapter, int statIndex)

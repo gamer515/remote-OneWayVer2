@@ -1,5 +1,5 @@
 ﻿/// <summary>
-/// 챕터 결과 기록, 외부 전달, 다음 챕터 준비와 저장 순서를 관리합니다.
+/// 챕터 결과 기록, 다음 챕터 준비와 저장 순서를 관리합니다.
 /// </summary>
 public sealed class ChapterFlowController
 {
@@ -28,7 +28,6 @@ public sealed class ChapterFlowController
             return false;
 
         CompleteCurrentChapter(
-            StoryRelayTrigger.MidTransition,
             clearHistory: false,
             playerPosition,
             playerRotation);
@@ -43,7 +42,6 @@ public sealed class ChapterFlowController
             return false;
 
         CompleteCurrentChapter(
-            StoryRelayTrigger.ChapterEnd,
             clearHistory: true,
             playerPosition,
             playerRotation);
@@ -59,12 +57,11 @@ public sealed class ChapterFlowController
     }
 
     private void CompleteCurrentChapter(
-        StoryRelayTrigger relayTrigger,
         bool clearHistory,
         UnityEngine.Vector3 playerPosition,
         UnityEngine.Quaternion playerRotation)
     {
-        // Relay에는 초기화 전 스탯과 완료된 챕터 번호가 전달되어야 하므로 먼저 스냅샷을 만듭니다.
+        // Capture the completed chapter's stats before advancing progression.
         int completedChapterIndex = session.ChapterIndex;
         int[] statsSnapshot = statContainer.stats;
         if (relayManager != null)
@@ -78,32 +75,8 @@ public sealed class ChapterFlowController
                     completedChapterIndex,
                     session.RunNumber);
                 saveService.SaveInfluenceProfile(influence);
-                relayManager.Relay(
-                    StoryRelayTrigger.EpisodeEnd,
-                    episode.scenarioPath,
-                    episode.encounterHistory,
-                    episodeStats,
-                    completedChapterIndex,
-                    session.RunNumber,
-                    influence);
             }
 
-            // 임계치 전투는 현재 에피소드가 정상 종료되지 않았으므로 별도 전환 요청으로 전달합니다.
-            if (relayTrigger == StoryRelayTrigger.MidTransition && session.PlayedHistory.Count > 0)
-            {
-                StoryInfluenceProfile influence = relayManager.CreateInfluenceProfile(
-                    statsSnapshot,
-                    completedChapterIndex,
-                    session.RunNumber);
-                relayManager.Relay(
-                    StoryRelayTrigger.MidTransition,
-                    session.ScenarioPath,
-                    session.PlayedEncounterHistory,
-                    statsSnapshot,
-                    completedChapterIndex,
-                    session.RunNumber,
-                    influence);
-            }
         }
 
         session.CompletedEpisodes.Clear();

@@ -61,6 +61,8 @@ public static class LocalStoryDialogueQueue
         LocalStoryDreamRule[] rules)
     {
         var result=new List<LocalStoryDreamMemory>();
+        // Rules inspect the same immutable saved runs. Load each run once per selection.
+        var runs=new Dictionary<int,GameProgress>();
         foreach(var rule in rules??Array.Empty<LocalStoryDreamRule>())
         {
             if(!rule.enabled) continue;
@@ -70,7 +72,8 @@ public static class LocalStoryDialogueQueue
                 throw new InvalidDataException("꿈 기억 규칙에는 ID/NPC/인상과 실제 선택ID 또는 사건종류가 필요합니다.");
             for(int run=1;run<=throughRun;run++)
             {
-                var progress=store.LoadRunData<GameProgress>(run,"Progress");
+                if(!runs.TryGetValue(run,out var progress))
+                {progress=store.LoadRunData<GameProgress>(run,"Progress");runs.Add(run,progress);}
                 if(progress==null || (run<throughRun && !progress.isCompleted) ||
                     (rule.runCompletedOnly && !progress.isCompleted)) continue;
                 if((rule.requiresUnlocks??Array.Empty<string>()).Any(id =>
