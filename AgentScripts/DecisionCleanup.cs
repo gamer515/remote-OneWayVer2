@@ -48,6 +48,7 @@ public static class DecisionCleanup
     public static object InspectSvgImporter()
     {
         string path="Assets/UnityAssets/Animated Characters Bundle/Skins/Source/Skins/racerRedFemale.svg";
+        if(!File.Exists(path))return new {retired=true,path};
         var importer=AssetImporter.GetAtPath(path);
         var so=new SerializedObject(importer);var it=so.GetIterator();var properties=new List<object>();
         while(it.Next(true)) if(it.propertyType==SerializedPropertyType.Enum)
@@ -57,6 +58,7 @@ public static class DecisionCleanup
     }
     public static object FixSvgImports()
     {
+        if(!Directory.Exists("Assets/UnityAssets/Animated Characters Bundle/Skins")) return new {retired=true,fixedImports=0};
         var paths=new List<string>();var errors=new List<string>();
         Application.LogCallback capture=(message,stack,type)=> {
             if(type==LogType.Error||type==LogType.Exception) errors.Add(message);
@@ -92,6 +94,178 @@ public static class DecisionCleanup
     {
         BattleConfigurationValidator.Validate();
         return new { passed=true };
+    }
+    public static object FinalizeApprovedFields()
+    {
+        var paths=AssetDatabase.FindAssets("t:PromptData").Select(AssetDatabase.GUIDToAssetPath).OrderBy(p=>p,StringComparer.Ordinal).ToArray();
+        string[] retained={"neutralStatValue","moderateChangeMinStat","strongChangeMinStat"};
+        var values=new List<object>();
+        foreach(string path in paths)
+        {
+            var asset=AssetDatabase.LoadAssetAtPath<PromptData>(path);var so=new SerializedObject(asset);
+            string backup="Documentation/CleanupRecovery/"+path.Replace('/','_').Replace('\\','_')+".txt";
+            if(!File.Exists(backup)) throw new IOException("Missing approved field recovery copy: "+path);
+            string text=File.ReadAllText(backup);
+            foreach(string field in retained)
+            {
+                var match=System.Text.RegularExpressions.Regex.Match(text,@"(?m)^\s*"+field+@":\s*(-?\d+)");
+                if(!match.Success || so.FindProperty(field).intValue!=int.Parse(match.Groups[1].Value))
+                    throw new InvalidOperationException("Retained influence value changed: "+path+" / "+field);
+            }
+            values.Add(new {path,asset.neutralStatValue,asset.moderateChangeMinStat,asset.strongChangeMinStat});
+        }
+        AssetDatabase.ForceReserializeAssets(paths,ForceReserializeAssetsOptions.ReserializeAssets);
+        const string planFile="Documentation/DecisionCleanupDeletionPlan.json";
+        var plan=Newtonsoft.Json.Linq.JObject.Parse(File.ReadAllText(planFile));
+        var retired=((Newtonsoft.Json.Linq.JArray)plan["obsoletePromptDataFields"]).Values<string>().ToArray();
+        foreach(string path in paths)
+            if(retired.Any(field=>System.Text.RegularExpressions.Regex.IsMatch(File.ReadAllText(path),@"(?m)^\s*"+field+":")))
+                throw new InvalidOperationException("Retired prompt data remains in "+path);
+        plan["promptDataFieldsRemoved"]=true;plan["reserializedPromptAssets"]=Newtonsoft.Json.Linq.JArray.FromObject(paths);
+        File.WriteAllText(planFile,plan.ToString(Newtonsoft.Json.Formatting.Indented));
+        return new {removedFields=retired.Length,retainedValues=values};
+    }
+    public static object ValidateCleanScenes()
+    {
+        var rows=new List<object>();
+        foreach(string path in EditorBuildSettings.scenes.Where(s=>s.enabled).Select(s=>s.path))
+        {
+            var scene=EditorSceneManager.OpenPreviewScene(path);
+            try
+            {
+                var transforms=scene.GetRootGameObjects().SelectMany(r=>r.GetComponentsInChildren<Transform>(true)).ToArray();
+                int missingScripts=transforms.Sum(t=>GameObjectUtility.GetMonoBehavioursWithMissingScriptCount(t.gameObject));
+                int missingPrefabs=transforms.Count(t=>PrefabUtility.IsAnyPrefabInstanceRoot(t.gameObject)&&PrefabUtility.GetPrefabInstanceStatus(t.gameObject)==PrefabInstanceStatus.MissingAsset);
+                int retiredClients=transforms.SelectMany(t=>t.GetComponents<MonoBehaviour>()).Count(b=>b!=null&&b.GetType().Name=="AIAPIClient");
+                if(missingScripts+missingPrefabs+retiredClients>0) throw new InvalidOperationException("Broken scene references after cleanup: "+path+" / "+missingScripts+" scripts / "+missingPrefabs+" prefabs / "+retiredClients+" retired clients");
+                rows.Add(new {path,missingScripts,missingPrefabs,retiredClients});
+            }
+            finally{EditorSceneManager.ClosePreviewScene(scene);}
+        }
+        return new {passed=true,scenes=rows};
+    }
+    public static object InspectBrokenDecision()
+    {
+        var scene=EditorSceneManager.OpenPreviewScene("Assets/Scenes/DecisionScene.unity");
+        try
+        {
+            return scene.GetRootGameObjects().SelectMany(r=>r.GetComponentsInChildren<Transform>(true)).Where(t=>
+                GameObjectUtility.GetMonoBehavioursWithMissingScriptCount(t.gameObject)>0 ||
+                (PrefabUtility.IsAnyPrefabInstanceRoot(t.gameObject)&&PrefabUtility.GetPrefabInstanceStatus(t.gameObject)==PrefabInstanceStatus.MissingAsset))
+                .Select(t=>new {t.name,parent=t.parent==null?null:t.parent.name,missingScripts=GameObjectUtility.GetMonoBehavioursWithMissingScriptCount(t.gameObject),
+                    prefabStatus=PrefabUtility.GetPrefabInstanceStatus(t.gameObject).ToString(),source=PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(t.gameObject),id=GlobalObjectId.GetGlobalObjectIdSlow(t.gameObject).ToString()}).ToArray();
+        }
+        finally{EditorSceneManager.ClosePreviewScene(scene);}
+    }
+    public static object RemoveOrphanFace()
+    {
+        const string path="Assets/Scenes/DecisionScene.unity";
+        if(EditorApplication.isPlaying || Enumerable.Range(0,SceneManager.sceneCount).Any(i=>SceneManager.GetSceneAt(i).isDirty))
+            throw new InvalidOperationException("Editor must be stopped with no unsaved scenes.");
+        var scene=SceneManager.GetSceneByPath(path);bool opened=!scene.IsValid()||!scene.isLoaded;
+        if(opened)scene=EditorSceneManager.OpenScene(path,OpenSceneMode.Additive);
+        int removed=0;
+        try
+        {
+            var candidates=scene.GetRootGameObjects().SelectMany(r=>r.GetComponentsInChildren<Transform>(true))
+                .Where(t=>t.name=="AangFace" && t.parent!=null && t.parent.name=="Face_Display" &&
+                    GlobalObjectId.GetGlobalObjectIdSlow(t.gameObject).ToString()=="GlobalObjectId_V1-2-1b43567c20479cb44b21edc2432a6d18-2131054597-0").ToArray();
+            if(candidates.Length>1) throw new InvalidOperationException("Ambiguous orphan face.");
+            foreach(var t in candidates)
+            {
+                if(PrefabUtility.GetPrefabInstanceStatus(t.gameObject)!=PrefabInstanceStatus.MissingAsset ||
+                    GameObjectUtility.GetMonoBehavioursWithMissingScriptCount(t.gameObject)!=1)
+                    throw new InvalidOperationException("Face is no longer the inspected missing prefab.");
+                UnityEngine.Object.DestroyImmediate(t.gameObject);removed++;
+            }
+            if(removed>0&&!EditorSceneManager.SaveScene(scene))throw new IOException("Could not save orphan cleanup.");
+        }
+        finally{if(opened)EditorSceneManager.CloseScene(scene,true);}
+        return new {removedOrphanFaces=removed,holderPreserved=true};
+    }
+    public static object ApplyApprovedPlan()
+    {
+        const string planFile="Documentation/DecisionCleanupDeletionPlan.json";
+        var plan=Newtonsoft.Json.Linq.JObject.Parse(File.ReadAllText(planFile));
+        var targets=((Newtonsoft.Json.Linq.JArray)plan["assets"]).Select(r=>(string)r["path"]).ToArray();
+        if(targets.Length!=101 || targets.Distinct(StringComparer.Ordinal).Count()!=101)
+            throw new InvalidOperationException("The approved deletion list changed.");
+        string project=Path.GetFullPath(Path.Combine(Application.dataPath,".."));
+        string assetsPrefix=Path.GetFullPath(Application.dataPath)+Path.DirectorySeparatorChar;
+        foreach(string path in targets)
+        {
+            string full=Path.GetFullPath(path);
+            if(!full.StartsWith(assetsPrefix,StringComparison.OrdinalIgnoreCase) || path.Contains(".."))
+                throw new IOException("Deletion target escaped Assets: "+path);
+            if(File.Exists(full)||Directory.Exists(full))
+            {
+                for(string current=full;current!=null && current.StartsWith(project,StringComparison.OrdinalIgnoreCase);current=Path.GetDirectoryName(current))
+                    if((File.GetAttributes(current)&FileAttributes.ReparsePoint)!=0) throw new IOException("Linked deletion target: "+path);
+                if(Directory.Exists(full) && Directory.GetFileSystemEntries(full,"*",SearchOption.AllDirectories)
+                    .Any(p=>(File.GetAttributes(p)&FileAttributes.ReparsePoint)!=0)) throw new IOException("Linked child: "+path);
+                int count=File.Exists(full)?1:Directory.GetFiles(full,"*",SearchOption.AllDirectories).Count(f=>!f.EndsWith(".meta",StringComparison.Ordinal));
+                int approved=(int)((Newtonsoft.Json.Linq.JArray)plan["assets"]).Single(r=>(string)r["path"]==path)["files"];
+                if(count!=approved) throw new InvalidOperationException("Target contents changed: "+path);
+            }
+        }
+        if(EditorApplication.isPlaying || EditorApplication.isCompiling) throw new InvalidOperationException("Editor must be idle.");
+        if(Enumerable.Range(0,SceneManager.sceneCount).Any(i=>SceneManager.GetSceneAt(i).isDirty))
+            throw new InvalidOperationException("An open scene has unsaved changes.");
+        var used=Used();
+        var owners=AssetDatabase.GetAllAssetPaths().Where(a=>a.EndsWith(".prefab")||a.EndsWith(".unity")||a.EndsWith(".asset"))
+            .ToDictionary(a=>a,a=>AssetDatabase.GetDependencies(a,false));
+        Func<string,bool> retiring=p=>targets.Any(t=>p==t||p.StartsWith(t+"/",StringComparison.Ordinal));
+        foreach(string target in targets)
+        {
+            if(used.Any(p=>p==target||p.StartsWith(target+"/",StringComparison.Ordinal))) throw new InvalidOperationException("Target is now used: "+target);
+            if(owners.Any(a=>!retiring(a.Key)&&a.Value.Any(d=>d==target||d.StartsWith(target+"/",StringComparison.Ordinal))))
+                throw new InvalidOperationException("Retained asset now references: "+target);
+        }
+        const string scenePath="Assets/Scenes/DecisionScene.unity";
+        Directory.CreateDirectory("Documentation/CleanupRecovery");
+        string backup="Documentation/CleanupRecovery/DecisionScene.before-approved-cleanup.unity.txt";
+        if(!File.Exists(backup)) File.Copy(scenePath,backup);
+        var scene=SceneManager.GetSceneByPath(scenePath);bool opened=!scene.IsValid()||!scene.isLoaded;
+        if(opened)scene=EditorSceneManager.OpenScene(scenePath,OpenSceneMode.Additive);
+        int components=0,containers=0;
+        try
+        {
+            var clients=scene.GetRootGameObjects().SelectMany(r=>r.GetComponentsInChildren<MonoBehaviour>(true))
+                .Where(b=>b!=null&&b.GetType().Name=="AIAPIClient").ToArray();
+            foreach(var client in clients)
+            {
+                var go=client.gameObject;
+                bool emptyContainer=go.name=="TempAiM"&&go.transform.parent==null&&go.transform.childCount==0&&go.GetComponents<Component>().Length==2;
+                UnityEngine.Object.DestroyImmediate(client);components++;
+                if(emptyContainer){UnityEngine.Object.DestroyImmediate(go);containers++;}
+            }
+            if(components>0&&!EditorSceneManager.SaveScene(scene))throw new IOException("Failed to save cleaned Decision scene.");
+        }
+        finally{if(opened)EditorSceneManager.CloseScene(scene,true);}
+        var scripts=new[]{"Assets/Decision_YYS/Scripts/Ai/AIAPIClient.cs","Assets/Decision_YYS/Scripts/TempDualMiniGame.cs"};
+        used=Used();
+        foreach(string script in scripts)
+            if(used.Contains(script)||AssetDatabase.GetAllAssetPaths().Where(p=>p.EndsWith(".unity")||p.EndsWith(".prefab")||p.EndsWith(".asset"))
+                .Any(p=>AssetDatabase.GetDependencies(p,false).Contains(script))) throw new InvalidOperationException("Retired script still referenced: "+script);
+        var removed=new List<string>();long bytes=0;
+        AssetDatabase.StartAssetEditing();
+        try
+        {
+            foreach(string path in targets.Concat(scripts))
+            {
+                if(!File.Exists(path)&&!Directory.Exists(path))continue;
+                bytes+=File.Exists(path)?new FileInfo(path).Length:Directory.GetFiles(path,"*",SearchOption.AllDirectories).Sum(f=>new FileInfo(f).Length);
+                if(!AssetDatabase.DeleteAsset(path))throw new IOException("Failed to delete approved target: "+path);
+                removed.Add(path);
+            }
+        }
+        finally{AssetDatabase.StopAssetEditing();AssetDatabase.Refresh();}
+        plan["status"]="Approved by user and applied";
+        plan["removedTargets"]=Newtonsoft.Json.Linq.JArray.FromObject(removed);
+        plan["removedBytes"]=bytes;plan["retiredSceneComponents"]=components;plan["retiredEmptyContainers"]=containers;
+        plan["sceneBackup"]=backup;
+        File.WriteAllText(planFile,plan.ToString(Newtonsoft.Json.Formatting.Indented));
+        return new {removedTargets=removed.Count,bytes,components,containers,backup};
     }
     public static object WriteDeletionPlan()
     {

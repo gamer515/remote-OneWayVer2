@@ -24,7 +24,7 @@ public static class DecisionCleanupRegression
             Check(rejected,"Unknown model silently selected a backend.");
         }
         Check(typeof(StoryRelayManager).GetMethod("Relay")==null,"Retired empty relay is still callable.");
-        Check(typeof(AIAPIClient).GetMethod("ProcessPacket")==null,"Retired Gemini generation remains callable.");
+        Check(typeof(DecisionManager).Assembly.GetType("AIAPIClient")==null,"Retired Gemini client remains compiled.");
         string folder=Path.Combine(Path.GetTempPath(),"OneWayCleanupRegression_"+Guid.NewGuid().ToString("N"));
         var store=(SaveIOService)Activator.CreateInstance(typeof(SaveIOService),BindingFlags.Instance|BindingFlags.NonPublic,null,new object[]{folder},null);
         try
