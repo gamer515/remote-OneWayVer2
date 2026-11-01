@@ -9,6 +9,20 @@ public class OmnibusData
     // 진행 상한만 지정합니다. 이후 챕터 데이터는 삭제하거나 목록에서 제외하지 않습니다.
     // 비워 두면 기존처럼 모든 챕터를 진행합니다.
     public string lastPlayableChapterId;
+    public string firstPlayableChapterId;
+    public string[] legacyChapterIds;
+
+    public int FirstPlayableChapterIndex
+    {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(firstPlayableChapterId)) return 0;
+            int index = chapters?.FindIndex(chapter => chapter?.chapterId == firstPlayableChapterId) ?? -1;
+            if (index < 0 || index >= PlayableChapterCount)
+                throw new InvalidOperationException("시작 챕터가 진행 가능 범위에 없습니다: " + firstPlayableChapterId);
+            return index;
+        }
+    }
 
     public bool IsProgressionLimited => !string.IsNullOrWhiteSpace(lastPlayableChapterId);
 

@@ -1,0 +1,48 @@
+EmacEArt Stylized Procedural Sky (URP) - package contents
+=========================================================
+
+Root folder after import:  Assets/EmacEArt/SkyboxURP
+
+
+COUNTS
+------
+
+  Shaders            1
+  Demo scenes        1
+  Materials          4   (1 sky, 3 plain materials for the demo props)
+  Scripts            2   (1 editor inspector, 1 demo panel)
+  Documents          5
+  ------------------------
+  Asset files        13
+  Folders            8
+  Total size         122.5 KB (without this file)
+
+
+FILE LIST
+---------
+
+  Demo/Scripts/EA_SkyboxDemoPanel.cs                       30.9 KB
+  Documentation/CONTENTS.txt                           (this file)
+  Documentation/EmacEArt_SkyboxURP_Manual.pdf              15.9 KB
+  Documentation/LICENSE.txt                                 0.4 KB
+  Documentation/README.txt                                  4.0 KB
+  Editor/EmacSkyboxURPEditor.cs                            10.8 KB
+  LICENSE.txt                                               0.4 KB
+  Materials/EA_Demo_Ground.mat                              1.2 KB
+  Materials/EA_Demo_Stone.mat                               1.2 KB
+  Materials/EA_Demo_White.mat                               1.2 KB
+  Materials/EA_Skybox.mat                                   2.2 KB
+  Scenes/EA_SkyboxURP_Demo.unity                           33.2 KB
+  Shaders/EmacSkyboxURP.shader                             20.9 KB
+
+
+NOT INCLUDED
+------------
+
+  - No textures. The sky is generated from math; the only texture slot is the
+    optional star cubemap, and it is left empty on purpose.
+  - No third-party assets, no external dependencies beyond URP itself.
+  - Nothing the sky needs runs at runtime. The one runtime script is the demo
+    panel in the Demo folder, which the sky itself does not use.
+
+EmacEArt - emaceart@gmail.com - https://emaceart.itch.io

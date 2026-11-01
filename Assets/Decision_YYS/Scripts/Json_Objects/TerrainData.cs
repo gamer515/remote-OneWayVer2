@@ -8,6 +8,7 @@ public class TerrainData
     // 첫 항목은 고정이며, 두 번째 이후 항목만 회차 Seed로 순서를 섞습니다.
     public string[] groundIds;
     public int chunkCount;
+    public float chunkLength;
     public PlaceData[] places;
 }
 
@@ -37,6 +38,7 @@ public class TerrainDefinition
     public string groundId;
     public string[] groundIds;
     public int chunkCount;
+    public float chunkLength;
     public TerrainPlaceDefinition[] places;
 }
 

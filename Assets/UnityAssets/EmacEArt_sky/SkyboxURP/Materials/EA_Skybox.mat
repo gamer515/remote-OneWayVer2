@@ -1,0 +1,76 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: EA_Skybox
+  m_Shader: {fileID: 4800000, guid: c42bca9ad804b464b9259cdd77ed8fd4, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords:
+  - _CLOUDSENABLED_ON
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties:
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _StarsTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _AtmosphereFalloff: 4
+    - _AtmosphereStrength: 0.34
+    - _CloudBands: 1
+    - _CloudCoverage: 0.54
+    - _CloudDensity: 0.92
+    - _CloudHeight: 0.04
+    - _CloudScale: 2.4
+    - _CloudSoftness: 0.09
+    - _CloudSpeed: 0.018
+    - _CloudStretch: 0.36
+    - _CloudStyle: 4
+    - _CloudSwirl: 0.18
+    - _CloudsEnabled: 1
+    - _Contrast: 1.04
+    - _Exposure: 1.08
+    - _HorizonOffset: 0.02
+    - _HorizonSharpness: 2.6
+    - _Saturation: 1.12
+    - _SkyGradAngle: 330
+    - _SkyGradSpread: 0.62
+    - _SkyGradStr: 0.3
+    - _StarsEnabled: 0
+    - _StarsIntensity: 1
+    - _StarsSharpness: 8
+    - _StarsThreshold: 0.72
+    - _SunFollowLight: 1
+    - _SunGlowFalloff: 6.5
+    - _SunGlowSize: 0.28
+    - _SunSize: 0.006
+    m_Colors:
+    - _AtmosphereColor: {r: 0.55, g: 0.7, b: 0.92, a: 1}
+    - _CloudColor: {r: 1, g: 0.99, b: 0.97, a: 1}
+    - _CloudShadowColor: {r: 0.62, g: 0.68, b: 0.8, a: 1}
+    - _Gain: {r: 1, g: 1, b: 1, a: 0}
+    - _Gamma: {r: 0.5, g: 0.5, b: 0.5, a: 0}
+    - _GroundColor: {r: 0.18, g: 0.16, b: 0.13, a: 1}
+    - _HorizonColor: {r: 0.62, g: 0.78, b: 0.92, a: 1}
+    - _Lift: {r: 0, g: 0, b: 0, a: 0}
+    - _SkyGradColor: {r: 1, g: 0.62, b: 0.3, a: 1}
+    - _SunColor: {r: 1, g: 0.97, b: 0.9, a: 1}
+    - _SunDirection: {r: -0.45315427, g: 0.42261827, b: 0.78488696, a: 0}
+    - _SunGlowColor: {r: 1, g: 0.85, b: 0.62, a: 1}
+    - _ZenithColor: {r: 0.13, g: 0.32, b: 0.72, a: 1}
+  m_BuildTextureStacks: []

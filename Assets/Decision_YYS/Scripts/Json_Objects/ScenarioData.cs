@@ -66,4 +66,5 @@ public sealed class StoryChoiceAction
     public string[] grantsUnlocks;
     public string relationshipId;
     public int relationshipDelta;
+    public int[] abilityCost;
 }

@@ -137,6 +137,7 @@ public static partial class LocalStoryNotebook
     {
         if(create)EnsureChapterBooks(storage,earned);
         return ChapterContentCatalog.Chapters.SelectMany(c=>{string chapter=(string)c["id"],file=ChapterPath(storage,chapter);return ReadChapterContexts(File.Exists(file)?file:TemplatePath(chapter),earned);})
+            .Where(c=>ChapterContentCatalog.CharacterData(c.characterId)!=null)
             .GroupBy(c=>c.characterId).Select(g=>g.First()).ToArray();
     }
     private static LocalStoryNpcContext[] ReadChapterContexts(string file,string[] earned)

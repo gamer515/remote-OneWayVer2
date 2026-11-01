@@ -2,29 +2,62 @@
   "episodes": {
     "Chapter_1_01": {
       "TerrainInfo": {
-        "terrainName": "Chapter1Road",
-        "groundId": "dungeon_01",
+        "terrainName": "MineVillageFirstChunk",
+        "groundId": "mine_chunk",
         "groundIds": [
-          "dungeon_01",
-          "dungeon_02"
+          "mine_chunk"
         ],
-        "chunkCount": 2,
+        "chunkCount": 1,
+        "chunkLength": 120,
         "places": [
           {
-            "placeId": "chapter_1_chunk_1_instructor_0",
-            "chunkIndex": 1,
-            "prefabId": "normal_people",
-            "connectStoryCards": "Chapter_1/Chapter_1_01/Encounters/chapter_1_chunk_1_instructor_0",
-            "characterId": "Instructor"
+            "placeId": "brook",
+            "chunkIndex": 0,
+            "prefabId": "mine_miner",
+            "connectStoryCards": "Chapter_1/Chapter_1_01/Encounters/brook",
+            "characterId": "Brook"
           }
         ]
       }
     }
   },
   "actions": {
-    "Chapter_1/Chapter_1_01/Encounters/chapter_1_chunk_1_instructor_0": {
-      "-476459027": {
-        "npcEmotion": "none"
+    "Chapter_1/Chapter_1_01/Encounters/brook": {
+      "110104": {
+        "choiceRules": {
+          "brook_entry_0": {
+            "abilityCost": [
+              1,
+              0,
+              0,
+              0
+            ]
+          },
+          "brook_entry_1": {
+            "abilityCost": [
+              0,
+              1,
+              0,
+              0
+            ]
+          },
+          "brook_entry_2": {
+            "abilityCost": [
+              0,
+              0,
+              1,
+              0
+            ]
+          },
+          "brook_entry_3": {
+            "abilityCost": [
+              0,
+              0,
+              0,
+              1
+            ]
+          }
+        }
       }
     }
   },

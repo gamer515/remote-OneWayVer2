@@ -55,6 +55,7 @@ public class GameManager : MonoBehaviour
 
         OmnibusData currentOmnibusData =
             SaveIOService.Instance.LoadResourceData<OmnibusData>("Omnibus_01");
+        saveManager.EnsureJourneyEntry(currentOmnibusData);
 
         var (chapterIndex, episodeIndex, storyIndex, playerStats) = LoadData();
         var player = ActivatePlayer();
@@ -139,6 +140,7 @@ public class GameManager : MonoBehaviour
     public bool ResumeFinalBattle()
     {
         saveManager ??= new SaveManager();
+        saveManager.EnsureJourneyEntry(SaveIOService.Instance.LoadResourceData<OmnibusData>("Omnibus_01"));
         var progress = saveManager.LoadProgress();
         if (!progress.finalBattlePending) return false;
         // A crash between completion and Profile update must not replay the boss or skip a run.

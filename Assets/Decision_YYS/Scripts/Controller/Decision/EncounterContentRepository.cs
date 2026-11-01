@@ -302,6 +302,11 @@ public sealed class EncounterContentRepository
             }
             foreach (StoryChoiceAction choice in card.choiceActions)
             {
+                if (choice != null && !AbilityPayment.IsValid(choice.abilityCost))
+                {
+                    error = "abilityCost는 0 이상의 네 능력 비용이어야 합니다.";
+                    return false;
+                }
                 if (choice == null || (choice.action != "continue" && choice.action != "skip" &&
                     choice.action != "story") || (choice.action == "story" && !StoryExists(choice.storyPath)))
                 {

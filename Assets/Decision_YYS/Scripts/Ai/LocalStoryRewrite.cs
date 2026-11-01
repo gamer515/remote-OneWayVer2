@@ -82,16 +82,22 @@ using UnityEngine;
 /// <summary>Explicitly synthetic comparison inputs. Never written to player progress or next-run requests.</summary>
 public static class LocalStoryTestInputs
 {
-    public const string GuidePath="Initial/Initial_01/Encounters/guide";
-    public static string Name(int scenario) => scenario==1?"첫 만남":scenario==2?"우호 재회":scenario==3?"모욕 재회":"실제 기록";
+    public static string GuidePath => (string)ChapterContentCatalog.Stories.First()["path"];
+    public static string Name(int scenario) => scenario==1?"첫 만남":scenario==2?"첫 선택 기록 재회":scenario==3?"넷째 선택 기록 재회":"실제 기록";
     public static LocalStoryRevisionRequest Create(int scenario)
     {
         if(scenario==1) return null;
         if(scenario!=2 && scenario!=3) throw new ArgumentOutOfRangeException(nameof(scenario));
-        return new LocalStoryRevisionRequest {sourceRun=1,targetRun=2,chapterId="Initial",finalStats=new[]{5,5,5,5},
-            events=new List<StoryEventRecord>{new StoryEventRecord {chapterId="Initial",characterId="Guide",characterName="로키",
-                terrainName="Dungeon",kind="choice",choiceId=scenario==2?"loki_question_place":"loki_insult",
-                semanticText=scenario==2?"왜 여기에 있는 거지?":"꺼져!",relationshipDelta=scenario==2?1:-2}}};
+        var info = ChapterContentCatalog.Info(GuidePath);
+        var root = JsonUtility.FromJson<EncounterCardRoot>(ChapterContentCatalog.Story(GuidePath));
+        var card = root.MainStory.First(c => c.type == "Choice");
+        int slot = scenario == 2 ? 0 : 3;
+        string npc = (string)info["characterId"];
+        return new LocalStoryRevisionRequest { sourceRun=1, targetRun=2, chapterId=(string)info["chapterId"],
+            events=new List<StoryEventRecord>{new StoryEventRecord {chapterId=(string)info["chapterId"],characterId=npc,
+                characterName=ChapterContentCatalog.Character(npc)?.name,storyPath=GuidePath,kind="choice",
+                choiceId=card.choiceActions[slot].choiceId,semanticText=card.options[slot],
+                relationshipDelta=card.choiceActions[slot].relationshipDelta}}};
     }
 }
 

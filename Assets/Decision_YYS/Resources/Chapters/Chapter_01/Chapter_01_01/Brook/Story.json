@@ -1,0 +1,89 @@
+{
+  "brook": {
+    "MainStory": [
+      {
+        "ID": 110100,
+        "type": "Next",
+        "eventIDstable": "brook_intro_1",
+        "speakID": "Brook",
+        "Text": "이상하네. 어제까진 이 곡괭이가 이렇게 무겁지 않았는데."
+      },
+      {
+        "ID": 110101,
+        "type": "Next",
+        "eventIDstable": "brook_intro_2",
+        "speakID": "Dor",
+        "Text": "손잡이가 아니라 당신 팔이 문제야. 이제 인정 좀 해."
+      },
+      {
+        "ID": 110102,
+        "type": "Next",
+        "eventIDstable": "brook_intro_3",
+        "speakID": "Brook",
+        "Text": "그 말을 헤른이 들으면 당장 나를 해고할 거야."
+      },
+      {
+        "ID": 110103,
+        "type": "Choice",
+        "eventIDstable": "brook_intro_4",
+        "speakID": "Brook",
+        "Text": "난 아직 여기서 할 수 있는 일이 있어. 그렇지?",
+        "options": [
+          "오늘 작업은 제가 대신할게요.",
+          "당신에게 맞는 곡괭이를 새로 만들죠.",
+          "채굴 말고 다른 일을 맡을 수는 없나요?",
+          "헤른에게 상태를 숨기는 건 더 위험해요."
+        ],
+        "choiceActions": [
+          {
+            "choiceID": "brook_intent_0",
+            "action": "continue"
+          },
+          {
+            "choiceID": "brook_intent_1",
+            "action": "continue"
+          },
+          {
+            "choiceID": "brook_intent_2",
+            "action": "continue"
+          },
+          {
+            "choiceID": "brook_intent_3",
+            "action": "continue"
+          }
+        ]
+      },
+      {
+        "ID": 110104,
+        "type": "Choice",
+        "eventIDstable": "brook_intro_5",
+        "speakID": "Brook",
+        "Text": "안쪽으로 가려면 내 작업반 등록이 필요해. 빈자리를 채울 코인 하나는 남겨 줘.",
+        "options": [
+          "제 힘을 드릴게요. 작업을 계속해 주세요.",
+          "이걸로 폐석을 빨리 운반하세요.",
+          "광맥을 구분하는 데 써 주세요.",
+          "헤른과 다시 협상할 때 사용하세요."
+        ],
+        "choiceActions": [
+          {
+            "choiceID": "brook_entry_0",
+            "action": "continue"
+          },
+          {
+            "choiceID": "brook_entry_1",
+            "action": "continue"
+          },
+          {
+            "choiceID": "brook_entry_2",
+            "action": "continue"
+          },
+          {
+            "choiceID": "brook_entry_3",
+            "action": "continue"
+          }
+        ]
+      }
+    ]
+  }
+}
