@@ -50,6 +50,12 @@ public partial class DecisionManager
         string key = "choice:" + storyVisit;
         if (storyEvents.Exists(record => record.eventKey == key)) return;
         var record = NewStoryEvent(key, "choice", card);
+        if (choice.abilityCost != null)
+        {
+            if (!AbilityPayment.TryPay(record.statsBefore, choice.abilityCost, out var paid)) return;
+            statContainer.SetStats(paid);
+            guideProgress.committedStats = (int[])paid.Clone();
+        }
         record.choiceId = string.IsNullOrWhiteSpace(choice.choiceId) ?
             activeEncounterPath + ":" + record.cardId + ":" + selectedGearIndex : choice.choiceId;
         record.displayedText = card.options[selectedGearIndex];

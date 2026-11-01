@@ -1,5 +1,4 @@
 using System.Collections;
-using AangFaceAsset;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
@@ -11,7 +10,6 @@ namespace JourneyMapKit
 {
     /// <summary>
     /// JourneyController의 기어와 노란 버튼 입력을 처리합니다.
-    /// 기어 선택에 따른 얼굴 표정도 이 컴포넌트에서 함께 갱신합니다.
     /// </summary>
     public sealed class JourneyBoardInput : MonoBehaviour
     {
@@ -20,9 +18,6 @@ namespace JourneyMapKit
 
         [Tooltip("보드 카메라를 RawImage로 표시할 때만 연결합니다.")]
         public RawImage boardViewport;
-
-        [Header("Face Expression")]
-        [SerializeField] private FaceExpressionController faceController;
 
         public UnityEvent onYellowPressed = new UnityEvent();
         public UnityEvent<int> onGearSelected = new UnityEvent<int>();
@@ -43,11 +38,6 @@ namespace JourneyMapKit
                 board = GetComponent<JourneyBoardReferences>();
             if (inputCamera == null)
                 inputCamera = Camera.main;
-            if (faceController == null)
-            {
-                faceController = FindFirstObjectByType<FaceExpressionController>(
-                    FindObjectsInactive.Include);
-            }
 
             if (board != null)
             {
@@ -126,13 +116,8 @@ namespace JourneyMapKit
             if (dragDelta.sqrMagnitude <= 100f)
             {
                 SelectGear(-1);
-                ResetFaceExpression();
                 return;
             }
-
-            float xRatio = Mathf.Clamp(dragDelta.x * 0.12f / 22f, -1f, 1f);
-            float yRatio = Mathf.Clamp(dragDelta.y * 0.12f / 22f, -1f, 1f);
-            ApplyFaceExpression(xRatio, yRatio);
 
             int index = dragDelta.x < 0f
                 ? (dragDelta.y >= 0f ? 0 : 1)
@@ -217,7 +202,6 @@ namespace JourneyMapKit
             }
 
             SelectedIndex = -1;
-            ResetFaceExpression();
         }
 
         public void ResetSelection()
@@ -227,29 +211,6 @@ namespace JourneyMapKit
                 board.gear.localRotation = restRotation;
 
             SelectGear(-1);
-            ResetFaceExpression();
-        }
-
-        private void ApplyFaceExpression(float xRatio, float yRatio)
-        {
-            if (faceController == null)
-                return;
-
-            float left = Mathf.Clamp01(-xRatio);
-            float right = Mathf.Clamp01(xRatio);
-            float top = Mathf.Clamp01(yRatio);
-            float bottom = Mathf.Clamp01(-yRatio);
-
-            faceController.angry = Mathf.Min(left, top) * 100f;
-            faceController.smile = Mathf.Min(left, bottom) * 100f;
-            faceController.surprised = Mathf.Min(right, top) * 100f;
-            faceController.sad = Mathf.Min(right, bottom) * 100f;
-            faceController.Apply();
-        }
-
-        private void ResetFaceExpression()
-        {
-            faceController?.ResetExpression();
         }
 
         private IEnumerator AnimatePress()
@@ -283,8 +244,6 @@ namespace JourneyMapKit
                 board.yellowButton.transform.localPosition = restButtonPosition;
                 board.gear.localRotation = restRotation;
             }
-
-            ResetFaceExpression();
         }
     }
 }

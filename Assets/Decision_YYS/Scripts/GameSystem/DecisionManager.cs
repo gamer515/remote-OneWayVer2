@@ -341,7 +341,7 @@ private void SetYellowInputInteractable(bool interactable)
         if (currentOmnibus?.chapters == null) return false;
 
         int lastChapterIndex = Mathf.Min(chapterIndex, currentOmnibus.PlayableChapterCount - 1);
-        for (int currentChapterIndex = 0;
+        for (int currentChapterIndex = currentOmnibus.FirstPlayableChapterIndex;
              currentChapterIndex <= lastChapterIndex;
              currentChapterIndex++)
         {
@@ -473,7 +473,7 @@ private void SetYellowInputInteractable(bool interactable)
                 () => { int next = GameManager.Instance.PrepareNextPlaythrough(); LocalStoryRuntimeService.TryResumePending(); return next; },
                 () => sceneTransitionService.LoadMainMenuScene());
         Debug.Log($"[Story] {session?.RunNumber ?? 1}회차 {reason}. " +
-            "다음 회차를 Initial부터 시작하도록 준비하고 메인 메뉴로 이동합니다.", this);
+            "설정된 시작 챕터에서 다음 회차를 준비하고 메인 메뉴로 이동합니다.", this);
         runCompletionService.Complete();
     }
 

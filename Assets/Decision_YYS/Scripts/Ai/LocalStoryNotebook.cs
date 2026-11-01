@@ -19,7 +19,7 @@ using UnityEngine;
 public static partial class LocalStoryNotebook
 {
     private static readonly XNamespace Ns = "http://schemas.openxmlformats.org/spreadsheetml/2006/main";
-    public static string PathFor(SaveIOService storage) => ChapterPath(storage,"Initial");
+    public static string PathFor(SaveIOService storage) => ChapterPath(storage, (string)ChapterContentCatalog.Chapters.First()["id"]);
     private static void Ensure(SaveIOService storage)
     {
         EnsureChapterBooks(storage);

@@ -24,6 +24,22 @@
 /Tests/LocalStoryBenchmark/Models/
 
 # Local authoring and generated document artifacts
+# Keep local planning, review notes, and retired content out of the game repository.
+*.md
+*.md.meta
+!**/LICENSE.md
+!**/LICENSE.md.meta
+!**/LICENCE.md
+!**/LICENCE.md.meta
+!**/NOTICE.md
+!**/NOTICE.md.meta
+/Docs/
+/Documentation/
+/Archive/
+/AgentScripts/Backups/
+__pycache__/
+*.pyc
+*.slnx
 /tmp/
 /outputs/
 /AgentScripts/StoryWorkbook/node_modules/

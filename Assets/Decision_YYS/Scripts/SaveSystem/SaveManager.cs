@@ -37,7 +37,7 @@ public class SaveManager
     /// <param name="storyIndex">에피소드 내부 지문 인덱스.</param>
     public void SaveProgress(int chapterIndex, int episodeIndex, int storyIndex)
     {
-        cachedProgress.chapterIndex = chapterIndex;
+        SetChapterIndex(chapterIndex);
         cachedProgress.episodeIndex = episodeIndex;
         cachedProgress.storyIndex = storyIndex;
 
@@ -67,7 +67,7 @@ public class SaveManager
         Quaternion rotation)
     {
         // 지문 인덱스와 목표 위치는 같은 체크포인트이므로 한 번의 파일 쓰기로 저장합니다.
-        cachedProgress.chapterIndex = chapterIndex;
+        SetChapterIndex(chapterIndex);
         cachedProgress.episodeIndex = episodeIndex;
         cachedProgress.storyIndex = storyIndex;
         cachedProgress.currentPosition = new[] { position.x, position.y, position.z };
@@ -128,7 +128,7 @@ public class SaveManager
         string activeStoryPath = null)
     {
         // 실제 플레이어 좌표와 배치물 진행도를 한 번에 기록합니다.
-        cachedProgress.chapterIndex = chapterIndex;
+        SetChapterIndex(chapterIndex);
         cachedProgress.episodeIndex = episodeIndex;
         cachedProgress.currentPosition = new[] { playerPosition.x, playerPosition.y, playerPosition.z };
         cachedProgress.currentRotation = new[]
@@ -353,6 +353,57 @@ public class SaveManager
     public GameProgress LoadProgress()
     {
         return cachedProgress;
+    }
+
+    private void SetChapterIndex(int index)
+    {
+        var omnibus = SaveIOService.Instance.LoadResourceData<OmnibusData>("Omnibus_01");
+        cachedProgress.chapterIndex = index;
+        cachedProgress.chapterId = index >= 0 && index < omnibus.chapters.Count ? omnibus.chapters[index].chapterId : null;
+    }
+
+    public void EnsureJourneyEntry(OmnibusData omnibus)
+    {
+        int first = omnibus.FirstPlayableChapterIndex;
+        string id = cachedProgress.chapterId;
+        if (string.IsNullOrWhiteSpace(id) && omnibus.legacyChapterIds != null &&
+            cachedProgress.chapterIndex >= 0 && cachedProgress.chapterIndex < omnibus.legacyChapterIds.Length)
+            id = omnibus.legacyChapterIds[cachedProgress.chapterIndex];
+        int mapped = string.IsNullOrWhiteSpace(id) ? cachedProgress.chapterIndex :
+            omnibus.chapters.FindIndex(chapter => chapter.chapterId == id);
+        if (mapped >= first && mapped < omnibus.PlayableChapterCount)
+        {
+            if (cachedProgress.chapterIndex != mapped || cachedProgress.chapterId != omnibus.chapters[mapped].chapterId)
+            {
+                cachedProgress.chapterIndex = mapped;
+                cachedProgress.chapterId = omnibus.chapters[mapped].chapterId;
+                SaveIOService.Instance.SaveRunCheckpoint(CurrentRun, "Progress", cachedProgress);
+            }
+            return;
+        }
+        cachedProgress.chapterIndex = first;
+        cachedProgress.chapterId = omnibus.chapters[first].chapterId;
+        cachedProgress.episodeIndex = 0;
+        cachedProgress.storyIndex = 0;
+        cachedProgress.currentPosition = null;
+        cachedProgress.currentRotation = null;
+        cachedProgress.interactionPhase = null;
+        cachedProgress.activePlaceId = null;
+        cachedProgress.activeStoryPath = null;
+        cachedProgress.activeCardIndex = 0;
+        cachedProgress.resolvedPlaceIds.Clear();
+        cachedProgress.currentEncounterHistory.Clear();
+        cachedProgress.finalBattlePending = false;
+        cachedProgress.isCompleted = false;
+        cachedProgress.runEndReason = null;
+        if (cachedProgress.guideProgress != null)
+        {
+            cachedProgress.guideProgress.activeDialogue = null;
+            cachedProgress.guideProgress.allocating = false;
+            cachedProgress.guideProgress.activeEffectId = null;
+            cachedProgress.guideProgress.effectStage = 0;
+        }
+        SaveIOService.Instance.SaveRunCheckpoint(CurrentRun, "Progress", cachedProgress);
     }
 
     public PlayerStats LoadStats()

@@ -1,5 +1,4 @@
 ﻿using System;
-using AangFaceAsset;
 using UnityEngine;
 
 /// <summary>
@@ -28,10 +27,6 @@ public class JoystickLikeGear : MonoBehaviour
     [SerializeField] private float verticalRange = 150f;
     [SerializeField] private float smoothTime = 0.08f;
 
-    [Header("Face Expression")]
-    [Tooltip("AangFace의 블렌드셰이프 표정 컨트롤러입니다. 비어 있으면 씬에서 자동으로 찾습니다.")]
-    [SerializeField] private FaceExpressionController faceController;
-
     [Header("Debug")]
     [SerializeField] private bool showDebugArea = true;
 
@@ -52,13 +47,6 @@ public class JoystickLikeGear : MonoBehaviour
     {
         if (mainCamera == null)
             mainCamera = Camera.main;
-
-        // 기존 2D 도형 얼굴 대신 씬에 배치된 AangFace를 자동으로 연결합니다.
-        if (faceController == null)
-        {
-            faceController = FindFirstObjectByType<FaceExpressionController>(
-                FindObjectsInactive.Include);
-        }
 
         if (gear3D != null)
         {
@@ -85,13 +73,6 @@ public class JoystickLikeGear : MonoBehaviour
             targetPosition,
             ref currentVelocity,
             smoothTime);
-
-        if (faceController != null)
-        {
-            float xRatio = currentPosition.x / Mathf.Max(horizontalRange, 0.01f);
-            float yRatio = currentPosition.y / Mathf.Max(verticalRange, 0.01f);
-            ApplyFaceExpression(xRatio, yRatio);
-        }
     }
 
     private void LateUpdate()
@@ -220,36 +201,13 @@ public class JoystickLikeGear : MonoBehaviour
     }
 
     /// <summary>
-    /// 베팅 확정 후 기어를 중앙으로 되돌리고 얼굴 입력도 중립으로 전환합니다.
+    /// 베팅 확정 후 기어를 중앙으로 되돌립니다.
     /// </summary>
     public void ResetToNeutral()
     {
         isDragging = false;
         currentVelocity = Vector2.zero;
         SetNeutral();
-        faceController?.ResetExpression();
-    }
-
-    /// <summary>
-    /// 기어의 네 방향을 AangFace의 표정 블렌드셰이프 값으로 변환합니다.
-    /// 중앙에 가까워질수록 모든 표정이 중립으로 자연스럽게 돌아갑니다.
-    /// </summary>
-    private void ApplyFaceExpression(float xRatio, float yRatio)
-    {
-        if (faceController == null)
-            return;
-
-        float left = Mathf.Clamp01(-xRatio);
-        float right = Mathf.Clamp01(xRatio);
-        float top = Mathf.Clamp01(yRatio);
-        float bottom = Mathf.Clamp01(-yRatio);
-
-        // 좌상: 화남, 좌하: 웃음, 우상: 놀람, 우하: 슬픔
-        faceController.angry = Mathf.Min(left, top) * 100f;
-        faceController.smile = Mathf.Min(left, bottom) * 100f;
-        faceController.surprised = Mathf.Min(right, top) * 100f;
-        faceController.sad = Mathf.Min(right, bottom) * 100f;
-        faceController.Apply();
     }
 
     private void ResolveHandleCollider()

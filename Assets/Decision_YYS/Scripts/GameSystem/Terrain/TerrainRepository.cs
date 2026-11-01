@@ -117,6 +117,11 @@ public sealed class TerrainRepository
             errorMessage = "Terrain 또는 Transform의 places가 없습니다.";
             return false;
         }
+        if (definition.chunkLength < 0 || float.IsNaN(definition.chunkLength) || float.IsInfinity(definition.chunkLength))
+        {
+            errorMessage = "chunkLength는 유한한 양수이거나 기존 크기를 사용하는 0이어야 합니다.";
+            return false;
+        }
 
         Dictionary<string, TerrainPlaceTransform> transformsById =
             new Dictionary<string, TerrainPlaceTransform>(StringComparer.Ordinal);
@@ -198,6 +203,7 @@ public sealed class TerrainRepository
             groundId = definition.groundId,
             groundIds = definition.groundIds,
             chunkCount = effectiveChunkCount,
+            chunkLength = definition.chunkLength,
             places = places
         };
         errorMessage = null;

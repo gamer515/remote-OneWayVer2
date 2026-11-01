@@ -44,6 +44,7 @@ public class EnvController : MonoBehaviour
     private TerrainStreamingController terrainStreamingController;
     private Transform playerTransform;
     private int nextGlobalChunkIndex;
+    private float registeredLength;
     private int contentRun = 1;
     private int contentSeed;
 
@@ -100,10 +101,10 @@ public class EnvController : MonoBehaviour
         }
 
         // 새 챕터의 로컬 청크 0은 이전 지형의 마지막 전역 청크 바로 뒤에서 시작합니다.
-        Vector3 segmentOrigin = TerrainOrigin +
-            Vector3.forward * (nextGlobalChunkIndex * chunkSize);
+        float segmentChunkSize = terrainData.chunkLength > 0 ? terrainData.chunkLength : chunkSize;
+        Vector3 segmentOrigin = TerrainOrigin + Vector3.forward * registeredLength;
         TerrainPlaceRegistry registry = new TerrainPlaceRegistry(
-            terrainData, segmentOrigin, chunkSize);
+            terrainData, segmentOrigin, segmentChunkSize);
 
         if (!TryResolveGroundPrefabs(terrainData, out GameObject[] selectedGroundPrefabs,
                 out string groundError))
@@ -116,7 +117,9 @@ public class EnvController : MonoBehaviour
             terrainPrefabCatalog, environment.transform, nextGlobalChunkIndex, chunkCount,
             contentSeed);
 
-        float segmentEndZ = segmentOrigin.z + chunkCount * chunkSize;
+        float segmentEndZ = segmentOrigin.z + chunkCount * segmentChunkSize;
+        terrainStreamingController.RegisterSegment(segmentOrigin.z, segmentChunkSize, chunkCount);
+        registeredLength += chunkCount * segmentChunkSize;
         registeredTerrains.Add(terrainPath, new RegisteredTerrain
         {
             Data = terrainData,
@@ -166,7 +169,7 @@ public class EnvController : MonoBehaviour
         }
 
         // 개발 중 보류한 이후 챕터의 콘텐츠는 시작/검증 대상에서도 제외합니다.
-        for (int chapterIndex = 0; chapterIndex < playableChapterCount; chapterIndex++)
+        for (int chapterIndex = omnibus.FirstPlayableChapterIndex; chapterIndex < playableChapterCount; chapterIndex++)
         {
             ChapterInfo chapter = omnibus.chapters[chapterIndex];
             if (chapter == null || string.IsNullOrWhiteSpace(chapter.chapterId) ||

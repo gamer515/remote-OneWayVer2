@@ -90,7 +90,7 @@ public partial class DecisionManager
         if (encounterFlow.TryFindFirst(startZ, endZ, resolvedPlaceIds, out var first))
         {
             pendingEncounter = first;
-            endZ = first.WorldPosition.z - encounterStopDistance;
+            endZ = Mathf.Max(startZ, first.WorldPosition.z - encounterStopDistance);
         }
         currentState = StoryState.MovingToEncounter;
         SetYellowInputInteractable(false);
@@ -147,7 +147,8 @@ public partial class DecisionManager
         StoryChoiceAction choice = card.choiceActions[selectedGearIndex];
         // A restored, confirmed exchange must continue even after its required item was consumed.
         bool confirmed=storyEvents.Exists(e=>e.eventKey=="choice:"+storyVisit && e.choiceSlot==selectedGearIndex);
-        if (!confirmed && (!saveService.HasAllUnlocks(choice.requiresUnlocks) || !saveService.HasAllItems(choice.requiresItems)))
+        if (!confirmed && (!saveService.HasAllUnlocks(choice.requiresUnlocks) || !saveService.HasAllItems(choice.requiresItems) ||
+            !AbilityPayment.CanPay(statContainer.stats, choice.abilityCost)))
         {
             RenderEncounterOptions();
             return true;
@@ -164,6 +165,11 @@ public partial class DecisionManager
         {
             backpackInventory?.Initialize(saveService.LoadInventoryState(), saveService.SaveInventoryState);
             foreach (var interaction in interactions) presentationController.ShowInteraction(interaction.notice, selected.characterId);
+        }
+        if (choice.abilityCost != null && statContainer.stats[0] <= 0)
+        {
+            FinishRunAndReturnToMainMenu("체력 0으로 사망");
+            return true;
         }
         switch (choice.action)
         {
@@ -345,8 +351,18 @@ public partial class DecisionManager
         string[] options = (string[])card.options.Clone();
         if (card.choiceActions != null && card.choiceActions.Length == 4)
             for (int index = 0; index < 4; index++)
+            {
                 if (!saveService.HasAllUnlocks(card.choiceActions[index].requiresUnlocks) || !saveService.HasAllItems(card.choiceActions[index].requiresItems))
                     options[index] += " (잠김)";
+                var cost = card.choiceActions[index].abilityCost;
+                if (cost != null)
+                {
+                    string[] labels = { "힘", "속도", "지능", "매력" };
+                    for (int stat = 0; stat < cost.Length; stat++)
+                        if (cost[stat] > 0) options[index] += $" ({labels[stat]} −{cost[stat]})";
+                    if (!AbilityPayment.CanPay(statContainer.stats, cost)) options[index] += " (능력 부족) (잠김)";
+                }
+            }
         presentationController.ShowOptions(options, selectedGearIndex);
     }
 

@@ -182,6 +182,7 @@ public static class LocalStoryDialogueQueue
     {
         string profile=Path.Combine(store.StorageRoot,"Profile.json");
         if(job==null || job.sourceRun<1 || job.targetRun!=job.sourceRun+1 || !File.Exists(profile)) return false;
+        if (ChapterContentCatalog.Info(job.storyPath) == null) return false;
         int current=JsonUtility.FromJson<ProfileData>(File.ReadAllText(profile)).currentRun;
         var progress=store.LoadRunData<GameProgress>(job.sourceRun,"Progress");
         bool validRun=current==job.sourceRun || (current==job.targetRun && progress?.isCompleted==true);

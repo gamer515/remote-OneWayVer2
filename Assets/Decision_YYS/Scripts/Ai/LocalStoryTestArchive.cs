@@ -361,10 +361,10 @@ public static partial class LocalStoryTestArchive
         if (string.IsNullOrWhiteSpace(speaker))
         {
             string path = (string)report["storyPath"] ?? "";
-            speaker = path.Contains("/guide") ? "Guide" : path.Contains("/duelist") ? "Duelist" : path.Contains("/gambler") ? "Gambler" : "NPC";
+            speaker = (string)ChapterContentCatalog.Info(path)?["characterId"] ?? "NPC";
         }
         // Only known character IDs are resolved. Human-authored names remain unchanged.
-        if (speaker == "Guide" || speaker == "Duelist" || speaker == "Gambler")
+        if (ChapterContentCatalog.CharacterData(speaker) != null)
         {
             var character = ChapterContentCatalog.Asset("Story_Json_Data/Characters/" + speaker);
             string name = character == null ? null : (string)JObject.Parse(character.text)["name"];

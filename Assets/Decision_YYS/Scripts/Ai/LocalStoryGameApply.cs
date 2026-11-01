@@ -94,7 +94,7 @@ public static class LocalStoryGameApply
                     throw new FormatException("Edit은 speaker/text와 options만 사용합니다: "+i);
                 var card=original.MainStory[i];
                 string id=card.speakerId;
-                if(string.IsNullOrEmpty(id)) id=report.storyPath.Contains("/guide")?"Guide":report.storyPath.Contains("/duelist")?"Duelist":"Gambler";
+                if(string.IsNullOrEmpty(id)) id=(string)ChapterContentCatalog.Info(report.storyPath)?["characterId"];
                 var person=ChapterContentCatalog.Asset("Story_Json_Data/Characters/"+id);
                 string name=person==null?id:JsonUtility.FromJson<StoryCharacter>(person.text).name;
                 if((string)line["speaker"]!=id && (string)line["speaker"]!=name)

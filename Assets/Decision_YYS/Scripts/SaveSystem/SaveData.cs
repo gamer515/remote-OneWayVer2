@@ -16,6 +16,7 @@ public class GameProgress
     // 같은 회차의 지형·오브젝트 랜덤 배치를 저장 복원할 때 재현하는 기준값입니다.
     public int runSeed;
     public int chapterIndex;
+    public string chapterId;
     public int episodeIndex;
     public int storyIndex;
     public float[] currentPosition;
