@@ -450,6 +450,7 @@ private void SetYellowInputInteractable(bool interactable)
         currentScenarioPath = mainStory.chapterId + "/" + mainStory.episodeIds[episodeIndex];
         PreloadNextTerrain();
         InitializeMineChapter();
+        InitializeLearning();
         StartEncounterEpisode();
     }
 

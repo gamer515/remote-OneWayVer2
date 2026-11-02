@@ -29,7 +29,7 @@ public partial class DecisionManager
         if (!mine.initialized)
         {
             mine.initialized = true;
-            Debug.Log("[미구현] 능력 성장 미니게임, 성장과 이동 병행, 나이에 따른 성장·유지, 신분별 통행료 가중치는 후속 작업입니다.");
+            Debug.Log("[학습] 학습 대기열과 이동·대화 병행 적용. 전용 성장 미니게임, 나이에 따른 성장·유지, 신분별 통행료 가중치는 후속 작업입니다.");
         }
         if (mineView == null)
         {
@@ -197,7 +197,10 @@ public partial class DecisionManager
 
     private void TickMineChapter()
     {
-        if (mine == null || currentScenarioPath != "Chapter_1/Chapter_1_01" || playerController == null || finalBattleRequested) return;
+        if (mine == null || playerController == null || finalBattleRequested) return;
+        TickLearning();
+        if (Time.unscaledTime >= mineSaveAt) { mineSaveAt = Time.unscaledTime + 1; SaveGuideCheckpoint(); }
+        if (currentScenarioPath != "Chapter_1/Chapter_1_01") return;
         if (!collectingTax)
         {
             mine.elapsedSeconds += Time.deltaTime;
@@ -222,7 +225,6 @@ public partial class DecisionManager
             if (mineCollectors?.CanMeet == true && collector != null &&
                 Vector3.Distance(playerController.CurrentPosition, collector.position) <= mineRules.encounterDistance && currentState != StoryState.Duel) BeginMineTax();
         }
-        if (Time.unscaledTime >= mineSaveAt) { mineSaveAt = Time.unscaledTime + 1; SaveGuideCheckpoint(); }
     }
 
     private int MineTaxAmount => mineRules.baseTax + resolvedPlaceIds.Count;

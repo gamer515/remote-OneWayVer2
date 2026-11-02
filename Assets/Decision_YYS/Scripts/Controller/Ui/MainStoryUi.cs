@@ -17,6 +17,7 @@ public class MainStoryUi : ParentUi
     {
         // Walking_View는 항상 유지하고 이벤트 텍스트만 상태에 따라 표시합니다.
         isStoryVisible = turn;
+        chatHistory?.SetDialogueVisible(turn);
         if (front_Dialogue_Text != null)
             front_Dialogue_Text.gameObject.SetActive(turn && chatHistory == null);
         if (option_Text != null)

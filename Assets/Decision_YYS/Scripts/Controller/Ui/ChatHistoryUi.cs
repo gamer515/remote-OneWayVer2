@@ -5,6 +5,7 @@ using UnityEngine;
 /// <summary>대화 기록과 확정 전 선택지 초안을 별도로 표시합니다.</summary>
 public sealed class ChatHistoryUi : MonoBehaviour
 {
+    [SerializeField] private FloatingDialogueView floatingView;
     [SerializeField] private UnityEngine.UI.ScrollRect scrollRect;
     [SerializeField] private RectTransform content;
     [SerializeField] private TextMeshProUGUI messageTemplate;
@@ -34,9 +35,10 @@ public sealed class ChatHistoryUi : MonoBehaviour
     private string draftText = string.Empty;
     private string draftDirection = string.Empty;
 
-    public int MessageCount => messages.Count;
+    public int MessageCount => floatingView != null ? floatingView.MessageCount : messages.Count;
     public string DraftText => composerActive && choiceDraft ? draftText : string.Empty;
     public bool IsTyping => composerActive && choiceDraft;
+    public void SetDialogueVisible(bool visible) => floatingView?.SetVisible(visible);
 
     private void Awake()
     {
@@ -86,6 +88,10 @@ public sealed class ChatHistoryUi : MonoBehaviour
 
     private void UpdateComposer()
     {
+        if (floatingView != null)
+        {
+            floatingView.SetDraft(draftText, draftDirection, composerActive, draftCanConfirm, choiceDraft); return;
+        }
         draftLayoutDirty = true;
         if (draftLabel != null)
         {
@@ -116,6 +122,7 @@ public sealed class ChatHistoryUi : MonoBehaviour
 
     private void Append(string text, string speaker, bool player)
     {
+        if (floatingView != null) { if (!string.IsNullOrWhiteSpace(text)) floatingView.Append(text,speaker,player); return; }
         if (string.IsNullOrWhiteSpace(text) || content == null || messageTemplate == null) return;
         var row = new GameObject(player ? "PlayerChoice" : "Dialogue",
             typeof(RectTransform), typeof(UnityEngine.UI.LayoutElement));
@@ -168,6 +175,7 @@ public sealed class ChatHistoryUi : MonoBehaviour
 
     private void LateUpdate()
     {
+        if (floatingView != null) return;
         RefreshLayout();
         AnimateTypingDots(Time.unscaledTime);
     }

@@ -39,6 +39,7 @@ using UnityEngine;
     public bool collectorPassedPlayer;
     public int collectorDirection;
     public bool collectorArrived;
+    public MineLearningProgress learning = new MineLearningProgress();
 }
 
 /// <summary>All provisional balance values are owned by the approved trial settings JSON.</summary>
