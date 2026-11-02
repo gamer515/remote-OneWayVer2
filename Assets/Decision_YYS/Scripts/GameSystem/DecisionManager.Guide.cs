@@ -55,6 +55,7 @@ public partial class DecisionManager
             if (!AbilityPayment.TryPay(record.statsBefore, choice.abilityCost, out var paid)) return;
             statContainer.SetStats(paid);
             guideProgress.committedStats = (int[])paid.Clone();
+            ReceiveMinePayment(choice);
         }
         record.choiceId = string.IsNullOrWhiteSpace(choice.choiceId) ?
             activeEncounterPath + ":" + record.cardId + ":" + selectedGearIndex : choice.choiceId;

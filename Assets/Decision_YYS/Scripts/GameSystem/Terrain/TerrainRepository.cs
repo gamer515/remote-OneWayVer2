@@ -102,7 +102,7 @@ public sealed class TerrainRepository
         }
     }
 
-    private static bool TryBuildTerrain(
+    private bool TryBuildTerrain(
         TerrainDefinitionRoot definitionRoot,
         TerrainTransformRoot transformRoot,
         out TerrainData terrainData,
@@ -171,6 +171,11 @@ public sealed class TerrainRepository
                     "side는 left/right, z는 5부터 95까지 10 간격 중 하나여야 합니다.";
                 return false;
             }
+            if (transformData.spawnPoints?.Length > 0)
+            {
+                int selected = new System.Random(CreateLayoutSeed(runSeed, place.placeId)).Next(transformData.spawnPoints.Length);
+                slotPosition = transformData.spawnPoints[selected];
+            }
 
             string slotKey = $"{place.chunkIndex}:{slotPosition.x:F3}:{slotPosition.z:F3}";
             if (!occupiedSlots.Add(slotKey))
@@ -187,6 +192,7 @@ public sealed class TerrainRepository
                 characterId = place.characterId,
                 connectStoryCards = place.connectStoryCards,
                 position = slotPosition,
+                spawnPoints = transformData.spawnPoints,
                 rotation = transformData.rotation
             };
         }

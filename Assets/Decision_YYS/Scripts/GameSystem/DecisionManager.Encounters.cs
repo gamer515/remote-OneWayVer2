@@ -15,6 +15,8 @@ public partial class DecisionManager
     private ScenarioData activeCards;
     private int activeCardIndex;
     private int selectedGearIndex = -1;
+    private int arrivalCardIndex;
+    private string arrivalStoryPath;
 
     private void StartEncounterEpisode()
     {
@@ -35,16 +37,14 @@ public partial class DecisionManager
         activePlaceId = loadedProgress?.activePlaceId;
         activeCardIndex = loadedProgress?.activeCardIndex ?? 0;
         string phase = loadedProgress?.interactionPhase;
-        if ((phase == "prompt" || phase == "card" || phase == "tutorial_result") && encounterFlow.TryGetEncounter(activePlaceId, out var encounter))
+        if ((phase == "prompt" || phase == "card" || phase == "walking" || phase == "tutorial_result") && encounterFlow.TryGetEncounter(activePlaceId, out var encounter))
         {
             pendingEncounter = encounter;
-            if (phase != "card") BeginEncounter(encounter); // 이전 Interaction 체크포인트 호환
+            if (phase != "card" && string.IsNullOrEmpty(loadedProgress?.activeStoryPath)) BeginEncounter(encounter);
             else
             {
                 restoringStoryCard = true;
-                playerController.StopAndLookAt(encounter.WorldPosition);
-                FaceNpcTowardPlayer(encounter.PlaceId);
-                OpenEncounterCards(encounter, activeCardIndex, loadedProgress?.activeStoryPath);
+                ApproachEncounter(encounter, activeCardIndex, loadedProgress?.activeStoryPath);
             }
         }
         else BeginExploration();
@@ -52,6 +52,7 @@ public partial class DecisionManager
 
     private void HandleEncounterYellowPressed()
     {
+        if (collectingTax || mine?.resting == true) return;
         if (guideProgress?.allocating == true) { ConfirmGuideAllocation(); return; }
         switch (currentState)
         {
@@ -65,6 +66,7 @@ public partial class DecisionManager
 
     private void BeginExploration()
     {
+        playerController?.ResetNpcFraming();
         if (guideProgress != null) guideProgress.activeDialogue = null;
         pendingEncounter = null;
         activePlaceId = null;
@@ -82,6 +84,7 @@ public partial class DecisionManager
 
     private void BeginWalkStep()
     {
+        mineView?.Hide();
         float startZ = playerController.CurrentPosition.z;
         if (startZ >= encounterFlow.EpisodeEndZ - 0.01f) { CompleteEncounterEpisode(); return; }
         // 한 번 누르면 다음 이벤트 오브젝트까지 계속 걷습니다. 그 사이 청크는 EnvController가 스트리밍합니다.
@@ -89,13 +92,14 @@ public partial class DecisionManager
         pendingEncounter = null;
         if (encounterFlow.TryFindFirst(startZ, endZ, resolvedPlaceIds, out var first))
         {
-            pendingEncounter = first;
-            endZ = Mathf.Max(startZ, first.WorldPosition.z - encounterStopDistance);
+            ApproachEncounter(first);
+            return;
         }
         currentState = StoryState.MovingToEncounter;
         SetYellowInputInteractable(false);
         presentationController.ShowWalkingView();
-        playerController.MoveToZ(endZ);
+        var destination = new Vector3(envController.TerrainOrigin.x, playerController.CurrentPosition.y, endZ);
+        playerController.MoveAlongPath(envController.NpcPlacement != null ? envController.NpcPlacement.Path(playerController.CurrentPosition, destination) : new[] { destination });
         SaveEncounterState("walking");
     }
 
@@ -104,7 +108,9 @@ public partial class DecisionManager
         if (pendingEncounter.HasValue)
         {
             var encounter = pendingEncounter.Value;
-            BeginEncounter(encounter);
+            playerController.StopAndLookAt(encounter.WorldPosition);
+            FaceNpcTowardPlayer(encounter.PlaceId);
+            OpenEncounterCards(encounter, arrivalCardIndex, arrivalStoryPath);
         }
         else if (playerController.CurrentPosition.z >= encounterFlow.EpisodeEndZ - 0.01f)
             CompleteEncounterEpisode();
@@ -113,10 +119,20 @@ public partial class DecisionManager
 
     private void BeginEncounter(EncounterFlowController.Encounter encounter)
     {
-        playerController.StopAndLookAt(encounter.WorldPosition);
-        FaceNpcTowardPlayer(encounter.PlaceId);
-        OpenEncounterCards(encounter, 0);
+        ApproachEncounter(encounter);
         Debug.Log($"[조우] {encounter.PlaceId} ({encounter.ContentPath})", this);
+    }
+
+    private void ApproachEncounter(EncounterFlowController.Encounter encounter, int index = 0, string storyPath = null)
+    {
+        pendingEncounter = encounter; arrivalCardIndex = index; arrivalStoryPath = storyPath;
+        activePlaceId = encounter.PlaceId; activeCardIndex = index; activeEncounterPath = storyPath;
+        var placement = envController.NpcPlacement;
+        var target = placement != null ? placement.ApproachPoint(encounter.WorldPosition, envController.TerrainOrigin, encounterStopDistance)
+            : encounter.WorldPosition - Vector3.forward * encounterStopDistance;
+        currentState = StoryState.MovingToEncounter; SetYellowInputInteractable(false); presentationController.ShowWalkingView();
+        playerController.MoveAlongPath(placement != null ? placement.Path(playerController.CurrentPosition, target) : new[] { target });
+        SaveEncounterState("walking");
     }
 
     private void FaceNpcTowardPlayer(string placeId)
@@ -129,10 +145,19 @@ public partial class DecisionManager
                      FindObjectsInactive.Exclude, FindObjectsSortMode.None))
         {
             if (candidate.name != objectName) continue;
-            Vector3 direction = playerController.CurrentPosition - candidate.position;
-            direction.y = 0f;
-            if (direction.sqrMagnitude > 0.0001f)
-                candidate.rotation = Quaternion.LookRotation(direction.normalized, Vector3.up);
+            bool sockets = false;
+            foreach (Transform actor in candidate)
+            {
+                if (!actor.name.StartsWith("ActorSocket_", StringComparison.Ordinal)) continue;
+                sockets = true;
+                Vector3 direction = playerController.CurrentPosition - actor.position; direction.y = 0;
+                if (direction.sqrMagnitude > 0.0001f) actor.rotation = Quaternion.LookRotation(direction.normalized, Vector3.up);
+            }
+            if (!sockets)
+            {
+                Vector3 direction = playerController.CurrentPosition - candidate.position; direction.y = 0;
+                if (direction.sqrMagnitude > 0.0001f) candidate.rotation = Quaternion.LookRotation(direction.normalized, Vector3.up);
+            }
             return;
         }
     }
@@ -147,10 +172,16 @@ public partial class DecisionManager
         StoryChoiceAction choice = card.choiceActions[selectedGearIndex];
         // A restored, confirmed exchange must continue even after its required item was consumed.
         bool confirmed=storyEvents.Exists(e=>e.eventKey=="choice:"+storyVisit && e.choiceSlot==selectedGearIndex);
-        if (!confirmed && (!saveService.HasAllUnlocks(choice.requiresUnlocks) || !saveService.HasAllItems(choice.requiresItems) ||
-            !AbilityPayment.CanPay(statContainer.stats, choice.abilityCost)))
+        if (!confirmed && (!saveService.HasAllUnlocks(choice.requiresUnlocks) || !saveService.HasAllItems(choice.requiresItems)))
         {
             RenderEncounterOptions();
+            return true;
+        }
+        if (!confirmed && !AbilityPayment.CanPay(statContainer.stats, choice.abilityCost))
+        {
+            presentationController?.ConfirmChoice(card.options[selectedGearIndex]);
+            if (!string.IsNullOrEmpty(choice.insufficientStoryPath)) OpenStoryBranch(choice.insufficientStoryPath);
+            else BeginInsufficientPaymentDuel(card);
             return true;
         }
         RecordStoryChoice(card, choice);
@@ -183,6 +214,7 @@ public partial class DecisionManager
 
     private void StartDuelTutorial(Dialogue card)
     {
+        FrameActiveEncounter(true);
         currentState = StoryState.Duel;
         SetYellowInputInteractable(false);
         presentationController.ExitChoice();
@@ -240,6 +272,7 @@ public partial class DecisionManager
     {
         activePlaceId = encounter.PlaceId;
         activeEncounterPath = string.IsNullOrWhiteSpace(storyPath) ? encounter.ContentPath : storyPath;
+        if (string.IsNullOrWhiteSpace(storyPath)) activeEncounterPath = MineOpeningPath(encounter.PlaceId, activeEncounterPath);
         if (string.IsNullOrWhiteSpace(storyPath))
             activeEncounterPath = LocalStoryNotebook.ResolveOpeningPath(SaveIOService.Instance,encounter.DisplayName,activeEncounterPath);
         activeEncounterPath=ChapterContentCatalog.ResolveStoryPath(activeEncounterPath,session.RunNumber);
@@ -275,6 +308,7 @@ public partial class DecisionManager
         SaveEncounterState("card");
         SaveGuideCheckpoint();
         presentationController.ShowDialogue(card);
+        FrameActiveEncounter(false);
         CompleteEncounterCardPresentation(card);
     }
 
@@ -296,7 +330,7 @@ public partial class DecisionManager
             currentState = StoryState.WaitingForChoice;
             // 선택 저장 후 분기 이동 전에 종료된 경우 같은 선택을 이어 갑니다.
             StoryEventRecord confirmed = storyEvents?.FindLast(record => record.eventKey == "choice:" + storyVisit);
-            if (confirmed != null && confirmed.choiceSlot >= 0 && confirmed.choiceSlot < 4)
+            if (confirmed != null && confirmed.choiceSlot >= 0 && confirmed.choiceSlot < card.options.Length)
             {
                 selectedGearIndex = confirmed.choiceSlot;
                 AdvanceEncounterCard();
@@ -321,9 +355,14 @@ public partial class DecisionManager
             if (ExecuteStoryChoice(card)) return;
         }
         Dialogue current = activeCards.MainStory[activeCardIndex];
+        if (TryExecuteMineAction(current)) return;
         if (!string.IsNullOrWhiteSpace(current.nextStoryPath)) { OpenStoryBranch(current.nextStoryPath); return; }
         activeCardIndex++;
-        if (activeCardIndex >= activeCards.MainStory.Count) ResolveEncounter();
+        if (activeCardIndex >= activeCards.MainStory.Count && !string.IsNullOrEmpty(mine?.pendingOpeningPath))
+        {
+            string next = mine.pendingOpeningPath; mine.pendingOpeningPath = null; OpenStoryBranch(next);
+        }
+        else if (activeCardIndex >= activeCards.MainStory.Count) ResolveEncounter();
         else PresentEncounterCard();
     }
 
@@ -338,7 +377,7 @@ public partial class DecisionManager
             return;
         }
         if (encounterFlow == null || currentState != StoryState.WaitingForChoice) return;
-        selectedGearIndex = index >= 0 && index < 4 ? index : -1;
+        selectedGearIndex = index >= 0 && index < (activeCards?.MainStory?[activeCardIndex]?.options?.Length ?? 0) ? index : -1;
         RenderEncounterOptions();
     }
 
@@ -347,10 +386,10 @@ public partial class DecisionManager
         if (currentState != StoryState.WaitingForChoice || activeCards?.MainStory == null ||
             activeCardIndex < 0 || activeCardIndex >= activeCards.MainStory.Count) return;
         Dialogue card = activeCards.MainStory[activeCardIndex];
-        if (card == null || !card.IsChoice || card.options == null || card.options.Length != 4) return;
+        if (card == null || !card.IsChoice || card.options == null || card.options.Length < 2 || card.options.Length > 4) return;
         string[] options = (string[])card.options.Clone();
-        if (card.choiceActions != null && card.choiceActions.Length == 4)
-            for (int index = 0; index < 4; index++)
+        if (card.choiceActions != null && card.choiceActions.Length == card.options.Length)
+            for (int index = 0; index < card.options.Length; index++)
             {
                 if (!saveService.HasAllUnlocks(card.choiceActions[index].requiresUnlocks) || !saveService.HasAllItems(card.choiceActions[index].requiresItems))
                     options[index] += " (잠김)";
@@ -360,7 +399,7 @@ public partial class DecisionManager
                     string[] labels = { "힘", "속도", "지능", "매력" };
                     for (int stat = 0; stat < cost.Length; stat++)
                         if (cost[stat] > 0) options[index] += $" ({labels[stat]} −{cost[stat]})";
-                    if (!AbilityPayment.CanPay(statContainer.stats, cost)) options[index] += " (능력 부족) (잠김)";
+                    if (!AbilityPayment.CanPay(statContainer.stats, cost)) options[index] += " (능력 부족)";
                 }
             }
         presentationController.ShowOptions(options, selectedGearIndex);
@@ -381,6 +420,7 @@ public partial class DecisionManager
         if(finishedEncounter.HasValue)
         {
             var finished=finishedEncounter.Value;
+            ShowMineRevisit(finished.PlaceId);
             try
             {
                 LocalStoryDialogueQueue.EncounterEnded(SaveIOService.Instance,session.RunNumber,
@@ -393,6 +433,11 @@ public partial class DecisionManager
 
     private void CompleteEncounterEpisode()
     {
+        if (currentScenarioPath == "Chapter_1/Chapter_1_BossPreview")
+        {
+            FinishRunAndReturnToMainMenu("청크 1과 보스 청크 확인 완료 — 보스 전투는 준비 범위");
+            return;
+        }
         encounterFlow = null;
         episodeIndex++;
         storyIndex = 0; // 다음 레거시 에피소드에만 적용됩니다.
@@ -405,4 +450,17 @@ public partial class DecisionManager
             playerController.CurrentPosition,
             playerController.CurrentRotation,
             phase, activePlaceId, activeCardIndex, resolvedPlaceIds, activeEncounterPath);
+
+    private void FrameActiveEncounter(bool fullBody)
+    {
+        if (playerController == null || string.IsNullOrEmpty(activePlaceId)) return;
+        var root = Array.Find(FindObjectsByType<Transform>(FindObjectsInactive.Exclude, FindObjectsSortMode.None), t => t.name == "Place_" + activePlaceId);
+        if (root == null) return;
+        FaceNpcTowardPlayer(activePlaceId);
+        string speaker = activeCards?.MainStory?[activeCardIndex]?.speakerId;
+        var actor = string.IsNullOrEmpty(speaker) ? null : root.Find("ActorSocket_" + speaker);
+        if (actor == null || actor.GetComponentsInChildren<Renderer>().Length == 0) actor = root;
+        playerController.StopAndLookAt(actor.position);
+        playerController.FocusNpc(actor, fullBody);
+    }
 }

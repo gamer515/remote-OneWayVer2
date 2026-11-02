@@ -19,7 +19,15 @@ public static class ProgressDocument
     private static void Write(string file,string text)
     {
         string temp=file+".tmp";File.WriteAllText(temp,text);
-        if(File.Exists(file)) File.Replace(temp,file,null);else File.Move(temp,file);
+        if (!File.Exists(file)) { File.Move(temp, file); return; }
+        // Windows indexing/antivirus can briefly hold a just-written checkpoint.
+        // Keep the previous file intact and retry the atomic replace; never delete it as a fallback.
+        for (int attempt = 0; ; attempt++)
+        {
+            try { File.Replace(temp, file, null); return; }
+            catch (IOException) when (attempt < 3 && File.Exists(temp))
+            { System.Threading.Thread.Sleep(20 * (attempt + 1)); }
+        }
     }
     public static string Encode(string path,GameProgress progress)
     {

@@ -179,7 +179,7 @@ public static class LocalStoryRuntimePipeline
             {
                 var played=(request.playedCards??new List<PlayedEncounterCardRecord>()).Select(c=>c.encounterPath)
                     .Concat((request.events??new List<StoryEventRecord>()).Where(e=>e.characterId==npc.characterId).Select(e=>e.storyPath)).Where(p=>!string.IsNullOrEmpty(p)).ToHashSet();
-                var paths=ChapterContentCatalog.Stories.Where(s=>(string)s["characterId"]==npc.characterId &&
+                var paths=ChapterContentCatalog.Stories.Where(s=>ChapterContentCatalog.CanRewrite((string)s["path"]) && (string)s["characterId"]==npc.characterId &&
                     (request.scenarioPaths??Array.Empty<string>()).Any(p=>((string)s["path"]).StartsWith(p+"/",StringComparison.Ordinal)) &&
                     (played.Contains((string)s["path"]) || (played.Count==0 && !((string)s["key"]).Contains('/') &&
                         (request.events??new List<StoryEventRecord>()).Any(e=>e.characterId==npc.characterId)))).Select(s=>(string)s["path"]).ToArray();

@@ -25,6 +25,7 @@ public sealed class GuideCoinAction
 [Serializable]
 public sealed class GuideProgress
 {
+    public MineChapterProgress mineChapter;
     public int[] knowledgeBefore;
     public int[] punishmentBefore;
     public string activeEffectId;

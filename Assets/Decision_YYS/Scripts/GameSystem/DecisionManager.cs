@@ -65,8 +65,8 @@ public partial class DecisionManager : MonoBehaviour
     [SerializeField] private DuelMiniGameBridge duelMiniGame;
     private JourneyCoinSupplyController journeyCoinSupply;
     [Header("Player Movement")]
-    [Tooltip("NPC 등 만남 대상보다 진행 방향(Z축)으로 몇 유닛 앞에서 멈출지 조절합니다. 다음 이동 목표를 정할 때 적용됩니다.")]
-    [SerializeField, Range(0.5f, 10f)] private float encounterStopDistance = 4f;
+    [Tooltip("NPC와 대화할 때 플레이어가 실제로 걸어가서 멈추는 거리입니다.")]
+    [SerializeField, Range(0.5f, 10f)] private float encounterStopDistance = 2f;
     private DecisionPlayerController playerController;
 
     [SerializeField] private StatContainer statContainer;
@@ -144,6 +144,7 @@ public partial class DecisionManager : MonoBehaviour
 
     private void Update()
     {
+        TickMineChapter();
         if (guideProgress?.allocating == true)
         {
             HandleGuideAllocationInput();
@@ -154,7 +155,7 @@ public partial class DecisionManager : MonoBehaviour
             journeyCoinSupply?.HandleInput();
 
         // 이동 명령과 화면 표현은 분리하고, 실제 도착한 프레임에서 이야기 화면을 엽니다.
-        if (encounterFlow != null && currentState == StoryState.MovingToEncounter &&
+        if (encounterFlow != null && currentState == StoryState.MovingToEncounter && mine?.resting != true &&
             playerController != null && playerController.HasReachedTarget())
         {
             CompleteWalkStep();
@@ -206,7 +207,7 @@ public partial class DecisionManager : MonoBehaviour
             saveService);
 
         // 중간 챕터 저장에서 시작해도 각 지형의 월드 시작점이 항상 같도록 순서대로 등록합니다.
-        if (!RegisterTerrainsThroughCurrentProgress())
+        if (!RegisterTerrainsThroughCurrentProgress() || !PreloadNextTerrain())
         {
             enabled = false;
             return;
@@ -215,10 +216,16 @@ public partial class DecisionManager : MonoBehaviour
         // Recover invalid legacy/editor coordinates without restarting the story or clearing its history.
         Vector3 entryPosition = envController.PlaceRegistry.GetChunkWorldPosition(0);
         entryPosition.z = Mathf.Min(entryPosition.z + 10f, envController.CurrentTerrainEndZ);
+        // New journeys must start before the first authored encounter, even when its anchor is close to the entrance.
+        foreach (var place in envController.TerrainData.places)
+            if (!string.IsNullOrWhiteSpace(place.connectStoryCards))
+                entryPosition.z = Mathf.Max(envController.TerrainOrigin.z,
+                    Mathf.Min(entryPosition.z, envController.PlaceRegistry.GetWorldPosition(place).z - encounterStopDistance));
         Vector3 startPosition = DecisionPlayerController.ResolveStartPosition(
             startData.SavedPlayerPosition, envController.TerrainOrigin,
-            envController.CurrentTerrainEndZ, entryPosition, out bool recoveredPosition);
-        playerController.Initialize(startPosition, startData.SavedPlayerRotation);
+            envController.CurrentTerrainEndZ, entryPosition, out bool recoveredPosition,
+            envController.NpcPlacement != null ? envController.NpcPlacement.LateralReach(envController.TerrainOrigin) + encounterStopDistance : 0.5f);
+        playerController.Initialize(startPosition, startData.SavedPlayerRotation, envController.TerrainOrigin.x);
         if (recoveredPosition)
         {
             Debug.LogWarning($"[Player] 지형 밖 저장 위치 복구: {startData.SavedPlayerPosition} → {startPosition}. 이야기 진행은 유지합니다.", this);
@@ -368,6 +375,13 @@ private void SetYellowInputInteractable(bool interactable)
         return true;
     }
 
+    private bool PreloadNextTerrain()
+    {
+        var chapter = currentOmnibus.chapters[chapterIndex];
+        return episodeIndex + 1 >= chapter.episodeIds.Count ||
+            envController.PreloadTerrain(chapter.chapterId, chapter.episodeIds[episodeIndex + 1]);
+    }
+
     private bool ValidateReference(UnityEngine.Object reference, string fieldName)
     {
         if (reference != null)
@@ -434,6 +448,8 @@ private void SetYellowInputInteractable(bool interactable)
         }
 
         currentScenarioPath = mainStory.chapterId + "/" + mainStory.episodeIds[episodeIndex];
+        PreloadNextTerrain();
+        InitializeMineChapter();
         StartEncounterEpisode();
     }
 

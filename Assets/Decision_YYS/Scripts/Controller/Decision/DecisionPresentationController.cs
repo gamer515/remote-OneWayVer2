@@ -22,13 +22,13 @@ public sealed class DecisionPresentationController
     public void ShowOptions(string[] options, int selectedIndex)
     {
         if (uiController == null) return;
-        if (options == null || options.Length != 4)
+        if (options == null || options.Length < 2 || options.Length > 4)
         {
             uiController.ActiveOptionTextUi(false);
             return;
         }
         string[] directions = { "좌상", "좌하", "우상", "우하" };
-        bool selected = selectedIndex >= 0 && selectedIndex < 4;
+        bool selected = selectedIndex >= 0 && selectedIndex < options.Length;
         string text = selected ? options[selectedIndex] ?? string.Empty : string.Empty;
         bool canConfirm = selected && !text.EndsWith(" (잠김)", System.StringComparison.Ordinal);
         uiController.PreviewChoice(text, selected ? directions[selectedIndex] : null, canConfirm);

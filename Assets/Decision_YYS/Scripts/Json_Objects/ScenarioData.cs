@@ -36,6 +36,7 @@ public class Dialogue
     public string coreMeaning;
     public string nextStoryPath;
     public GuideCoinAction guideAction;
+    public MineChapterAction chapterAction;
 
     public DialogueType Type
     {
@@ -67,4 +68,6 @@ public sealed class StoryChoiceAction
     public string relationshipId;
     public int relationshipDelta;
     public int[] abilityCost;
+    public string receiverId;
+    public string insufficientStoryPath;
 }

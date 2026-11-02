@@ -44,6 +44,7 @@ public sealed class EncounterCard
     public string coreMeaning;
     public string nextStoryPath;
     public GuideCoinAction guideAction;
+    public MineChapterAction chapterAction;
 }
 
 /// <summary>지형의 connectStoryCards 경로에서 해당 오브젝트의 데이터만 읽습니다.</summary>
@@ -96,7 +97,7 @@ public sealed class EncounterContentRepository
             error = null;
             return true;
         }
-        if (runNumber > 1 && SaveIOService.Instance.TryLoadGeneratedContent(
+        if (ChapterContentCatalog.CanRewrite(contentPath) && runNumber > 1 && SaveIOService.Instance.TryLoadGeneratedContent(
                 runNumber,
                 "Encounters",
                 contentPath + (variant == null ? "/Story" : "/Variants/" + variant + "/Story"),
@@ -131,7 +132,7 @@ public sealed class EncounterContentRepository
                 return false;
             }
             if (sourceCard.type == "Choice" &&
-                (sourceCard.options == null || sourceCard.options.Length != 4))
+                (sourceCard.options == null || sourceCard.options.Length < 2 || sourceCard.options.Length > 4))
             {
                 error = $"{contentPath}/Story의 {index}번째 선택 카드에는 기어 방향 문구 4개가 필요합니다.";
                 cards = null;
@@ -165,7 +166,8 @@ public sealed class EncounterContentRepository
                 semanticText = sourceCard.semanticText,
                 coreMeaning = sourceCard.coreMeaning,
                 nextStoryPath = sourceCard.nextStoryPath,
-                guideAction = sourceCard.guideAction
+                guideAction = sourceCard.guideAction,
+                chapterAction = sourceCard.chapterAction
             });
         }
 
@@ -205,6 +207,7 @@ public sealed class EncounterContentRepository
         foreach (var card in root.MainStory)
         {
             if (card == null) continue;
+            if (string.IsNullOrEmpty(card.chapterAction?.kind)) card.chapterAction = null;
             // JsonUtility writes null strings/arrays as empty values in saved generated files.
             // Normalize both sides before comparing metadata, otherwise valid wording always falls back.
             card.npcEmotion = EmptyToNull(card.npcEmotion);
@@ -226,6 +229,7 @@ public sealed class EncounterContentRepository
                 action.choiceId = EmptyToNull(action.choiceId);
                 action.choiceRole = EmptyToNull(action.choiceRole);
                 action.storyPath = EmptyToNull(action.storyPath);
+                action.insufficientStoryPath = EmptyToNull(action.insufficientStoryPath);
                 action.relationshipId = EmptyToNull(action.relationshipId);
                 if (action.requiresUnlocks?.Length == 0) action.requiresUnlocks = null;
                 if (action.requiresItems?.Length == 0) action.requiresItems = null;
@@ -295,13 +299,15 @@ public sealed class EncounterContentRepository
         }
         if (card.choiceActions != null && card.choiceActions.Length > 0)
         {
-            if (card.type != "Choice" || card.choiceActions.Length != 4)
+            if (card.type != "Choice" || card.choiceActions.Length != card.options?.Length)
             {
                 error = "choiceActions는 Choice 카드에서 네 선택지와 순서를 맞춰야 합니다.";
                 return false;
             }
             foreach (StoryChoiceAction choice in card.choiceActions)
             {
+                if (!string.IsNullOrEmpty(choice?.insufficientStoryPath) && !StoryExists(choice.insufficientStoryPath))
+                { error = "잔액 부족 분기 Story 경로가 없습니다."; return false; }
                 if (choice != null && !AbilityPayment.IsValid(choice.abilityCost))
                 {
                     error = "abilityCost는 0 이상의 네 능력 비용이어야 합니다.";
@@ -367,6 +373,7 @@ public sealed class EncounterContentRepository
             StoryChoiceRoles.FillMissingMetadata(generatedCard, originalCard);
 
             if (generatedCard.type != originalCard.type ||
+                JsonUtility.ToJson(generatedCard.chapterAction) != JsonUtility.ToJson(originalCard.chapterAction) ||
                 generatedCard.choiceKind != originalCard.choiceKind ||
                 generatedCard.npcEmotion != originalCard.npcEmotion ||
                 generatedCard.startAction != originalCard.startAction ||

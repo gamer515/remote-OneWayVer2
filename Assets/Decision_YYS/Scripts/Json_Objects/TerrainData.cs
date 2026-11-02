@@ -15,6 +15,8 @@ public class TerrainData
 [System.Serializable]
 public class PlaceData
 {
+    public Vector3[] spawnPoints;
+    public Vector3[] actorPositions;
     public string placeId;
     public int chunkIndex;
     public string prefabId;
@@ -67,6 +69,7 @@ public class TerrainTransformData
 [System.Serializable]
 public class TerrainPlaceTransform
 {
+    public Vector3[] spawnPoints;
     public string placeId;
     // 새 형식: Terrain 프리팹에서 확인한 정확한 로컬 좌표를 그대로 사용합니다.
     public bool useExactPosition;

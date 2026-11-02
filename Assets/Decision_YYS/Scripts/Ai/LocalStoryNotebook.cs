@@ -98,7 +98,13 @@ public static partial class LocalStoryNotebook
         var c = request.npcContexts?.FirstOrDefault(p => p.characterId == npc);
         if (c == null) return "";
         var facts=new Newtonsoft.Json.Linq.JObject { ["name"]=c.name,["role"]=c.role,["personality"]=c.personality,["publicFacts"]=c.publicFacts,["revealedPast"]=c.revealedPast };
-        return "\n[인물 설정 — 대사에 그대로 출력하지 않을 참고 자료]\n"+facts.ToString(Newtonsoft.Json.Formatting.Indented)+
+        string mood = "";
+        if (request.targetRun > 0 && ChapterContentCatalog.Chapters.Any(ch => (string)ch["id"] == "Chapter_1"))
+        {
+            var moods = MineChapterSettings.Load().moods;
+            if (moods?.Length > 0) mood = "\n이번 회차의 기분: " + moods[(int)(MineChapterSettings.Roll(request.targetRun, 0, npc) * moods.Length)] + ". 말투에만 반영하고 사건·비용·결과는 유지한다.";
+        }
+        return "\n[인물 설정 — 대사에 그대로 출력하지 않을 참고 자료]\n"+facts.ToString(Newtonsoft.Json.Formatting.Indented)+mood+
             "\n해금 조건을 통과한 설정만 포함했다. 내부 해금 ID를 추측하거나 대사로 읽지 않는다."+
             "\n핵심 대사도 같은 사건 의미로 새로 표현한다. 게임 기능/보상/분기는 만들거나 변경하지 않는다.";
     }

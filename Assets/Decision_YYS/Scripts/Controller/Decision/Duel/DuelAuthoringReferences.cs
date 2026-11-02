@@ -46,6 +46,7 @@ public sealed class DuelAuthoringReferences : MonoBehaviour
 
     private GameObject spawnedPlayerHand;
     private GameObject spawnedNpcHand;
+    private Renderer[] hiddenHandRenderers = System.Array.Empty<Renderer>();
 
     public GameObject KnightTarget { get; private set; }
     public Transform PlayerHandSpawnPoint => playerHandSpawnPoint;
@@ -86,6 +87,25 @@ public sealed class DuelAuthoringReferences : MonoBehaviour
 
         ApplyStartPose(spawnedPlayerHand, playerHandStartPose);
         ApplyStartPose(spawnedNpcHand, npcHandStartPose);
+        var hidden = new System.Collections.Generic.List<Renderer>();
+        foreach (var hand in new[] { spawnedPlayerHand, spawnedNpcHand })
+        {
+            if (hand == null) continue;
+            var blade = hand.GetComponentInChildren<DuelBladeHitbox>(true);
+            foreach (var renderer in hand.GetComponentsInChildren<Renderer>(true))
+            {
+                if (renderer.name == "BladeTip") { renderer.enabled = false; continue; }
+                if (!renderer.enabled || (blade != null && renderer.transform.IsChildOf(blade.transform))) continue;
+                hidden.Add(renderer); renderer.enabled = false;
+            }
+        }
+        hiddenHandRenderers = hidden.ToArray();
+    }
+
+    public void RevealHands()
+    {
+        foreach (var renderer in hiddenHandRenderers) if (renderer != null) renderer.enabled = true;
+        hiddenHandRenderers = System.Array.Empty<Renderer>();
     }
 
     /// <summary>처음 손을 잡을 때 부모 기본 회전을 적용합니다. 선택적인 배치 참조가 없어도 회전은 적용하며 생성/자식 애니메이션은 건드리지 않습니다.</summary>
@@ -138,6 +158,7 @@ public sealed class DuelAuthoringReferences : MonoBehaviour
 
     private void CleanupSpawnedHands(bool detachFromParent = true)
     {
+        hiddenHandRenderers = System.Array.Empty<Renderer>();
         // Destroy는 프레임 끝에 실행되므로, 재시작 직후 보드 Bounds에 이전 손
         // Renderer가 포함되지 않도록 앵커에서 먼저 분리합니다.
         if (spawnedPlayerHand != null)

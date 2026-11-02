@@ -22,8 +22,25 @@ public static class MineChapterReview
         save.LoadProgress().guideProgress.committedStats = new[] { 3, 3, 3, 3 };
         var env = UnityEngine.Object.FindFirstObjectByType<EnvController>(FindObjectsInactive.Include);
         // Start at the end of the existing tutorial, before the authored miner anchor.
-        var start = env.TerrainOrigin + Vector3.forward * 52;
-        save.SaveProgressAndPlayerPosition(1, 0, 0, start, Quaternion.identity);
+        var start = env.TerrainOrigin + Vector3.forward * 5;
+        var omnibus = SaveIOService.Instance.LoadResourceData<OmnibusData>("Omnibus_01");
+        save.SaveProgressAndPlayerPosition(omnibus.FirstPlayableChapterIndex, 0, 0, start, Quaternion.identity);
+        SessionState.SetBool("MineReview.PreviousOptionsEnabled", EditorSettings.enterPlayModeOptionsEnabled);
+        SessionState.SetInt("MineReview.PreviousOptions", (int)EditorSettings.enterPlayModeOptions);
+        SessionState.SetBool("MineReview.Active", true);
+        EditorSettings.enterPlayModeOptionsEnabled = true;
+        EditorSettings.enterPlayModeOptions = EnterPlayModeOptions.DisableDomainReload;
+        EditorApplication.isPlaying = true;
+        return folder;
+    }
+
+    public static string BeginMenuReview()
+    {
+        if (Application.isPlaying || SceneManager.GetActiveScene().isDirty || SceneManager.GetActiveScene().name != "MainMenuScene")
+            throw new Exception("Saved MainMenuScene required.");
+        var folder = Path.GetFullPath("output/MineChapterReview/MenuSave-" + DateTime.Now.ToString("yyyyMMdd-HHmmss"));
+        typeof(SaveIOService).GetField("_instance", BindingFlags.Static | BindingFlags.NonPublic).SetValue(null,
+            typeof(SaveIOService).GetConstructor(Hidden, null, new[] { typeof(string) }, null).Invoke(new object[] { folder }));
         SessionState.SetBool("MineReview.PreviousOptionsEnabled", EditorSettings.enterPlayModeOptionsEnabled);
         SessionState.SetInt("MineReview.PreviousOptions", (int)EditorSettings.enterPlayModeOptions);
         SessionState.SetBool("MineReview.Active", true);
@@ -90,6 +107,94 @@ public static class MineChapterReview
         var manager = UnityEngine.Object.FindFirstObjectByType<DecisionManager>();
         typeof(DecisionManager).GetMethod("HandleEncounterGearSelection", Hidden).Invoke(manager, new object[] { slot });
         return State();
+    }
+
+    public static object Branch(string place, string key)
+    {
+        if (!Application.isPlaying || !SaveIOService.Instance.StorageRoot.Contains("MineChapterReview")) throw new Exception("Isolated review required.");
+        var manager = UnityEngine.Object.FindFirstObjectByType<DecisionManager>();
+        var flow = (EncounterFlowController)typeof(DecisionManager).GetField("encounterFlow", Hidden).GetValue(manager);
+        if (!flow.TryGetEncounter(place, out var encounter)) throw new Exception("Unknown place: " + place);
+        typeof(DecisionManager).GetField("pendingEncounter", Hidden).SetValue(manager, (EncounterFlowController.Encounter?)encounter);
+        typeof(DecisionManager).GetMethod("OpenEncounterCards", Hidden).Invoke(manager, new object[] { encounter, 0, "Chapter_1/Chapter_1_01/Encounters/" + key });
+        return State();
+    }
+
+    public static object BossPreview()
+    {
+        if (!Application.isPlaying || !SaveIOService.Instance.StorageRoot.Contains("MineChapterReview")) throw new Exception("Isolated review required.");
+        var manager = UnityEngine.Object.FindFirstObjectByType<DecisionManager>();
+        var session = (DecisionSession)typeof(DecisionManager).GetField("session", Hidden).GetValue(manager);
+        session.EpisodeIndex = 1;
+        typeof(DecisionManager).GetMethod("LoadCurrentEpisode", Hidden).Invoke(manager, null);
+        var env = UnityEngine.Object.FindFirstObjectByType<EnvController>();
+        var player = UnityEngine.Object.FindFirstObjectByType<Player>();
+        var controller = (DecisionPlayerController)typeof(DecisionManager).GetField("playerController", Hidden).GetValue(manager);
+        controller.Initialize(env.PlaceRegistry.GetChunkWorldPosition(0) + Vector3.forward * 5, Quaternion.identity);
+        env.BindPlayer(player);
+        UnityEngine.Object.FindFirstObjectByType<RoadViewCameraController>().Initialize(player.transform, false);
+        return State();
+    }
+
+    public static string WalkFullRoute()
+    {
+        if (!Application.isPlaying || !SaveIOService.Instance.StorageRoot.Contains("MineChapterReview")) throw new Exception("Isolated review required.");
+        var manager = UnityEngine.Object.FindFirstObjectByType<DecisionManager>();
+        var stats = (StatContainer)typeof(DecisionManager).GetField("statContainer", Hidden).GetValue(manager);
+        stats.SetStats(new[] { 100, 100, 100, 100 });
+        ((GuideProgress)typeof(DecisionManager).GetField("guideProgress", Hidden).GetValue(manager)).committedStats = stats.stats;
+        typeof(DecisionManager).GetMethod("SyncAbilityWallet", Hidden).Invoke(manager, null);
+        double started = EditorApplication.timeSinceStartup, next = 0;
+        int sourceRun = new SaveManager().CurrentRun;
+        EditorApplication.CallbackFunction step = null;
+        step = () => {
+            if (EditorApplication.timeSinceStartup < next) return;
+            next = EditorApplication.timeSinceStartup + 0.2;
+            bool done = SceneManager.GetActiveScene().name == "MainMenuScene";
+            bool timeout = EditorApplication.timeSinceStartup - started > 180;
+            if (!Application.isPlaying || done || timeout)
+            {
+                EditorApplication.update -= step;
+                var progress = SaveIOService.Instance.LoadRunData<GameProgress>(sourceRun, "Progress");
+                var report = new { completed = done && progress?.isCompleted == true, scene = SceneManager.GetActiveScene().name,
+                    resolvedPlaces = progress?.resolvedPlaceIds, run = sourceRun, stats = progress?.guideProgress?.committedStats,
+                    seconds = EditorApplication.timeSinceStartup - started, testBudget = "100 per ability in isolated save only", timeout };
+                File.WriteAllText("output/MineChapterReview/full-route.json", Newtonsoft.Json.JsonConvert.SerializeObject(report, Newtonsoft.Json.Formatting.Indented));
+                return;
+            }
+            if (manager == null) return;
+            bool tax = (bool)typeof(DecisionManager).GetField("collectingTax", Hidden).GetValue(manager);
+            if (tax)
+            {
+                var view = UnityEngine.Object.FindFirstObjectByType<MineChapterActivityView>();
+                view?.GetComponentsInChildren<UnityEngine.UI.Button>().FirstOrDefault()?.onClick.Invoke();
+                return;
+            }
+            string state = typeof(DecisionManager).GetField("currentState", Hidden).GetValue(manager).ToString();
+            if (state == "WaitingForChoice") manager.OnJourneyGearSelected(0);
+            if (state == "ShowingStory" || state == "WaitingForChoice" || state == "Exploring") manager.OnJourneyYellowPressed();
+        };
+        EditorApplication.update += step;
+        return "Walking the real four-place route to the boss preview and MainMenu; no place or scene jumps.";
+    }
+
+    public static string PressRaceSpace()
+    {
+        if (!Application.isPlaying || !SaveIOService.Instance.StorageRoot.Contains("MineChapterReview")) throw new Exception("Isolated review required.");
+        UnityEngine.Object.FindFirstObjectByType<DecisionManager>().StartCoroutine(RaceKeys());
+        return "Sending 40 space press/release events through the existing Input System.";
+    }
+    private static System.Collections.IEnumerator RaceKeys()
+    {
+        for (int i = 0; i < 40; i++)
+        {
+            UnityEngine.InputSystem.InputSystem.QueueStateEvent(UnityEngine.InputSystem.Keyboard.current,
+                new UnityEngine.InputSystem.LowLevel.KeyboardState(UnityEngine.InputSystem.Key.Space));
+            yield return null;
+            UnityEngine.InputSystem.InputSystem.QueueStateEvent(UnityEngine.InputSystem.Keyboard.current,
+                new UnityEngine.InputSystem.LowLevel.KeyboardState());
+            yield return null;
+        }
     }
 
     public static string FinishReview()

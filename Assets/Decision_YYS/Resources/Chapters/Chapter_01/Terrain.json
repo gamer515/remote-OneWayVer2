@@ -13,53 +13,1209 @@
           {
             "placeId": "brook",
             "chunkIndex": 0,
-            "prefabId": "mine_miner",
-            "connectStoryCards": "Chapter_1/Chapter_1_01/Encounters/brook",
-            "characterId": "Brook"
+            "prefabId": "mine_anchor",
+            "characterId": "Brook",
+            "connectStoryCards": "Chapter_1/Chapter_1_01/Encounters/brook"
+          },
+          {
+            "placeId": "moa",
+            "chunkIndex": 0,
+            "prefabId": "mine_anchor",
+            "characterId": "Moa",
+            "connectStoryCards": "Chapter_1/Chapter_1_01/Encounters/moa"
+          },
+          {
+            "placeId": "til",
+            "chunkIndex": 0,
+            "prefabId": "mine_anchor",
+            "characterId": "Til",
+            "connectStoryCards": "Chapter_1/Chapter_1_01/Encounters/til"
+          },
+          {
+            "placeId": "nea_sia",
+            "chunkIndex": 0,
+            "prefabId": "mine_anchor",
+            "characterId": "Nea",
+            "connectStoryCards": "Chapter_1/Chapter_1_01/Encounters/nea_sia"
           }
         ]
+      }
+    },
+    "Chapter_1_BossPreview": {
+      "TerrainInfo": {
+        "terrainName": "BossRevealPreparedChunk",
+        "groundId": "boss_preview",
+        "groundIds": [
+          "boss_preview"
+        ],
+        "chunkCount": 1,
+        "chunkLength": 50,
+        "places": []
       }
     }
   },
   "actions": {
-    "Chapter_1/Chapter_1_01/Encounters/brook": {
-      "110104": {
+    "Chapter_1/Chapter_1_01/Encounters/brook": {},
+    "Chapter_1/Chapter_1_01/Encounters/brook_pay": {
+      "120102": {
         "choiceRules": {
-          "brook_entry_0": {
+          "brook_pay_0": {
+            "abilityCost": [
+              10,
+              0,
+              0,
+              0
+            ],
+            "receiverId": "Brook",
+            "insufficientStoryPath": "Chapter_1/Chapter_1_01/Encounters/brook_insufficient"
+          },
+          "brook_pay_1": {
+            "abilityCost": [
+              0,
+              10,
+              0,
+              0
+            ],
+            "receiverId": "Brook",
+            "insufficientStoryPath": "Chapter_1/Chapter_1_01/Encounters/brook_insufficient"
+          },
+          "brook_pay_2": {
+            "abilityCost": [
+              0,
+              0,
+              10,
+              0
+            ],
+            "receiverId": "Dor",
+            "insufficientStoryPath": "Chapter_1/Chapter_1_01/Encounters/brook_insufficient"
+          },
+          "brook_pay_3": {
+            "abilityCost": [
+              0,
+              0,
+              0,
+              10
+            ],
+            "receiverId": "Brook",
+            "insufficientStoryPath": "Chapter_1/Chapter_1_01/Encounters/brook_insufficient"
+          }
+        }
+      }
+    },
+    "Chapter_1/Chapter_1_01/Encounters/brook_insufficient": {
+      "120202": {
+        "chapterAction": {
+          "kind": "duel",
+          "winStoryPath": "Chapter_1/Chapter_1_01/Encounters/brook_duel_win",
+          "loseStoryPath": "Chapter_1/Chapter_1_01/Encounters/brook_duel_lose"
+        }
+      }
+    },
+    "Chapter_1/Chapter_1_01/Encounters/brook_strength": {
+      "120304": {
+        "chapterAction": {
+          "kind": "access",
+          "granted": true
+        }
+      }
+    },
+    "Chapter_1/Chapter_1_01/Encounters/brook_speed": {
+      "120405": {
+        "chapterAction": {
+          "kind": "access",
+          "granted": true
+        }
+      }
+    },
+    "Chapter_1/Chapter_1_01/Encounters/brook_knowledge": {
+      "120506": {
+        "chapterAction": {
+          "kind": "duel",
+          "winStoryPath": "Chapter_1/Chapter_1_01/Encounters/brook_duel_win",
+          "loseStoryPath": "Chapter_1/Chapter_1_01/Encounters/brook_duel_lose"
+        }
+      }
+    },
+    "Chapter_1/Chapter_1_01/Encounters/brook_duel_win": {
+      "120604": {
+        "chapterAction": {
+          "kind": "access",
+          "granted": true
+        }
+      }
+    },
+    "Chapter_1/Chapter_1_01/Encounters/brook_duel_lose": {
+      "120704": {
+        "chapterAction": {
+          "kind": "death"
+        }
+      }
+    },
+    "Chapter_1/Chapter_1_01/Encounters/brook_charm": {
+      "120805": {
+        "nextStoryPath": "Chapter_1/Chapter_1_01/Encounters/brook_charm_after"
+      }
+    },
+    "Chapter_1/Chapter_1_01/Encounters/brook_charm_after": {
+      "120903": {
+        "chapterAction": {
+          "kind": "access",
+          "granted": true
+        }
+      }
+    },
+    "Chapter_1/Chapter_1_01/Encounters/brook_why": {},
+    "Chapter_1/Chapter_1_01/Encounters/brook_free": {},
+    "Chapter_1/Chapter_1_01/Encounters/brook_refuse": {
+      "121201": {
+        "chapterAction": {
+          "kind": "access",
+          "granted": false
+        }
+      }
+    },
+    "Chapter_1/Chapter_1_01/Encounters/dor": {},
+    "Chapter_1/Chapter_1_01/Encounters/dor_pay": {
+      "121401": {
+        "choiceRules": {
+          "dor_pay_0": {
+            "abilityCost": [
+              10,
+              0,
+              0,
+              0
+            ],
+            "receiverId": "Dor"
+          },
+          "dor_pay_1": {
+            "abilityCost": [
+              0,
+              10,
+              0,
+              0
+            ],
+            "receiverId": "Dor"
+          },
+          "dor_pay_2": {
+            "abilityCost": [
+              0,
+              0,
+              10,
+              0
+            ],
+            "receiverId": "Dor"
+          },
+          "dor_pay_3": {
+            "abilityCost": [
+              0,
+              0,
+              0,
+              10
+            ],
+            "receiverId": "Dor"
+          }
+        }
+      }
+    },
+    "Chapter_1/Chapter_1_01/Encounters/dor_strength": {
+      "121503": {
+        "chapterAction": {
+          "kind": "access",
+          "granted": true
+        }
+      }
+    },
+    "Chapter_1/Chapter_1_01/Encounters/dor_speed": {
+      "121603": {
+        "chapterAction": {
+          "kind": "access",
+          "granted": true
+        }
+      }
+    },
+    "Chapter_1/Chapter_1_01/Encounters/dor_knowledge": {
+      "121703": {
+        "chapterAction": {
+          "kind": "access",
+          "granted": true
+        }
+      }
+    },
+    "Chapter_1/Chapter_1_01/Encounters/dor_charm": {
+      "121805": {
+        "chapterAction": {
+          "kind": "access",
+          "granted": true
+        }
+      }
+    },
+    "Chapter_1/Chapter_1_01/Encounters/dor_revisit": {
+      "121901": {
+        "chapterAction": {
+          "kind": "access",
+          "granted": true
+        }
+      }
+    },
+    "Chapter_1/Chapter_1_01/Encounters/dor_why": {},
+    "Chapter_1/Chapter_1_01/Encounters/dor_labor_offer": {},
+    "Chapter_1/Chapter_1_01/Encounters/dor_labor": {
+      "122201": {
+        "chapterAction": {
+          "kind": "labor",
+          "ability": 0,
+          "successDelta": [
+            2,
+            -3,
+            1,
+            -4
+          ],
+          "failureDelta": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "winStoryPath": "Chapter_1/Chapter_1_01/Encounters/dor_labor_done",
+          "loseStoryPath": "Chapter_1/Chapter_1_01/Encounters/dor_labor_done",
+          "guaranteed": true
+        }
+      }
+    },
+    "Chapter_1/Chapter_1_01/Encounters/dor_labor_done": {
+      "122300": {
+        "chapterAction": {
+          "kind": "access",
+          "granted": true
+        }
+      }
+    },
+    "Chapter_1/Chapter_1_01/Encounters/dor_refuse": {
+      "122402": {
+        "chapterAction": {
+          "kind": "access",
+          "granted": false
+        }
+      }
+    },
+    "Chapter_1/Chapter_1_01/Encounters/dor_refuse_retry": {
+      "122500": {
+        "nextStoryPath": "Chapter_1/Chapter_1_01/Encounters/dor_pay"
+      }
+    },
+    "Chapter_1/Chapter_1_01/Encounters/moa": {},
+    "Chapter_1/Chapter_1_01/Encounters/moa_pay": {
+      "122702": {
+        "choiceRules": {
+          "moa_pay_0": {
+            "abilityCost": [
+              8,
+              0,
+              0,
+              0
+            ],
+            "receiverId": "Moa"
+          },
+          "moa_pay_1": {
+            "abilityCost": [
+              0,
+              8,
+              0,
+              0
+            ],
+            "receiverId": "Moa"
+          },
+          "moa_pay_2": {
+            "abilityCost": [
+              0,
+              0,
+              8,
+              0
+            ],
+            "receiverId": "Moa"
+          },
+          "moa_pay_3": {
+            "abilityCost": [
+              0,
+              0,
+              0,
+              8
+            ],
+            "receiverId": "Moa"
+          }
+        }
+      }
+    },
+    "Chapter_1/Chapter_1_01/Encounters/moa_strength": {
+      "122802": {
+        "chapterAction": {
+          "kind": "access",
+          "granted": true
+        }
+      }
+    },
+    "Chapter_1/Chapter_1_01/Encounters/moa_speed": {
+      "122902": {
+        "chapterAction": {
+          "kind": "access",
+          "granted": true
+        }
+      }
+    },
+    "Chapter_1/Chapter_1_01/Encounters/moa_knowledge": {
+      "123002": {
+        "chapterAction": {
+          "kind": "access",
+          "granted": true
+        }
+      }
+    },
+    "Chapter_1/Chapter_1_01/Encounters/moa_charm": {
+      "123104": {
+        "chapterAction": {
+          "kind": "access",
+          "granted": true
+        }
+      }
+    },
+    "Chapter_1/Chapter_1_01/Encounters/moa_why": {},
+    "Chapter_1/Chapter_1_01/Encounters/moa_labor": {
+      "123302": {
+        "chapterAction": {
+          "kind": "labor",
+          "ability": 0,
+          "successDelta": [
+            -3,
+            -4,
+            2,
+            1
+          ],
+          "failureDelta": [
+            -5,
+            -2,
+            1,
+            -1
+          ],
+          "winStoryPath": "Chapter_1/Chapter_1_01/Encounters/moa_labor_done",
+          "loseStoryPath": "Chapter_1/Chapter_1_01/Encounters/moa_labor_retry",
+          "guaranteed": false
+        }
+      }
+    },
+    "Chapter_1/Chapter_1_01/Encounters/moa_labor_done": {
+      "123400": {
+        "chapterAction": {
+          "kind": "access",
+          "granted": true
+        }
+      }
+    },
+    "Chapter_1/Chapter_1_01/Encounters/moa_labor_retry": {},
+    "Chapter_1/Chapter_1_01/Encounters/moa_refuse": {
+      "123601": {
+        "chapterAction": {
+          "kind": "access",
+          "granted": false
+        }
+      }
+    },
+    "Chapter_1/Chapter_1_01/Encounters/pico": {},
+    "Chapter_1/Chapter_1_01/Encounters/pico_pay": {
+      "123801": {
+        "choiceRules": {
+          "pico_pay_0": {
+            "abilityCost": [
+              4,
+              0,
+              0,
+              0
+            ],
+            "receiverId": "Pico"
+          },
+          "pico_pay_1": {
+            "abilityCost": [
+              0,
+              4,
+              0,
+              0
+            ],
+            "receiverId": "Pico"
+          },
+          "pico_pay_2": {
+            "abilityCost": [
+              0,
+              0,
+              4,
+              0
+            ],
+            "receiverId": "Pico"
+          },
+          "pico_pay_3": {
+            "abilityCost": [
+              0,
+              0,
+              0,
+              4
+            ],
+            "receiverId": "Pico"
+          }
+        }
+      }
+    },
+    "Chapter_1/Chapter_1_01/Encounters/pico_strength": {
+      "123901": {
+        "chapterAction": {
+          "kind": "access",
+          "granted": true
+        }
+      }
+    },
+    "Chapter_1/Chapter_1_01/Encounters/pico_speed": {
+      "124001": {
+        "chapterAction": {
+          "kind": "access",
+          "granted": true
+        }
+      }
+    },
+    "Chapter_1/Chapter_1_01/Encounters/pico_knowledge": {
+      "124101": {
+        "chapterAction": {
+          "kind": "access",
+          "granted": true
+        }
+      }
+    },
+    "Chapter_1/Chapter_1_01/Encounters/pico_charm": {
+      "124202": {
+        "chapterAction": {
+          "kind": "access",
+          "granted": true
+        }
+      }
+    },
+    "Chapter_1/Chapter_1_01/Encounters/pico_why": {},
+    "Chapter_1/Chapter_1_01/Encounters/pico_gamble": {},
+    "Chapter_1/Chapter_1_01/Encounters/pico_heads": {
+      "124503": {
+        "chapterAction": {
+          "kind": "coin_heads",
+          "winStoryPath": "Chapter_1/Chapter_1_01/Encounters/pico_win",
+          "loseStoryPath": "Chapter_1/Chapter_1_01/Encounters/pico_lose"
+        }
+      }
+    },
+    "Chapter_1/Chapter_1_01/Encounters/pico_tails": {
+      "124603": {
+        "chapterAction": {
+          "kind": "coin_tails",
+          "winStoryPath": "Chapter_1/Chapter_1_01/Encounters/pico_win",
+          "loseStoryPath": "Chapter_1/Chapter_1_01/Encounters/pico_lose"
+        }
+      }
+    },
+    "Chapter_1/Chapter_1_01/Encounters/pico_win": {
+      "124703": {
+        "chapterAction": {
+          "kind": "access",
+          "granted": true
+        }
+      }
+    },
+    "Chapter_1/Chapter_1_01/Encounters/pico_lose": {},
+    "Chapter_1/Chapter_1_01/Encounters/pico_pay6": {
+      "124901": {
+        "choiceRules": {
+          "pico_pay6_0": {
+            "abilityCost": [
+              6,
+              0,
+              0,
+              0
+            ],
+            "receiverId": "Pico"
+          },
+          "pico_pay6_1": {
+            "abilityCost": [
+              0,
+              6,
+              0,
+              0
+            ],
+            "receiverId": "Pico"
+          },
+          "pico_pay6_2": {
+            "abilityCost": [
+              0,
+              0,
+              6,
+              0
+            ],
+            "receiverId": "Pico"
+          },
+          "pico_pay6_3": {
+            "abilityCost": [
+              0,
+              0,
+              0,
+              6
+            ],
+            "receiverId": "Pico"
+          }
+        }
+      }
+    },
+    "Chapter_1/Chapter_1_01/Encounters/pico_rematch": {},
+    "Chapter_1/Chapter_1_01/Encounters/pico_fee": {
+      "125101": {
+        "choiceRules": {
+          "pico_fee_0": {
             "abilityCost": [
               1,
               0,
               0,
               0
-            ]
+            ],
+            "receiverId": "Pico"
           },
-          "brook_entry_1": {
+          "pico_fee_1": {
             "abilityCost": [
               0,
               1,
               0,
               0
-            ]
+            ],
+            "receiverId": "Pico"
           },
-          "brook_entry_2": {
+          "pico_fee_2": {
             "abilityCost": [
               0,
               0,
               1,
               0
-            ]
+            ],
+            "receiverId": "Pico"
           },
-          "brook_entry_3": {
+          "pico_fee_3": {
             "abilityCost": [
               0,
               0,
               0,
               1
-            ]
+            ],
+            "receiverId": "Pico"
           }
         }
       }
-    }
+    },
+    "Chapter_1/Chapter_1_01/Encounters/pico_condition": {},
+    "Chapter_1/Chapter_1_01/Encounters/pico_gamble7": {},
+    "Chapter_1/Chapter_1_01/Encounters/pico_heads7": {
+      "125401": {
+        "chapterAction": {
+          "kind": "coin_heads",
+          "winStoryPath": "Chapter_1/Chapter_1_01/Encounters/pico_win",
+          "loseStoryPath": "Chapter_1/Chapter_1_01/Encounters/pico_lose7"
+        }
+      }
+    },
+    "Chapter_1/Chapter_1_01/Encounters/pico_tails7": {
+      "125501": {
+        "chapterAction": {
+          "kind": "coin_tails",
+          "winStoryPath": "Chapter_1/Chapter_1_01/Encounters/pico_win",
+          "loseStoryPath": "Chapter_1/Chapter_1_01/Encounters/pico_lose7"
+        }
+      }
+    },
+    "Chapter_1/Chapter_1_01/Encounters/pico_lose7": {},
+    "Chapter_1/Chapter_1_01/Encounters/pico_pay7": {
+      "125701": {
+        "choiceRules": {
+          "pico_pay7_0": {
+            "abilityCost": [
+              7,
+              0,
+              0,
+              0
+            ],
+            "receiverId": "Pico"
+          },
+          "pico_pay7_1": {
+            "abilityCost": [
+              0,
+              7,
+              0,
+              0
+            ],
+            "receiverId": "Pico"
+          },
+          "pico_pay7_2": {
+            "abilityCost": [
+              0,
+              0,
+              7,
+              0
+            ],
+            "receiverId": "Pico"
+          },
+          "pico_pay7_3": {
+            "abilityCost": [
+              0,
+              0,
+              0,
+              7
+            ],
+            "receiverId": "Pico"
+          }
+        }
+      }
+    },
+    "Chapter_1/Chapter_1_01/Encounters/pico_pay6_retry": {
+      "125801": {
+        "choiceRules": {
+          "pico_pay6_retry_0": {
+            "abilityCost": [
+              6,
+              0,
+              0,
+              0
+            ],
+            "receiverId": "Pico"
+          },
+          "pico_pay6_retry_1": {
+            "abilityCost": [
+              0,
+              6,
+              0,
+              0
+            ],
+            "receiverId": "Pico"
+          },
+          "pico_pay6_retry_2": {
+            "abilityCost": [
+              0,
+              0,
+              6,
+              0
+            ],
+            "receiverId": "Pico"
+          },
+          "pico_pay6_retry_3": {
+            "abilityCost": [
+              0,
+              0,
+              0,
+              6
+            ],
+            "receiverId": "Pico"
+          }
+        }
+      }
+    },
+    "Chapter_1/Chapter_1_01/Encounters/pico_refuse": {
+      "125902": {
+        "chapterAction": {
+          "kind": "access",
+          "granted": false
+        }
+      }
+    },
+    "Chapter_1/Chapter_1_01/Encounters/til": {},
+    "Chapter_1/Chapter_1_01/Encounters/til_pay5": {
+      "126101": {
+        "choiceRules": {
+          "til_pay5_0": {
+            "abilityCost": [
+              5,
+              0,
+              0,
+              0
+            ],
+            "receiverId": "Til"
+          },
+          "til_pay5_1": {
+            "abilityCost": [
+              0,
+              5,
+              0,
+              0
+            ],
+            "receiverId": "Til"
+          },
+          "til_pay5_2": {
+            "abilityCost": [
+              0,
+              0,
+              5,
+              0
+            ],
+            "receiverId": "Til"
+          },
+          "til_pay5_3": {
+            "abilityCost": [
+              0,
+              0,
+              0,
+              5
+            ],
+            "receiverId": "Til"
+          }
+        }
+      }
+    },
+    "Chapter_1/Chapter_1_01/Encounters/til_pay6": {
+      "126201": {
+        "choiceRules": {
+          "til_pay6_0": {
+            "abilityCost": [
+              6,
+              0,
+              0,
+              0
+            ],
+            "receiverId": "Til"
+          },
+          "til_pay6_1": {
+            "abilityCost": [
+              0,
+              6,
+              0,
+              0
+            ],
+            "receiverId": "Til"
+          },
+          "til_pay6_2": {
+            "abilityCost": [
+              0,
+              0,
+              6,
+              0
+            ],
+            "receiverId": "Til"
+          },
+          "til_pay6_3": {
+            "abilityCost": [
+              0,
+              0,
+              0,
+              6
+            ],
+            "receiverId": "Til"
+          }
+        }
+      }
+    },
+    "Chapter_1/Chapter_1_01/Encounters/til_pay": {
+      "126301": {
+        "choiceRules": {
+          "til_pay_0": {
+            "abilityCost": [
+              10,
+              0,
+              0,
+              0
+            ],
+            "receiverId": "Til"
+          },
+          "til_pay_1": {
+            "abilityCost": [
+              0,
+              10,
+              0,
+              0
+            ],
+            "receiverId": "Til"
+          },
+          "til_pay_2": {
+            "abilityCost": [
+              0,
+              0,
+              10,
+              0
+            ],
+            "receiverId": "Til"
+          },
+          "til_pay_3": {
+            "abilityCost": [
+              0,
+              0,
+              0,
+              10
+            ],
+            "receiverId": "Til"
+          }
+        }
+      }
+    },
+    "Chapter_1/Chapter_1_01/Encounters/til_pay12": {
+      "126401": {
+        "choiceRules": {
+          "til_pay12_0": {
+            "abilityCost": [
+              12,
+              0,
+              0,
+              0
+            ],
+            "receiverId": "Til"
+          },
+          "til_pay12_1": {
+            "abilityCost": [
+              0,
+              12,
+              0,
+              0
+            ],
+            "receiverId": "Til"
+          },
+          "til_pay12_2": {
+            "abilityCost": [
+              0,
+              0,
+              12,
+              0
+            ],
+            "receiverId": "Til"
+          },
+          "til_pay12_3": {
+            "abilityCost": [
+              0,
+              0,
+              0,
+              12
+            ],
+            "receiverId": "Til"
+          }
+        }
+      }
+    },
+    "Chapter_1/Chapter_1_01/Encounters/til_pay15": {
+      "126501": {
+        "choiceRules": {
+          "til_pay15_0": {
+            "abilityCost": [
+              15,
+              0,
+              0,
+              0
+            ],
+            "receiverId": "Til"
+          },
+          "til_pay15_1": {
+            "abilityCost": [
+              0,
+              15,
+              0,
+              0
+            ],
+            "receiverId": "Til"
+          },
+          "til_pay15_2": {
+            "abilityCost": [
+              0,
+              0,
+              15,
+              0
+            ],
+            "receiverId": "Til"
+          },
+          "til_pay15_3": {
+            "abilityCost": [
+              0,
+              0,
+              0,
+              15
+            ],
+            "receiverId": "Til"
+          }
+        }
+      }
+    },
+    "Chapter_1/Chapter_1_01/Encounters/til_pay20": {
+      "126601": {
+        "choiceRules": {
+          "til_pay20_0": {
+            "abilityCost": [
+              20,
+              0,
+              0,
+              0
+            ],
+            "receiverId": "Til"
+          },
+          "til_pay20_1": {
+            "abilityCost": [
+              0,
+              20,
+              0,
+              0
+            ],
+            "receiverId": "Til"
+          },
+          "til_pay20_2": {
+            "abilityCost": [
+              0,
+              0,
+              20,
+              0
+            ],
+            "receiverId": "Til"
+          },
+          "til_pay20_3": {
+            "abilityCost": [
+              0,
+              0,
+              0,
+              20
+            ],
+            "receiverId": "Til"
+          }
+        }
+      }
+    },
+    "Chapter_1/Chapter_1_01/Encounters/til_strength": {
+      "126702": {
+        "chapterAction": {
+          "kind": "access",
+          "granted": true
+        }
+      }
+    },
+    "Chapter_1/Chapter_1_01/Encounters/til_speed": {
+      "126803": {
+        "chapterAction": {
+          "kind": "access",
+          "granted": true
+        }
+      }
+    },
+    "Chapter_1/Chapter_1_01/Encounters/til_knowledge": {
+      "126903": {
+        "chapterAction": {
+          "kind": "access",
+          "granted": true
+        }
+      }
+    },
+    "Chapter_1/Chapter_1_01/Encounters/til_charm": {
+      "127005": {
+        "chapterAction": {
+          "kind": "access",
+          "granted": true
+        }
+      }
+    },
+    "Chapter_1/Chapter_1_01/Encounters/til_revisit": {
+      "127101": {
+        "chapterAction": {
+          "kind": "access",
+          "granted": true
+        }
+      }
+    },
+    "Chapter_1/Chapter_1_01/Encounters/til_why": {},
+    "Chapter_1/Chapter_1_01/Encounters/til_race_offer": {},
+    "Chapter_1/Chapter_1_01/Encounters/til_race": {
+      "127401": {
+        "chapterAction": {
+          "kind": "race",
+          "winStoryPath": "Chapter_1/Chapter_1_01/Encounters/til_win",
+          "loseStoryPath": "Chapter_1/Chapter_1_01/Encounters/til_lose"
+        }
+      }
+    },
+    "Chapter_1/Chapter_1_01/Encounters/til_negotiate": {
+      "127502": {
+        "chapterAction": {
+          "kind": "race",
+          "winStoryPath": "Chapter_1/Chapter_1_01/Encounters/til_win",
+          "loseStoryPath": "Chapter_1/Chapter_1_01/Encounters/til_lose10"
+        }
+      }
+    },
+    "Chapter_1/Chapter_1_01/Encounters/til_cancel": {
+      "127601": {
+        "nextStoryPath": "Chapter_1/Chapter_1_01/Encounters/til_pay12"
+      }
+    },
+    "Chapter_1/Chapter_1_01/Encounters/til_win": {
+      "127703": {
+        "chapterAction": {
+          "kind": "access",
+          "granted": true
+        }
+      }
+    },
+    "Chapter_1/Chapter_1_01/Encounters/til_lose": {},
+    "Chapter_1/Chapter_1_01/Encounters/til_lose10": {},
+    "Chapter_1/Chapter_1_01/Encounters/til_rematch": {},
+    "Chapter_1/Chapter_1_01/Encounters/til_race_retry": {
+      "128101": {
+        "chapterAction": {
+          "kind": "race",
+          "winStoryPath": "Chapter_1/Chapter_1_01/Encounters/til_win",
+          "loseStoryPath": "Chapter_1/Chapter_1_01/Encounters/til_lose15"
+        }
+      }
+    },
+    "Chapter_1/Chapter_1_01/Encounters/til_lose15": {},
+    "Chapter_1/Chapter_1_01/Encounters/til_refuse": {
+      "128301": {
+        "chapterAction": {
+          "kind": "duel",
+          "winStoryPath": "Chapter_1/Chapter_1_01/Encounters/til_duel_win",
+          "loseStoryPath": "Chapter_1/Chapter_1_01/Encounters/til_duel_lose"
+        }
+      }
+    },
+    "Chapter_1/Chapter_1_01/Encounters/til_duel_win": {
+      "128400": {
+        "chapterAction": {
+          "kind": "access",
+          "granted": true
+        }
+      }
+    },
+    "Chapter_1/Chapter_1_01/Encounters/til_duel_lose": {
+      "128500": {
+        "chapterAction": {
+          "kind": "death"
+        }
+      }
+    },
+    "Chapter_1/Chapter_1_01/Encounters/bella": {},
+    "Chapter_1/Chapter_1_01/Encounters/bella_pay": {
+      "128701": {
+        "choiceRules": {
+          "bella_pay_0": {
+            "abilityCost": [
+              10,
+              0,
+              0,
+              0
+            ],
+            "receiverId": "Bella"
+          },
+          "bella_pay_1": {
+            "abilityCost": [
+              0,
+              10,
+              0,
+              0
+            ],
+            "receiverId": "Bella"
+          },
+          "bella_pay_2": {
+            "abilityCost": [
+              0,
+              0,
+              10,
+              0
+            ],
+            "receiverId": "Bella"
+          },
+          "bella_pay_3": {
+            "abilityCost": [
+              0,
+              0,
+              0,
+              10
+            ],
+            "receiverId": "Bella"
+          }
+        }
+      }
+    },
+    "Chapter_1/Chapter_1_01/Encounters/bella_strength": {
+      "128803": {
+        "chapterAction": {
+          "kind": "access",
+          "granted": true
+        }
+      }
+    },
+    "Chapter_1/Chapter_1_01/Encounters/bella_speed": {
+      "128903": {
+        "chapterAction": {
+          "kind": "access",
+          "granted": true
+        }
+      }
+    },
+    "Chapter_1/Chapter_1_01/Encounters/bella_knowledge": {
+      "129004": {
+        "chapterAction": {
+          "kind": "access",
+          "granted": true
+        }
+      }
+    },
+    "Chapter_1/Chapter_1_01/Encounters/bella_charm": {
+      "129105": {
+        "chapterAction": {
+          "kind": "access",
+          "granted": true
+        }
+      }
+    },
+    "Chapter_1/Chapter_1_01/Encounters/bella_revisit": {
+      "129202": {
+        "chapterAction": {
+          "kind": "access",
+          "granted": true
+        }
+      }
+    },
+    "Chapter_1/Chapter_1_01/Encounters/bella_why": {},
+    "Chapter_1/Chapter_1_01/Encounters/bella_pay_ack": {
+      "129401": {
+        "nextStoryPath": "Chapter_1/Chapter_1_01/Encounters/bella_pay"
+      }
+    },
+    "Chapter_1/Chapter_1_01/Encounters/bella_refuse": {
+      "129501": {
+        "chapterAction": {
+          "kind": "access",
+          "granted": false
+        }
+      }
+    },
+    "Chapter_1/Chapter_1_01/Encounters/bella_labor_offer": {},
+    "Chapter_1/Chapter_1_01/Encounters/bella_labor": {
+      "129702": {
+        "chapterAction": {
+          "kind": "labor",
+          "ability": 2,
+          "successDelta": [
+            -3,
+            -2,
+            3,
+            2
+          ],
+          "failureDelta": [
+            -3,
+            -2,
+            1,
+            -4
+          ],
+          "winStoryPath": "Chapter_1/Chapter_1_01/Encounters/bella_labor_win",
+          "loseStoryPath": "Chapter_1/Chapter_1_01/Encounters/bella_labor_lose",
+          "guaranteed": false
+        }
+      }
+    },
+    "Chapter_1/Chapter_1_01/Encounters/bella_labor_win": {
+      "129802": {
+        "chapterAction": {
+          "kind": "access",
+          "granted": true
+        }
+      }
+    },
+    "Chapter_1/Chapter_1_01/Encounters/bella_labor_lose": {},
+    "Chapter_1/Chapter_1_01/Encounters/rumor_1": {},
+    "Chapter_1/Chapter_1_01/Encounters/nea_sia": {}
   },
   "interactions": []
 }

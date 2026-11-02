@@ -7,6 +7,8 @@ using UnityEngine.Serialization;
 /// </summary>
 public class EnvController : MonoBehaviour
 {
+    [SerializeField] private MineNpcPlacement npcPlacement;
+    public MineNpcPlacement NpcPlacement => npcPlacement;
     [System.Serializable]
     private sealed class TerrainGroundEntry
     {
@@ -87,6 +89,8 @@ public class EnvController : MonoBehaviour
         }
 
         TerrainData terrainData = terrainRepository.Load(terrainPath);
+        if (terrainData != null && npcPlacement != null)
+            npcPlacement.Apply(terrainData, contentSeed, TerrainOrigin + Vector3.forward * registeredLength);
         int chunkCount = GetChunkCount(terrainData);
         if (terrainData == null || chunkCount == 0)
         {
@@ -134,6 +138,13 @@ public class EnvController : MonoBehaviour
         if (playerTransform != null)
             terrainStreamingController?.RefreshPlayerPosition(playerTransform.position.z);
         return true;
+    }
+
+    public bool PreloadTerrain(string chapterName, string episodeTitle)
+    {
+        var data = TerrainData; var registry = PlaceRegistry; float end = CurrentTerrainEndZ;
+        try { return RegisterTerrain(chapterName, episodeTitle); }
+        finally { TerrainData = data; PlaceRegistry = registry; CurrentTerrainEndZ = end; }
     }
 
     /// <summary>

@@ -1,0 +1,30 @@
+{
+  "laborSeconds": 15,
+  "successBase": 0.5,
+  "successBonus": 0.4,
+  "abilityScale": 20,
+  "encounterDistance": 2,
+  "baseTax": 1,
+  "alternatePaymentMultiplier": 2,
+  "fatigueMax": 100,
+  "fatigueResume": 30,
+  "walkingFatiguePerSecond": 2,
+  "recoveryPerSecond": 10,
+  "racePressTarget": 40,
+  "raceSeconds": 10,
+  "duelHitTarget": 3,
+  "rumorChance": 0.35,
+  "bossAttackPerCoin": 0.01,
+  "persuasionBase": 1,
+  "persuasionPerAttempt": 0.15,
+  "statusThreshold": 10,
+  "statusPenaltyPerPoint": 0.05,
+  "moods": ["담담함", "피곤함", "조급함", "희망적임"],
+  "bossPrefab": "Assets/AiAsset/BossRevealMapPack/Prefabs/Assembly/Assembly_BossReveal_50x50_NoCharacters.prefab",
+  "openings": [
+    {"placeId":"brook","variants":["brook","dor"],"rumor":"rumor_1"},
+    {"placeId":"moa","variants":["moa","pico"]},
+    {"placeId":"til","variants":["til","bella"]},
+    {"placeId":"nea_sia","variants":["nea_sia"]}
+  ]
+}

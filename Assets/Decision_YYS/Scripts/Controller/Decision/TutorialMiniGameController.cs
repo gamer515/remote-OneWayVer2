@@ -19,6 +19,7 @@ public sealed class TutorialMiniGameController : MonoBehaviour
     private Coroutine coinRoutine;
     private float duelBoardSurfaceY;
     private float appliedKnightScale;
+    private RectTransform[] raceMarkers;
 
     private void Awake()
     {
@@ -59,7 +60,7 @@ public sealed class TutorialMiniGameController : MonoBehaviour
         completed?.Invoke(true);
     }
 
-    public void StartCoinToss(bool choseHeads, Action<bool, bool> completed)
+    public void StartCoinToss(bool choseHeads, Action<bool, bool> completed, bool? resultHeads = null)
     {
         Cleanup();
         if (!IsReady)
@@ -94,7 +95,38 @@ public sealed class TutorialMiniGameController : MonoBehaviour
         body.AddForce(Vector3.up * 1.8f + UnityEngine.Random.insideUnitSphere * 0.35f,
             ForceMode.VelocityChange);
         body.AddTorque(new Vector3(10f, 4f, 8f), ForceMode.VelocityChange);
-        coinRoutine = StartCoroutine(WaitForCoin(coin, body, choseHeads, completed));
+        coinRoutine = StartCoroutine(WaitForCoin(coin, body, choseHeads, completed, resultHeads));
+    }
+
+    public void StartRaceTrack()
+    {
+        Cleanup();
+        if (miniGameBoard == null) return;
+        EnsureRoot();
+        var go = new GameObject("RaceTrack", typeof(RectTransform), typeof(Canvas));
+        go.transform.SetParent(spawnedRoot, false);
+        go.GetComponent<Canvas>().renderMode = RenderMode.WorldSpace;
+        var rt = (RectTransform)go.transform; rt.sizeDelta = new Vector2(500, 180);
+        Bounds bounds = GetBoardBounds();
+        rt.position = GetBoardCenter() + Vector3.up * 0.05f;
+        rt.rotation = Quaternion.Euler(90, 0, 0);
+        rt.localScale = Vector3.one * (Mathf.Min(bounds.size.x, bounds.size.z) / 500f);
+        raceMarkers = new RectTransform[2];
+        for (int i = 0; i < 2; i++)
+        {
+            var lane = new GameObject("Lane_" + i, typeof(RectTransform), typeof(UnityEngine.UI.Image)); lane.transform.SetParent(rt, false);
+            var lr = (RectTransform)lane.transform; lr.anchorMin = new Vector2(0, i * 0.5f); lr.anchorMax = new Vector2(1, i * 0.5f + 0.4f); lr.offsetMin = lr.offsetMax = Vector2.zero;
+            lane.GetComponent<UnityEngine.UI.Image>().color = new Color(0.07f, 0.10f, 0.14f);
+            var marker = new GameObject("Progress_" + i, typeof(RectTransform), typeof(UnityEngine.UI.Image)); marker.transform.SetParent(lr, false);
+            raceMarkers[i] = (RectTransform)marker.transform; raceMarkers[i].anchorMin = Vector2.zero; raceMarkers[i].anchorMax = new Vector2(0, 1); raceMarkers[i].offsetMin = raceMarkers[i].offsetMax = Vector2.zero;
+            marker.GetComponent<UnityEngine.UI.Image>().color = i == 0 ? new Color(0.25f, 0.8f, 0.85f) : new Color(1, 0.6f, 0.2f);
+        }
+    }
+    public void UpdateRaceTrack(float player, float opponent)
+    {
+        if (raceMarkers == null) return;
+        for (int i = 0; i < raceMarkers.Length; i++)
+            if (raceMarkers[i] != null) raceMarkers[i].anchorMax = new Vector2(Mathf.Clamp01(i == 0 ? player : opponent), 1);
     }
 
     public void Cleanup() => Cleanup(true);
@@ -120,7 +152,8 @@ public sealed class TutorialMiniGameController : MonoBehaviour
         GameObject coin,
         Rigidbody body,
         bool choseHeads,
-        Action<bool, bool> completed)
+        Action<bool, bool> completed,
+        bool? resultHeads)
     {
         float elapsed = 0f;
         while (coin != null && elapsed < 6f)
@@ -132,7 +165,13 @@ public sealed class TutorialMiniGameController : MonoBehaviour
             yield return null;
         }
 
-        bool heads = coin != null && Vector3.Dot(coin.transform.up, Vector3.up) >= 0f;
+        bool heads = resultHeads ?? (coin != null && Vector3.Dot(coin.transform.up, Vector3.up) >= 0f);
+        if (resultHeads.HasValue && coin != null && body != null)
+        {
+            body.isKinematic = true;
+            coin.transform.rotation = Quaternion.Euler(heads ? 0 : 180, 0, 0);
+            yield return new WaitForSeconds(0.6f);
+        }
         bool won = choseHeads == heads;
         coinRoutine = null;
         completed?.Invoke(won, heads);

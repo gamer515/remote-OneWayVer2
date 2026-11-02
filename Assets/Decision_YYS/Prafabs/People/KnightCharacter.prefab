@@ -72,7 +72,7 @@ Camera:
   m_Depth: 0
   m_CullingMask:
     serializedVersion: 2
-    m_Bits: 4294967295
+    m_Bits: 4294967039
   m_RenderingPath: -1
   m_TargetTexture: {fileID: 8400000, guid: d6e60aa68769acb40b5eee8f5b4d0ee8, type: 2}
   m_TargetDisplay: 2
@@ -388,6 +388,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0.0000043697423
       objectReference: {fileID: 0}
+    - target: {fileID: -1594015730887339857, guid: 04de17e633772964486af00e9843c073, type: 3}
+      propertyPath: m_Layer
+      value: 8
+      objectReference: {fileID: 0}
     - target: {fileID: -1044745713356962485, guid: 04de17e633772964486af00e9843c073, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
       value: -14.833821
@@ -634,6 +638,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Player
   moveSpeed: 3
+  dialogueFraming:
+    cropBelow: 0.25
+    viewportFill: 0.9
+    headroom: 0.05
+  duelFraming:
+    cropBelow: 0
+    viewportFill: 0.9
+    headroom: 0.05
 --- !u!136 &7017431142533227935
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -741,6 +753,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Helmet3
       objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: 0bc19d797a180574580919707cc95341, type: 3}
+      propertyPath: m_Layer
+      value: 8
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -815,6 +831,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: ShoulderPads
       objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: 562ecbafc2db0694e94438e18e0b7b2b, type: 3}
+      propertyPath: m_Layer
+      value: 8
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -888,6 +908,10 @@ PrefabInstance:
     - target: {fileID: 919132149155446097, guid: 54e2e145b312e6c46970b9a9fe7d0fef, type: 3}
       propertyPath: m_Name
       value: Sword
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: 54e2e145b312e6c46970b9a9fe7d0fef, type: 3}
+      propertyPath: m_Layer
+      value: 8
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

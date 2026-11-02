@@ -43,6 +43,7 @@ public static class ChapterContentCatalog
     public static IEnumerable<JObject> Chapters => ((JArray)Catalog["chapters"]).OfType<JObject>();
     public static IEnumerable<JObject> Stories => ((JArray)Catalog["stories"]).OfType<JObject>();
     public static JObject Info(string path) => Stories.FirstOrDefault(e=>(string)e["path"]==path);
+    public static bool CanRewrite(string path) => (bool?)Info(path)?["rewriteAllowed"] ?? true;
     public static int CardId(string path,int index)
     {
         var info=Info(path);return (int)Pack(info,false)[(string)info["key"]]["MainStory"][index]["ID"];

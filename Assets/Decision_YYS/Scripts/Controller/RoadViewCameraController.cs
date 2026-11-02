@@ -50,11 +50,12 @@ public class RoadViewCameraController : MonoBehaviour
             return;
 
         // X와 Y 거리는 Road View 구도 자체이므로 추적 판단에는 Z축 거리만 사용합니다.
-        float signedDistanceZ = playerTransform.position.z - transform.position.z;
+        float followZ = playerTransform.position.z + playerFollowOffsetZ;
+        float signedDistanceZ = followZ - transform.position.z;
         if (Mathf.Abs(signedDistanceZ) <= maxDistance)
             return;
 
-        float targetZ = playerTransform.position.z -
+        float targetZ = followZ -
             Mathf.Sign(signedDistanceZ) * maxDistance;
 
         float nextZ = Mathf.SmoothDamp(

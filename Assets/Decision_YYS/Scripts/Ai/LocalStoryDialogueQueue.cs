@@ -105,9 +105,10 @@ public static class LocalStoryDialogueQueue
         // The hook is after the completed encounter checkpoint. Opening a dialogue alone is not enough.
         if(progress==null || !(progress.unlockedIds??new List<string>()).Contains("event:"+placeId)) return;
         var paths=(progress.guideProgress?.runHistory??new List<PlayedEncounterCardRecord>())
-            .Where(c=>c.placeId==placeId && (c.encounterPath==basePath || c.encounterPath.StartsWith(basePath+"/",StringComparison.Ordinal)))
+            .Where(c=>c.placeId==placeId && ChapterContentCatalog.CanRewrite(c.encounterPath))
             .Select(c=>c.encounterPath).Distinct().ToArray();
-        QueuePaths(store,run,npc,paths,"대화 종료: "+placeId);
+        foreach (var group in paths.GroupBy(p => (string)ChapterContentCatalog.Info(p)?["characterId"] ?? npc))
+            QueuePaths(store,run,group.Key,group.ToArray(),"대화 종료: "+placeId);
     }
     public static void FinalizeRun(SaveIOService store,int run)
     {
@@ -148,6 +149,7 @@ public static class LocalStoryDialogueQueue
         int added=0;
         foreach(string path in requestedPaths)
         {
+            if (!ChapterContentCatalog.CanRewrite(path)) continue;
             // One immutable request per played story and source run. Completion, later choices and
             // policy edits must not turn the same next-run story into another generation attempt.
             if(queue.jobs.Any(j=>j.storyPath==path))continue;

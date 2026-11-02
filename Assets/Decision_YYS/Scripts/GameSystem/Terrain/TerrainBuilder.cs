@@ -131,6 +131,7 @@ public sealed class TerrainBuilder
                 authoredPlace.SetPositionAndRotation(
                     segment.Registry.GetWorldPosition(place),
                     Quaternion.Euler(place.rotation));
+                PositionActorSockets(segment, place, authoredPlace);
                 continue;
             }
 
@@ -138,6 +139,20 @@ public sealed class TerrainBuilder
             GameObject instance = Object.Instantiate(placePrefab,
                 segment.Registry.GetWorldPosition(place), Quaternion.Euler(place.rotation), chunkParent);
             instance.name = $"Place_{place.placeId}_{place.prefabId}";
+        }
+    }
+
+    private static void PositionActorSockets(TerrainSegment segment, PlaceData place, Transform root)
+    {
+        if (place.spawnPoints == null || place.spawnPoints.Length == 0) return;
+        int first = System.Array.FindIndex(place.spawnPoints, p => Vector3.SqrMagnitude(p - place.position) < 0.0001f);
+        int actor = 0;
+        foreach (Transform child in root)
+        {
+            if (!child.name.StartsWith("ActorSocket_", System.StringComparison.Ordinal)) continue;
+            Vector3 localPoint = place.actorPositions?.Length > actor ? place.actorPositions[actor] : place.spawnPoints[(System.Math.Max(0, first) + actor) % place.spawnPoints.Length];
+            actor++;
+            child.position = segment.Registry.GetChunkWorldPosition(place.chunkIndex) + localPoint;
         }
     }
 }

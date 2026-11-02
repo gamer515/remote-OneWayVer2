@@ -66,7 +66,17 @@ public sealed class DuelMouseHandController : MonoBehaviour
         controlledHand = handObject.transform;
         readyPoseApplied = false;
         RestRotation = controlledHand.rotation;
-        Collider clickCollider = EnsureClickableCollider(handObject);
+        var blade = handObject.GetComponentInChildren<DuelBladeHitbox>();
+        Collider clickCollider;
+        var contact = blade != null ? blade.GetComponent<BoxCollider>() : null;
+        if (contact != null)
+        {
+            // Combat turns the blade contact box off while waiting. Selection stays independently clickable.
+            var selection = new GameObject("SwordSelection"); selection.transform.SetParent(blade.transform, false);
+            var box = selection.AddComponent<BoxCollider>(); box.center = contact.center; box.size = contact.size; box.isTrigger = true;
+            clickCollider = box;
+        }
+        else clickCollider = EnsureClickableCollider(handObject);
         if (clickCollider != null)
         {
             DuelHandClickProxy proxy = clickCollider.GetComponent<DuelHandClickProxy>();
@@ -157,6 +167,7 @@ public sealed class DuelMouseHandController : MonoBehaviour
     private void CaptureHand()
     {
         if (controlledHand == null || IsCaptured) return;
+        authoringReferences?.RevealHands();
         if (!readyPoseApplied)
         {
             authoringReferences?.ApplyPlayerReadyPose();
@@ -190,9 +201,9 @@ public sealed class DuelMouseHandController : MonoBehaviour
     private bool IsPointerOverControlledHand(Vector2 screenPosition)
     {
         Ray ray = inputCamera.ScreenPointToRay(screenPosition);
-        foreach (RaycastHit hit in Physics.RaycastAll(ray, 1000f, inputCamera.cullingMask))
+        foreach (RaycastHit hit in Physics.RaycastAll(ray, 1000f, inputCamera.cullingMask, QueryTriggerInteraction.Collide))
         {
-            if (hit.transform == controlledHand || hit.transform.IsChildOf(controlledHand))
+            if (hit.transform.IsChildOf(controlledHand) && hit.transform.GetComponentInParent<DuelBladeHitbox>() != null)
                 return true;
         }
         return false;
