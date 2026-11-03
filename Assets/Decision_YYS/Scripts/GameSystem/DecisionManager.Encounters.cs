@@ -52,7 +52,8 @@ public partial class DecisionManager
 
     private void HandleEncounterYellowPressed()
     {
-        if (collectingTax || mine?.resting == true) return;
+        if (collectingTax) { ConfirmMineTaxChoice(); return; }
+        if (mine?.resting == true) return;
         if (guideProgress?.allocating == true) { ConfirmGuideAllocation(); return; }
         switch (currentState)
         {
@@ -368,6 +369,12 @@ public partial class DecisionManager
 
     private void HandleEncounterGearSelection(int index)
     {
+        if (collectingTax)
+        {
+            taxSelection = index >= 0 && index < (taxOptions?.Length ?? 0) ? index : -1;
+            presentationController.ShowOptions(taxOptions, taxSelection);
+            return;
+        }
         if (guideProgress?.allocating == true)
         {
             // 기존 기어의 좌상/우상은 추가, 좌하/우하는 빼기입니다.
@@ -398,7 +405,7 @@ public partial class DecisionManager
                 {
                     string[] labels = { "힘", "속도", "지능", "매력" };
                     for (int stat = 0; stat < cost.Length; stat++)
-                        if (cost[stat] > 0) options[index] += $" ({labels[stat]} −{cost[stat]})";
+                        if (cost[stat] > 0) options[index] += $" ({labels[stat]} -{cost[stat]})";
                     if (!AbilityPayment.CanPay(statContainer.stats, cost)) options[index] += " (능력 부족)";
                 }
             }

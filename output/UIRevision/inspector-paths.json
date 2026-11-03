@@ -1,0 +1,110 @@
+[
+  {
+    "name": "PlayerHandRestPose",
+    "path": "_Systems / DuelMiniGame / PlayerHandRestPose",
+    "position": "(-0.70000, -7.51000, -0.95820)",
+    "scale": "(1.000, 1.000, 1.000)",
+    "components": [
+      "Transform"
+    ]
+  },
+  {
+    "name": "KnightCharacter_Copy",
+    "path": "KnightCharacter_Copy",
+    "position": "(-2.95000, -7.89500, -1.75820)",
+    "scale": "(0.500, 0.500, 0.500)",
+    "components": [
+      "Transform",
+      "Animator",
+      "CapsuleCollider"
+    ]
+  },
+  {
+    "name": "NpcHandRoot",
+    "path": "NpcHandRoot",
+    "position": "(-5.36000, -7.72000, -0.95820)",
+    "scale": "(1.000, 1.000, 1.000)",
+    "components": [
+      "Transform"
+    ]
+  },
+  {
+    "name": "KnightCharacter_Copy_Exam",
+    "path": "KnightCharacter_Copy_Exam",
+    "position": "(-6.77601, -7.40018, 0.73184)",
+    "scale": "(0.500, 0.500, 0.500)",
+    "components": [
+      "Transform",
+      "Animator",
+      "CapsuleCollider"
+    ]
+  },
+  {
+    "name": "MineTaxCollectors",
+    "path": "MineTaxCollectors",
+    "position": "(-200.00000, 0.00000, 0.00000)",
+    "scale": "(1.000, 1.000, 1.000)",
+    "components": [
+      "Transform",
+      "MineCollectorProcession"
+    ]
+  },
+  {
+    "name": "HandRoot",
+    "path": "HandRoot",
+    "position": "(-2.95000, -6.91000, -2.91000)",
+    "scale": "(1.000, 1.000, 1.000)",
+    "components": [
+      "Transform"
+    ]
+  },
+  {
+    "name": "DuelMiniGame",
+    "path": "_Systems / DuelMiniGame",
+    "position": "(0.00000, 0.00000, 0.00000)",
+    "scale": "(1.000, 1.000, 1.000)",
+    "components": [
+      "Transform",
+      "DuelMiniGameBridge",
+      "DuelAuthoringReferences",
+      "DuelMouseHandController",
+      "DrawGizmoAreas",
+      "NpcDuelStateMachine",
+      "PlayerDuelAction",
+      "SeatedPlayerPreview"
+    ]
+  },
+  {
+    "name": "FloatingDialogue",
+    "path": "_UI / Decision_Canvas / Decision_UI_Root / Encounter_Display / Event_View / Walking_View_Back / Walking_View / FloatingDialogue",
+    "position": "(-3.02389, -47.34505, 77.50457)",
+    "scale": "(1.000, 1.000, 1.000)",
+    "components": [
+      "RectTransform",
+      "FloatingDialogueView"
+    ]
+  },
+  {
+    "name": "LearningStation",
+    "path": "_UI / Decision_Canvas / Decision_UI_Root / LearningStation",
+    "position": "(2.01315, -44.79818, 79.02846)",
+    "scale": "(1.000, 1.000, 1.000)",
+    "components": [
+      "RectTransform",
+      "CanvasRenderer",
+      "ChatBubbleGraphic",
+      "MineLearningStation"
+    ]
+  },
+  {
+    "name": "LiveMapMarkers",
+    "path": "_UI / Decision_Canvas / Decision_UI_Root / RawImage / RawImage_Road_View_And_Map / LiveMapMarkers",
+    "position": "(7.94630, -46.76278, 77.89420)",
+    "scale": "(1.000, 1.000, 1.000)",
+    "components": [
+      "RectTransform",
+      "RectMask2D",
+      "JourneyMapMarkers"
+    ]
+  }
+]

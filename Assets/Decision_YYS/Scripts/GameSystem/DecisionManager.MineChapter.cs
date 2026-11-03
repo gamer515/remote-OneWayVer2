@@ -20,6 +20,9 @@ public partial class DecisionManager
     private bool collectingTax;
     private float mineSaveAt;
     private StoryState beforeTax;
+    private string[] taxOptions;
+    private Action<int> taxSelected;
+    private int taxSelection = -1;
 
     private void InitializeMineChapter()
     {
@@ -230,6 +233,7 @@ public partial class DecisionManager
     private int MineTaxAmount => mineRules.baseTax + resolvedPlaceIds.Count;
     private void BeginMineTax()
     {
+        if (collectingTax) return;
         collectingTax = true; beforeTax = currentState;
         var collector = mineCollectors.NearestMember(playerController.CurrentPosition);
         playerController.PauseAndLookAt(collector.position);
@@ -241,7 +245,7 @@ public partial class DecisionManager
     {
         int type = (int)(MineChapterSettings.Roll(session.RunSeed, mine.collected, "tax") * 4);
         string[] labels = { "힘", "속도", "지능", "매력" };
-        mineView.Show($"징수원 조우 / {labels[type]} {MineTaxAmount}개 요구\n다른 코인은 {mineRules.alternatePaymentMultiplier}배로 대납", labels.Select((n, i) => n + " " + (MineTaxAmount * (i == type ? 1 : mineRules.alternatePaymentMultiplier))).ToArray(), slot => {
+        ShowTaxChoices($"징수원 조우 / {labels[type]} {MineTaxAmount}개 요구\n다른 코인은 {mineRules.alternatePaymentMultiplier}배로 대납", labels.Select((n, i) => n + " " + (MineTaxAmount * (i == type ? 1 : mineRules.alternatePaymentMultiplier))).ToArray(), slot => {
             if (!collectingTax) return;
             var cost = new int[4]; cost[slot] = MineTaxAmount * (slot == type ? 1 : mineRules.alternatePaymentMultiplier);
             if (!AbilityPayment.TryPay(statContainer.stats, cost, out var after)) { ShowMineTaxAlternatives(); return; }
@@ -252,7 +256,7 @@ public partial class DecisionManager
     }
     private void ShowMineTaxAlternatives()
     {
-        mineView.Show("코인이 부족합니다. 대응을 선택하세요.", new[] { "다른 코인으로 납부", "매력으로 설득", "결투" }, slot => {
+        ShowTaxChoices("코인이 부족합니다. 대응을 선택하세요.", new[] { "다른 코인으로 납부", "매력으로 설득", "결투" }, slot => {
             if (slot == 0) { ShowMineTax(); return; }
             if (slot == 1)
             {
@@ -262,14 +266,34 @@ public partial class DecisionManager
             }
             else if (duelMiniGame != null)
             {
-                mineView.Hide(); currentState = StoryState.Duel;
+                presentationController.ExitChoice(); taxSelected = null; currentState = StoryState.Duel;
                 playerController.FocusNpc(mineCollectors.NearestMember(playerController.CurrentPosition), true);
                 duelMiniGame.BeginDuel(won => { duelMiniGame.CleanupDuel(); if (won) FinishMineTax(); else FinishRunAndReturnToMainMenu("징수원 결투 패배"); }, mineRules.duelHitTarget, statContainer.stats[0], ConsumeMineDuelHealth);
             }
         });
     }
+    private void ShowTaxChoices(string message, string[] choices, Action<int> selected)
+    {
+        mineView.Hide();
+        taxOptions = choices; taxSelected = selected; taxSelection = -1;
+        ResetGearSelection();
+        presentationController.ShowPlayerViewControl();
+        presentationController.ShowInteraction(message, "징수원");
+        presentationController.ShowOptions(taxOptions, taxSelection);
+        SetYellowInputInteractable(true);
+    }
+    private void ConfirmMineTaxChoice()
+    {
+        if(taxSelected == null || taxSelection < 0 || taxSelection >= taxOptions.Length) return;
+        var selected = taxSelected; int slot = taxSelection;
+        taxSelected = null;
+        presentationController.ConfirmChoice(taxOptions[slot]);
+        selected(slot);
+    }
     private void FinishMineTax()
     {
+        taxOptions = null; taxSelected = null; taxSelection = -1;
+        presentationController.ExitChoice();
         collectingTax = false; mineCollectors.ContinueForward();
         mineView.Hide(); currentState = beforeTax;
         if (currentState == StoryState.MovingToEncounter && !mine.resting) playerController.ResumeMovement();
@@ -277,6 +301,7 @@ public partial class DecisionManager
         SaveGuideCheckpoint();
         if (currentState == StoryState.ShowingStory || currentState == StoryState.WaitingForChoice) FrameActiveEncounter(false);
         else playerController.ResetNpcFraming();
+        if (currentState == StoryState.WaitingForChoice) RenderEncounterOptions();
         Debug.Log($"[징수] 누적 {mine.collected}, 향후 보스 공격 배율 {mineRules.BossAttackMultiplier(mine.collected):F2}. 보스전 적용은 후속 범위.");
     }
 

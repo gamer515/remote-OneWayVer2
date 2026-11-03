@@ -1,0 +1,12 @@
+Learning Dispenser Prototype v1
+Unity 6000.3 / URP. Real 3D meshes; no reference image texture.
+Import the .unitypackage and drag Prefabs/LearningDispenser_Static into your scene.
+Front faces local -Z. 1 unit = 1 meter; scale root to fit your UI camera.
+Main cabinet ~5.1 wide x 5.5 high, left dispenser extends 1.95 below base.
+01 cabinet, 02 scheduled stack, 03 four aligned columns, 04 left dispenser.
+The four lower coin tubes are intentionally excluded. No text labels.
+Buttons, coins and learning objects are separate child objects.
+AnimatedDemo uses a legacy Animation clip to show a repeating dispense; it does not implement scheduling, inventory or input. Static prefab captures a tile mid-fall.
+Optional isolated demo scene included. No changes to your existing scene.
+Meshes/materials/prefabs are owned by this package; no third-party models/textures.
+Edit source: AssetBuild/LearningDispenser/BuildLearningDispenser.cs in source workspace.

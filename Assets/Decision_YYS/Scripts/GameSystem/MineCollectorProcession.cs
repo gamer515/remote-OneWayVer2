@@ -17,6 +17,8 @@ public sealed class MineCollectorProcession : MonoBehaviour
     [Header("Timing / seconds")]
     [Tooltip("출구 밖에서 가로 정렬을 마친 뒤 대기하는 시간(초)")]
     [SerializeField, Min(0)] private float rowWaitSeconds = 3f;
+    [Tooltip("청크 끝에서 사라진 뒤 다시 출발할 때까지 대기(초). 현재 시험값 5, 최종 주기 미정")]
+    [SerializeField, Min(0)] private float returnDelaySeconds = 5f;
     [SerializeField, Min(0.01f)] private float arrivalSpeed = 3f;
     [SerializeField, Min(0.01f)] private float marchSpeed = 0.25f;
     [Header("Authored entry/exit anchors, first to fourth place")]
@@ -67,7 +69,18 @@ public sealed class MineCollectorProcession : MonoBehaviour
     }
     public void Tick(float seconds)
     {
-        if (progress == null || members == null || (Phase)progress.collectorPhase == Phase.Finished) return;
+        if (progress == null || members == null) return;
+        if ((Phase)progress.collectorPhase == Phase.Finished)
+        {
+            progress.collectorWait = Mathf.Max(0, progress.collectorWait - seconds);
+            if (progress.collectorWait > 0) return;
+            progress.collectorZ = chunkEnd; progress.collectorDirection = -1;
+            progress.collectorStop = stops.Length - 1; progress.collectorPhase = (int)Phase.Arrival;
+            progress.collectorArrived = progress.collectorPassedPlayer = false;
+            for (int i=0;i<Count;i++) members[i].SetPositionAndRotation(Desired(i),Heading());
+            SetVisible(true);
+            return;
+        }
         var phase = (Phase)progress.collectorPhase;
         float speed = phase == Phase.FormRow || phase == Phase.FormColumn || !progress.collectorArrived ? arrivalSpeed : marchSpeed;
         int direction = progress.collectorDirection;
@@ -112,7 +125,11 @@ public sealed class MineCollectorProcession : MonoBehaviour
             foreach (var member in members) member.rotation = Heading();
             progress.collectorPhase = (int)Phase.March;
         }
-        if ((Phase)progress.collectorPhase == Phase.Finished) SetVisible(false);
+        if ((Phase)progress.collectorPhase == Phase.Finished)
+        {
+            progress.collectorWait = returnDelaySeconds;
+            SetVisible(false);
+        }
     }
     private void MoveLeader(float targetZ, float speed, float seconds, Phase next)
     {

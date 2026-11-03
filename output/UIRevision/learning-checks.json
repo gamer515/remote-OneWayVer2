@@ -1,0 +1,23 @@
+{
+  "passed": true,
+  "count": 17,
+  "checks": [
+    "Initial learning capacity is one active and five waiting",
+    "Book 1 is accepted and charged once",
+    "Book 2 is accepted and charged once",
+    "Book 3 is accepted and charged once",
+    "Book 4 is accepted and charged once",
+    "Book 5 is accepted and charged once",
+    "Book 6 is accepted and charged once",
+    "Full queue rejects entry without charging",
+    "Waiting books remain in the five-item FIFO queue",
+    "Requirements pause remaining learning time",
+    "One completed strength book awards two coins after its one-coin entry cost",
+    "Completion dispatches the next queued book in order",
+    "Restoring active and queued books does not charge again",
+    "Inspector knowledge thresholds expand active and queued capacity",
+    "Random durations respect the Inspector range",
+    "Insufficient learning coins are not charged",
+    "Entry and completion request persistence"
+  ]
+}

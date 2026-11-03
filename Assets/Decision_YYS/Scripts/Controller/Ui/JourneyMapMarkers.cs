@@ -34,6 +34,8 @@ public sealed class JourneyMapMarkers : MonoBehaviour
             Position("room:"+place.placeId,placement.transform.TransformPoint((place.entrance+place.exit)*.5f),new Color(.12f,.4f,.9f),true);
         foreach(var actor in actors)if(actor!=null)Position("npc:"+actor.GetInstanceID(),actor.position,new Color(.25f,.95f,.68f),false);
         if(player!=null)Position("player",player.transform.position,new Color(1,.72f,.2f),false);
+        foreach(var marker in markers)
+            if(marker.Key.StartsWith("collector:"))marker.Value.gameObject.SetActive(false);
         var members=collectors!=null?collectors.GetComponentsInChildren<Transform>():System.Array.Empty<Transform>();
         float nearest=float.MaxValue;float collectorZ=0;
         foreach(var member in members)

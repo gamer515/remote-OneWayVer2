@@ -8,7 +8,7 @@ using UnityEngine.InputSystem;
 /// 손을 잡는 동안 커서를 잠그고 숨기며, 대련 종료 또는 Escape에서 복원합니다.
 /// [참조] DuelAuthoringReferences.SpawnedPlayerHand의 부모를 이동하며 자식 Animator 자세와 분리합니다.
 /// 손을 클릭하는 BoxCollider는 선택용입니다. 칼날 접촉 판정은 Sword의 DuelBladeHitbox가 담당합니다.
-/// [수정] 최초 생성 배치는 유지하고, 잡은 뒤에는 월드 Z=-2.5의 X/Y 평면에서 움직입니다.
+/// [수정] 최초 생성은 씬 기준점, 잡은 뒤에는 보드 기사 + Held Forward Offset의 X/Y 평면을 사용합니다.
 /// </summary>
 public sealed class DuelMouseHandController : MonoBehaviour
 {
@@ -17,6 +17,8 @@ public sealed class DuelMouseHandController : MonoBehaviour
     [SerializeField, Min(0.1f)] private float mouseSensitivity = 1f;
     [SerializeField] private bool constrainToAuthoringArea;
     [SerializeField, Min(0f)] private float screenMargin = 12f;
+    [Tooltip("보드 플레이어 앞쪽(+Z)에 두는 손 조작 평면의 거리")]
+    [SerializeField] private float heldForwardOffset = 0.8f;
 
     private DuelAuthoringReferences authoringReferences;
     private Transform controlledHand;
@@ -189,8 +191,8 @@ public sealed class DuelMouseHandController : MonoBehaviour
     private void PlaceHeldHandOnCombatPlane()
     {
         if (inputCamera == null) return;
-        // 최초 생성은 그대로 두고, 처음 잡은 뒤에만 요청한 월드 깊이를 적용합니다.
-        const float heldZ = -2.5f;
+        float heldZ = authoringReferences?.KnightTarget != null
+            ? authoringReferences.KnightTarget.transform.position.z + heldForwardOffset : controlledHand.position.z;
         Vector2 screen = inputCamera.WorldToScreenPoint(controlledHand.position);
         Ray ray = inputCamera.ScreenPointToRay(screen);
         var heldPlane = new Plane(Vector3.forward, new Vector3(0f, 0f, heldZ));

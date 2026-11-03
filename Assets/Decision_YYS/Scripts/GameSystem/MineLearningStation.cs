@@ -33,6 +33,7 @@ public sealed class MineLearningStation : MonoBehaviour
     [SerializeField] private bool randomDuration;
     [SerializeField, Min(.05f)] private float deliverySeconds = .6f;
     [Header("Station view")]
+    [SerializeField] private bool showFlatBooks = true;
     [SerializeField] private UnityEngine.UI.Button[] abilityButtons;
     [SerializeField] private TextMeshProUGUI[] balances;
     [SerializeField] private TextMeshProUGUI status;
@@ -99,7 +100,7 @@ public sealed class MineLearningStation : MonoBehaviour
         for(int i=0;i<abilityButtons.Length;i++) abilityButtons[i].interactable=!stop;
         status.text=(stop?"요구 수행 중 / 학습 일시 정지":"학습 "+progress.active.Count+"/"+Capacity.simultaneous+" / 대기 "+progress.queued.Count+"/"+Capacity.waiting)+
             (notice==null?"":"\n"+notice);
-        for(int i=0;i<progress.active.Count;i++)
+        for(int i=0;showFlatBooks && i<progress.active.Count;i++)
         {
             var job=progress.active[i];var rect=books[i];
             rect.GetComponentInChildren<TextMeshProUGUI>().text=job.transit>0?"이동 중":job.remaining.ToString("F1")+"초";
@@ -114,6 +115,7 @@ public sealed class MineLearningStation : MonoBehaviour
     private void Rebuild()
     {
         foreach(var book in books) if(book!=null) Destroy(book.gameObject); books.Clear();
+        if(!showFlatBooks) return;
         foreach(var job in progress.active.Concat(progress.queued))
         {
             var book=Instantiate(bookTemplate,transform); book.gameObject.SetActive(true);book.name="LearningBook_"+job.ability;

@@ -46,6 +46,39 @@ __pycache__/
 /AgentScripts/StoryWorkbook/qa/
 /Assets/StreamingAssets/LocalStory/*.inspect.ndjson*
 /output/
+# Preserve the existing game report, manual and their local evidence.
+!/output/
+/output/*
+!/output/UIRevision/
+/output/UIRevision/*
+!/output/UIRevision/index.html
+!/output/UIRevision/*.png
+!/output/UIRevision/*checks.json
+!/output/UIRevision/*check.json
+!/output/UIRevision/inspector-paths.json
+!/output/UIRevision/arm-comparison.json
+!/output/MineChapterReview/
+/output/MineChapterReview/*
+!/output/MineChapterReview/index.html
+!/output/MineChapterReview/usage-guide.html
+!/output/MineChapterReview/cleanup-result.json
+!/output/MineChapterReview/14-dialogue-layout.png
+!/output/MineChapterReview/15-choice-center.png
+!/output/MineChapterReview/16-duel-contact.png
+!/output/MineChapterReview/layout-choice-check.json
+!/output/MineChapterReview/duel-movement-check.json
+!/output/MineChapterReview/duel-contact-check.json
+!/output/MineChapterReview/duel-user-adjusted-pose.json
+!/output/MineChapterReview/17-choice-lower-fit.png
+!/output/MineChapterReview/18-mouse-guard.png
+!/output/MineChapterReview/choice-sizing-check.json
+!/output/MineChapterReview/mouse-defense-check.json
+!/output/MineChapterReview/hand-depth-user-pose.json
+!/output/MineChapterReview/19-npc-depth-guard.png
+!/output/MineChapterReview/20-hero-choice.png
+!/output/MineChapterReview/npc-adjusted-input-check.json
+!/output/MineChapterReview/hero-label-check.json
+!/output/MineChapterReview/npc-hand-user-pose.json
 /.codex-finalizer-*/
 
 # Generated caches from all nested authoring/validation Unity projects

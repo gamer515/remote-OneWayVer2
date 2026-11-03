@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>학습 자판기 3D 에셋 제작</title><style>body{max-width:960px;margin:36px auto;padding:0 24px;font:16px/1.7 system-ui;color:#23303a;background:#faf8f2}table{border-collapse:collapse;width:100%}td,th{border:1px solid #c8c1af;padding:10px;text-align:left}img{max-width:480px;width:100%}code{overflow-wrap:anywhere}</style></head><body>
+<h1>학습 자판기 3D 에셋 초안</h1><p>작업일: 2026-11-04 (Asia/Seoul). 사용자가 표시한 본체·왼쪽 학습 적층부·왼쪽 배출구와 받는 통을 실제 3D 메시로 제작했다. 아래 네 개 동전통은 제외했다.</p>
+<p><a href="../output/LearningDispenserPrototype/LearningDispenserPrototype_v1.unitypackage">Unity 에셋 패키지</a> · <a href="../output/LearningDispenserPrototype/Preview.png">실제 Unity 렌더 미리보기</a> · <a href="../output/LearningDispenserPrototype/validation.txt">검증 기록</a></p>
+<table><tr><th>단계</th><th>작업</th><th>상태</th></tr><tr><td>1</td><td>요청 범위와 프로젝트 확인</td><td>완료: Unity 6000.3.12f1 / URP</td></tr><tr><td>2</td><td>본체·적층칸·배출구·개별 오브젝트 제작</td><td>완료</td></tr><tr><td>3</td><td>프리팹·배출 시연·패키지 제작</td><td>완료</td></tr><tr><td>4</td><td>렌더 및 참조·정렬·애니메이션 검사</td><td>완료. 다른 프로젝트에서의 새 가져오기는 미실시</td></tr></table>
+<h2>사용 방법</h2><p>.unitypackage를 Unity에서 가져온 뒤 <code>Assets/LearningDispenserPrototype/Prefabs/LearningDispenser_Static.prefab</code>을 배치한다. 앞면은 로컬 -Z 방향이다. 전체 루트 Scale을 게임 카메라에 맞게 줄여 사용한다. 본체 약 5.1 × 5.5 유닛, 왼쪽 배출부가 아래로 약 1.95 유닛 이어진다. 재질은 URP Lit 기반이다.</p>
+<p><code>LearningDispenser_AnimatedDemo.prefab</code> 또는 <code>LearningDispenser_Demo.unity</code>에서는 Play 시 간단한 배출 반복 동작을 볼 수 있다. Legacy Animation 클립을 사용한다. 실제 입력·학습 일정·코인 차감 로직은 이번 외형 에셋 범위에 포함하지 않는다.</p>
+<h2>구조와 수정</h2><p><code>01_WoodCabinet</code>은 본체, <code>02_ScheduledStack</code>은 얇은 물체 39개가 쌓인 왼쪽 칸, <code>03_Column_*</code>는 각 색상별 상단 코인·진열칸·누름 버튼, <code>04_LeftDispenser</code>는 배출구·낙하 물체·받는 통이다. 각 부품은 독립 자식 오브젝트이며 버튼에는 별도 Collider가 있다. 버튼·코인·네 색 학습 책·얇은 적층 타일을 개별 프리팹으로 제공한다.</p>
+<p><a href="../AssetBuild/LearningDispenser/BuildLearningDispenser.cs">재현용 빌더</a>가 메시·재질·프리팹·시연 씬·패키지를 만든다. Unity Pipeline의 run_script로 <code>LearningDispenserBuilder.Build</code>를 실행한다. 검증 진입점은 <code>LearningDispenserBuilder.Validate</code>다. 이미 출력 폴더가 있으면 재모델링하지 않고 프리뷰·패키지 완성을 재개한다. 새 모델 버전을 만들려면 Root와 출력 경로를 별도 이름으로 변경한다.</p>
+<h2>확인 결과와 한계</h2><p>실행 중인 Unity 에디터에서 C# 컴파일 및 생성 성공. 185개 MeshRenderer의 재질과 영구 메시 참조를 검사했다. 네 열의 코인·진열칸·버튼 X축 일치를 검사했다. 배출 클립을 두 시점에 샘플링해 낙하 이동을 확인했다. 격리된 프리뷰 씬에서 1000×1400 이미지를 렌더링하고 시각 확인했다. unitypackage의 gzip/tar 디렉터리 구조를 확인했다.</p>
+<p>별도 새 프로젝트로 패키지를 다시 가져오는 시험 및 실제 Play 진행 프레임 검사는 하지 않았다. 배출 동작은 클립 샘플 검사까지 완료했다. 단순한 로우폴리 초안이며 참고 이미지와 같은 완성도의 조각·텍스처는 구현하지 않았다. 기존 게임 씬을 저장하거나 게임 소스를 수정하지 않았다. 제작을 위해 Play를 한 번 종료했으며 검증 시 다시 Play 중인 것이 확인되어 해당 세션을 유지했다.</p>
+<h2>현황·다음 작업·임시 코드</h2><p>패키지 제공 완료. 다음 작업은 사용자 게임 화면에서 크기·카메라 각도 검토 및 필요 시 기능 연결이다. 일회성 임시 코드는 없다. 빌더는 재현·수정에 필요한 유지 도구다. 출력 패키지와 미리보기는 기존 .gitignore의 output 규칙에 따라 로컬 배포물로 관리하고, 원본 Assets·빌더·이 보고서는 Git 포함 대상임을 확인했다. 기존 보고서 <a href="development-principles-skill.html">개발 원칙 스킬 보고서</a>는 보존했다.</p>
+<img src="../output/LearningDispenserPrototype/Preview.png" alt="실제 Unity에서 렌더링한 자판기 에셋 초안">
+</body></html>
+
+
+
+
