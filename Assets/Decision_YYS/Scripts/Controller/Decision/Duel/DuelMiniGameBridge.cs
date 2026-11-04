@@ -82,6 +82,10 @@ public sealed class DuelMiniGameBridge : MonoBehaviour
             return;
         }
 
+        // The entrance is asynchronous: lock board input before the first animation frame.
+        boardInputWasEnabled = boardInput == null || boardInput.InputEnabled;
+        boardInputLocked = boardInput != null;
+        boardInput?.SetInputEnabled(false);
         setupController.StartDuel(created =>
         {
             if (!created || setupController.CurrentKnightTarget == null)
@@ -96,9 +100,6 @@ public sealed class DuelMiniGameBridge : MonoBehaviour
             authoringReferences?.Prepare(setupController.CurrentKnightTarget);
             if (npcStateMachine == null) npcStateMachine = GetComponent<NpcDuelStateMachine>();
             // 본 게임과 테스트는 같은 대련을 실행합니다. 테스트 여부는 결과 콜백/UI 구분에만 사용합니다.
-            boardInputWasEnabled = boardInput == null || boardInput.InputEnabled;
-            boardInputLocked = boardInput != null;
-            boardInput?.SetInputEnabled(false);
             mouseHandController?.Begin(authoringReferences);
             GetComponent<PlayerDuelAction>()?.BeginDefense(authoringReferences);
             npcStateMachine?.Begin(authoringReferences);

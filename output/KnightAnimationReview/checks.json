@@ -1,0 +1,142 @@
+{
+  "checks": [
+    {
+      "passed": true,
+      "message": "Player loop advances during real animation playback"
+    },
+    {
+      "passed": true,
+      "message": "Both random gestures play and return to Sitting Idle"
+    },
+    {
+      "passed": true,
+      "message": "Retargeted gestures move actual arm bones (max change 103.76 degrees)"
+    },
+    {
+      "passed": true,
+      "message": "Seated gestures do not drift the root"
+    },
+    {
+      "passed": true,
+      "message": "Knight_For_Ani uses a valid Humanoid Avatar"
+    },
+    {
+      "passed": true,
+      "message": "Duel starts after entrance finishes"
+    },
+    {
+      "passed": true,
+      "message": "Pelvis motion remains continuous with elapsed-time allowance (max unexplained step 0.0000 m; raw step 0.2481 m)"
+    },
+    {
+      "passed": true,
+      "message": "Entrance plays Dismount -> Walking -> Warrior in order"
+    },
+    {
+      "passed": true,
+      "message": "Duel hands/input wait for the entrance to finish"
+    },
+    {
+      "passed": true,
+      "message": "Seated preview is hidden while its moving duplicate is visible"
+    },
+    {
+      "passed": true,
+      "message": "Knight reaches the authored board destination"
+    },
+    {
+      "passed": true,
+      "message": "Existing duel logic preserves Warrior Idle"
+    },
+    {
+      "passed": true,
+      "message": "Existing knight hit-reaction state is retained"
+    },
+    {
+      "passed": true,
+      "message": "Generated NPC hand inherits the marked permanent start position"
+    },
+    {
+      "passed": true,
+      "message": "Generated NPC hand inherits the marked rotation"
+    },
+    {
+      "passed": true,
+      "message": "Reaction verification captures the player hand to resume combat time"
+    },
+    {
+      "passed": true,
+      "message": "Existing knight hit reaction actually starts"
+    },
+    {
+      "passed": true,
+      "message": "Hit reaction returns to Warrior Idle"
+    },
+    {
+      "passed": true,
+      "message": "Cleanup restores the seated preview"
+    },
+    {
+      "passed": true,
+      "message": "Cancelling the entrance prevents a late duel start"
+    },
+    {
+      "passed": true,
+      "message": "Cancelling the entrance restores the seated preview"
+    }
+  ],
+  "phases": [
+    "Dismount",
+    "Walking",
+    "Warrior"
+  ],
+  "samples": [
+    {
+      "phase": "Dismount",
+      "time": 0.0,
+      "root": "(-6.7760, -7.4002, 0.7318)",
+      "hips": "(-6.7044, -6.7026, 0.4655)"
+    },
+    {
+      "eventName": "largestPelvisStep",
+      "phase": "Dismount",
+      "time": 0.19367981,
+      "step": 0.0550301746,
+      "dt": 0.1936884,
+      "previousDelta": 0.0526491776
+    },
+    {
+      "eventName": "largestPelvisStep",
+      "phase": "Dismount",
+      "time": 0.8757019,
+      "step": 0.08901006,
+      "dt": 0.2104212,
+      "previousDelta": 0.0202600975
+    },
+    {
+      "phase": "Walking",
+      "time": 1.63801575,
+      "root": "(-6.7275, -7.8950, 0.5121)",
+      "hips": "(-6.6849, -6.8265, 0.4265)"
+    },
+    {
+      "eventName": "largestPelvisStep",
+      "phase": "Walking",
+      "time": 2.89004517,
+      "step": 0.248107627,
+      "dt": 0.1847075,
+      "previousDelta": 0.0106820008
+    },
+    {
+      "phase": "Warrior",
+      "time": 5.53942871,
+      "root": "(-2.9500, -7.8950, -1.7582)",
+      "hips": "(-2.9868, -6.9369, -1.6690)"
+    }
+  ],
+  "gestures": [
+    "Sitting And Pointing",
+    "Sitting Rubbing Arm"
+  ],
+  "time": "2026-11-04T15:27:50.4197857+09:00"
+}

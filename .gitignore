@@ -88,7 +88,22 @@ __pycache__/
 /AssetBuild/**/[Uu]ser[Ss]ettings/
 /AssetBuild/BlenderTools/
 
+# Knight desk dismount: keep source, final FBX/Blend, tools and usage guide.
+# Rendered previews and validation output can be regenerated locally.
+!/AssetBuild/KnightRigFix/DeskDismount/README.md
+/AssetBuild/KnightRigFix/DeskDismount/*.blend[0-9]*
+/AssetBuild/KnightRigFix/DeskDismount/pose_*.png
+/AssetBuild/KnightRigFix/DeskDismount/motion_preview.png
+/AssetBuild/KnightRigFix/DeskDismount/*_preview.mp4
+/AssetBuild/KnightRigFix/DeskDismount/validation.json
+
 # MemoryCaptures can get excessive in size.
+# Preserve the knight integration report's selected play-mode evidence.
+!/output/KnightAnimationReview/
+/output/KnightAnimationReview/*
+!/output/KnightAnimationReview/0[1-6]-*.png
+!/output/KnightAnimationReview/checks.json
+
 # They also could contain extremely sensitive data
 /[Mm]emoryCaptures/
 

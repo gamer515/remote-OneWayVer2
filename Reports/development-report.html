@@ -11,6 +11,100 @@
 <p>별도 새 프로젝트로 패키지를 다시 가져오는 시험 및 실제 Play 진행 프레임 검사는 하지 않았다. 배출 동작은 클립 샘플 검사까지 완료했다. 단순한 로우폴리 초안이며 참고 이미지와 같은 완성도의 조각·텍스처는 구현하지 않았다. 기존 게임 씬을 저장하거나 게임 소스를 수정하지 않았다. 제작을 위해 Play를 한 번 종료했으며 검증 시 다시 Play 중인 것이 확인되어 해당 세션을 유지했다.</p>
 <h2>현황·다음 작업·임시 코드</h2><p>패키지 제공 완료. 다음 작업은 사용자 게임 화면에서 크기·카메라 각도 검토 및 필요 시 기능 연결이다. 일회성 임시 코드는 없다. 빌더는 재현·수정에 필요한 유지 도구다. 출력 패키지와 미리보기는 기존 .gitignore의 output 규칙에 따라 로컬 배포물로 관리하고, 원본 Assets·빌더·이 보고서는 Git 포함 대상임을 확인했다. 기존 보고서 <a href="development-principles-skill.html">개발 원칙 스킬 보고서</a>는 보존했다.</p>
 <img src="../output/LearningDispenserPrototype/Preview.png" alt="실제 Unity에서 렌더링한 자판기 에셋 초안">
+<hr>
+<section id="knight-desk-dismount">
+<h1>기사 캐릭터 책상 내려오기 애니메이션 정리</h1>
+<p>작업일: 2026-11-04 14:11 (Asia/Seoul). 목표: <code>development-principles</code>에 따라 이 채팅에서 만든 애니메이션의 필수 파일·재생성 도구를 보존하고, 오래된 출력과 Git 제외 규칙 및 실행·수정 안내를 정리한다. 위 자판기 작업 기록은 보존했다.</p>
+<table><thead><tr><th>단계</th><th>주요 작업</th><th>확인 방법</th><th>상태</th></tr></thead><tbody>
+<tr><td>1</td><td>원본·최종 결과·유지 도구 구분, 오래된 출력 정리</td><td>이 채팅의 생성 목록과 Git 상태 대조</td><td>완료</td></tr>
+<tr><td>2</td><td>안내서 포함, 재생성 출력 제외</td><td>git check-ignore 및 git status</td><td>완료: 안내서 예외와 생성물 제외 확인</td></tr>
+<tr><td>3</td><td>현재 폴더에서 누락된 FBX 재생성 및 전체 프레임 검사</td><td>Blender FBX 재불러오기</td><td>완료: 30fps·1~50프레임 통과</td></tr>
+<tr><td>4</td><td>기존 HTML 보고서와 사용 안내 갱신</td><td>UTF-8·관련 상대 링크 확인</td><td>완료: 정적 문서 검사, 브라우저 화면 검사는 미실시</td></tr>
+</tbody></table>
+<h2>사용할 파일과 현재 현황</h2>
+<p>Unity로 가져올 파일은 <a href="../AssetBuild/KnightRigFix/DeskDismount/Knight_DeskDismount.fbx">Knight_DeskDismount.fbx</a>다. <a href="../AssetBuild/KnightRigFix/DeskDismount/Knight_DeskDismount.blend">Blender 편집 원본</a>도 함께 보존한다. 앉은 상태 → 책상에서 내려오기 → 착지 → 일어서기만 들어 있으며, 12개 기준 자세를 30fps·1~50프레임(약 1.67초)에 배치했다. 앉으러 접근하거나 다시 올라가는 동작은 없다.</p>
+<p>전체 게임 실행과 인계에 관한 기존 문서는 <code>Docs/PC_HANDOFF.md</code>이며 이 작업에서는 수정하지 않았다. 애니메이션 실행·수정 방법은 <a href="../AssetBuild/KnightRigFix/DeskDismount/README.md">기존 사용 안내서</a>를 갱신했다. 이 안내서는 광범위한 Markdown 제외 규칙의 좁은 예외로 Git에 포함한다. 기존 게임 씬·Animator·사용자 파일 및 무관한 Git 변경은 건드리지 않았다. 커밋·푸시·스테이징은 수행하지 않는다.</p>
+<h2>핵심 구조와 변경 이유</h2>
+<ul>
+<li><a href="../AssetBuild/KnightRigFix/KnightCharacter_RigFixed_ColorFixed.blend">기존 리깅 원본</a>: 모델·재질·HumanArmature 원본. 최초로 제공된 Standing FBX에는 뼈대가 없어 이 원본으로 제작했다.</li>
+<li><a href="../AssetBuild/KnightRigFix/create_desk_dismount.py">create_desk_dismount.py</a>: <code>keys</code>에 12개 자세, <code>tangent</code>에 연속 속도 보간, <code>limb</code>에 고정 길이 도달 계산을 둔다. 발을 닿지 않는 목표 위치로 강제 이동하지 않고 실제 발목 관절에 붙여 부츠 변형을 방지했다. <code>-- --skip-stills</code>로 PNG 렌더 없이 최종 Blend/FBX를 재생성할 수 있게 했다.</li>
+<li><a href="../AssetBuild/KnightRigFix/validate_desk_dismount.py">validate_desk_dismount.py</a>: FBX를 다시 불러와 전체 50프레임의 메시 좌표·범위, 다리 관절 이동·크기, 클립 범위를 확인하는 유지 검증 도구다.</li>
+<li><a href="../AssetBuild/KnightRigFix/render_dismount_video.py">render_dismount_video.py</a>: 저장된 Blend에서 30fps 확인용 MP4를 재생성하는 유지 도구다.</li>
+</ul>
+<h2>실행·수정 방법</h2>
+<p>Blender 5.2.3 LTS를 사용했다. 프로젝트 루트의 PowerShell에서 다음을 실행한다. 재생성은 생성된 Blend/FBX를 덮어쓰므로 수동 편집본은 별도 이름으로 저장한다.</p>
+<pre><code>&amp; 'C:/Program Files/Blender Foundation/Blender 5.2/blender.exe' --background --python AssetBuild/KnightRigFix/create_desk_dismount.py -- --skip-stills
+&amp; 'C:/Program Files/Blender Foundation/Blender 5.2/blender.exe' --background --python AssetBuild/KnightRigFix/validate_desk_dismount.py
+&amp; 'C:/Program Files/Blender Foundation/Blender 5.2/blender.exe' --background --python AssetBuild/KnightRigFix/render_dismount_video.py</code></pre>
+<p>12장 PNG도 필요하면 첫 명령의 <code>-- --skip-stills</code>를 뺀다. 게임 내 위치에 맞추려면 시작 골반 높이·손 지지점·책상 높이를 조절한다. Body 뼈에 약 0.45m 전진이 들어 있으므로 이동 스크립트로 중복 이동시키지 않는다.</p>
+<h2>검증 결과와 남은 작업</h2>
+<p id="knight-validation">이번 재생성 후 Blender FBX 재불러오기 통과: 30fps·1~50프레임, 뼈 42개·정점 480개. 전체 프레임의 다리 로컬 이동 오차 최대 9.53e-7, 크기 오차 최대 3.58e-7로 임계값 0.001 이하다. 생성된 FBX는 494,588바이트다. 안내서의 Git 포함 예외, 필수 파일 비제외 및 미리보기·검사 JSON·번호 백업 제외를 확인했다. 기존 보고서 내용과 이번 절의 상대 링크·UTF-8을 정적 확인했으며 브라우저 렌더 검사는 하지 않았다.</p>
+<p>이전 제작 단계에서 12장 렌더와 전체 50프레임 영상 출력을 확인했다. 이번 정리는 애니메이션 동작 자체를 바꾸지 않는다. 실제 Unity 가져오기·재생·게임 책상 높이 맞춤은 미확인이다. 기존 Mixamo Avatar와 뼈대가 달라 해당 Avatar를 그대로 복사하면 안 되며 별도 Humanoid 매핑 또는 이 모델의 Generic rig 설정이 필요하다. 다음 작업은 사용자가 Unity 적용을 요청하면 실제 캐릭터·책상 기준으로 연결하는 것이다.</p>
+<h2>Git 관리와 정리 상태</h2>
+<p>필수 보존: 기존 리깅 원본, 최종 Blend/FBX, 위 3개 유지 도구, 사용 안내서 및 이 누적 HTML 보고서. Git 제외: 재생성 가능한 <code>pose_*.png</code>, <code>motion_preview.png</code>, <code>*_preview.mp4</code>, <code>validation.json</code>, 로그와 Blender 번호 백업. 현재 12장 PNG·영상·검사 JSON은 로컬 확인용으로 유지한다.</p>
+<p id="knight-cleanup">임시 코드: 없음. 제작·검증·영상 스크립트는 모두 재현에 필요한 유지 도구로 보존한다. 만족 응답을 기다리는 일회성 코드도 없다. 사용자의 명시적인 정리 요청에 따라 아래 20개 생성 파일을 삭제했으며 사용자 파일·기존 리깅 원본·현재 12장 미리보기는 보존했다.</p>
+<ul><li><code>AssetBuild/KnightRigFix/DeskDismount/</code> 아래 이전 이미지: <code>pose_030.png</code>, <code>pose_033.png</code>, <code>pose_043.png</code>, <code>pose_047.png</code>, <code>pose_054.png</code>, <code>pose_061.png</code>, <code>pose_062.png</code>, <code>pose_075.png</code>, <code>pose_087.png</code>, <code>pose_090.png</code>, <code>pose_097.png</code>, <code>pose_109.png</code>, <code>pose_125.png</code>, <code>pose_141.png</code>, <code>pose_161.png</code>, <code>pose_199.png</code> 및 번호 백업 <code>Knight_DeskDismount.blend1</code>.</li>
+<li><code>AssetBuild/KnightRigFix/</code> 아래 로그: <code>desk_dismount_build.log</code>, <code>desk_dismount_validation.log</code>, <code>desk_dismount_video.log</code>.</li></ul>
+<p>삭제된 파일의 활성 도구·안내서 참조가 없음을 확인했다. 삭제 경로는 위 이력에만 남긴다. 기존 무관한 변경 <code>Assets/Decision_YYS/Scripts/Controller/Ui/LearningDispenserView.cs.meta</code>는 보존했다. 최종 파일과 도구는 Git 포함 가능한 미추적 상태이며 별도 커밋은 하지 않았다.</p>
+</section>
+<hr><section id="knight-animation-integration">
+<h1>Knight_For_Ani 아바타·앉기·결투 진입 연결</h1>
+<p>작업일: 2026-11-04 (Asia/Seoul). 목표: 사용자가 지정한 Knight_For_Ani 외형에 앉기 Idle 중심의 랜덤 동작을 적용하고, 책상 내려오기 → 걷기 → Warrior Idle까지 연결하며, 표시한 NPC 손 시작 배치를 저장한다. 위의 과거 작업 기록은 당시 상태로 보존했다.</p>
+<table><tr><th>단계</th><th>주요 작업·확인 방법</th><th>상태</th></tr>
+<tr><td>1</td><td>프로젝트 구조·인계 문서·Git·씬·리그 조사</td><td>완료. Unity 6000.3.12f1, Pipeline 0.7.0-exp.1, URP. 기존 실행 안내 Docs/PC_HANDOFF.md 확인.</td></tr>
+<tr><td>2</td><td>모델의 실제 뼈대 연결과 별도 Humanoid Avatar, FBX 호환 검사</td><td>완료. 지정 FBX 11개 Avatar 유효·Humanoid 클립 확인.</td></tr>
+<tr><td>3</td><td>랜덤 앉기·내려오기·걷기·Warrior Idle 및 취소·피격 복귀 검증</td><td id="knight-play-validation">완료. 2026-11-04 15:27:50 (Asia/Seoul), 실제 Play 검사 21/21 통과. C# 컴파일 오류 없음. 최종 FBX 메타 11개의 Humanoid·Avatar 생성 설정을 디스크에서도 확인.</td></tr>
+<tr><td>4</td><td>NPC 손 영구 시작점·재현 도구·문서 및 증거 보존</td><td>완료. 시작 위치·회전 실제 생성 복제본에서 확인.</td></tr></table>
+<h2>적용 결과와 원인</h2>
+<p>기존 Knight_For_Ani는 뼈대가 없는 MeshRenderer 조합이라 Avatar 지정만으로 애니메이션을 재생할 수 없었다. 기존 씬의 같은 기사 외형과 리깅된 몸체·헬멧·어깨 장비를 재사용해 <a href="../Assets/Decision_YYS/Prafabs/People/Knight_For_Ani.prefab">Knight_For_Ani.prefab</a>을 구성했다. 대상 전용 <a href="../Assets/Decision_YYS/Animation/KnightForAniAvatar.asset">KnightForAniAvatar.asset</a>과 <a href="../Assets/Decision_YYS/Animation/KnightPresentation.controller">KnightPresentation.controller</a>을 연결했다. Knight_Center의 중복 메시 Renderer는 끄고 참조용 Transform은 유지했다.</p>
+<p>Sitting Idle을 반복하며 Idle에서 6~8초 대기한 뒤 Sitting And Pointing / Sitting Rubbing Arm 중 하나를 무작위 재생한다. 동작을 끝까지 재생한 뒤 0.3초 블렌딩으로 Idle에 복귀한다. 팔 문지르기 원본은 약 7.97초이므로 동작을 7초마다 강제로 끊지 않으며, 다음 랜덤 대기는 Idle 복귀 후 다시 계산한다.</p>
+<p>결투 시작은 기존 BeginDuel / BeginTestDuel 경로를 사용한다. 앉은 기사와 같은 프리팹을 해당 앉은 위치에서 움직이고, 원래 미리보기는 숨겨 중복을 막는다. 시작 당시 앉기 자세를 복사한 뒤 Knight_DeskDismount_Smooth(약 1.63초) → Walking → 기존 KnightSpawnPose의 위치·방향 → Warrior Idle로 연결한다. 진입 중 보드 입력을 잠그며 손 생성과 결투 판정은 도착 후 시작한다. 취소하면 코루틴·복제본을 정리하고 앉은 모습을 복원한다.</p>
+<p>내려오기 원본의 Armature 스케일은 32.15, 대상 리그는 100이었다. 원본 Avatar를 자체 스케일로 교정하고 전진·높이 루트 이동을 분리했다. 대상 모델에서 실제 앉기·내려오기·걷기 골반 위치를 샘플링하여 시작·끝 기준점 차이를 구하고, 블렌딩과 함께 보정해 중복 이동과 자세 전환의 튐을 줄였다. 기존 피격 클립·상태도 보존했고, 이미 Warrior Idle로 블렌딩 중이면 대련 코드가 전환을 반복 초기화하지 않도록 했다.</p>
+<h2>핵심 코드와 Inspector 조정</h2>
+<table><tr><th>위치·파일</th><th>역할·수정 항목</th></tr>
+<tr><td><a href="../Assets/Decision_YYS/Scripts/Controller/Decision/KnightPresentation.cs">KnightPresentation.cs</a> / 씬의 Knight_For_Ani</td><td>ResetSeated·Update: 앉기와 랜덤 동작. Seated Interval=(6,8), Blend Seconds=0.3. EnterDuel: 내려오기·이동·도착. Walk Speed=1.35, Turn Speed=240. 시작·끝 Pose Offset은 빌더가 실제 Avatar 자세에서 계산한다.</td></tr>
+<tr><td><a href="../Assets/Decision_YYS/Scripts/Controller/Decision/TutorialMiniGameController.cs">TutorialMiniGameController.cs</a> / _Systems/Decision_Manager</td><td>Seated Knight Pose=Knight_For_Ani, Knight Target Prefab=Knight_For_Ani, Knight Spawn Pose=KnightCharacter_Copy. 앉은 위치와 도착 위치는 해당 Transform으로 조정한다. 기존 배치 (-6.776,-7.400,0.732) → (-2.95,-7.895,-1.7582), Scale=0.5 유지.</td></tr>
+<tr><td><a href="../Assets/Decision_YYS/Scripts/Controller/Decision/Duel/DuelMiniGameBridge.cs">DuelMiniGameBridge.cs</a></td><td>비동기 진입이 끝난 뒤 손·입력·결투 상태 머신을 시작한다. 취소 시 잠갔던 입력을 복원한다.</td></tr>
+<tr><td><a href="../Assets/Decision_YYS/Scripts/Controller/Decision/Duel/NpcDuelStateMachine.cs">NpcDuelStateMachine.cs</a></td><td>새 기사는 Warrior Idle, 기존 모델은 기존 Idle 상태 사용. 기존 피격과 Warrior Idle 복귀 보존.</td></tr>
+<tr><td>_Systems/DuelMiniGame / Duel Authoring References / Npc Hand Start Pose → NpcHandRoot</td><td>영구 수정 위치. Position=(-5.36,-7.7199,-2), Rotation=(-73.519,170.87,-21.078). 실행 중 DuelNpcHand는 이 시작점에서 복제한다. 기존 크기 유지. 사진의 음수 회전은 Inspector에서 동치인 0~360도 값으로 보일 수 있다.</td></tr>
+</table>
+<h2>실행·재현·검증</h2>
+<p>직접 확인: Assets/Scenes/DecisionScene.unity를 열고 Play. 처음에는 앉기와 랜덤 동작을 확인하고, 상단 Duel 버튼으로 내려오기·걷기·전투 대기를 확인한다. 도박으로 모드를 바꾸거나 결투를 정리하면 앉은 모습으로 복귀한다. 정상 게임 진입은 기존 MainMenuScene → 시작 버튼 경로를 유지한다.</p>
+<p><a href="../AgentScripts/KnightAnimationSetup.cs">KnightAnimationSetup.cs</a>는 유지할 제작·점검 도구다. Inspect는 관련 씬·리그를 조사하고, ConfigureImports는 FBX Humanoid와 루트·반복 설정을 적용하며, Build는 Animator·프리팹·씬 연결 및 기준점 보정을 재생성한다. Build는 지정된 프리팹·컨트롤러와 DecisionScene을 저장하므로, 수동으로 조정한 값은 실행 전에 별도 보존한다. 새 소스 수정 후 Unity 컴파일이 끝나야 Build를 실행할 수 있다.</p>
+<pre><code>unity command run_script --caller plugin --skill unity-cli --file AgentScripts/KnightAnimationSetup.cs --entry KnightAnimationSetup.ConfigureImports
+unity command run_script --caller plugin --skill unity-cli --file AgentScripts/KnightAnimationSetup.cs --entry KnightAnimationSetup.Build
+# DecisionScene Play 중에만 실행. 테스트 모드로 진행하며 실제 플레이 저장은 수정하지 않는다.
+unity command run_script --caller plugin --skill unity-cli --file AgentScripts/KnightAnimationChecks.cs --entry KnightAnimationChecks.Run</code></pre>
+<p><a href="../AgentScripts/KnightAnimationChecks.cs">KnightAnimationChecks.cs</a>는 실제 Animator 프레임·팔뼈 변화·두 랜덤 동작·루트 고정·진입 순서·프레임 시간 대비 골반 이동·도착·손 위치/회전·기존 피격 시작/복귀·취소/정리를 확인한다. 앉기 검사만 Time Scale=4로 가속하고 진입과 피격은 1배속으로 재생한다. 종료 시 Time Scale과 Random 상태를 복원한다. <a href="../output/KnightAnimationReview/checks.json">검증 JSON</a> 및 아래 6장은 실제 Play 화면이다.</p>
+<p><a href="../output/KnightAnimationReview/01-seated-idle.png">앉기 Idle</a> · <a href="../output/KnightAnimationReview/02-pointing.png">랜덤 가리키기</a> · <a href="../output/KnightAnimationReview/03-rubbing-arm.png">팔 문지르기</a> · <a href="../output/KnightAnimationReview/04-dismount.png">책상 내려오기</a> · <a href="../output/KnightAnimationReview/05-walking.png">걷기</a> · <a href="../output/KnightAnimationReview/06-warrior-idle.png">Warrior Idle</a></p>
+<img src="../output/KnightAnimationReview/02-pointing.png" alt="실제 게임에서 랜덤 앉기 동작"><img src="../output/KnightAnimationReview/06-warrior-idle.png" alt="걷기 완료 후 Warrior Idle과 두 손 시작 배치">
+<h2>현재 현황·다음 작업·한계</h2>
+<p>요청한 애니메이션 연결과 손 시작 배치를 적용했다. Sit To Stand 원본은 Humanoid 호환을 확인했지만 실제 진입에는 사용자가 마지막에 지정한 Knight_DeskDismount_Smooth를 사용한다. 칼 뽑기·휘두르기 클립은 Humanoid 가져오기까지만 확인했으며 기존 손 기반 전투 공격을 대체하지 않는다. Windows Player 빌드 및 실제 저장된 이야기에서 결투에 도달하는 전체 경로는 이번 범위에서 실행하지 않았다. 몸체 비율·책상 접촉점과 이동 속도의 최종 미감은 사용자 화면에서 추가 조정할 수 있다.</p>
+<p>검사 해석: 기존 전투는 손을 잡기 전 피격 시간도 정지하므로, 피격 복귀 검사는 TryCaptureHand 후 수행했다. 캡처 저장으로 약 0.2초 지연되는 프레임은 실제 경과 시간의 이동량을 허용해 자세 점프와 구분했다. 작업 중 콘솔에 남은 Pipeline의 구형 editor status 명령 호환 오류·연결 타임아웃·초기 캡처 경로 오류 및 일시 메타 쓰기 오류는 실제 게임 재생 오류와 구분했다. 최종 컴파일 성공, 21개 실제 재생 검사와 디스크의 11개 메타 저장 설정을 별도로 확인했다.</p>
+<h2>Git·임시 코드 정리</h2>
+<p>필수 보존: 새 런타임 소스·메타, Avatar·Animator·리깅된 프리팹, 지정 FBX와 가져오기 메타, DecisionScene, 위 두 유지 도구, 사용 안내서와 이 누적 보고서. 보고서에 연결된 최종 6장 PNG와 검사 JSON은 .gitignore에 좁은 예외를 추가했다. 초기 조사 화면 2장은 2026-11-05 사용자 정리 요청에 따라 삭제했다. 기존 무관한 사용자 변경은 보존하며 스테이징·커밋·푸시는 하지 않았다.</p>
+<p>임시 코드: 없음. AgentScripts/KnightAnimationSetup.cs와 AgentScripts/KnightAnimationChecks.cs는 재현·유지·회귀 검사 도구로 보존한다. 사용자 만족 응답을 기다리는 일회성 코드는 없다. 캡처 도구가 Assets/output에 만든 이번 초기 PNG는 프로젝트 output/KnightAnimationReview로 이동했고, 해당 자동 생성 메타·빈 디렉터리만 정리했다.</p>
+</section>
+<hr><section id="knight-cleanup-final">
+<h1>기사 애니메이션 정리 완료</h1>
+<p>작업일: 2026-11-05 (Asia/Seoul). 목표: 이 채팅의 애니메이션 정리를 마무리하고 후속 Unity 연결 기록과 제작용 파일의 상태를 일치시킨다.</p>
+<table><tr><th>단계</th><th>작업·확인 방법</th><th>상태</th></tr>
+<tr><td>1</td><td>제작 폴더·기존 보고·Git 상태 비교</td><td>완료. 이전에 삭제한 오래된 이미지 16장·로그 3개·번호 백업 1개의 재생성 없음.</td></tr>
+<tr><td>2</td><td>임시 파일과 안내서 현황 정리</td><td>완료. 남은 불필요한 일회성 코드 없음. 후속 Unity 적용 기록과 안내서의 과거 미검증 표현을 구분.</td></tr>
+<tr><td>3</td><td>필수 파일·Git 규칙·문서 상대 링크 확인</td><td>완료. 제작 Blend/FBX·안내서·3개 유지 도구 보존. 로컬 PNG 12장·영상·검사 JSON은 제외 규칙 유지.</td></tr></table>
+<h2>최종 보존 및 검증 범위</h2>
+<p><a href="../AssetBuild/KnightRigFix/DeskDismount/README.md">실행·수정 안내서</a>와 <a href="#knight-desk-dismount">제작 기록</a>, <a href="#knight-animation-integration">후속 Unity 적용 기록</a>을 함께 유지한다. 위 기존 보고 내용을 덮어쓰지 않았다. 이번에는 애니메이션 재생성·게임 재생 검사를 실행하지 않았으며, 기존 검사 JSON의 30fps·1~50프레임 및 이전 후속 연결 기록을 확인했다.</p>
+<p>제작용 <code>AssetBuild/KnightRigFix/DeskDismount/Knight_DeskDismount.fbx</code>와 Unity 적용본 <code>Assets/Decision_YYS/Animation/MaximoAni/Knight_DeskDismount.fbx</code>는 SHA-256이 다르다. 후속 작업으로 조정된 적용본과 그 메타를 보존했으며 서로 복사하거나 덮어쓰지 않았다. 제작 도구를 다시 실행해도 Unity 적용본을 자동으로 바꾸지 않음을 안내서에 명시했다.</p>
+<h2>임시 코드·현재 현황·다음 작업</h2>
+<p>정리 완료. 삭제 대기 임시 코드·로그·번호 백업 없음. 이번 추가 확인에서는 새로 삭제할 파일이 없었다. 제작·영상·검증 Python 3개와 후속 Unity 설정·검사 도구는 재현과 유지에 필요하므로 보존한다. 다른 작업의 씬·소스·메타·검증 화면 및 미커밋 변경도 그대로 유지했다. 커밋·푸시·스테이징은 하지 않았다. 정리 범위에 남은 작업은 없으며 향후 애니메이션 변경 시 실제 Unity 적용본의 Avatar와 재생을 다시 확인한다.</p>
+</section>
+<hr><section id="knight-integration-cleanup">
+<h1>기사 애니메이션 작업 정리 완료</h1>
+<p>작업일: 2026-11-05 (Asia/Seoul). 사용자 요청: 정리 마무리. 이번 연결 작업의 파일과 이전 보고서, Git 상태를 대조해 실행·재현·검증에 필요한 파일을 보존하고 불필요한 초기 캡처만 정리했다.</p>
+<table><tr><th>단계</th><th>작업·확인 방법</th><th>상태</th></tr><tr><td>1</td><td>임시 코드·생성물과 보고서 대조</td><td>완료. 일회성 임시 코드 없음.</td></tr><tr><td>2</td><td>초기 캡처의 활성 참조 확인 후 삭제</td><td>완료. output/KnightAnimationReview/initial-seated.png, output/KnightAnimationReview/initial-warrior.png 삭제.</td></tr><tr><td>3</td><td>필수 파일·최종 증거·Git 제외·문서 확인</td><td>완료. 최종 화면 6장과 checks.json, 런타임·에셋·메타·유지 도구 보존.</td></tr></table>
+<p>핵심 코드와 사용·수정 방법은 <a href="#knight-animation-integration">위 연결 작업 기록</a>을 따른다. 이번 정리는 게임 동작을 변경하지 않는다. 이전 실제 Play 검사 21/21 통과 기록을 보존하고, 정리 후 삭제 대상 부재·필수 파일 존재·새 보고서 절의 상대 링크 및 Git 포함/제외 상태를 정적으로 확인했다. 이번 정리에서 Unity Play를 다시 실행하지 않았다.</p>
+<p>임시 코드 정리 상태: 완료, 삭제 대기 없음. AgentScripts/KnightAnimationSetup.cs와 AgentScripts/KnightAnimationChecks.cs는 향후 재생성·회귀 검증에 필요한 유지 도구이므로 보존한다. 다른 작업의 소스·Blender 원본·생성물과 기존 사용자 변경은 이번 정리 대상에서 제외했다. 커밋·푸시는 수행하지 않았다. 추가 정리 작업은 없다.</p>
+</section>
 </body></html>
 
 

@@ -138,7 +138,8 @@ public class NpcDuelStateMachine : MonoBehaviour
     private bool knightAnimatorWasEnabled, knightRootMotionWasEnabled, knightHitPlaying, knightHitPlayed;
     private float knightAnimatorSpeed, knightHitElapsed;
     private KnightPose[] knightRestPose;
-    private const string KnightIdleState = "HumanArmature_New_Idle_swordRight";
+    private string KnightIdleState => knightAnimator != null && knightAnimator.GetComponent<KnightPresentation>() != null
+        ? "Warrior Idle" : "HumanArmature_New_Idle_swordRight";
     private bool knightIdleAvailable;
     private KnightPose knightRootPose;
     private Collider knightHitBody;
@@ -534,7 +535,11 @@ public class NpcDuelStateMachine : MonoBehaviour
         knightAnimator.enabled = true;
         knightAnimator.applyRootMotion = false;
         knightAnimator.speed = knightAnimatorSpeed > 0f ? knightAnimatorSpeed : 1f;
-        knightAnimator.Play(KnightIdleState, 0, 0f);
+        if (knightAnimator.GetComponent<KnightPresentation>() == null)
+            knightAnimator.Play(KnightIdleState, 0, 0f);
+        else if (!knightAnimator.GetCurrentAnimatorStateInfo(0).IsName(KnightIdleState) &&
+                 !(knightAnimator.IsInTransition(0) && knightAnimator.GetNextAnimatorStateInfo(0).IsName(KnightIdleState)))
+            knightAnimator.CrossFadeInFixedTime(KnightIdleState, 0.3f, 0, 0f);
         knightAnimator.Update(0f);
         RestoreKnightRoot();
     }

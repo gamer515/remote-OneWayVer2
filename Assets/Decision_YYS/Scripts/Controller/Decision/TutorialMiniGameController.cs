@@ -13,10 +13,13 @@ public sealed class TutorialMiniGameController : MonoBehaviour
     private float knightScale = 0.6f;
     [Tooltip("기사 생성 기준의 월드 위치/회전입니다. 씬에 배치한 KnightCharacter_Copy를 연결하면 현재 배치를 그대로 사용하고 Play 동안 원본을 숨깁니다. 비우면 보드 중앙에 생성합니다.")]
     [SerializeField] private Transform knightSpawnPose;
+    [Tooltip("앉아 있는 Knight_For_Ani. 연결하면 같은 프리팹으로 내려오기·걷기를 마친 뒤 대련을 시작합니다.")]
+    [SerializeField] private Transform seatedKnightPose;
     [SerializeField, Min(0.05f)] private float coinSize = 0.45f;
 
     private Transform spawnedRoot;
     private Coroutine coinRoutine;
+    private Coroutine knightEntranceRoutine;
     private float duelBoardSurfaceY;
     private float appliedKnightScale;
     private RectTransform[] raceMarkers;
@@ -57,6 +60,20 @@ public sealed class TutorialMiniGameController : MonoBehaviour
         duelBoardSurfaceY = center.y;
         CurrentKnightTarget = SpawnKnight(center);
         KnightSpawned?.Invoke(CurrentKnightTarget);
+        var presentation = CurrentKnightTarget.GetComponent<KnightPresentation>();
+        if (presentation != null && seatedKnightPose != null)
+            knightEntranceRoutine = StartCoroutine(EnterKnight(presentation, completed));
+        else completed?.Invoke(true);
+    }
+
+    private IEnumerator EnterKnight(KnightPresentation presentation, Action<bool> completed)
+    {
+        Vector3 destination = presentation.transform.position;
+        Quaternion rotation = presentation.transform.rotation;
+        presentation.transform.SetPositionAndRotation(seatedKnightPose.position, seatedKnightPose.rotation);
+        presentation.MatchSeatedPose(seatedKnightPose.GetComponent<Animator>());
+        yield return presentation.EnterDuel(destination, rotation);
+        knightEntranceRoutine = null;
         completed?.Invoke(true);
     }
 
@@ -133,6 +150,8 @@ public sealed class TutorialMiniGameController : MonoBehaviour
 
     public void Cleanup(bool detachFromParent)
     {
+        if (knightEntranceRoutine != null) StopCoroutine(knightEntranceRoutine);
+        knightEntranceRoutine = null;
         if (coinRoutine != null) StopCoroutine(coinRoutine);
         coinRoutine = null;
         if (spawnedRoot != null)
