@@ -9,7 +9,7 @@ using UnityEngine.SceneManagement;
 // Retained authoring tool. Run through Unity Pipeline run_script, entry LearningDispenserBuilder.Build.
 public static class LearningDispenserBuilder
 {
-    const string Root = "Assets/LearningDispenserPrototype";
+    const string Root = "Assets/AiAsset/LearningDispenserPrototype";
     static Material wood, darkWood, gold, inset, pages, amber;
     static Material[] colors;
     static Mesh bevel, cylinder, star;

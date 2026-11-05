@@ -13,6 +13,7 @@
 *.log
 
 # Local inference payloads are restored by AgentScripts/SetupLocalStoryModel.ps1.
+/AgentScripts/ConnectLearningDispenser.cs
 # Keep model/runtime out of Git; Windows builds include them through StreamingAssets.
 /Assets/StreamingAssets/LocalStory/*.gguf
 /Assets/StreamingAssets/LocalStory/*.gguf.meta
@@ -166,3 +167,10 @@ crashlytics-build.properties
 # Temporary auto-generated Android Assets
 /[Aa]ssets/[Ss]treamingAssets/aa.meta
 /[Aa]ssets/[Ss]treamingAssets/aa/*
+
+!/output/MineChapterReview/21-dispenser-empty.png
+!/output/MineChapterReview/22-dispenser-queue.png
+!/output/MineChapterReview/dispenser-check.json
+
+!/output/MineChapterReview/23-payment-half.png
+!/output/MineChapterReview/payment-halving-check.json

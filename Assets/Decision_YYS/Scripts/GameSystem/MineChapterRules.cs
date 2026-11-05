@@ -48,6 +48,7 @@ using UnityEngine;
     public float laborSeconds, successBase, successBonus, abilityScale;
     public float encounterDistance;
     public int baseTax, alternatePaymentMultiplier;
+    public float taxCostScale = 1f;
     public float fatigueMax, fatigueResume, walkingFatiguePerSecond, recoveryPerSecond;
     public int racePressTarget, duelHitTarget;
     public float raceSeconds, rumorChance, bossAttackPerCoin, persuasionBase, persuasionPerAttempt;
@@ -63,6 +64,8 @@ using UnityEngine;
         return JsonUtility.FromJson<MineChapterSettings>(asset.text);
     }
     public float SuccessChance(int ability) => successBase + successBonus * Mathf.Max(0, ability) / (Mathf.Max(0, ability) + abilityScale);
+    public int TaxAmount(int completedPlaces, bool alternate) => Mathf.CeilToInt(
+        (baseTax + completedPlaces) * (alternate ? alternatePaymentMultiplier : 1) * taxCostScale);
     public float StatusMultiplier(int strength) => 1 + Mathf.Max(0, statusThreshold - strength) * statusPenaltyPerPoint;
     public float BossAttackMultiplier(int collected) => 1 + Mathf.Max(0, collected) * bossAttackPerCoin;
     public float PersuasionChance(int charm, int attempts) => Mathf.Clamp01(SuccessChance(charm) * persuasionBase - attempts * persuasionPerAttempt);

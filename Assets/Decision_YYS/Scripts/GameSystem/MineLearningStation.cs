@@ -50,6 +50,7 @@ public sealed class MineLearningStation : MonoBehaviour
     private bool paused;
     private string notice;
     public MineLearningProgress Progress => progress;
+    public float DeliverySeconds => deliverySeconds;
     public CapacityStep Capacity => capacities.Where(c=>c.knowledgeCoins <= wallet()[2]).OrderBy(c=>c.knowledgeCoins).LastOrDefault() ?? new CapacityStep();
     public void Initialize(MineLearningProgress state, int runSeed, Func<int[]> getWallet, Func<int,int,bool> spend, Action<int,int> reward, Action persist)
     {

@@ -230,7 +230,7 @@ public partial class DecisionManager
         }
     }
 
-    private int MineTaxAmount => mineRules.baseTax + resolvedPlaceIds.Count;
+    private int MineTaxAmount => mineRules.TaxAmount(resolvedPlaceIds.Count, false);
     private void BeginMineTax()
     {
         if (collectingTax) return;
@@ -245,9 +245,9 @@ public partial class DecisionManager
     {
         int type = (int)(MineChapterSettings.Roll(session.RunSeed, mine.collected, "tax") * 4);
         string[] labels = { "힘", "속도", "지능", "매력" };
-        ShowTaxChoices($"징수원 조우 / {labels[type]} {MineTaxAmount}개 요구\n다른 코인은 {mineRules.alternatePaymentMultiplier}배로 대납", labels.Select((n, i) => n + " " + (MineTaxAmount * (i == type ? 1 : mineRules.alternatePaymentMultiplier))).ToArray(), slot => {
+        ShowTaxChoices($"징수원 조우 / {labels[type]} {MineTaxAmount}개 요구\n다른 능력 코인으로도 대납 가능", labels.Select((n, i) => n + " " + mineRules.TaxAmount(resolvedPlaceIds.Count, i != type)).ToArray(), slot => {
             if (!collectingTax) return;
-            var cost = new int[4]; cost[slot] = MineTaxAmount * (slot == type ? 1 : mineRules.alternatePaymentMultiplier);
+            var cost = new int[4]; cost[slot] = mineRules.TaxAmount(resolvedPlaceIds.Count, slot != type);
             if (!AbilityPayment.TryPay(statContainer.stats, cost, out var after)) { ShowMineTaxAlternatives(); return; }
             statContainer.SetStats(after); guideProgress.committedStats = after;
             mine.collected += cost.Sum(); SyncAbilityWallet(); FinishMineTax();

@@ -160,6 +160,29 @@ def write(path,data):
     path.parent.mkdir(parents=True,exist_ok=True)
     path.write_text(json.dumps(data,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
 
+# Approved 2026-11-06: halve authored payments and matching coin text, rounding up.
+def reduce_payment_text(text):
+    return re.sub(r'((?:코인|동전)\s*)(\d+)|(\d+)(?=\s*개)',
+                  lambda m: (m[1] or '') + str((int(m[2] or m[3]) + 1) // 2), text)
+
+def reduce_payments(value):
+    if isinstance(value, dict):
+        for key, item in value.items():
+            if key == 'abilityCost':
+                value[key] = [(amount + 1) // 2 for amount in item]
+            elif isinstance(item, str):
+                value[key] = reduce_payment_text(item)
+            else:
+                reduce_payments(item)
+    elif isinstance(value, list):
+        for index, item in enumerate(value):
+            if isinstance(item, str):
+                value[index] = reduce_payment_text(item)
+            else:
+                reduce_payments(item)
+
+reduce_payments(nodes)
+
 catalog={'chapters':[{'id':'Chapter_1','folder':'Chapter_01','episodes':['Chapter_1_01','Chapter_1_BossPreview']}],'stories':[]}
 storypack,explanations,actions={},{},{}
 for num,(key,content) in enumerate(nodes.items()):

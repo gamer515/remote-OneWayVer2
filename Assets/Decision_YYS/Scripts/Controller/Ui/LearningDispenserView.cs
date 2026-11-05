@@ -11,9 +11,13 @@ public sealed class LearningDispenserView : MonoBehaviour
     [SerializeField] private GameObject queuedTilePrefab;
     [SerializeField] private GameObject[] learningBookPrefabs;
     [SerializeField] private Transform[] outletPath;
-    [SerializeField, Min(.01f)] private float deliverySeconds = .6f;
     [SerializeField] private Vector3 activeStep = new Vector3(0,.32f,0);
     [SerializeField] private TMP_Text activeTimer;
+    [Header("Screen overlays follow the authored model anchors")]
+    [SerializeField] private Camera viewCamera;
+    [SerializeField] private RectTransform overlayRoot;
+    [SerializeField] private RectTransform[] overlays;
+    [SerializeField] private Transform[] overlayAnchors;
     private readonly List<Transform> tiles = new List<Transform>();
     private readonly Dictionary<MineLearningJob,Transform> books = new Dictionary<MineLearningJob,Transform>();
     private readonly List<MineLearningJob> finished = new List<MineLearningJob>();
@@ -22,6 +26,13 @@ public sealed class LearningDispenserView : MonoBehaviour
 
     private void LateUpdate()
     {
+        if(overlayRoot != null)
+            for(int i=0;i<overlays.Length;i++)
+            {
+                RectTransformUtility.ScreenPointToLocalPointInRectangle(overlayRoot,viewCamera.WorldToScreenPoint(overlayAnchors[i].position),null,out var point);
+                overlays[i].anchoredPosition=point;
+            }
+        if(station == null) return;
         var progress = station.Progress;
         if(progress == null) return;
         while(tiles.Count > progress.queued.Count)
@@ -43,7 +54,7 @@ public sealed class LearningDispenserView : MonoBehaviour
                 book=Instantiate(learningBookPrefabs[job.ability],dynamicRoot).transform;
                 books.Add(job,book);
             }
-            float t=job.transit>0?Mathf.Clamp01(1-job.transit/deliverySeconds):1;
+            float t=job.transit>0?Mathf.Clamp01(1-job.transit/station.DeliverySeconds):1;
             float path=t*(outletPath.Length-1);int segment=Mathf.Min((int)path,outletPath.Length-2);
             Vector3 position=Vector3.Lerp(outletPath[segment].position,outletPath[segment+1].position,path-segment);
             if(job.transit<=0)position+=dynamicRoot.TransformVector(activeStep*i);
