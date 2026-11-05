@@ -17,6 +17,18 @@ namespace OneWay.Battle3D
         GameObject active;
         Vector3 anchorOffset;
         void Awake() => player = GetComponent<BattlePlayerController>();
+        public void PlayAuthoredSwing(float seconds)
+        {
+            if (slashPrefab == null) return;
+            Vector3 center = sword != null ? sword.position : transform.position + Vector3.up;
+            Quaternion rotation = sword != null ? sword.rotation : transform.rotation;
+            var effect = Instantiate(slashPrefab, center, rotation);
+            effect.name = "NewPlayer Sword Slash";
+            effect.transform.localScale = slashPrefab.transform.localScale * effectScale;
+            float lifetime = Mathf.Max(.01f, seconds) + .1f;
+            foreach (var vfx in effect.GetComponentsInChildren<VisualEffect>()) vfx.playRate = 1f / lifetime;
+            Destroy(effect, lifetime);
+        }
         public void PlaySwing(int step, float speed)
         {
             // Previous swing keeps its independently scheduled tail when a new swing starts.

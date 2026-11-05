@@ -74,7 +74,7 @@ namespace OneWay.Battle3D
 
         public void TakeDamage(float damage)
         {
-            if (!IsAlive) return;
+            if (!IsAlive || GetComponent<BossPhaseTwo>()?.IsInvulnerable == true) return;
             Health = Mathf.Max(0f, Health - Mathf.Max(0f, damage));
             flashRemaining = 0.12f;
             actionPriority?.OnDamage();
@@ -82,6 +82,7 @@ namespace OneWay.Battle3D
 
         public void ResetBoss()
         {
+            GetComponent<BossPhaseTwo>()?.ResetPhase();
             actionPriority?.ResetPriority();
             Health = maxHealth;
             phase = flashRemaining = 0f;

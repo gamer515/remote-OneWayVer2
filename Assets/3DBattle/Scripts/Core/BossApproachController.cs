@@ -95,6 +95,7 @@ namespace OneWay.Battle3D
         void Update() => Tick(Time.deltaTime);
         public void Tick(float delta)
         {
+            if (GetComponent<BossPhaseTwo>()?.BlocksAutomaticActions == true) return;
             if (!automaticApproach || !ValidTarget || !boss.IsAlive)
             {
                 if (running || actions.Current == BossActionKind.Rest) actions.RequestStop();

@@ -42,6 +42,12 @@ namespace OneWay.Battle3D.Editor
             {
                 if (GUILayout.Button("보스 처치 (Kill Boss)")) controller.DefeatCurrentBoss();
             }
+            if (controller.GetComponent<BattleDebugBootstrap>() != null)
+            {
+                var phase = stage.boss != null ? stage.boss.GetComponent<BossPhaseTwo>() : null;
+                using (new EditorGUI.DisabledScope(!Application.isPlaying || phase == null || phase.Phase != 1 || !stage.boss.IsAlive))
+                    if (GUILayout.Button("페이즈 2 바로 시작")) phase.ForcePhaseTwo();
+            }
             if (Application.isPlaying)
             {
                 if (controller.IsReturnPending)

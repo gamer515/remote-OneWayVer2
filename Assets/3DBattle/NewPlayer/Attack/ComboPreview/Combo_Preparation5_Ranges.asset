@@ -1,0 +1,55 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!49 &4900000
+TextAsset:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Combo_Preparation5_Ranges
+  m_Script: "{\r\n  \"objectName\": \"New Knight Combo Sequence Preview\",\r\n  \"attackRanges\":
+    [\r\n    {\r\n      \"order\": 1,\r\n      \"motion\": \"Attack 05 - Skill_03\",\r\n     
+    \"sourceFirst\": 0,\r\n      \"sourceLast\": 16,\r\n      \"comboFirst\": 0,\r\n     
+    \"comboLast\": 16\r\n    },\r\n    {\r\n      \"order\": 2,\r\n      \"motion\":
+    \"Attack 02 - Charged_Upward_Slash\",\r\n      \"sourceFirst\": 21,\r\n     
+    \"sourceLast\": 42,\r\n      \"comboFirst\": 22,\r\n      \"comboLast\": 43\r\n   
+    },\r\n    {\r\n      \"order\": 3,\r\n      \"motion\": \"Attack 03 - Double_Combo_Attack\",\r\n     
+    \"sourceFirst\": 0,\r\n      \"sourceLast\": 41,\r\n      \"comboFirst\": 49,\r\n     
+    \"comboLast\": 90\r\n    },\r\n    {\r\n      \"order\": 4,\r\n      \"motion\":
+    \"Attack 06 - Weapon_Combo_1\",\r\n      \"sourceFirst\": 4,\r\n      \"sourceLast\":
+    39,\r\n      \"comboFirst\": 96,\r\n      \"comboLast\": 131\r\n    },\r\n   
+    {\r\n      \"order\": 5,\r\n      \"motion\": \"Attack 05 - Skill_03\",\r\n     
+    \"sourceFirst\": 0,\r\n      \"sourceLast\": 16,\r\n      \"comboFirst\": 137,\r\n     
+    \"comboLast\": 153\r\n    },\r\n    {\r\n      \"order\": 6,\r\n      \"motion\":
+    \"Attack 04 - Right_Hand_Sword_Slash\",\r\n      \"sourceFirst\": 8,\r\n     
+    \"sourceLast\": 22,\r\n      \"comboFirst\": 159,\r\n      \"comboLast\": 173\r\n   
+    },\r\n    {\r\n      \"order\": 7,\r\n      \"motion\": \"Attack 01 - Attack\",\r\n     
+    \"sourceFirst\": 15,\r\n      \"sourceLast\": 33,\r\n      \"comboFirst\": 179,\r\n     
+    \"comboLast\": 197\r\n    }\r\n  ],\r\n  \"transitions\": [\r\n    {\r\n     
+    \"from\": \"Attack 05 - Skill_03\",\r\n      \"to\": \"Attack 02 - Charged_Upward_Slash\",\r\n     
+    \"firstFrame\": 17,\r\n      \"lastFrame\": 21,\r\n      \"previousFrontFoot\":
+    \"Right\",\r\n      \"nextFrontFoot\": \"Left\",\r\n      \"step\": true,\r\n     
+    \"stepForwardDistance\": 1.224274\r\n    },\r\n    {\r\n      \"from\": \"Attack
+    02 - Charged_Upward_Slash\",\r\n      \"to\": \"Attack 03 - Double_Combo_Attack\",\r\n     
+    \"firstFrame\": 44,\r\n      \"lastFrame\": 48,\r\n      \"previousFrontFoot\":
+    \"Right\",\r\n      \"nextFrontFoot\": \"Left\",\r\n      \"step\": true,\r\n     
+    \"stepForwardDistance\": 0.6756065\r\n    },\r\n    {\r\n      \"from\": \"Attack
+    03 - Double_Combo_Attack\",\r\n      \"to\": \"Attack 06 - Weapon_Combo_1\",\r\n     
+    \"firstFrame\": 91,\r\n      \"lastFrame\": 95,\r\n      \"previousFrontFoot\":
+    \"Right\",\r\n      \"nextFrontFoot\": \"Left\",\r\n      \"step\": true,\r\n     
+    \"stepForwardDistance\": 0.6623472\r\n    },\r\n    {\r\n      \"from\": \"Attack
+    06 - Weapon_Combo_1\",\r\n      \"to\": \"Attack 05 - Skill_03\",\r\n      \"firstFrame\":
+    132,\r\n      \"lastFrame\": 136,\r\n      \"previousFrontFoot\": \"Left\",\r\n     
+    \"nextFrontFoot\": \"Right\",\r\n      \"step\": true,\r\n      \"stepForwardDistance\":
+    1.20604181\r\n    },\r\n    {\r\n      \"from\": \"Attack 05 - Skill_03\",\r\n     
+    \"to\": \"Attack 04 - Right_Hand_Sword_Slash\",\r\n      \"firstFrame\": 154,\r\n     
+    \"lastFrame\": 158,\r\n      \"previousFrontFoot\": \"Right\",\r\n      \"nextFrontFoot\":
+    \"Left\",\r\n      \"step\": true,\r\n      \"stepForwardDistance\": 1.319618\r\n   
+    },\r\n    {\r\n      \"from\": \"Attack 04 - Right_Hand_Sword_Slash\",\r\n     
+    \"to\": \"Attack 01 - Attack\",\r\n      \"firstFrame\": 174,\r\n      \"lastFrame\":
+    178,\r\n      \"previousFrontFoot\": \"Left\",\r\n      \"nextFrontFoot\": \"Right\",\r\n     
+    \"step\": true,\r\n      \"stepForwardDistance\": 1.00923824\r\n    }\r\n  ],\r\n 
+    \"totalFrames\": 198,\r\n  \"lastFrame\": 197,\r\n  \"duration\": 6.5666666,\r\n 
+    \"stepTransitions\": 6,\r\n  \"maxFootTargetError\": 0.000145549711,\r\n  \"maxSupportHorizontalDrift\":
+    5.231981E-05,\r\n  \"positionError\": 0.0,\r\n  \"rotationError\": 0.0,\r\n 
+    \"clip\": \"Assets/3DBattle/NewPlayer/Attack/ComboPreview/NewKnight_ComboSequence_Preparation5.anim\"\r\n}"
