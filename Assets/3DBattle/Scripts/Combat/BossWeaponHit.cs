@@ -38,6 +38,8 @@ namespace OneWay.Battle3D
         public void SampleContact()
         {
             WindowOpen = false;
+            // Dedicated phase-entry rhythm resolves its seven strikes separately.
+            if (GetComponent<BossPhaseTwoGimmick>()?.OwnsAttack == true) { previousValid = false; return; }
             if (pattern == null || weapon == null || target == null || !target.IsAlive)
             { previousValid = false; CurrentStrikeIndex = -1; return; }
             var state = animator.GetCurrentAnimatorStateInfo(0);

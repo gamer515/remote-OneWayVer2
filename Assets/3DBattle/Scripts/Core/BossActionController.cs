@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace OneWay.Battle3D
 {
-    public enum BossActionKind { Idle, Attack, Jump12, Jump17, HitReaction, Down, RunApproach, WalkApproach, Rest }
+    public enum BossActionKind { Idle, Attack, Jump12, Jump17, HitReaction, Down, RunApproach, WalkApproach, Rest, PhaseChange }
     public enum BossActionEnd { Completed, Interrupted, Reset, Failed }
 
     [DisallowMultipleComponent]
@@ -23,10 +23,12 @@ namespace OneWay.Battle3D
         bool downCompleted, transitioning;
         void Awake() => boss = GetComponent<BattleBoss>();
         bool CanStart => Application.isPlaying && isActiveAndEnabled && !transitioning &&
-            GetComponent<BattleBoss>().IsAlive && !Airborne && Current != BossActionKind.HitReaction && Current != BossActionKind.Down;
+            GetComponent<BattleBoss>().IsAlive && !Airborne && Current != BossActionKind.PhaseChange && Current != BossActionKind.HitReaction && Current != BossActionKind.Down;
 
         public bool RequestAttack(BossAttackPattern pattern)
         {
+            var phase = GetComponent<BossPhaseTwo>();
+            if (phase != null && !phase.AllowsAttack(pattern)) return false;
             var runner=GetComponent<BossPatternRunner>();
             if(!CanStart || pattern==null || runner==null || !runner.isActiveAndEnabled || runner.Target==null || !runner.Target.IsAlive) return false;
             if(pattern is BossWeaponAttackPattern weaponAttack && !weaponAttack.IsValid(runner)) return false;
@@ -99,8 +101,29 @@ namespace OneWay.Battle3D
             if(a!=null && a.runtimeAnimatorController!=null && a.HasState(0,Animator.StringToHash(state))) a.Play(state,0,0f);
         }
         void Update() => Tick(Time.deltaTime);
+        public bool RequestPhaseChange(string state)
+        {
+            if (!CanStart || Current == BossActionKind.Attack) return false;
+            boss = GetComponent<BattleBoss>();
+            if (boss.animator == null || !boss.animator.HasState(0, Animator.StringToHash(state))) return false;
+            EndCurrent(BossActionEnd.Interrupted);
+            boss.patrolEnabled = false;
+            boss.PatternControlsAnimation = true;
+            StartAction(BossActionKind.PhaseChange, null);
+            boss.animator.Play(state, 0, 0f);
+            return true;
+        }
         public void Tick(float delta)
         {
+            if (Current == BossActionKind.PhaseChange)
+            {
+                if (boss.animator.GetCurrentAnimatorStateInfo(0).normalizedTime >= 1f)
+                {
+                    boss.PatternControlsAnimation = false;
+                    EndCurrent(BossActionEnd.Completed);
+                }
+                return;
+            }
             if(Current!=BossActionKind.HitReaction && Current!=BossActionKind.Down && Current!=BossActionKind.Rest) return;
             if(downCompleted) return;
             reactionRemaining-=Mathf.Max(0f,delta);
@@ -122,6 +145,7 @@ namespace OneWay.Battle3D
         {
             if(transitioning) return;
             var previous=Current; var executor=owner;
+            if (previous == BossActionKind.PhaseChange) GetComponent<BattleBoss>().PatternControlsAnimation = false;
             owner=null; Current=BossActionKind.Idle; StopQueued=false;
             if(previous==BossActionKind.Idle) return;
             transitioning=true;

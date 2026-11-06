@@ -15,8 +15,9 @@ namespace OneWay.Battle3D
         [Min(.1f)] public float shieldAnimationSpeed = 1f;
         [Min(.1f)] public float rollAnimationSpeed = 2f;
         [Min(0f)] public float rollDistance = 4.32f;
-        public bool IsDefenseMode { get; private set; }
-        public bool IsBlocking => IsDefenseMode && blockRemaining > 0f;
+        bool legacyDefenseMode;
+        public bool IsDefenseMode { get => newLocomotion != null && newLocomotion.enabled ? newLocomotion.DefenseMode : legacyDefenseMode; private set => legacyDefenseMode = value; }
+        public bool IsBlocking => newLocomotion != null && newLocomotion.enabled ? newLocomotion.Parrying : IsDefenseMode && blockRemaining > 0f;
         float blockRemaining, shieldClipSeconds = 2.333333f, rollClipSeconds = 1.966667f;
         float activeRollDuration;
         static readonly int ShieldAnimation = Animator.StringToHash("Base Layer.MeshyShieldPushLeft_Player");
@@ -52,6 +53,8 @@ namespace OneWay.Battle3D
         public const float FiveHitRecoverySeconds = 18f / 60f;
         readonly float[] fiveHitDurations = new float[5];
         bool fiveHitReady;
+        NewPlayerAttackCombo authoredCombo;
+        NewPlayerLocomotion newLocomotion;
         static readonly int[] FiveHitAnimations = {
             Animator.StringToHash("Base Layer.MeshyCombo01"), Animator.StringToHash("Base Layer.MeshyCombo02"),
             Animator.StringToHash("Base Layer.MeshyCombo03"), Animator.StringToHash("Base Layer.MeshyCombo04"),
@@ -65,8 +68,8 @@ namespace OneWay.Battle3D
         public enum PressState { Idle, Charging, Cancelled, Dash }
         public PressState State { get; private set; }
         public float Charge01 => State == PressState.Charging ? Mathf.Clamp01(heldSeconds / chargeSeconds) : 0f;
-        public bool IsDashing => dashRemaining > 0f;
-        public bool IsMoving => moving;
+        public bool IsDashing => newLocomotion != null && newLocomotion.enabled ? newLocomotion.Rolling : dashRemaining > 0f;
+        public bool IsMoving => newLocomotion != null && newLocomotion.enabled ? newLocomotion.Running : moving;
         public string Status { get; private set; } = "Attack mode";
         public bool BossInRange => boss != null && boss.IsAlive && boss.PlanarDistance(transform.position) <= attackRange;
 
@@ -78,7 +81,7 @@ namespace OneWay.Battle3D
         Vector3 attackPosition;
         Quaternion attackRotation;
         bool attackDirectionHeld;
-        public bool IsAttackLocked => attackAnimationRemaining > 0f && !IsDashing;
+        public bool IsAttackLocked => (authoredCombo != null && authoredCombo.enabled && authoredCombo.IsActive) || (attackAnimationRemaining > 0f && !IsDashing);
         float comboGateRemaining, comboWindowRemaining;
         int nextComboIndex;
         bool queuedNormalAttack;
@@ -98,6 +101,8 @@ namespace OneWay.Battle3D
         void Awake()
         {
             motor = GetComponent<CharacterController>();
+            authoredCombo = GetComponent<NewPlayerAttackCombo>();
+            newLocomotion = GetComponent<NewPlayerLocomotion>();
             SetDefenseMode(false);
             if (animator == null || animator.runtimeAnimatorController == null) return;
             foreach (AnimationClip clip in animator.runtimeAnimatorController.animationClips)
@@ -129,6 +134,12 @@ namespace OneWay.Battle3D
         {
             var health = GetComponent<BattlePlayerHealth>();
             if (health != null && !health.IsAlive) { PlayDefeat(); return; }
+            if (authoredCombo != null && authoredCombo.enabled)
+            {
+                authoredCombo.ProcessInput();
+                authoredCombo.Tick(Time.deltaTime);
+                return;
+            }
             Mouse mouse = Mouse.current;
             if (mouse == null || !Application.isFocused)
             {
@@ -156,6 +167,7 @@ namespace OneWay.Battle3D
 
         void SetDefenseMode(bool defense)
         {
+            if (newLocomotion != null && newLocomotion.enabled) newLocomotion.SetDefenseMode(defense);
             IsDefenseMode = defense;
             if (shield != null) shield.SetActive(defense);
             if (!defense) blockRemaining = 0f;
@@ -180,6 +192,12 @@ namespace OneWay.Battle3D
         public void ProcessControlFrame(float scroll, bool attackDown, bool dashDown, float deltaTime)
         {
             if (IsDefeated) return;
+            if (authoredCombo != null && authoredCombo.enabled)
+            {
+                if (newLocomotion != null && newLocomotion.enabled) newLocomotion.ProcessControlFrame(scroll, attackDown, dashDown);
+                else if (attackDown) authoredCombo.RequestAttack();
+                return;
+            }
             nextAttack = Mathf.Max(0f, nextAttack - deltaTime);
             comboGateRemaining = Mathf.Max(0f, comboGateRemaining - deltaTime);
             comboWindowRemaining = Mathf.Max(0f, comboWindowRemaining - deltaTime);
@@ -298,6 +316,8 @@ namespace OneWay.Battle3D
 
         public void CancelInput()
         {
+            if (authoredCombo != null) authoredCombo.Cancel();
+            if (newLocomotion != null) newLocomotion.Stop();
             attackDirectionHeld = false;
             ResetCombo();
             attackAnimationRemaining = 0f;
@@ -315,6 +335,7 @@ namespace OneWay.Battle3D
             deathElapsed = 0f;
             Status = "Defeated";
             if (animator == null || animator.runtimeAnimatorController == null) return;
+            if (authoredCombo != null && authoredCombo.enabled) return; // Attack-only test character has no death clip.
             animatorSpeedBeforeDeath = animator.speed;
             animator.speed = 0f;
             animator.Play(DeathAnimation, 0, 0f);
@@ -352,6 +373,7 @@ namespace OneWay.Battle3D
         public void Move(float deltaTime)
         {
             if (IsDefeated) return;
+            if (authoredCombo != null && authoredCombo.enabled) { authoredCombo.Tick(deltaTime); return; }
             if (IsFirstAttackDashing)
             {
                 Vector3 forward = CameraForward;
@@ -500,6 +522,7 @@ namespace OneWay.Battle3D
 
         void LateUpdate()
         {
+            if (authoredCombo != null && authoredCombo.enabled) return;
             if (IsDefeated)
             {
                 // Sample explicitly so the last pose stays held even if the clip loops.
