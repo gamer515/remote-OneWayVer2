@@ -26,8 +26,9 @@ using UnityEngine;
     public List<MinePlaceVisit> visits = new List<MinePlaceVisit>();
     public List<MineNpcBalance> recipients = new List<MineNpcBalance>();
     public List<string> completedActions = new List<string>();
-    public float elapsedSeconds, collectorZ, fatigue;
+    public float elapsedSeconds, savedDayLength, collectorZ, fatigue;
     public bool initialized, resting;
+    public bool variedRoomLayout;
     public int collected, persuasionAttempts;
     public string activityKey, resultPath;
     public string pendingOpeningPath;
@@ -39,12 +40,22 @@ using UnityEngine;
     public bool collectorPassedPlayer;
     public int collectorDirection;
     public bool collectorArrived;
+    public int collectorNpcPauseIndex, collectorNpcWitnessIndex;
+    public int collectorNpcActorIndex, collectorNpcWitnessActor;
+    public float collectorNpcPause;
+    public int nextTaxDay, taxScheduleTier, taxScheduleInterval;
+    public string taxChapterId;
+    public bool taxPatrolActive;
+    public MineTaxInvoice taxInvoice;
+    public bool HasTaxInvoice => taxInvoice?.lines?.Length > 0;
     public MineLearningProgress learning = new MineLearningProgress();
 }
 
 /// <summary>All provisional balance values are owned by the approved trial settings JSON.</summary>
 [Serializable] public sealed class MineChapterSettings
 {
+    public ChapterDayCycle dayCycle;
+    public float collectorArrivalSeconds, collectorNpcWaitMin, collectorNpcWaitMax;
     public float laborSeconds, successBase, successBonus, abilityScale;
     public float encounterDistance;
     public int baseTax, alternatePaymentMultiplier;
@@ -57,15 +68,15 @@ using UnityEngine;
     public string bossPrefab;
     public MineOpening[] openings;
     public string[] moods;
-    public static MineChapterSettings Load()
+    public static MineChapterSettings Load(string document = "Chapter_01/Rules")
     {
-        var asset = Resources.Load<TextAsset>("Chapters/Chapter_01/Rules");
+        var authored = ChapterWorkbookContent.Get(document);
+        if (authored != null) return authored.ToObject<MineChapterSettings>();
+        var asset = Resources.Load<TextAsset>("Chapters/" + document);
         if (asset == null) throw new InvalidOperationException("청크 1 시험 설정이 없습니다.");
         return JsonUtility.FromJson<MineChapterSettings>(asset.text);
     }
     public float SuccessChance(int ability) => successBase + successBonus * Mathf.Max(0, ability) / (Mathf.Max(0, ability) + abilityScale);
-    public int TaxAmount(int completedPlaces, bool alternate) => Mathf.CeilToInt(
-        (baseTax + completedPlaces) * (alternate ? alternatePaymentMultiplier : 1) * taxCostScale);
     public float StatusMultiplier(int strength) => 1 + Mathf.Max(0, statusThreshold - strength) * statusPenaltyPerPoint;
     public float BossAttackMultiplier(int collected) => 1 + Mathf.Max(0, collected) * bossAttackPerCoin;
     public float PersuasionChance(int charm, int attempts) => Mathf.Clamp01(SuccessChance(charm) * persuasionBase - attempts * persuasionPerAttempt);

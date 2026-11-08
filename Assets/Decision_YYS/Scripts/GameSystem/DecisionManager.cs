@@ -109,6 +109,7 @@ public partial class DecisionManager : MonoBehaviour
 
     private void OnDisable()
     {
+        StopChapterSky();
         RestoreGuideKneel();
         if (statContainer != null)
         {
@@ -145,6 +146,7 @@ public partial class DecisionManager : MonoBehaviour
     private void Update()
     {
         TickMineChapter();
+        TickLearning();
         if (guideProgress?.allocating == true)
         {
             HandleGuideAllocationInput();
@@ -191,7 +193,10 @@ public partial class DecisionManager : MonoBehaviour
         storyVisit = loadedProgress.storyVisit;
         if (loadedProgress.currentEncounterHistory != null)
             session.PlayedEncounterHistory.AddRange(loadedProgress.currentEncounterHistory);
-        envController.SetContentRun(session.RunNumber, session.RunSeed);
+        // Keep existing mine saves on the original layout so their player and patrol positions stay valid.
+        var mineProgress = guideProgress.mineChapter ??= new MineChapterProgress();
+        if (!mineProgress.initialized) mineProgress.variedRoomLayout = true;
+        envController.SetContentRun(session.RunNumber, session.RunSeed, mineProgress.variedRoomLayout);
         if (!envController.TryValidateAllContent(session.Omnibus, out string contentError))
         {
             Debug.LogError($"전체 콘텐츠 검증 실패: {contentError}", this);
@@ -214,15 +219,19 @@ public partial class DecisionManager : MonoBehaviour
         }
 
         // Recover invalid legacy/editor coordinates without restarting the story or clearing its history.
-        Vector3 entryPosition = envController.PlaceRegistry.GetChunkWorldPosition(0);
+        Vector3 activeSegmentOrigin = envController.PlaceRegistry.GetChunkWorldPosition(0);
+        Vector3 entryPosition = activeSegmentOrigin;
         entryPosition.z = Mathf.Min(entryPosition.z + 10f, envController.CurrentTerrainEndZ);
         // New journeys must start before the first authored encounter, even when its anchor is close to the entrance.
         foreach (var place in envController.TerrainData.places)
             if (!string.IsNullOrWhiteSpace(place.connectStoryCards))
-                entryPosition.z = Mathf.Max(envController.TerrainOrigin.z,
+                entryPosition.z = Mathf.Max(activeSegmentOrigin.z,
                     Mathf.Min(entryPosition.z, envController.PlaceRegistry.GetWorldPosition(place).z - encounterStopDistance));
+        foreach (var facility in envController.FacilityMarkers)
+            if (facility.IsShop && facility.Position.z >= activeSegmentOrigin.z && facility.Position.z < entryPosition.z + encounterStopDistance)
+                entryPosition.z = Mathf.Max(activeSegmentOrigin.z, facility.Position.z - encounterStopDistance);
         Vector3 startPosition = DecisionPlayerController.ResolveStartPosition(
-            startData.SavedPlayerPosition, envController.TerrainOrigin,
+            startData.SavedPlayerPosition, activeSegmentOrigin,
             envController.CurrentTerrainEndZ, entryPosition, out bool recoveredPosition,
             envController.NpcPlacement != null ? envController.NpcPlacement.LateralReach(envController.TerrainOrigin) + encounterStopDistance : 0.5f);
         playerController.Initialize(startPosition, startData.SavedPlayerRotation, envController.TerrainOrigin.x);
@@ -468,13 +477,13 @@ private void SetYellowInputInteractable(bool interactable)
         journeyBoardInput?.SetInputEnabled(false);
     }
 
-    private void EnterFinalBattle(string reason)
+    private void EnterFinalBattle(string reason, int stage = 1, string chapterBossId = null)
     {
         if (finalBattleRequested) return;
         finalBattleRequested = true;
         PrepareRunTransition(reason);
         Debug.Log($"[Story] {session?.RunNumber ?? 1}회차 {reason}. 3D 보스 전투로 이동합니다.", this);
-        (finalBattleTransition ?? (() => GameManager.Instance.EnterFinalBattle()))();
+        (finalBattleTransition ?? (() => GameManager.Instance.EnterFinalBattle(stage, chapterBossId)))();
     }
 
     private void FinishRunAndReturnToMainMenu(string reason)

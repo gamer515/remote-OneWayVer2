@@ -22,11 +22,14 @@ namespace JourneyMapKit
         public UnityEvent onYellowPressed = new UnityEvent();
         public UnityEvent<int> onGearSelected = new UnityEvent<int>();
 
+        [SerializeField, Min(1)] private float choiceStepPixels = 14f;
         public int SelectedIndex { get; private set; } = -1;
         public bool InputEnabled { get; private set; } = true;
 
         private bool yellowInteractable = true;
         private bool dragging;
+        private bool choiceStepTaken;
+        private int choiceCount;
         private Vector2 dragOrigin;
         private Quaternion restRotation;
         private Vector3 restButtonPosition;
@@ -67,6 +70,7 @@ namespace JourneyMapKit
                     if (hit.collider == board.gearHandleCollider)
                     {
                         dragging = true;
+                        choiceStepTaken = false;
                         dragOrigin = pointerPosition;
                         break;
                     }
@@ -76,8 +80,11 @@ namespace JourneyMapKit
             if (dragging && held)
                 UpdateGear(pointerPosition - dragOrigin);
 
-            if (up)
+            if (up && dragging)
+            {
                 dragging = false;
+                board.gear.localRotation = restRotation;
+            }
         }
 
         private static void ReadPointer(
@@ -109,6 +116,16 @@ namespace JourneyMapKit
         private void UpdateGear(Vector2 dragDelta)
         {
             float pitch = Mathf.Clamp(dragDelta.y * 0.12f, -22f, 22f);
+            if (choiceCount > 0)
+            {
+                board.gear.localRotation = restRotation * Quaternion.Euler(pitch, 0f, 0f);
+                if (Mathf.Abs(dragDelta.y) <= choiceStepPixels * .35f)
+                    choiceStepTaken = false;
+                if (choiceStepTaken || Mathf.Abs(dragDelta.y) < choiceStepPixels) return;
+                choiceStepTaken = true;
+                SelectGear(Mathf.Clamp(SelectedIndex + (dragDelta.y > 0f ? -1 : 1), 0, choiceCount - 1));
+                return;
+            }
             float roll = Mathf.Clamp(-dragDelta.x * 0.12f, -22f, 22f);
             board.gear.localRotation =
                 restRotation * Quaternion.Euler(pitch, 0f, roll);
@@ -156,12 +173,21 @@ namespace JourneyMapKit
 
         public void SelectGear(int index)
         {
-            index = Mathf.Clamp(index, -1, 3);
+            index = Mathf.Clamp(index, -1, choiceCount > 0 ? choiceCount - 1 : 3);
             if (index == SelectedIndex)
                 return;
 
             SelectedIndex = index;
             onGearSelected.Invoke(index);
+        }
+
+        public void SetChoiceCount(int count, int selected = 0)
+        {
+            dragging = false;
+            if (board != null && board.gear != null)
+                board.gear.localRotation = restRotation;
+            choiceCount = count;
+            SelectGear(count > 0 ? Mathf.Clamp(selected, 0, count - 1) : -1);
         }
 
         public void PressYellow()

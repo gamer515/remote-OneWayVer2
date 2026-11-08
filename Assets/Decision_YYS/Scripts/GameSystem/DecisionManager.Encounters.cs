@@ -55,6 +55,7 @@ public partial class DecisionManager
         if (collectingTax) { ConfirmMineTaxChoice(); return; }
         if (mine?.resting == true) return;
         if (guideProgress?.allocating == true) { ConfirmGuideAllocation(); return; }
+        if (lastMinePlace != null) { ConfirmMineRevisit(); return; }
         switch (currentState)
         {
             case StoryState.Exploring: BeginWalkStep(); break;
@@ -67,6 +68,7 @@ public partial class DecisionManager
 
     private void BeginExploration()
     {
+        lastMinePlace = null;
         playerController?.ResetNpcFraming();
         if (guideProgress != null) guideProgress.activeDialogue = null;
         pendingEncounter = null;
@@ -75,6 +77,7 @@ public partial class DecisionManager
         activeCards = null;
         selectedGearIndex = -1;
         currentState = StoryState.Exploring;
+        journeyBoardInput?.SetChoiceCount(0);
         ResetGearSelection();
         bettingButtonController?.SetBettingInteractable(false);
         SetYellowInputInteractable(true);
@@ -303,6 +306,7 @@ public partial class DecisionManager
         currentState = StoryState.Transitioning;
         SetYellowInputInteractable(false);
         selectedGearIndex = -1;
+        journeyBoardInput?.SetChoiceCount(0);
         ResetGearSelection();
         bettingButtonController?.SetBettingInteractable(false);
         RecordPlayedEncounterStory(card, activePlaceId, activeEncounterPath, activeCardIndex);
@@ -337,6 +341,8 @@ public partial class DecisionManager
                 AdvanceEncounterCard();
                 return;
             }
+            selectedGearIndex = 0;
+            journeyBoardInput?.SetChoiceCount(card.options.Length);
             RenderEncounterOptions();
         }
         else
@@ -383,6 +389,12 @@ public partial class DecisionManager
             SaveGuideCheckpoint();
             return;
         }
+        if (lastMinePlace != null)
+        {
+            selectedGearIndex = index;
+            RenderMineRevisit();
+            return;
+        }
         if (encounterFlow == null || currentState != StoryState.WaitingForChoice) return;
         selectedGearIndex = index >= 0 && index < (activeCards?.MainStory?[activeCardIndex]?.options?.Length ?? 0) ? index : -1;
         RenderEncounterOptions();
@@ -393,7 +405,7 @@ public partial class DecisionManager
         if (currentState != StoryState.WaitingForChoice || activeCards?.MainStory == null ||
             activeCardIndex < 0 || activeCardIndex >= activeCards.MainStory.Count) return;
         Dialogue card = activeCards.MainStory[activeCardIndex];
-        if (card == null || !card.IsChoice || card.options == null || card.options.Length < 2 || card.options.Length > 4) return;
+        if (card == null || !card.IsChoice || card.options == null || card.options.Length < 2) return;
         string[] options = (string[])card.options.Clone();
         if (card.choiceActions != null && card.choiceActions.Length == card.options.Length)
             for (int index = 0; index < card.options.Length; index++)
@@ -440,9 +452,25 @@ public partial class DecisionManager
 
     private void CompleteEncounterEpisode()
     {
-        if (currentScenarioPath == "Chapter_1/Chapter_1_BossPreview")
+        var chapter = currentOmnibus.chapters[chapterIndex];
+        if (episodeIndex == chapter.episodeIds.Count - 1 && chapter.bossStage > 0)
         {
-            FinishRunAndReturnToMainMenu("청크 1과 보스 청크 확인 완료 — 보스 전투는 준비 범위");
+            RelayCompletedEpisode();
+            SaveEncounterState("battle");
+            EnterFinalBattle("챕터 보스 도착", chapter.bossStage, chapter.chapterId);
+            return;
+        }
+        if (episodeIndex == chapter.episodeIds.Count - 1 && chapter.stopAtEnd)
+        {
+            SaveEncounterState("walking");
+            currentState = StoryState.Transitioning;
+            SetYellowInputInteractable(false);
+            Debug.Log($"[Chapter] {chapter.chapterId} 콘텐츠의 현재 끝에 도착했습니다.", this);
+            return;
+        }
+        if (chapter.episodeIds[episodeIndex] == chapter.previewEndEpisodeId)
+        {
+            FinishRunAndReturnToMainMenu("보스 미리보기 완료");
             return;
         }
         encounterFlow = null;
@@ -461,13 +489,19 @@ public partial class DecisionManager
     private void FrameActiveEncounter(bool fullBody)
     {
         if (playerController == null || string.IsNullOrEmpty(activePlaceId)) return;
-        var root = Array.Find(FindObjectsByType<Transform>(FindObjectsInactive.Exclude, FindObjectsSortMode.None), t => t.name == "Place_" + activePlaceId);
-        if (root == null) return;
-        FaceNpcTowardPlayer(activePlaceId);
         string speaker = activeCards?.MainStory?[activeCardIndex]?.speakerId;
-        var actor = string.IsNullOrEmpty(speaker) ? null : root.Find("ActorSocket_" + speaker);
-        if (actor == null || actor.GetComponentsInChildren<Renderer>().Length == 0) actor = root;
-        playerController.StopAndLookAt(actor.position);
+        var actor = FindEncounterActor(activePlaceId, speaker);
+        if (actor == null) return;
+        FaceNpcTowardPlayer(activePlaceId);
         playerController.FocusNpc(actor, fullBody);
+        playerController.StopAndLookAt(actor.position);
+    }
+
+    private Transform FindEncounterActor(string placeId, string speaker)
+    {
+        var root = Array.Find(FindObjectsByType<Transform>(FindObjectsInactive.Exclude, FindObjectsSortMode.None),
+            transform => transform.name == "Place_" + placeId);
+        var actor = string.IsNullOrEmpty(speaker) ? null : root?.Find("ActorSocket_" + speaker);
+        return actor != null && actor.GetComponentInChildren<Renderer>() != null ? actor : root;
     }
 }

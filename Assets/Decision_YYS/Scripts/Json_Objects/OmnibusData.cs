@@ -45,6 +45,11 @@ public class ChapterInfo
 {
     public string chapterId;
     public List<string> episodeIds;
+    public string rulesDocument;
+    public string[] rulesEpisodes;
+    public string previewEndEpisodeId;
+    public int bossStage;
+    public bool stopAtEnd;
 }
 
 //[Serializable]

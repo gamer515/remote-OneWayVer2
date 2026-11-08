@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>학습 자판기 3D 에셋 제작</title><style>body{max-width:960px;margin:36px auto;padding:0 24px;font:16px/1.7 system-ui;color:#23303a;background:#faf8f2}table{border-collapse:collapse;width:100%}td,th{border:1px solid #c8c1af;padding:10px;text-align:left}img{max-width:480px;width:100%}code{overflow-wrap:anywhere}</style></head><body><p>실제 게임 연결·최신 Inspector·검증 결과: <a href="../output/MineChapterReview/index.html#dispenser-latest">통합 보고서</a></p>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>학습 자판기 3D 에셋 제작</title><style>body{max-width:960px;margin:36px auto;padding:0 24px;font:16px/1.7 system-ui;color:#23303a;background:#faf8f2}table{border-collapse:collapse;width:100%}td,th{border:1px solid #c8c1af;padding:10px;text-align:left}img{max-width:480px;width:100%}code{overflow-wrap:anywhere}</style></head><body><p>실제 게임 연결·최신 Inspector·검증 결과: <a href="../output/MineChapterReview/work-history.html#dispenser-latest">통합 보고서</a></p>
 <h1>학습 자판기 3D 에셋 초안</h1><p>작업일: 2026-11-04 (Asia/Seoul). 사용자가 표시한 본체·왼쪽 학습 적층부·왼쪽 배출구와 받는 통을 실제 3D 메시로 제작했다. 아래 네 개 동전통은 제외했다.</p>
 <p><a href="../output/LearningDispenserPrototype/LearningDispenserPrototype_v1.unitypackage">Unity 에셋 패키지</a> · <a href="../output/LearningDispenserPrototype/Preview.png">실제 Unity 렌더 미리보기</a> · <a href="../output/LearningDispenserPrototype/validation.txt">검증 기록</a></p>
 <table><tr><th>단계</th><th>작업</th><th>상태</th></tr><tr><td>1</td><td>요청 범위와 프로젝트 확인</td><td>완료: Unity 6000.3.12f1 / URP</td></tr><tr><td>2</td><td>본체·적층칸·배출구·개별 오브젝트 제작</td><td>완료</td></tr><tr><td>3</td><td>프리팹·배출 시연·패키지 제작</td><td>완료</td></tr><tr><td>4</td><td>렌더 및 참조·정렬·애니메이션 검사</td><td>완료. 다른 프로젝트에서의 새 가져오기는 미실시</td></tr></table>
@@ -105,7 +105,63 @@ unity command run_script --caller plugin --skill unity-cli --file AgentScripts/K
 <p>핵심 코드와 사용·수정 방법은 <a href="#knight-animation-integration">위 연결 작업 기록</a>을 따른다. 이번 정리는 게임 동작을 변경하지 않는다. 이전 실제 Play 검사 21/21 통과 기록을 보존하고, 정리 후 삭제 대상 부재·필수 파일 존재·새 보고서 절의 상대 링크 및 Git 포함/제외 상태를 정적으로 확인했다. 이번 정리에서 Unity Play를 다시 실행하지 않았다.</p>
 <p>임시 코드 정리 상태: 완료, 삭제 대기 없음. AgentScripts/KnightAnimationSetup.cs와 AgentScripts/KnightAnimationChecks.cs는 향후 재생성·회귀 검증에 필요한 유지 도구이므로 보존한다. 다른 작업의 소스·Blender 원본·생성물과 기존 사용자 변경은 이번 정리 대상에서 제외했다. 커밋·푸시는 수행하지 않았다. 추가 정리 작업은 없다.</p>
 </section>
-</body></html>
+<hr><section id="learning-dispenser-board-revision">
+<h1>자판기 크기 정렬·학습 책 보드 이동</h1>
+<p>2026-11-07 (Asia/Seoul). 요청: 실제 화면의 자판기 크기를 맞추고 시간 문구를 없애며 배출된 책을 하얀 보드판으로 집어 옮긴다.</p>
+<table><tr><th>계획</th><th>결과</th><th>확인</th></tr><tr><td>자판기 크기·정렬</td><td>완료</td><td>기준 화면 비율 x 0.55~0.80, y 0.50~0.97에 본체를 맞추고 실제 네 공급통 버튼 중심과 각 열 X좌표 일치</td></tr><tr><td>시간·학습 상태 문구 제거</td><td>완료</td><td>DispenserTimer 제거, Status 비활성. 코인 잔액 4개와 클릭 영역 4개의 오버레이만 유지</td></tr><tr><td>배출 책 집기·보드에 놓기</td><td>완료</td><td>포인터 화면 좌표에서 책 선택, 이동, 보드 충돌면에 놓기. 바깥에 놓으면 이전 위치 복귀</td></tr><tr><td>실제 Play·컴파일 검사</td><td>완료</td><td>17개 검사 통과, 플레이 프레임 증가 확인, 최종 콘솔 오류 0</td></tr></table>
+<p><a href="../output/LearningDispenserRevision/02-book-on-board.png">책을 하얀 보드에 놓은 실제 화면</a> · <a href="../output/LearningDispenserRevision/01-outlet.png">배출구 화면</a> · <a href="../output/LearningDispenserRevision/interaction-checks.json">17개 검사 결과</a> · <a href="../output/LearningDispenserRevision/layout.json">정렬 수치</a></p>
+<h2>코드·씬 구조와 사용 방법</h2>
+<p><code>Assets/Decision_YYS/Scripts/Controller/Ui/LearningDispenserView.cs</code>가 화면 레이로 배출 완료된 책을 선택한다. 마우스를 누른 채 하얀 보드판으로 옮기고 놓는다. 보드 위 책은 다시 집어 이동할 수 있다. 책 전체가 보드 안에 있도록 경계에서 위치를 제한하고, 보드 밖에 놓으면 이전 위치를 복원한다. 게임이 학습을 일시 정지하면 들고 있던 책을 복귀시킨다.</p>
+<p><code>MineLearningStation.cs</code>의 학습 작업에 보드 배치 여부와 정규화 좌표를 저장한다. held는 저장하지 않는 런타임 상태다. 잡고 있는 동안만 학습 타이머를 보류하며, 이동으로 코인 차감·보상을 추가 발생시키지 않는다. 기존 시간 학습·완료 보상 규칙을 유지하므로 책은 학습 완료 후 사라진다. 기존 저장 데이터에는 새 필드의 기본값이 적용된다.</p>
+<p><code>Assets/Scenes/DecisionScene.unity</code>에 <code>LearningBookBoardSurface</code> 트리거를 추가하고 view의 bookBoard 필드에 연결했다. 기존 trayFloor는 하얀 종이 윗부분만 덮으므로 책 전용 표면은 실제 Paper 메시 전체 크기를 사용한다. 부모의 비균등 스케일을 축별로 보정해 충돌면이 종이 밖으로 나오지 않게 했다. 종이 경계에서 각 0.06 유닛을 제외한 약 4.43 × 3.88 유닛이다.</p>
+<p>재현·수정 도구 <a href="../AgentScripts/LearningDispenserRevision.cs">AgentScripts/LearningDispenserRevision.cs</a>의 Apply는 편집 모드에서 크기와 열 정렬·책 전용 보드를 설정하고 해당 씬을 저장한다. CheckInteraction은 Play 모드의 별도 임시 학습 상태를 사용해 드래그·저장 직렬화·학습 완료·코인 증감을 검사하고 기존 상태 연결을 복원한다. 기존 임시 연결 도구 ConnectLearningDispenser.cs에서도 시간 오버레이 생성 경로를 제거했다. 새 에셋 패키지로 갈아 끼울 필요 없이 현재 프로젝트 씬에 반영되어 있다.</p>
+<h2>검증 범위</h2>
+<p>컴파일 오류 없음. 포인터가 사용하는 것과 동일한 Begin/Move/End 경로로 선택·보드 배치·다시 선택·범위 밖 복귀·경계 제한·게임 정지 시 취소를 검사했다. 작업 JSON에 배치 좌표가 보존되고, 잡는 중 완료되지 않으며, 이동에는 코인이 추가 사용되지 않고 최종 학습 완료에만 보상이 지급됨을 확인했다. 실제 Story Play에서 책 한 개를 배출시킨 뒤 보드에 놓아 캡처했다. Unity 프레임 증가가 met=true로 확인됐고 최종 콘솔 오류는 0이었다. 실제 OS 마우스 자동화와 터치 기기 검사는 하지 않았다.</p>
+<p>촬영에만 60초 학습 시간을 사용했으며 이 값은 씬에 저장하지 않았다. 기존 5초 인스펙터 설정을 유지했다. 배치 저장은 JSON 왕복 검사까지 수행했고 애플리케이션을 완전히 다시 켜는 검사는 하지 않았다. 새 기능과 무관한 스카이박스·다른 씬 및 기존 미커밋 변경을 유지했다. 검증 종료 후 편집 모드·기존 Play 설정·일반 저장소를 복구했고 씬이 저장되어 dirty=false임을 확인했다.</p>
+<h2>현재 현황·임시 파일</h2>
+<p>요청한 수정 완료. 이후 크기 변경은 Apply의 목표 영역 또는 Inspector에서 조정한다. 재현 도구는 유지 대상이며 이번 작업의 일회성 코드는 없다. 2026-11-07 정리 완료된 검증 저장: <code>output/MineChapterReview/PlaySave-20261107-013104</code>, <code>output/MineChapterReview/PlaySave-20261107-013521</code>. 캡처 도구가 Assets 아래에 만든 폴더 메타데이터는 <code>output/LearningDispenserRevision/CaptureMetadata</code>와 <code>CaptureMetadata.meta</code>로 옮겼으며 2026-11-07 정리 요청으로 잔여 메타데이터도 삭제했다. 현재 정리 결과는 아래 독립 패키지 기록을 따른다. 커밋·푸시는 하지 않았다.</p>
+<img src="../output/LearningDispenserRevision/02-book-on-board.png" alt="크기를 맞춘 자판기와 하얀 보드 위 학습 책" style="max-width:100%;width:900px">
+</section><hr><section id="learning-dispenser-standalone-v2">
+<h1>학습 자판기 v2 독립 패키지 및 임시 작업 정리</h1><p>2026-11-07 (Asia/Seoul). 사용자가 씬에서 변화가 확인되지 않아 독립 에셋 패키지 제공을 요청했다. 현재 게임 씬에 추가 적용하지 않고 본체·배출부·개별 책·하얀 보드 포함 데모를 독립 폴더로 구성했다.</p>
+<table><tr><th>계획</th><th>결과</th><th>검증</th></tr><tr><td>수정 모델의 독립 프리팹 구성</td><td>완료</td><td>본체만 있는 프리팹과 보드 포함 프리팹, 책 4종</td></tr><tr><td>독립 책 배출·보드 이동</td><td>완료</td><td>게임 매니저·저장·경제 시스템 의존 없음, 기능 4개 및 의존성 1개 검사 통과</td></tr><tr><td>unitypackage 내보내기</td><td>완료</td><td>프리팹과 데모 씬의 Assets 의존성 모두 패키지 폴더 내부</td></tr><tr><td>임시 파일 정리</td><td>완료</td><td>아래 명시된 7개 경로 삭제·부재 확인, 소스·에셋·보고서 보존</td></tr></table>
+<p><a href="../output/LearningDispenserKit_v2/LearningDispenserKit_v2.unitypackage">v2 Unity 에셋 패키지</a> · <a href="../output/LearningDispenserKit_v2/LearningDispenserKit_v2.zip">패키지·미리보기·설명서 ZIP</a> · <a href="../output/LearningDispenserKit_v2/Preview.png">실제 렌더</a> · <a href="../output/LearningDispenserKit_v2/checks.json">검사 결과</a> · <a href="../output/LearningDispenserKit_v2/cleanup.json">삭제 경로 기록</a></p>
+<h2>가져오기와 사용</h2><p>unitypackage를 Import한 뒤 <code>Assets/LearningDispenserKit_v2/LearningDispenser_Demo.unity</code>를 열고 Play한다. 네 버튼 중 하나를 누르면 책이 내려오며 배출 완료 후 눌러 하얀 보드로 드래그한다. 보드 위 책을 다시 옮길 수 있고 범위 밖 드롭은 이전 위치로 돌아온다.</p>
+<p><code>Prefabs/LearningDispenser_WithWhiteBoard.prefab</code>는 보드 포함 완성 조립본이다. <code>Prefabs/LearningDispenser_v2.prefab</code>는 본체와 왼쪽 배출부만 포함하며 Board Surface에 직접 만든 수평 보드의 BoxCollider를 연결한다. Input Camera는 지정하거나 Camera.main 자동 연결을 사용한다. 원래 하단 네 동전통은 제외했다. 루트 Scale로 화면에 맞게 크기를 조절한다.</p>
+<h2>구조·검증·범위</h2><p><code>Assets/LearningDispenserKit_v2/Runtime/LearningDispenserAsset.cs</code> 하나가 버튼 선택·짧은 배출 이동·책 선택·드래그·안전한 드롭을 처리한다. 시간 문구, 코인 차감·보상, 일정 및 저장 시스템은 포함하지 않은 독립 외형·상호작용 에셋이다. 이전 게임 연결 코드를 포함하지 않아 기존 씬을 덮어쓰지 않는다. 패키지 안에 자체 메시·재질·텍스처를 복사해 GUID 의존성을 분리했다. Unity 6 / URP 기준으로 제작했다.</p>
+<p><a href="../AssetBuild/LearningDispenser/ExportStandaloneV2.cs">ExportStandaloneV2.cs</a>는 유지할 내보내기 도구다. Build로 제작하거나, 구성된 폴더에서 FinalizePackage로 검사와 재내보내기를 수행한다. Compile 오류 없음, 실제 메시 렌더 확인, 독립 책 생성·집기·보드 드롭·범위 밖 복귀·중복 없음 검사 통과. 데모 씬과 프리팹의 외부 Assets 의존성은 0개다. 별도 새 프로젝트의 실제 Import 및 OS 마우스 자동화 검사는 하지 않았다. 배출 애니메이션은 소스에 포함했지만 이번 독립 패키지의 Play 프레임 검사는 수행하지 않았다.</p>
+<h2>임시 작업 정리 완료</h2><p>이전 연결용 일회성 스크립트 <code>AgentScripts/ConnectLearningDispenser.cs</code>, 자판기 격리 저장 <code>output/MineChapterReview/MenuSave-20261105-013747</code>, <code>MenuSave-20261105-014450</code>, <code>PlaySave-20261107-013104</code>, <code>PlaySave-20261107-013521</code>, 캡처 잔여 <code>output/LearningDispenserRevision/CaptureMetadata</code> 및 <code>CaptureMetadata.meta</code>를 삭제했다. 삭제 전 워크스페이스 경계·심볼릭 링크·Git 추적 여부·코드 참조를 확인하고 삭제 후 7개 경로가 없음을 검사했다. 총 약 24 KiB 정리.</p>
+<p>런타임 코드·모델·메타·프리팹·재현 및 회귀 검사 도구·검증 결과·최종 이미지·보고서는 유지했다. 다른 작업의 2026-11-06 저장 폴더와 기존 사용자 변경은 유지했다. 이번 자판기 작업의 삭제 대기 임시 코드·검증 저장은 없다. 새 패키지 내보내기 코드는 재현에 필요한 유지 도구다. 커밋·푸시는 하지 않았다. 다음 작업은 사용자 프로젝트에서 패키지 데모를 가져와 배치 크기를 검토하는 것이다.</p></section><hr>
+<section id="pamphlet-preview-cleanup-20261107">
+<h1>졸업 프로젝트 팜플렛 임시 파일 정리</h1>
+<p>2026-11-07 23:10 (Asia/Seoul). 팜플렛 편집 중 생성한 임시 작업 파일을 정리했다.</p>
+<table><thead><tr><th>단계</th><th>작업 및 확인</th><th>상태</th></tr></thead>
+<tbody><tr><td>1</td><td>작업 경로와 최종 PPT의 내장 이미지 대조</td><td>완료</td></tr>
+<tr><td>2</td><td>생성 미리보기 3개 삭제</td><td>완료</td></tr>
+<tr><td>3</td><td>삭제 경로 부재와 최종 PPT의 SHA-256 일치 확인</td><td>완료</td></tr></tbody></table>
+<p><a href="../outputs/C211201_유영선_사망상태_간격수정.pptx">최종 팜플렛 PPT</a>에 보정 대사 이미지 두 장이 내장되어 있다. 미리보기 삭제 전 내장 데이터와 각 파일의 SHA-256이 일치함을 확인했다. 현재 남은 팜플렛용 일회성 코드, 검수 파일 및 삭제 대기 항목은 없다.</p>
+</section><hr><section id="learning-dispenser-coin-slots">
+<h1>학습 자판기 v3 코인 투입구</h1>
+<p>2026-11-08 (Asia/Seoul). 표시한 네 버튼 아래에 가로형 코인 투입구를 만들고 독립 Unity 패키지로 제공했다.</p>
+<table><tr><th>계획</th><th>확인</th></tr><tr><td>황동 투입구 제작 및 배치</td><td>완료. 두 본체 프리팹에서 네 투입구의 중심을 각 버튼에 맞췄다.</td></tr><tr><td>프리팹·패키지 검증</td><td>완료. Unity 렌더와 기존 책 배출·드롭을 포함한 검사 6개를 확인했다.</td></tr></table>
+<p>v3 패키지를 가져오면 기존 폴더의 두 자판기 프리팹과 데모가 갱신된다. <code>Prefabs/CoinSlot.prefab</code>은 투입구 단독 배치용이다. 황동 프레임 네 조각과 안쪽의 어두운 벽으로 가로 0.44 유닛, 높이 0.088 유닛의 홈을 만들었다. 투입구는 외형 에셋이다.</p>
+<p>재현 도구 <code>AssetBuild/LearningDispenser/ExportStandaloneV2.cs</code>의 <code>AddCoinSlots</code>가 투입구를 생성하고 두 프리팹에 배치한 다음 데모와 패키지를 내보낸다. 검증은 Unity 에디터에서 수행했다. 별도 프로젝트의 Import는 검사하지 않았다. 일회성 코드와 정리 대기 파일은 없다.</p>
+<p><a href="../output/LearningDispenserKit_v3/LearningDispenserKit_v3.unitypackage">Unity 패키지</a> · <a href="../output/LearningDispenserKit_v3/Preview.png">렌더</a> · <a href="../output/LearningDispenserKit_v3/checks.json">검사 결과</a></p></section><hr><section id="learning-dispenser-calendar-v4">
+<h1>학습 자판기와 탁상 달력 v4</h1>
+<p>2026-11-08 (Asia/Seoul). 승인된 이미지의 자판기와 달력을 Unity 6 URP 에셋으로 제작했다.</p>
+<table><tr><th>계획</th><th>확인</th></tr><tr><td>배출 받침과 책 거치대 연결</td><td>완료. 왼쪽 황동 앞판과 오른쪽 목재 앞판을 같은 높이에 두고 하나의 바닥으로 연결했다. 책 위치는 왼쪽 배출 한 칸과 오른쪽 거치 네 칸이다.</td></tr><tr><td>달력 프리팹 제작</td><td>완료. 1005-01-01, D-2, 기본 초승달, 선택 가능한 해를 포함했다.</td></tr><tr><td>데모 및 패키지</td><td>완료. Unity 렌더와 일곱 가지 에디터 검사를 확인했다.</td></tr></table>
+<p>패키지 Import 후 <code>LearningDispenser_Demo.unity</code>를 열고 Play한다. 색상 버튼으로 책을 내보내고 오른쪽의 빈 거치 칸 또는 하얀 보드에 끌어 놓는다. 이미 책이 놓인 칸이나 범위 밖에 놓으면 원래 자리로 돌아온다. 책이 배출구에 있으면 그 책을 옮겨 다음 책을 꺼낼 수 있다.</p>
+<p>달력은 <code>Prefabs/DeskCalendar.prefab</code>에 있다. <code>CalendarFace/Date</code>와 <code>Countdown</code>의 Text Mesh 값을 수정한다. 낮을 표시하려면 <code>DaySun</code>을 켜고 <code>NightMoon</code>을 끈다. 날짜와 낮밤 표시는 프리팹에서 편집하며 게임 시간에 자동 연동되지 않는다. 가져오기 경로와 프리팹 GUID는 이전 버전과 동일하다.</p>
+<p>유지 도구 <code>AssetBuild/LearningDispenser/ExportStandaloneV2.cs</code>의 <code>AddBookRackAndCalendar</code>가 두 본체 프리팹과 달력, 데모를 갱신하고 패키지를 생성한다. <code>LearningDispenserAsset.cs</code>가 배출 위치와 거치 칸을 연결한다. 기존 책 배출과 보드 놓기, 거치 칸 스냅, 겹침 방지, 달력 기본값, 의존성을 에디터에서 검사했다. 별도 프로젝트 재가져오기와 OS 입력 검증은 하지 않았다. 일회성 코드와 삭제 대기 파일은 없다.</p>
+<p><a href="../output/LearningDispenserKit_v4/LearningDispenserKit_v4.unitypackage">Unity 패키지</a> · <a href="../output/LearningDispenserKit_v4/Preview.png">Unity 렌더</a> · <a href="../output/LearningDispenserKit_v4/checks.json">검사 결과</a></p>
+</section><hr><section id="learning-dispenser-editable-calendar-v5">
+<h1>편집 가능한 탁상 달력과 5칸 책꽂이 v5</h1>
+<p>2026-11-08 (Asia/Seoul). 탁상 달력의 두 문구와 낮밤 표시를 Inspector에서 바꿀 수 있도록 하고, 아래 하얀 보드를 갈색 목재 책꽂이로 바꿨다.</p>
+<table><tr><th>계획</th><th>확인</th></tr><tr><td>달력 편집 설정</td><td>완료. Date, Countdown, Is Night를 편집하며 Day Icon과 Night Icon 참조도 교체할 수 있다.</td></tr><tr><td>아래 5칸 책꽂이</td><td>완료. 각 칸에 한 권씩 놓아 다섯 권이 같은 줄에 들어간다. 위쪽 네 칸과 왼쪽 배출 위치를 함께 제공한다.</td></tr><tr><td>패키지 및 미리보기</td><td>완료. Unity 컴파일, 에디터 검사 9개, 미리보기 렌더를 확인했다.</td></tr></table>
+<p><code>DeskCalendar.prefab</code>의 Desk Calendar Display를 편집한다. 코드에서 <code>SetDisplay(date, countdown, isNight)</code>를 호출할 수 있다. 기본 표시는 1005-01-01, D-2, 초승달이다. <code>LearningDispenser_Demo.unity</code>에서 버튼을 눌러 책을 배출하고 선반의 빈 칸으로 드래그한다. 기존 가져오기 경로를 유지하기 위해 책꽂이 포함 프리팹의 파일 이름은 <code>LearningDispenser_WithWhiteBoard.prefab</code>이다.</p>
+<p><code>DeskCalendarDisplay.cs</code>가 날짜·문구·아이콘을 갱신한다. <code>LearningDispenserAsset.cs</code>의 공통 칸 배치 로직으로 위아래 책꽂이에 책을 맞추고, 이미 차 있는 칸에서는 이전 위치로 복귀한다. 유지 도구 <code>AssetBuild/LearningDispenser/ExportStandaloneV2.cs</code>의 <code>AddEditableCalendarAndLowerShelf</code>가 프리팹과 데모를 갱신하고 패키지를 만든다.</p>
+<p>아래 다섯 칸을 각각 채워 위치를 검증했다. 달력 복제본에 다른 날짜와 D-1을 넣고 낮 아이콘이 켜지는 것도 확인했다. 별도 프로젝트의 Import와 OS 포인터 조작은 검사하지 않았다. 새 임시 코드와 정리 대기 파일은 없다.</p>
+<p><a href="../output/LearningDispenserKit_v5/LearningDispenserKit_v5.unitypackage">Unity 패키지</a> · <a href="../output/LearningDispenserKit_v5/Preview.png">Unity 렌더</a> · <a href="../output/LearningDispenserKit_v5/checks.json">검사 결과</a></p>
+</section></body></html>
 
 
 

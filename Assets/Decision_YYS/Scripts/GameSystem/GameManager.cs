@@ -120,10 +120,10 @@ public class GameManager : MonoBehaviour
         return saveManager.StartNextRun();
     }
 
-    public void EnterFinalBattle(int stage = 1)
+    public void EnterFinalBattle(int stage = 1, string chapterBossId = null)
     {
         saveManager ??= new SaveManager();
-        saveManager.BeginFinalBattle(stage);
+        saveManager.BeginFinalBattle(stage, chapterBossId);
         finalBattleCompletion = null;
         LoadFinalBattle();
     }
@@ -158,6 +158,11 @@ public class GameManager : MonoBehaviour
 
     private void FinishFinalBattle(bool won)
     {
+        if (won && saveManager.TryContinueAfterChapterBoss(SaveIOService.Instance.LoadResourceData<OmnibusData>("Omnibus_01")))
+        {
+            new SceneTransitionService().LoadDecisionScene();
+            return;
+        }
         if (finalBattleCompletion == null)
         {
             int sourceRun = saveManager.CurrentRun;

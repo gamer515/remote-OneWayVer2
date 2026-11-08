@@ -64,7 +64,12 @@ public class Player : MonoBehaviour
         Vector3 direction = worldPosition - this.worldPosition;
         direction.y = 0f;
         if (direction.sqrMagnitude > 0.0001f)
+        {
+            bool preserveView = viewCamera != null && framedNpc != null;
+            Quaternion viewRotation = preserveView ? viewCamera.transform.rotation : Quaternion.identity;
             SetFacing(Quaternion.LookRotation(direction.normalized, Vector3.up));
+            if (preserveView) viewCamera.transform.rotation = viewRotation;
+        }
     }
 
     public void FaceForward()
@@ -104,7 +109,6 @@ public class Player : MonoBehaviour
     public void FocusNpc(Transform npc, bool showFullBody)
     {
         framedNpc = npc; fullBody = showFullBody;
-        UpdateNpcFraming();
     }
     public void ResetNpcFraming()
     {
@@ -131,17 +135,21 @@ public class Player : MonoBehaviour
         float pitch = Mathf.Atan2(focus.y - viewCamera.transform.position.y, distance);
         Vector3 forward = horizontal.normalized * Mathf.Cos(pitch) + Vector3.up * Mathf.Sin(pitch);
         if (forward.sqrMagnitude < 0.001f) forward = transform.forward;
-        viewCamera.transform.rotation = Quaternion.LookRotation(forward, Vector3.up);
+        Quaternion targetRotation = Quaternion.LookRotation(forward, Vector3.up);
+        Quaternion worldToCamera = Quaternion.Inverse(targetRotation);
         float tangent = 0;
         foreach (float x in new[] { bounds.min.x, bounds.max.x })
         foreach (float y in new[] { bottom, top })
         foreach (float z in new[] { bounds.min.z, bounds.max.z })
         {
-            Vector3 local = viewCamera.transform.InverseTransformPoint(new Vector3(x, y, z));
+            Vector3 local = worldToCamera * (new Vector3(x, y, z) - viewCamera.transform.position);
             float depth = Mathf.Max(0.1f, local.z);
             tangent = Mathf.Max(tangent, Mathf.Abs(local.y) / depth, Mathf.Abs(local.x) / (depth * viewCamera.aspect));
         }
-        viewCamera.fieldOfView = Mathf.Clamp(2 * Mathf.Atan(tangent * (1 + profile.headroom) / profile.viewportFill) * Mathf.Rad2Deg, 20, 120);
+        float targetFov = Mathf.Clamp(2 * Mathf.Atan(tangent * (1 + profile.headroom) / profile.viewportFill) * Mathf.Rad2Deg, 20, 120);
+        float blend = 1 - Mathf.Exp(-Time.unscaledDeltaTime * 10f);
+        viewCamera.transform.rotation = Quaternion.Slerp(viewCamera.transform.rotation, targetRotation, blend);
+        viewCamera.fieldOfView = Mathf.Lerp(viewCamera.fieldOfView, targetFov, blend);
     }
 
     // The shared Animator contains root Transform bindings (including StandUP).

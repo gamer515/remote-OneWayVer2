@@ -1,0 +1,24 @@
+{
+  "authority": "갱도 감독관",
+  "minimumLevies": 2,
+  "maximumLevies": 3,
+  "intervalDays": [2, 3, 5, 7, 14],
+  "maximumBurdenTier": 7,
+  "increasePerTier": 0.25,
+  "levies": [
+    { "id": "head", "label": "인두세", "kind": "mixed", "coins": 2, "enabled": true, "mine": false },
+    { "id": "land", "label": "전세·토지세", "kind": "fixed", "cost": [2,0,1,0], "enabled": true, "mine": false },
+    { "id": "tribute", "label": "공납", "kind": "notice", "coins": 3, "enabled": true, "mine": false },
+    { "id": "labor", "label": "요역·부역", "kind": "fixed", "cost": [3,0,0,0], "enabled": true, "mine": false },
+    { "id": "service", "label": "군역", "kind": "fixed", "cost": [2,1,0,0], "enabled": true, "mine": false },
+    { "id": "breath", "label": "숨세", "kind": "fixed", "cost": [0,0,2,2], "enabled": false, "mine": false, "condition": "살아 있는 생명에게 부과. 주석 1 확인 후 활성화." },
+    { "id": "ability", "label": "능력세", "kind": "largest", "divisor": 10, "minimum": 1, "enabled": true, "mine": false },
+    { "id": "shadow", "label": "그림자세", "kind": "shadow", "cost": [0,0,0,2], "enabled": false, "mine": false, "condition": "그림자가 없는 존재와 어두운 동굴 주민 면제." },
+    { "id": "occupation", "label": "직업세", "kind": "occupation", "coins": 2, "enabled": false, "mine": false, "condition": "직업의 주력 능력." },
+    { "id": "freedom", "label": "자유세", "kind": "single", "coins": 4, "enabled": true, "mine": false },
+    { "id": "path", "label": "길눈세", "kind": "fixed", "cost": [0,1,2,0], "enabled": true, "mine": true },
+    { "id": "echo", "label": "울림세", "kind": "fixed", "cost": [0,0,0,2], "enabled": false, "mine": true, "condition": "주석 2 확인 후 활성화." },
+    { "id": "export", "label": "반출세", "kind": "declared", "divisor": 10, "enabled": false, "mine": true, "condition": "신고 대상 능력 코인." },
+    { "id": "mining", "label": "채굴세", "kind": "fixed", "cost": [2,0,1,0], "enabled": true, "mine": true }
+  ]
+}

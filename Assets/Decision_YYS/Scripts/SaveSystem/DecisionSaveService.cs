@@ -4,6 +4,7 @@
 public sealed class DecisionSaveService
 {
     private readonly SaveManager saveManager;
+    public int DefeatedTaxBosses => saveManager.LoadProgress().defeatedTaxBossIds?.Count ?? 0;
     private readonly int inventoryRun;
 
     public DecisionSaveService(SaveManager saveManager)

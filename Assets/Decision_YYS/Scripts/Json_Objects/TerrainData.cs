@@ -10,11 +10,15 @@ public class TerrainData
     public int chunkCount;
     public float chunkLength;
     public PlaceData[] places;
+    public TerrainFacilityRule[] facilityRules;
+    public float facilitySpacing;
+    public int facilityMajorLimit = 4, facilityOptionalLimit = 2;
 }
 
 [System.Serializable]
 public class PlaceData
 {
+    [System.NonSerialized] public int originalChunkIndex = -1;
     public Vector3[] spawnPoints;
     public Vector3[] actorPositions;
     public string placeId;
@@ -42,6 +46,18 @@ public class TerrainDefinition
     public int chunkCount;
     public float chunkLength;
     public TerrainPlaceDefinition[] places;
+    public TerrainFacilityRule[] facilityRules;
+    public float facilitySpacing;
+    public int facilityMajorLimit = 4, facilityOptionalLimit = 2;
+}
+
+[System.Serializable]
+public sealed class TerrainFacilityRule
+{
+    public string id, kind, label;
+    public int minimumChunkGap, maximumChunkGap;
+    public int firstMinimumChunk, firstMaximumChunk, priority;
+    public bool firstChunk, lastChunk, oncePerChapter;
 }
 
 [System.Serializable]

@@ -10,7 +10,7 @@ using UnityEngine.InputSystem;
 /// <summary>First-meeting orchestration. Dialogue, costs, deltas and destinations remain in chapter data.</summary>
 public partial class DecisionManager
 {
-    private const string MineStoryPrefix = "Chapter_1/Chapter_1_01/Encounters/";
+    private string MineStoryPrefix => currentScenarioPath + "/Encounters/";
     private MineChapterSettings mineRules;
     private MineChapterProgress mine;
     private MineChapterActivityView mineView;
@@ -20,15 +20,43 @@ public partial class DecisionManager
     private bool collectingTax;
     private float mineSaveAt;
     private StoryState beforeTax;
+    private int beforeTaxSelection;
+    private int taxWitnessStep;
+    private Transform taxWitness;
+    private const string MineActorSocketPrefix = "ActorSocket_";
     private string[] taxOptions;
     private Action<int> taxSelected;
     private int taxSelection = -1;
 
     private void InitializeMineChapter()
     {
-        if (currentScenarioPath != "Chapter_1/Chapter_1_01") return;
-        mineRules ??= MineChapterSettings.Load();
+        var chapter = currentOmnibus.chapters[chapterIndex];
+        if (string.IsNullOrEmpty(chapter.rulesDocument) ||
+            chapter.rulesEpisodes != null && !chapter.rulesEpisodes.Contains(chapter.episodeIds[episodeIndex]))
+        {
+            mineCollectors?.SetVisible(false);
+            StopChapterSky();
+            mineRules = null;
+            taxRules = null;
+            mine = null;
+            UpdateChapterCalendar();
+            return;
+        }
+        mineRules = MineChapterSettings.Load(chapter.rulesDocument);
         mine = guideProgress.mineChapter ??= new MineChapterProgress();
+        mineRules.dayCycle?.RestoreClock(mine);
+        if (mine.taxChapterId != chapter.chapterId)
+        {
+            mine.taxChapterId = chapter.chapterId;
+            mine.nextTaxDay = 0;
+            mine.taxPatrolActive = false;
+            mine.taxInvoice = null;
+        }
+        taxRules = ChapterTaxSettings.Load(ChapterContentCatalog.ChapterFolder(chapter.chapterId));
+        UpdateTaxSchedule();
+        StartChapterSky();
+        UpdateChapterSky(mineRules.dayCycle?.Daylight(mine.elapsedSeconds) ?? 1f);
+        UpdateChapterCalendar();
         if (!mine.initialized)
         {
             mine.initialized = true;
@@ -42,7 +70,20 @@ public partial class DecisionManager
         SyncAbilityWallet();
         guideProgress.committedStats ??= statContainer.stats;
         mineCollectors ??= FindFirstObjectByType<MineCollectorProcession>();
-        mineCollectors?.Initialize(mineCollectorPrefab, mine, envController.PlaceRegistry.GetChunkWorldPosition(0), envController.TerrainData.chunkLength, session.RunSeed);
+        var origin = envController.PlaceRegistry.GetChunkWorldPosition(0);
+        var npcPositions = envController.TerrainData.places
+            .Where(place => !string.IsNullOrEmpty(place.characterId))
+            .SelectMany(place => (place.actorPositions ?? new[] { place.position })
+                .Select(position => envController.PlaceRegistry.GetChunkWorldPosition(place.chunkIndex) + position));
+        var placement = envController.NpcPlacement;
+        var doors = mine.variedRoomLayout && placement != null ? placement.Places.Select(placement.Doors) : null;
+        float patrolLength = envController.TerrainData.chunkLength;
+        if (doors != null)
+            patrolLength *= Mathf.Max(1, Mathf.CeilToInt((doors.Max(door => door.exit.z) - origin.z) / patrolLength));
+        mineCollectors?.Initialize(mineCollectorPrefab, mine, origin,
+            patrolLength, session.RunSeed, mineRules.collectorArrivalSeconds,
+            mineRules.collectorNpcWaitMin, mineRules.collectorNpcWaitMax, npcPositions, doors);
+        mineCollectors?.SetVisible(mine.taxPatrolActive);
     }
 
     private string MineOpeningPath(string place, string fallback)
@@ -146,9 +187,12 @@ public partial class DecisionManager
         return balances[0];
     }
 
+    private bool mineLaborInProgress;
+
     private IEnumerator RunMineActivity(MineChapterAction action, string key)
     {
         bool labor = action.kind == "labor";
+        mineLaborInProgress = labor;
         if (!labor) tutorialMiniGames?.StartRaceTrack();
         if (mine.activityKey != key)
         {
@@ -170,13 +214,18 @@ public partial class DecisionManager
 #else
                 if (!labor && Input.GetKeyDown(KeyCode.Space)) mine.racePresses++;
 #endif
-                mineView.Show(labor ? $"요구사항 수행 중 / {mine.activityRemaining:F1}초\n이동과 능력 성장 중지 / 징수원은 접근합니다." :
+                var collector = labor && mine.taxPatrolActive && mineCollectors?.Finished == false
+                    ? mineCollectors.NearestMember(playerController.CurrentPosition) : null;
+                string distance = collector != null
+                    ? $"\n징수원 거리 {Vector3.Distance(collector.position, playerController.CurrentPosition):F1}u" : "";
+                mineView.Show(labor ? $"요구사항 수행 중 / {mine.activityRemaining:F1}초\n이동과 능력 성장 중지{distance}" :
                     $"경주 / SPACE 연타\n{mine.racePresses}/{mineRules.racePressTarget} / 남은 시간 {mine.activityRemaining:F1}초");
                 if (!labor) tutorialMiniGames?.UpdateRaceTrack((float)mine.racePresses / mineRules.racePressTarget, 1 - mine.activityRemaining / mineRules.raceSeconds);
                 if (!labor && mine.racePresses >= mineRules.racePressTarget) break;
             }
             yield return null;
         }
+        mineLaborInProgress = false;
         if (!labor) { mine.resultPath = mine.racePresses >= mineRules.racePressTarget ? action.winStoryPath : action.loseStoryPath; tutorialMiniGames?.Cleanup(); }
         string next = mine.resultPath;
         if (!labor) RecordMiniGameResult(NewStoryEvent(key, "race_result", activeCards.MainStory[activeCardIndex]), next == action.winStoryPath);
@@ -201,17 +250,21 @@ public partial class DecisionManager
     private void TickMineChapter()
     {
         if (mine == null || playerController == null || finalBattleRequested) return;
-        TickLearning();
         if (Time.unscaledTime >= mineSaveAt) { mineSaveAt = Time.unscaledTime + 1; SaveGuideCheckpoint(); }
-        if (currentScenarioPath != "Chapter_1/Chapter_1_01") return;
+        mine.elapsedSeconds += Time.deltaTime;
+        float daylight = mineRules.dayCycle?.Daylight(mine.elapsedSeconds) ?? 1f;
+        TickTaxSchedule(daylight);
+        UpdateChapterSky(daylight);
+        UpdateChapterCalendar();
         if (!collectingTax)
         {
-            mine.elapsedSeconds += Time.deltaTime;
-            mineCollectors?.Tick(Time.deltaTime);
+            if (daylight > 0 && mine.taxPatrolActive)
+                mineCollectors?.Tick(Time.deltaTime * daylight, Time.deltaTime);
             if (mine.resting)
             {
                 mine.fatigue = Mathf.Max(0, mine.fatigue - mineRules.recoveryPerSecond * Time.deltaTime);
-                mineView.Show($"강제 휴식 / 피로 {mine.fatigue:F0}\n징수원 거리 {playerController.CurrentPosition.z - mine.collectorZ:F1}");
+                string distance = mine.taxPatrolActive ? $"\n징수원 거리 {Mathf.Abs(playerController.CurrentPosition.z - mine.collectorZ):F1}" : "";
+                mineView.Show($"강제 휴식 / 피로 {mine.fatigue:F0}{distance}");
                 if (mine.fatigue <= mineRules.fatigueResume) { mine.resting = false; mineView.Hide(); if (currentState == StoryState.MovingToEncounter) playerController.ResumeMovement(); }
             }
             else if (currentState == StoryState.MovingToEncounter)
@@ -224,66 +277,86 @@ public partial class DecisionManager
                     Debug.Log("[에셋 필요] 강제 휴식 애니메이션 미지정. 정지 상태로 회복합니다.");
                 }
             }
-            var collector = mineCollectors?.NearestMember(playerController.CurrentPosition);
-            if (mineCollectors?.CanMeet == true && collector != null &&
-                Vector3.Distance(playerController.CurrentPosition, collector.position) <= mineRules.encounterDistance && currentState != StoryState.Duel) BeginMineTax();
+            if (daylight <= 0 || !mine.taxPatrolActive || mineCollectors == null || mineCollectors.Finished || currentState == StoryState.Duel ||
+                (currentState == StoryState.Transitioning && !mineLaborInProgress) || guideProgress.allocating) return;
+            var collector = mineCollectors.NearestMember(playerController.CurrentPosition);
+            if (collector == null) return;
+            if (mine.HasTaxInvoice && mineCollectors.CanMeet &&
+                Vector3.Distance(playerController.CurrentPosition, collector.position) <= mineRules.encounterDistance)
+                BeginMineTax(collector);
+            else
+                TryBeginMineWitness(collector);
         }
     }
 
-    private int MineTaxAmount => mineRules.TaxAmount(resolvedPlaceIds.Count, false);
-    private void BeginMineTax()
+    private void BeginCollectorDialogue(Transform collector, Transform witness = null)
     {
-        if (collectingTax) return;
         collectingTax = true; beforeTax = currentState;
-        var collector = mineCollectors.NearestMember(playerController.CurrentPosition);
-        playerController.PauseAndLookAt(collector.position);
+        beforeTaxSelection = selectedGearIndex;
+        var residents = FindObjectsByType<Transform>(FindObjectsInactive.Exclude, FindObjectsSortMode.None)
+            .Where(actor => actor.name.StartsWith(MineActorSocketPrefix, StringComparison.Ordinal) &&
+                (actor.position - collector.position).sqrMagnitude < 36f)
+            .Select(actor => actor.position).ToArray();
+        mineCollectors.ArrangeForDialogue(playerController.CurrentPosition, residents, witness?.position);
         playerController.FocusNpc(collector, false);
+        playerController.PauseAndLookAt(collector.position);
         currentState = StoryState.Transitioning; SetYellowInputInteractable(false);
+        mineView.Hide();
+        presentationController.ExitChoice();
+        presentationController.ShowPlayerViewControl();
+        journeyBoardInput?.SetChoiceCount(0);
+    }
+
+    private void BeginMineTax(Transform collector)
+    {
+        BeginCollectorDialogue(collector);
         ShowMineTax();
     }
-    private void ShowMineTax()
+
+    private void TryBeginMineWitness(Transform collector)
     {
-        int type = (int)(MineChapterSettings.Roll(session.RunSeed, mine.collected, "tax") * 4);
-        string[] labels = { "힘", "속도", "지능", "매력" };
-        ShowTaxChoices($"징수원 조우 / {labels[type]} {MineTaxAmount}개 요구\n다른 능력 코인으로도 대납 가능", labels.Select((n, i) => n + " " + mineRules.TaxAmount(resolvedPlaceIds.Count, i != type)).ToArray(), slot => {
-            if (!collectingTax) return;
-            var cost = new int[4]; cost[slot] = mineRules.TaxAmount(resolvedPlaceIds.Count, slot != type);
-            if (!AbilityPayment.TryPay(statContainer.stats, cost, out var after)) { ShowMineTaxAlternatives(); return; }
-            statContainer.SetStats(after); guideProgress.committedStats = after;
-            mine.collected += cost.Sum(); SyncAbilityWallet(); FinishMineTax();
-            if (after[0] <= 0) FinishRunAndReturnToMainMenu("징수 후 체력 0");
-        });
-    }
-    private void ShowMineTaxAlternatives()
-    {
-        ShowTaxChoices("코인이 부족합니다. 대응을 선택하세요.", new[] { "다른 코인으로 납부", "매력으로 설득", "결투" }, slot => {
-            if (slot == 0) { ShowMineTax(); return; }
-            if (slot == 1)
-            {
-                bool success = MineChapterSettings.Roll(session.RunSeed, mine.persuasionAttempts, "persuade") < mineRules.PersuasionChance(statContainer.stats[3], mine.persuasionAttempts++);
-                SaveGuideCheckpoint();
-                if (success) FinishMineTax(); else ShowMineTaxAlternatives();
-            }
-            else if (duelMiniGame != null)
-            {
-                presentationController.ExitChoice(); taxSelected = null; currentState = StoryState.Duel;
-                playerController.FocusNpc(mineCollectors.NearestMember(playerController.CurrentPosition), true);
-                duelMiniGame.BeginDuel(won => { duelMiniGame.CleanupDuel(); if (won) FinishMineTax(); else FinishRunAndReturnToMainMenu("징수원 결투 패배"); }, mineRules.duelHitTarget, statContainer.stats[0], ConsumeMineDuelHealth);
-            }
-        });
+        if (mine.collectorNpcPause <= 0 ||
+            (mine.collectorNpcPauseIndex == mine.collectorNpcWitnessIndex &&
+             mine.collectorNpcActorIndex == mine.collectorNpcWitnessActor) ||
+            mineCollectors.CurrentNpcPosition is not Vector3 point ||
+            Vector3.Distance(playerController.CurrentPosition, point) > mineRules.encounterDistance) return;
+        var actor = Array.Find(FindObjectsByType<Transform>(FindObjectsInactive.Exclude, FindObjectsSortMode.None),
+            target => target.name.StartsWith(MineActorSocketPrefix, StringComparison.Ordinal) &&
+                      (target.position - point).sqrMagnitude < .001f);
+        if (actor == null) return;
+
+        BeginCollectorDialogue(collector, actor);
+        taxWitness = actor;
+        mine.collectorNpcWitnessIndex = mine.collectorNpcPauseIndex;
+        mine.collectorNpcWitnessActor = mine.collectorNpcActorIndex;
+        taxWitnessStep = 1;
+        presentationController.ShowInteraction("너도 세금을 걷어 간다. 세금을 내라.", "징수원");
+        SetYellowInputInteractable(true);
     }
     private void ShowTaxChoices(string message, string[] choices, Action<int> selected)
     {
         mineView.Hide();
-        taxOptions = choices; taxSelected = selected; taxSelection = -1;
-        ResetGearSelection();
+        taxOptions = choices; taxSelected = selected; taxSelection = 0;
         presentationController.ShowPlayerViewControl();
         presentationController.ShowInteraction(message, "징수원");
+        journeyBoardInput?.SetChoiceCount(choices.Length);
         presentationController.ShowOptions(taxOptions, taxSelection);
         SetYellowInputInteractable(true);
     }
     private void ConfirmMineTaxChoice()
     {
+        if (taxWitnessStep == 1)
+        {
+            taxWitnessStep = 2;
+            presentationController.ShowInteraction("또 내라고? 젠장 끝도 없구만.", taxWitness.name.Substring(MineActorSocketPrefix.Length));
+            playerController.FocusNpc(taxWitness, false);
+            return;
+        }
+        if (taxWitnessStep == 2)
+        {
+            FinishCollectorDialogue(false);
+            return;
+        }
         if(taxSelected == null || taxSelection < 0 || taxSelection >= taxOptions.Length) return;
         var selected = taxSelected; int slot = taxSelection;
         taxSelected = null;
@@ -292,41 +365,81 @@ public partial class DecisionManager
     }
     private void FinishMineTax()
     {
+        mine.taxInvoice = null;
+        FinishCollectorDialogue(true);
+    }
+
+    private void FinishCollectorDialogue(bool playerTaxSettled)
+    {
+        taxWitnessStep = 0; taxWitness = null;
         taxOptions = null; taxSelected = null; taxSelection = -1;
+        journeyBoardInput?.SetChoiceCount(0);
         presentationController.ExitChoice();
-        collectingTax = false; mineCollectors.ContinueForward();
+        collectingTax = false;
+        mineCollectors.RestoreDialoguePositions();
+        if (playerTaxSettled) mineCollectors.ContinueForward();
         mineView.Hide(); currentState = beforeTax;
         if (currentState == StoryState.MovingToEncounter && !mine.resting) playerController.ResumeMovement();
         SetYellowInputInteractable(currentState == StoryState.Exploring || currentState == StoryState.ShowingStory || currentState == StoryState.WaitingForChoice);
         SaveGuideCheckpoint();
-        if (currentState == StoryState.ShowingStory || currentState == StoryState.WaitingForChoice) FrameActiveEncounter(false);
-        else playerController.ResetNpcFraming();
-        if (currentState == StoryState.WaitingForChoice) RenderEncounterOptions();
+        presentationController.ShowWalkingView();
+        if (currentState == StoryState.ShowingStory || currentState == StoryState.WaitingForChoice)
+        {
+            var card = activeCards.MainStory[activeCardIndex];
+            presentationController.ShowDialogue(card);
+            FrameActiveEncounter(false);
+            if (currentState == StoryState.WaitingForChoice)
+            {
+                selectedGearIndex = beforeTaxSelection;
+                journeyBoardInput?.SetChoiceCount(card.options.Length, selectedGearIndex);
+                RenderEncounterOptions();
+            }
+        }
+        else if (mineLaborInProgress) FrameActiveEncounter(false);
+        else
+        {
+            playerController.ResetNpcFraming();
+            if (lastMinePlace != null) ShowMineRevisit(lastMinePlace, beforeTaxSelection);
+        }
         Debug.Log($"[징수] 누적 {mine.collected}, 향후 보스 공격 배율 {mineRules.BossAttackMultiplier(mine.collected):F2}. 보스전 적용은 후속 범위.");
     }
 
-    private void ShowMineRevisit(string place)
+    private static readonly string[] MineRevisitOptions = { "다시 말 걸기", "다음 장소로 이동" };
+
+    private void ShowMineRevisit(string place, int selection = 0)
     {
         if (mine == null) return;
         lastMinePlace = place;
-        mineView.Show("이 장소의 대화가 끝났습니다.", new[] { "다시 말 걸기", "다음 장소로 이동" }, slot => {
-            if (collectingTax) return;
-            mineView.Hide();
-            if (slot == 0 && encounterFlow.TryGetEncounter(lastMinePlace, out var encounter))
-            {
-                pendingEncounter = encounter;
-                var visit = mine.visits.First(v => v.placeId == lastMinePlace);
-                string key = visit.openingPath.Substring(MineStoryPrefix.Length);
-                string revisit = key + "_revisit";
-                string returnPath = visit.granted && !string.IsNullOrEmpty(visit.returnStoryPath) ? visit.returnStoryPath : visit.openingPath;
-                if (!visit.granted && ChapterContentCatalog.Info(MineStoryPrefix + key + "_refuse_retry") != null) returnPath = MineStoryPrefix + key + "_refuse_retry";
-                if (visit.paidCharm && visit.granted && ChapterContentCatalog.Info(MineStoryPrefix + revisit) != null) returnPath = MineStoryPrefix + revisit;
-                OpenEncounterCards(encounter, 0, returnPath);
-            }
-            else BeginWalkStep();
-        });
+        selectedGearIndex = selection;
+        presentationController.ShowPlayerViewControl();
+        presentationController.ShowInteraction("이 장소의 대화가 끝났습니다.", "안내");
+        journeyBoardInput?.SetChoiceCount(MineRevisitOptions.Length, selection);
+        RenderMineRevisit();
     }
-    private void LateUpdate() => mineCollectors?.SetVisible(currentScenarioPath == "Chapter_1/Chapter_1_01");
+
+    private void RenderMineRevisit() => presentationController.ShowOptions(MineRevisitOptions, selectedGearIndex);
+
+    private void ConfirmMineRevisit()
+    {
+        string place = lastMinePlace;
+        int slot = selectedGearIndex;
+        lastMinePlace = null;
+        journeyBoardInput?.SetChoiceCount(0);
+        presentationController.ExitChoice();
+        if (slot == 0 && encounterFlow.TryGetEncounter(place, out var encounter))
+        {
+            pendingEncounter = encounter;
+            var visit = mine.visits.First(v => v.placeId == place);
+            string key = visit.openingPath.Substring(MineStoryPrefix.Length);
+            string revisit = key + "_revisit";
+            string returnPath = visit.granted && !string.IsNullOrEmpty(visit.returnStoryPath) ? visit.returnStoryPath : visit.openingPath;
+            if (!visit.granted && ChapterContentCatalog.Info(MineStoryPrefix + key + "_refuse_retry") != null) returnPath = MineStoryPrefix + key + "_refuse_retry";
+            if (visit.paidCharm && visit.granted && ChapterContentCatalog.Info(MineStoryPrefix + revisit) != null) returnPath = MineStoryPrefix + revisit;
+            OpenEncounterCards(encounter, 0, returnPath);
+        }
+        else BeginWalkStep();
+    }
+    private void LateUpdate() => mineCollectors?.SetVisible(mine?.taxPatrolActive == true);
 
     private void BeginInsufficientPaymentDuel(Dialogue card)
     {

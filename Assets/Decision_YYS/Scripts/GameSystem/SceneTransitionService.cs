@@ -22,6 +22,8 @@ public sealed class SceneTransitionService
         SceneManager.LoadScene(BattleSceneName);
     }
 
+    public void LoadDecisionScene() => SceneManager.LoadScene("DecisionScene");
+
     public void LoadMainMenuScene()
     {
         SceneManager.LoadScene(MainMenuSceneName);

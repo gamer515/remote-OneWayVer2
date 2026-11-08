@@ -17,16 +17,23 @@ public sealed class MineNpcPlacement : MonoBehaviour
         public Vector3 entrance, exit;
     }
     [SerializeField] private Place[] places;
+    private readonly Dictionary<string, float> roomOffsets = new Dictionary<string, float>();
     public Place[] Places => places;
+    internal bool HasPlace(string id) => places.Any(place => place.placeId == id);
     public float LateralReach(Vector3 origin) => places.SelectMany(p => p.spawnPoints)
         .Select(p => Mathf.Abs(transform.TransformPoint(p).x - origin.x)).DefaultIfEmpty(0.5f).Max();
-    public void Apply(TerrainData terrain, int seed, Vector3 origin)
+    public void Apply(TerrainData terrain, int seed, Vector3 origin) => Apply(terrain, seed, origin, null);
+
+    internal void Apply(TerrainData terrain, int seed, Vector3 origin, TerrainRoomLayout[] layouts)
     {
         foreach (var place in terrain.places)
         {
             var config = places.FirstOrDefault(p => p.placeId == place.placeId);
             if (config?.spawnPoints == null || config.spawnPoints.Length == 0) continue;
-            place.spawnPoints = config.spawnPoints.Select(p => transform.TransformPoint(p) - origin).ToArray();
+            float center = (config.entrance.z + config.exit.z) * .5f;
+            float offset = layouts?[place.chunkIndex]?.OffsetAt(center) ?? 0;
+            roomOffsets[config.placeId] = offset + place.chunkIndex * terrain.chunkLength;
+            place.spawnPoints = config.spawnPoints.Select(p => transform.TransformPoint(p + Vector3.forward * offset) - origin).ToArray();
             int Pick(int[] allowed, int excluded, string key)
             {
                 var choices = (allowed?.Length > 0 ? allowed : Enumerable.Range(0, place.spawnPoints.Length).ToArray())
@@ -40,6 +47,12 @@ public sealed class MineNpcPlacement : MonoBehaviour
             place.actorPositions = new[] { place.position, place.spawnPoints[second] };
         }
     }
+
+    public (Vector3 entrance, Vector3 exit) Doors(Place place)
+    {
+        var shift = Vector3.forward * (roomOffsets.TryGetValue(place.placeId, out float offset) ? offset : 0);
+        return (transform.TransformPoint(place.entrance + shift), transform.TransformPoint(place.exit + shift));
+    }
     public Vector3 ApproachPoint(Vector3 npc, Vector3 origin, float distance)
     {
         Vector3 towardLane = new Vector3(origin.x - npc.x, 0, 0);
@@ -49,7 +62,7 @@ public sealed class MineNpcPlacement : MonoBehaviour
     public IEnumerable<Vector3> Path(Vector3 from, Vector3 destination)
     {
         float direction = Mathf.Sign(destination.z - from.z);
-        var doors = places.SelectMany(p => new[] { transform.TransformPoint(p.entrance), transform.TransformPoint(p.exit) })
+        var doors = places.Select(Doors).SelectMany(p => new[] { p.entrance, p.exit })
             .Where(p => direction * (p.z - from.z) > 0.01f && direction * (destination.z - p.z) > 0.01f)
             .OrderBy(p => direction * p.z);
         foreach (var door in doors) yield return door;

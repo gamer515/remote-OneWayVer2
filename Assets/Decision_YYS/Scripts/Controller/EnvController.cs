@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.Serialization;
 
@@ -14,6 +15,12 @@ public class EnvController : MonoBehaviour
     {
         public string groundId;
         public GameObject prefab;
+        [Tooltip("청크 프리팹 안에서 개별 건물을 묶는 그룹 경로")]
+        public string roomGroup;
+        [Tooltip("건물과 같은 Z 위치에서 함께 이동할 지붕 그룹 경로")]
+        public string roomCompanionGroup;
+        [Tooltip("빈 청크에 같은 테마의 건물을 재사용할 Ground ID")]
+        public string roomSourceGroundId;
     }
 
     private sealed class RegisteredTerrain
@@ -40,6 +47,7 @@ public class EnvController : MonoBehaviour
 
     private TerrainRepository terrainRepository = new TerrainRepository();
     private readonly TerrainBuilder terrainBuilder = new TerrainBuilder();
+    internal System.Collections.Generic.IReadOnlyList<TerrainBuilder.FacilityMarker> FacilityMarkers => terrainBuilder.FacilityMarkers;
     private readonly Dictionary<string, RegisteredTerrain> registeredTerrains =
         new Dictionary<string, RegisteredTerrain>();
 
@@ -49,6 +57,7 @@ public class EnvController : MonoBehaviour
     private float registeredLength;
     private int contentRun = 1;
     private int contentSeed;
+    private bool varyRooms;
 
     private void Awake()
     {
@@ -89,8 +98,6 @@ public class EnvController : MonoBehaviour
         }
 
         TerrainData terrainData = terrainRepository.Load(terrainPath);
-        if (terrainData != null && npcPlacement != null)
-            npcPlacement.Apply(terrainData, contentSeed, TerrainOrigin + Vector3.forward * registeredLength);
         int chunkCount = GetChunkCount(terrainData);
         if (terrainData == null || chunkCount == 0)
         {
@@ -107,9 +114,6 @@ public class EnvController : MonoBehaviour
         // 새 챕터의 로컬 청크 0은 이전 지형의 마지막 전역 청크 바로 뒤에서 시작합니다.
         float segmentChunkSize = terrainData.chunkLength > 0 ? terrainData.chunkLength : chunkSize;
         Vector3 segmentOrigin = TerrainOrigin + Vector3.forward * registeredLength;
-        TerrainPlaceRegistry registry = new TerrainPlaceRegistry(
-            terrainData, segmentOrigin, segmentChunkSize);
-
         if (!TryResolveGroundPrefabs(terrainData, out GameObject[] selectedGroundPrefabs,
                 out string groundError))
         {
@@ -117,9 +121,27 @@ public class EnvController : MonoBehaviour
             return false;
         }
 
+        if (varyRooms && !TerrainFacilityPlan.FitAuthoredPlaces(terrainData, !terrainBuilder.HasChapter(chapterName)))
+        {
+            Debug.LogError($"청크당 장소 상한 안에서 필수 장소를 모두 배치할 수 없습니다: {terrainPath}", this);
+            return false;
+        }
+        var roomLayouts = varyRooms ? PlanRoomLayouts(terrainData, selectedGroundPrefabs, segmentChunkSize) : null;
+        if (roomLayouts != null)
+            foreach (var place in terrainData.places)
+            {
+                var layout = roomLayouts[place.chunkIndex];
+                if (layout == null || (npcPlacement != null && npcPlacement.HasPlace(place.placeId))) continue;
+                var shift = Vector3.forward * layout.OffsetAt(place.position.z);
+                place.position += shift;
+                if (place.spawnPoints != null)
+                    place.spawnPoints = place.spawnPoints.Select(point => point + shift).ToArray();
+            }
+        if (npcPlacement != null) npcPlacement.Apply(terrainData, contentSeed, segmentOrigin, roomLayouts);
+        var registry = new TerrainPlaceRegistry(terrainData, segmentOrigin, segmentChunkSize);
         terrainBuilder.RegisterTerrain(terrainData, registry, selectedGroundPrefabs,
             terrainPrefabCatalog, environment.transform, nextGlobalChunkIndex, chunkCount,
-            contentSeed);
+            contentSeed, chapterName, roomLayouts, varyRooms);
 
         float segmentEndZ = segmentOrigin.z + chunkCount * segmentChunkSize;
         terrainStreamingController.RegisterSegment(segmentOrigin.z, segmentChunkSize, chunkCount);
@@ -150,7 +172,7 @@ public class EnvController : MonoBehaviour
     /// <summary>
     /// 지형을 등록하기 전에 현재 회차를 지정하여 원본/생성 지형의 출처를 고정합니다.
     /// </summary>
-    public void SetContentRun(int runNumber, int runSeed)
+    public void SetContentRun(int runNumber, int runSeed, bool varyRooms = false)
     {
         int safeRunNumber = Mathf.Max(1, runNumber);
         if (registeredTerrains.Count > 0 && safeRunNumber != contentRun)
@@ -161,6 +183,7 @@ public class EnvController : MonoBehaviour
 
         contentRun = safeRunNumber;
         contentSeed = runSeed;
+        this.varyRooms = varyRooms;
         terrainRepository = new TerrainRepository(contentRun, contentSeed);
     }
 
@@ -350,6 +373,30 @@ public class EnvController : MonoBehaviour
             }
         }
         return false;
+    }
+
+    private TerrainRoomLayout[] PlanRoomLayouts(TerrainData terrain, GameObject[] prefabs, float length)
+    {
+        var layouts = new TerrainRoomLayout[prefabs.Length];
+        for (int i = 0; i < prefabs.Length; i++)
+        {
+            string groundId = terrain.groundIds?.Length > i ? terrain.groundIds[i] : terrain.groundId;
+            var entry = groundEntries.FirstOrDefault(item => item?.groundId == groundId);
+            if (string.IsNullOrEmpty(entry?.roomGroup)) continue;
+            bool useTemplates = !string.IsNullOrEmpty(entry.roomSourceGroundId);
+            GameObject source = entry.prefab;
+            if (useTemplates && !TryResolveGroundPrefabExact(entry.roomSourceGroundId, out source))
+                continue;
+            Transform group = source.transform.Find(entry.roomGroup);
+            if (group == null || group.childCount == 0) continue;
+            var required = terrain.places.Where(place => place.chunkIndex == i).Select(place => place.position.z);
+            var relocated = terrain.places.Where(place => place.originalChunkIndex == i).Select(place => place.position.z);
+            layouts[i] = new TerrainRoomLayout(group, entry.roomGroup, entry.roomCompanionGroup,
+                useTemplates, required, relocated, TerrainFacilityPlan.LocationLimit(terrain), length,
+                terrain.facilitySpacing > 0 ? terrain.facilitySpacing : 15f,
+                contentSeed, nextGlobalChunkIndex + i);
+        }
+        return layouts;
     }
 
     private bool TryResolveGroundPrefabs(

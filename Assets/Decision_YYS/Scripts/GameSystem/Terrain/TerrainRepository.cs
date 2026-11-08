@@ -210,7 +210,11 @@ public sealed class TerrainRepository
             groundIds = definition.groundIds,
             chunkCount = effectiveChunkCount,
             chunkLength = definition.chunkLength,
-            places = places
+            places = places,
+            facilityRules = definition.facilityRules,
+            facilitySpacing = definition.facilitySpacing,
+            facilityMajorLimit = definition.facilityMajorLimit,
+            facilityOptionalLimit = definition.facilityOptionalLimit
         };
         errorMessage = null;
         return true;

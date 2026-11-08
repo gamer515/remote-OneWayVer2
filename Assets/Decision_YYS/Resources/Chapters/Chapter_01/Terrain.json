@@ -3,12 +3,35 @@
     "Chapter_1_01": {
       "TerrainInfo": {
         "terrainName": "MineVillageFirstChunk",
-        "groundId": "mine_chunk",
+        "groundId": "mine_village_180",
         "groundIds": [
-          "mine_chunk"
+          "mine_village_180",
+          "mine_passage_180",
+          "mine_passage_180"
         ],
-        "chunkCount": 1,
-        "chunkLength": 120,
+        "chunkCount": 3,
+        "chunkLength": 180,
+        "facilitySpacing": 15,
+        "facilityMajorLimit": 4,
+        "facilityOptionalLimit": 2,
+        "facilityRules": [
+          { "id": "shop", "label": "상점·교환상", "kind": "common", "priority": 100, "firstChunk": true, "lastChunk": true, "minimumChunkGap": 1, "maximumChunkGap": 3 },
+          { "id": "vault", "label": "금고·은행", "kind": "common", "priority": 80, "firstMinimumChunk": 2, "firstMaximumChunk": 3, "minimumChunkGap": 3, "maximumChunkGap": 5 },
+          { "id": "rest", "label": "숙소·휴식처", "kind": "common", "priority": 60, "minimumChunkGap": 1, "maximumChunkGap": 2 },
+          { "id": "work_broker", "label": "일거리 중개인", "kind": "common", "priority": 40, "minimumChunkGap": 1, "maximumChunkGap": 3 },
+          { "id": "timber_repair", "label": "갱목 보수소", "kind": "special", "oncePerChapter": true },
+          { "id": "ventilation_workshop", "label": "환풍기 작업장", "kind": "special", "oncePerChapter": true },
+          { "id": "lantern_keeper", "label": "등불지기", "kind": "special", "oncePerChapter": true },
+          { "id": "ore_appraisal", "label": "광석 감정소", "kind": "special", "oncePerChapter": true },
+          { "id": "tunnel_guide", "label": "폐갱 길잡이", "kind": "special", "oncePerChapter": true },
+          { "id": "miners_canteen", "label": "광부 공동식당", "kind": "special", "oncePerChapter": true },
+          { "id": "mine_clinic", "label": "갱도 진료소", "kind": "special", "oncePerChapter": true },
+          { "id": "gang_den", "label": "막장 패거리", "kind": "special", "oncePerChapter": true },
+          { "id": "smuggler_market", "label": "밀수 장터", "kind": "special", "oncePerChapter": true },
+          { "id": "rescue_post", "label": "구조대 대기소", "kind": "special", "oncePerChapter": true },
+          { "id": "campfire", "label": "광부 모닥불", "kind": "special", "oncePerChapter": true },
+          { "id": "memorial_altar", "label": "폐광의 작은 제단", "kind": "special", "oncePerChapter": true }
+        ],
         "places": [
           {
             "placeId": "brook",

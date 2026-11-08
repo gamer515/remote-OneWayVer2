@@ -22,6 +22,7 @@ public sealed class DuelMouseHandController : MonoBehaviour
 
     private DuelAuthoringReferences authoringReferences;
     private Transform controlledHand;
+    private Collider clickCollider;
     private Plane movementPlane;
     private Vector2 virtualScreenPosition;
     private bool previousCursorVisible;
@@ -69,13 +70,17 @@ public sealed class DuelMouseHandController : MonoBehaviour
         readyPoseApplied = false;
         RestRotation = controlledHand.rotation;
         var blade = handObject.GetComponentInChildren<DuelBladeHitbox>();
-        Collider clickCollider;
-        var contact = blade != null ? blade.GetComponent<BoxCollider>() : null;
-        if (contact != null)
+        var swordMesh = blade != null ? blade.GetComponentInChildren<MeshFilter>(true) : null;
+        if (swordMesh != null && swordMesh.sharedMesh != null)
         {
-            // Combat turns the blade contact box off while waiting. Selection stays independently clickable.
-            var selection = new GameObject("SwordSelection"); selection.transform.SetParent(blade.transform, false);
-            var box = selection.AddComponent<BoxCollider>(); box.center = contact.center; box.size = contact.size; box.isTrigger = true;
+            // The visible mesh includes the guard, grip and pommel, outside the blade's combat box.
+            var selection = new GameObject("SwordSelection") { layer = swordMesh.gameObject.layer };
+            selection.transform.SetParent(swordMesh.transform, false);
+            var bounds = swordMesh.sharedMesh.bounds;
+            var box = selection.AddComponent<BoxCollider>();
+            box.center = bounds.center;
+            box.size = bounds.size * 1.06f;
+            box.isTrigger = true;
             clickCollider = box;
         }
         else clickCollider = EnsureClickableCollider(handObject);
@@ -95,6 +100,7 @@ public sealed class DuelMouseHandController : MonoBehaviour
         ReleaseHand();
         MovementSpeedMultiplier = 1f;
         controlledHand = null;
+        clickCollider = null;
         authoringReferences = null;
     }
 
@@ -205,7 +211,7 @@ public sealed class DuelMouseHandController : MonoBehaviour
         Ray ray = inputCamera.ScreenPointToRay(screenPosition);
         foreach (RaycastHit hit in Physics.RaycastAll(ray, 1000f, inputCamera.cullingMask, QueryTriggerInteraction.Collide))
         {
-            if (hit.transform.IsChildOf(controlledHand) && hit.transform.GetComponentInParent<DuelBladeHitbox>() != null)
+            if (hit.collider == clickCollider)
                 return true;
         }
         return false;

@@ -1,0 +1,21 @@
+학습 자판기 v5 - 독립 3D 에셋
+
+Unity 6 / URP용 간단한 메시·프리팹입니다.
+1. unitypackage 전체를 Import합니다.
+2. LearningDispenser_Demo 씬을 열고 Play합니다.
+3. 네 색상 버튼을 누르면 책이 배출구로 내려옵니다.
+4. 나온 책을 누른 채 위쪽 거치대 또는 아래 갈색 책꽂이의 빈 칸으로 끌어 놓습니다. 다시 집어 옮길 수 있습니다.
+5. 바깥에 놓으면 원래 위치로 돌아옵니다.
+
+Prefabs/LearningDispenser_WithWhiteBoard.prefab: 5칸 갈색 책꽂이 포함, Camera.main 자동 연결. 이전 패키지와 같은 프리팹 경로입니다.
+Prefabs/LearningDispenser_v2.prefab: 본체와 왼쪽 배출부만. 컨트롤러 Board Surface에 직접 만든 하얀 보드 BoxCollider를 연결합니다. 수평 보드(XZ 평면)를 사용합니다.
+책 4종은 개별 Prefab으로 포함되어 있습니다. 네 개 하단 동전통은 포함하지 않습니다.
+
+수정: Scene에 놓은 프리팹 루트 Scale과 위치를 맞추세요. Selection Buttons, Outlet, Receiver, Book Prefabs가 분리되어 있습니다. Input Camera를 지정하면 해당 카메라로 집기를 처리합니다.
+
+시간·진행 문구는 없습니다. 기존 DecisionManager, MineLearningStation, 저장 시스템에 의존하지 않습니다. 코인 차감·학습 보상·학습 일정 로직은 포함하지 않는 외형/상호작용 에셋입니다. 기존 게임 로직 연결은 별도입니다. 원본 프로젝트의 씬을 덮어쓰지 않습니다.
+
+버튼 아래 네 곳에 가로형 황동 코인 투입구가 있습니다. Prefabs/CoinSlot.prefab을 개별 배치할 수 있습니다. 투입구는 외형 에셋입니다.
+
+Prefabs/DeskCalendar.prefab: Inspector의 Desk Calendar Display에서 Date, Countdown, Is Night를 수정합니다. Day Icon과 Night Icon에 다른 오브젝트를 연결할 수도 있습니다. 실행 중 코드에서는 SetDisplay(date, countdown, isNight)를 호출합니다.
+아래 선반은 책 다섯 권을 한 줄로 놓을 수 있습니다. 차 있는 칸에 놓으면 책이 이전 위치로 돌아옵니다. 위쪽 배출구 옆 선반은 기존 네 칸입니다.

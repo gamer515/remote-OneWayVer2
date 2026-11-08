@@ -49,7 +49,9 @@ public class GameProgress
     // Journey completion enters a battle within this run; only its outcome advances the profile.
     public bool finalBattlePending;
     public int finalBattleStage = 1;
+    public string chapterBossId;
     public bool finalBattleWon;
+    public List<string> defeatedTaxBossIds = new List<string>();
     public List<StoryInfluenceProfile> influenceHistory = new List<StoryInfluenceProfile>();
     public List<CompletedEpisodeRecord> pendingEpisodes = new List<CompletedEpisodeRecord>();
     public GuideProgress guideProgress = new GuideProgress();

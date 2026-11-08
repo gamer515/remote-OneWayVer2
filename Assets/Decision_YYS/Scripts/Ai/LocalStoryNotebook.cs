@@ -42,17 +42,20 @@ public static partial class LocalStoryNotebook
         return target.StartsWith("/") ? target.TrimStart('/') : "xl/" + target;
     }
     private static List<string[]> Rows(ZipArchive zip, string name)
+        => ReadWorkbookRows(zip, name).Select(row => row.cells).ToList();
+
+    internal static IEnumerable<(int number, string[] cells)> ReadWorkbookRows(ZipArchive zip, string name, bool includeHeader = false)
     {
         string[] shared = zip.GetEntry("xl/sharedStrings.xml") == null ? Array.Empty<string>() :
             Read(zip,"xl/sharedStrings.xml").Descendants(Ns+"si").Select(s => string.Concat(s.Descendants(Ns+"t").Select(t => t.Value))).ToArray();
-        var rows = new List<string[]>();
-        foreach (var row in Read(zip, SheetPath(zip,name)).Descendants(Ns+"row").Take(10000))
+        foreach (var row in Read(zip, SheetPath(zip,name)).Descendants(Ns+"row"))
         {
-            if ((int?)row.Attribute("r") == 1) continue;
+            int number = (int?)row.Attribute("r") ?? throw new InvalidDataException("Excel 행 번호 누락");
+            if (number == 1 && !includeHeader) continue;
             var values = new string[32];
             foreach (var cell in row.Elements(Ns+"c"))
             {
-                if (cell.Element(Ns+"f") != null) throw new InvalidDataException("설정/해금 입력에는 수식을 사용하지 마세요.");
+                if (cell.Element(Ns+"f") != null) throw new InvalidDataException($"{name} {number}행에 수식을 사용할 수 없습니다.");
                 int column = 0;
                 foreach (char c in ((string)cell.Attribute("r") ?? "")) { if (c < 'A' || c > 'Z') break; column = column * 26 + c - 'A' + 1; }
                 if (column < 1 || column > values.Length) continue;
@@ -61,9 +64,8 @@ public static partial class LocalStoryNotebook
                 if ((string)cell.Attribute("t") == "inlineStr") value = string.Concat(cell.Descendants(Ns+"t").Select(t => t.Value));
                 values[column-1] = value;
             }
-            rows.Add(values.Select(v => v ?? "").ToArray());
+            yield return (number, values.Select(v => v ?? "").ToArray());
         }
-        return rows;
     }
     public static string[] EarnedUnlocks(SaveIOService storage, int throughRun = int.MaxValue) =>
         ProgressFiles(storage).Where(p => RunNumber(p) <= throughRun).SelectMany(p =>

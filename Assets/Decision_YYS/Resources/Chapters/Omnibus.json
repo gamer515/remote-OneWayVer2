@@ -1,13 +1,22 @@
 {
   "firstPlayableChapterId": "Chapter_1",
-  "lastPlayableChapterId": "Chapter_1",
+  "lastPlayableChapterId": "",
   "chapters": [
     {
       "chapterId": "Chapter_1",
+      "rulesDocument": "Chapter_01/Rules",
+      "rulesEpisodes": ["Chapter_1_01"],
+      "previewEndEpisodeId": "Chapter_1_BossPreview",
+      "bossStage": 1,
       "episodeIds": [
         "Chapter_1_01",
         "Chapter_1_BossPreview"
       ]
+    },
+    {
+      "chapterId": "Chapter_Coast",
+      "episodeIds": ["Chapter_Coast_01"],
+      "stopAtEnd": true
     }
   ],
   "legacyChapterIds": [

@@ -1,0 +1,316 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>게임 프로젝트 작업 이력</title><style>body{font:17px/1.8 system-ui,"Malgun Gothic",sans-serif;background:#141b24;color:#edf0f3;max-width:1160px;margin:35px auto;padding:0 24px}a{color:#9fd5ff}h1{font-size:30px}h2{margin-top:38px}nav,.box{background:#223144;padding:18px;border-radius:10px}nav a{margin-right:20px}table{border-collapse:collapse;width:100%}th,td{padding:11px;border:1px solid #46576d;text-align:left;vertical-align:top}th{background:#253348}code{background:#283547;padding:2px 5px;overflow-wrap:anywhere}img{width:100%;border-radius:8px}figure{margin:24px 0}figcaption,small{color:#bcc9d8}.table{overflow:auto}details{padding:14px;background:#1b2838;margin:16px 0}</style><style>
+:root{color-scheme:dark;--card:#223144;--muted:#b9c8d7}
+body{max-width:1120px}
+.page-nav{display:flex;flex-wrap:wrap;gap:8px 14px;margin-bottom:22px}
+.page-nav a{margin:0;padding:5px 10px;border-radius:6px}
+.page-nav [aria-current="page"]{background:#304865;color:#fff;font-weight:700}
+.kicker{font-size:.82rem;font-weight:700;letter-spacing:.08em;color:#b9dbf5}
+.lead{font-size:1.07rem;color:var(--muted);margin-top:0}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr));gap:14px;margin:18px 0}
+.grid article{margin:0}
+.grid h2,.grid h3{margin:0 0 6px;font-size:1.05rem}
+.grid p{margin:0 0 8px}
+.toc{margin:20px 0 32px}
+.toc ul{margin:0;padding-left:1.35rem}
+.toc li{padding:.13rem 0}
+.status-badge{white-space:nowrap;font-weight:700;color:#a9dfba}
+.status-pending{color:#f5cd8c}
+section[id],h2[id]{scroll-margin-top:18px}
+section[id]:target,h2[id]:target{outline:2px solid #8fbbe3;outline-offset:5px}
+a:focus-visible{outline:2px solid #cfe8fb;outline-offset:3px}
+@media(max-width:600px){body{margin:20px auto;padding:0 14px}th,td{padding:8px}h1{line-height:1.3}}
+</style></head><body><nav class="page-nav" aria-label="보고서 페이지"><a href="index.html">현재 현황</a><a href="work-history.html" aria-current="page">작업 이력</a><a href="usage-guide.html">사용 안내</a></nav><header><p class="kicker">갱도 챕터 보고서</p><h1>작업 이력</h1><p class="lead">최근 작업부터 이전 작업까지, 상세 변경·캡처·검증 결과를 모았습니다. 각 기록의 수치와 상태는 당시 기준입니다.</p></header><div class="grid toc" aria-label="작업 이력 목차">
+<article class="box"><h2>최근 작업</h2><ul>
+<li><a href="#variable-room-layout-nov09">청크별 건물 간격·장소 상한·갱도 바닥</a></li><li><a href="#shop-map-encounter-nov08">상점 지도·징수 조우·선택지 탐색</a></li><li><a href="#mine-facility-layout-nov08">갱도 장소 배치와 시설 주기</a></li>
+<li><a href="#five-minute-day-nov08">하루 5분과 징수 간격 상한</a></li>
+<li><a href="#tax-catalog-nov08">복수 세목·보스 격파·갱도 하늘</a></li>
+<li><a href="#open-mine-calendar-nov08">갱도 맵·자판기·달력·NPC 징수</a></li>
+<li><a href="#encounter-panel-nov08">하단 대화창·기어·검 잡기</a></li>
+<li><a href="#chapter-modules-nov08">챕터 전환과 편집용 엑셀</a></li>
+</ul></article>
+<article class="box"><h2>이전 작업</h2><ul>
+<li><a href="#payment-latest">코인 지불액 조정</a></li>
+<li><a href="#dispenser-latest">3D 학습 자판기 초기 연결</a></li>
+<li><a href="#npc-hero-latest">NPC 손 배치와 용사 이름</a></li>
+<li><a href="#choice-depth-latest">선택지 크기와 손 깊이</a></li>
+<li><a href="#layout-combat-latest">대사 영역과 결투 접촉</a></li>
+</ul></article>
+<article class="box"><h2>기존 기록과 참고</h2><ul>
+<li><a href="#status">이전 O/X 상태표</a></li>
+<li><a href="#inspector-current">기존 Inspector 수정 위치</a></li>
+<li><a href="#remaining">이전 후속 작업·필요 에셋</a></li>
+<li><a href="#screens">결과 화면</a></li>
+<li><a href="#verification">검증 기록</a></li>
+<li><a href="#cleanup">임시 작업 정리 기록</a></li>
+</ul></article>
+</div><section id="variable-room-layout-nov09" class="box">
+<h2>2026-11-09 청크별 건물 간격·장소 상한·갱도 바닥</h2>
+<table><tr><th>항목</th><th>상태</th><th>내용</th></tr>
+<tr><td>실제 건물 간격</td><td>O</td><td>일반 청크마다 기존 에셋의 건물 앞뒤 길이를 읽어 앞쪽 빈 길과 건물 사이 여유 공간을 계산합니다. 회차 시드와 청크 번호로 간격을 바꾸며, 현재 갱도와 해안은 최소 15유닛을 사용합니다. 같은 회차 시드와 설정으로 배치를 재현합니다.</td></tr>
+<tr><td>장소 수와 첫 상점</td><td>O</td><td>이야기·일반·특화 장소 예약을 합쳐 청크당 최대 4곳입니다. 첫 청크는 상점 예정지와 브룩·모아·틸로 구성하고, 네아·시아는 두 번째 청크에 배치합니다. 보스 직전 상점 예정지도 유지합니다.</td></tr>
+<tr><td>특화 장소</td><td>O</td><td>갱도 시험용 청크 3개를 유지합니다. 공통 시설 배치 후 빈 자리에 시드로 고른 특화 장소가 들어오며, 같은 특화 장소는 챕터에서 최대 한 번 배치합니다. 미선택 항목은 다음 회차의 후보에 남습니다.</td></tr>
+<tr><td>NPC·입출구·지도</td><td>O</td><td>갱도 이야기 건물과 입출구, NPC 후보, 미니맵 좌표가 함께 이동합니다. 징수원은 옮겨진 네아·시아 입출구까지 경로에 포함합니다. 해안에서는 지붕이 해당 건물을 따라갑니다.</td></tr>
+<tr><td>갱도 판자 바닥</td><td>O</td><td>기존 판자 윗면은 Y=-0.01, 청크 흙 표면은 Y=0이었습니다. 갱도 건물 프리팹 네 개의 <code>Floor_Planks</code>를 로컬 Y=0.03으로 옮겼습니다. 같은 오브젝트 아래에 있는 판자 메시와 콜라이더가 함께 올라갑니다.</td></tr>
+<tr><td>상점 거래 및 특화 장소 콘텐츠</td><td>X</td><td>상점 거래·품목·재고와 아직 에셋이 없는 특화 장소의 오브젝트·상호작용은 추가 자료 연결이 필요합니다. 재사용한 통로 건물은 배경이며, 지도에 표시되는 예약 시설은 별도 장소 데이터로 관리합니다.</td></tr></table>
+<p>다음 챕터는 <code>DecisionScene → EnvController → Ground Entries</code>에서 <code>Room Group</code>, 필요하면 <code>Room Companion Group</code> 및 <code>Room Source Ground Id</code>를 연결합니다. 상세 절차는 <a href="usage-guide.html">사용 안내</a>에 있습니다. 기존 갱도 진행 저장은 좌표 호환을 위해 원래 배치를 사용합니다. 새 배치는 새 회차에서 확인할 수 있습니다.</p>
+<p>메인 메뉴에서 시작한 격리 회차로 갱도 세 청크와 해안 청크를 불러왔습니다. 네아·시아의 건물과 NPC가 두 번째 청크에 배치되었고 징수원 문 좌표도 일치했습니다. 마지막 시험에서 갱도 장소 예약은 4·4·4곳, 특화 장소는 광부 모닥불과 환풍기 작업장 각 한 곳이었습니다. 시드 32개에서 재현성, 청크당 상한, 첫·보스 직전 상점과 특화 장소 중복 방지를 검사했습니다. 보스전까지의 전체 수동 플레이는 이번 검증에 포함되지 않았습니다.</p>
+<p>캡처 회차의 건물 사이 실제 빈 거리는 갱도 1청크 34.9·67.1, 2청크 19.0·24.2·20.0, 3청크 24.9·40.7, 해안 17.2·26.0유닛이었습니다. 해당 회차의 갱도 건물 10동에서 판자 윗면 Y=0.02를 확인했고, 위에서 아래로 검사했을 때 청크 흙보다 판자 콜라이더가 먼저 감지됐습니다.</p>
+<figure><img src="40-room-layout.png" alt="왼쪽부터 갱도 1·2·3청크와 해안 청크를 위에서 본 Unity 화면"><figcaption>왼쪽부터 갱도 1·2·3청크와 해안. 갈색 판자 바닥과 청크마다 다른 건물 간격을 확인할 수 있습니다.</figcaption></figure>
+<p>임시 검증 스크립트 <code>tmp/ChunkRoomLayoutReview.cs</code>와 격리 저장 폴더 <code>output/MineChapterReview/MenuSave-20261108-231929</code>, <code>MenuSave-20261108-232533</code>, <code>MenuSave-20261109-023751</code>, <code>MenuSave-20261109-023953</code>는 결과 확인 후 정리합니다.</p>
+</section><section id="shop-map-encounter-nov08" class="box">
+<h2>2026-11-08 상점 지도·징수 조우·선택지 탐색</h2>
+<table><tr><th>항목</th><th>상태</th><th>내용</th></tr>
+<tr><td>상점 위치와 지도</td><td>O</td><td>첫 청크의 상점을 다른 신규 시설 후보보다 앞에 예약하고, 보스 직전 예약을 유지합니다. 미니맵은 상점을 금색, 주요 시설 후보를 청록색으로 구분하며 전방의 가장 가까운 상점까지 Z축 거리를 표시합니다. 다음 상점이 지도 범위 밖에 있으면 아이콘을 가장자리에 표시합니다. 지도 좌표는 회차의 실제 예약 결과입니다.</td></tr>
+<tr><td>상점 거래·특화 시설 조건</td><td>X</td><td>합의한 범위는 위치·지도·거리입니다. 건물 상점, 수레, 광부 교환대별 에셋·품목·재고·가격과 새 특화 장소의 요구사항은 콘텐츠를 지정한 뒤 연결합니다. 첫 소비·보상과 실제 교환상 조우도 거래 연결 시 적용합니다.</td></tr>
+<tr><td>보스 진입과 기존 조작</td><td>기존 확인</td><td>180유닛 청크 3개 뒤 보스 청크와 3D 전투로 이어지는 기존 코드를 확인했습니다. 글자 15, 반투명 검회색 패널, 상하 기어 한 칸 이동과 마우스 버튼을 놓았을 때 중앙 복귀를 사용합니다.</td></tr>
+<tr><td>노동 중 징수</td><td>O</td><td>노동 중 징수원이 조우 범위에 들어오면 기존 징수 대화로 전환합니다. 순찰이 활성화된 노동 화면에 징수원 거리를 표시하며, 징수 대화 중에는 노동 시간을 멈추고 종료 후 노동 상태로 복귀합니다.</td></tr>
+<tr><td>겹침과 카메라</td><td>O</td><td>대화할 때 NPC와 겹치거나 목격 장면의 시선을 막는 징수원을 작은 원형 후보 위치에서 분리합니다. 대화 후에는 원래 순찰 위치로 복귀합니다. 플레이어 방향을 바꾸기 전 카메라 회전을 보존하고 기존 보간으로 다음 화자를 향합니다. 공간이 부족해 안전한 후보를 찾지 못하면 기존 위치를 사용합니다.</td></tr>
+<tr><td>선택지 탐색</td><td>O</td><td>한 화면에 최대 네 항목을 표시하고 기어로 순서대로 이동합니다. 앞이나 뒤에 더 있으면 목록 오른쪽에 ↑·↓를 표시합니다. 원래 번호와 확정 입력은 유지합니다.</td></tr></table>
+<p>수정 위치는 <code>JourneyMapMarkers</code>의 미니맵 표시, <code>MineCollectorProcession → Dialogue Clearance</code>의 최소 대화 거리, <code>FloatingDialogueView</code>의 선택지 패널입니다. 상점 간격과 후보 좌표 규칙은 기존 <code>Places.xlsx</code>를 사용합니다.</p>
+<p>최종 Unity 컴파일 오류 0개. 메인 메뉴에서 격리 회차를 시작해 첫 상점과 보스 직전 상점 예약, 지도 아이콘과 거리 2u를 확인했습니다. 여섯 항목을 표시하는 시험에서 첫 항목, 다섯 번째, 마지막 항목을 차례로 선택해 오른쪽에 ↓, ↑↓, ↑가 각각 나타나는 것을 확인했습니다.</p>
+<p>노동 중 징수원을 브룩과 겹치는 위치에서 시작시켜 징수 대화로 전환되는지 확인했습니다. 징수원은 1.50유닛 떨어진 후보로 이동했고, 대화가 표시되는 동안 노동 타이머가 60초에 머물렀습니다. 대화 종료 후 원래 순찰 위치와 노동 상태로 복귀했습니다. 이번 검증은 배치를 재현한 Play Mode 시험으로, 보스전까지 수동으로 다시 플레이하는 검증은 남아 있습니다.</p>
+<figure><img loading="lazy" src="38-shop-map-choices.png" alt="미니맵 오른쪽 아래의 다음 상점 아이콘과 상단의 거리 표시"><figcaption>미니맵의 금색 상점 아이콘과 다음 상점 예정지 2u 표시입니다.</figcaption></figure>
+<figure><img loading="lazy" src="39-labor-collector-spacing.png" alt="노동 도중 징수원 쪽으로 전환한 카메라"><figcaption>노동 도중 징수원으로 카메라를 전환한 모습입니다. 두 캡처에는 하단 대화 패널이 표시되지 않아 선택지 화살표와 징수 문구는 Play Mode UI 상태를 직접 읽어 확인했습니다.</figcaption></figure>
+<p>임시 검증 스크립트 <code>tmp/ShopEncounterReview.cs</code>와 격리 저장 폴더 <code>output/MineChapterReview/MenuSave-20261108-225219</code>, <code>MenuSave-20261108-225609</code>, <code>MenuSave-20261108-225825</code>, <code>MenuSave-20261108-230304</code>, <code>MenuSave-20261108-230524</code>는 결과 확인 후 정리합니다.</p>
+</section>
+<section id="mine-facility-layout-nov08" class="box">
+<h2>2026-11-08 갱도 장소 배치와 챕터 공통 규칙</h2>
+<table><tr><th>항목</th><th>O/X</th><th>적용 범위</th></tr>
+<tr><td>기존 50×180 청크와 첫 조우</td><td>O</td><td>이미 적용된 50×180 청크 세 개를 사용합니다. 첫 청크의 브룩·모아·틸·네아/시아 조우와 기존 좌표 및 순서는 그대로 사용합니다.</td></tr>
+<tr><td>공통 시설 주기</td><td>O</td><td>상점·교환상 1~3청크와 첫·보스 직전 청크, 금고·은행 첫 2~3청크 및 재등장 3~5청크, 숙소·휴식처 1~2청크, 일거리 중개인 1~3청크입니다. 다음 간격은 직전 등장 청크를 기준으로 고릅니다. 금고의 첫 위치는 지형 등록 시 출력되는 배치 예고에서 확인합니다.</td></tr>
+<tr><td>특화 장소</td><td>O</td><td>갱목 보수소, 환풍기 작업장, 등불지기, 광석 감정소, 폐갱 길잡이, 광부 공동식당, 갱도 진료소, 막장 패거리, 밀수 장터, 구조대 대기소, 광부 모닥불, 폐광의 작은 제단을 챕터당 각각 한 번 예약합니다. 이미지의 특화 재등장 주기 대신 본문의 챕터당 한 번 규칙을 적용했습니다.</td></tr>
+<tr><td>시드·간격·후보 제한</td><td>O</td><td>회차 시드로 좌우와 Z 위치를 정합니다. 기존 NPC와 다른 예약지로부터 수평 거리 최소 15유닛을 확보합니다. 요청 범위 12~15유닛의 상한을 최소 거리로 사용하고, 충돌하는 후보는 제외합니다. 상점·금고·숙소·중개인을 먼저 잡고 남는 후보를 채웁니다. 기존 조우와 주요 선택 후보 합계는 청크당 최대 4곳, 주요 선택 후보는 최대 2곳입니다. 추가 로그 예약지는 주요 선택 후보 수에 포함하지 않습니다.</td></tr>
+<tr><td>새 시설과 필수 조우 콘텐츠</td><td>X</td><td>새 좌표는 모두 로그 예약이며 상점·은행 등의 기능, 실제 중간 보스 직전 거래, 화면 안의 금고 예고, 2·3청크의 새 필수 조우는 에셋·내용 연결 후 추가합니다.</td></tr></table>
+<p>실제 편집본은 <code>Saves/ContentAuthoring/Places.xlsx → Data</code>입니다. <code>facilityRules</code>에서 유형·순위·등장 간격을, <code>facilitySpacing</code>에서 최소 간격을, <code>facilityMajorLimit</code>·<code>facilityOptionalLimit</code>에서 후보 상한을 편집합니다. 청크 길이와 개수는 기존 <code>Maps.xlsx</code>에서 관리합니다.</p>
+<p>Unity 컴파일 오류 0. 실제 편집본과 씬의 NPC 배치 데이터를 사용해 갱도 시드 128개에서 첫·마지막 상점, 금고 첫 범위, 특화 12곳, 기존 NPC를 포함한 최소 15유닛 간격, 청크별 선택 후보 수, 시드 재현성을 확인했습니다. 18청크씩 나눈 36청크 시험을 24개 시드로 실행해 에피소드 사이 재등장 간격과 특화 장소 중복 방지를 확인했습니다.</p>
+<p>간격 보정 전 메인 메뉴의 격리 회차에서 청크 세 개를 불러와 배치 예고와 위치 로그 21개를 확인했습니다. 최종 15유닛 값은 Unity의 실제 엑셀 로더와 배치 함수를 통해 다시 검증했습니다. 아래는 최종 시드 42의 좌표 예시입니다.</p>
+<table><tr><th>최종 배치 예시</th><th>청크</th><th>로컬 X, Z</th></tr>
+<tr><td>첫 상점·교환상</td><td>1</td><td>-15, 11.5</td></tr>
+<tr><td>환풍기 작업장</td><td>2</td><td>-15, 49.5</td></tr>
+<tr><td>금고·은행</td><td>3</td><td>15, 158.5</td></tr>
+<tr><td>보스 직전 상점·교환상</td><td>3</td><td>-15, 166.5</td></tr></table>
+<p>임시 검증 코드 <code>tmp/FacilityPlanReview.cs</code>와 격리 회차 <code>MenuSave-20261108-223818</code>는 결과 확인 후 정리 대기입니다.</p>
+</section>
+<section id="five-minute-day-nov08" class="box">
+<h2>2026-11-08 하루 5분과 징수 간격 14일 상한</h2>
+<table><tr><th>항목</th><th>O/X</th><th>적용 값</th></tr>
+<tr><td>게임 하루</td><td>O</td><td>총 300초. 낮 135초, 해 질 무렵 15초, 밤 135초, 해 뜰 무렵 15초. 이전 시간 비율을 유지합니다.</td></tr>
+<tr><td>징수 일정</td><td>O</td><td>2 → 3 → 5 → 7 → 14일. 20·30·60일 제거. 보스를 4회 이상 격파한 뒤에도 간격은 14일입니다. 첫 징수까지 게임 시간 2일은 실제 진행 시간 약 10분입니다.</td></tr>
+<tr><td>징수 금액</td><td>O</td><td>간격의 상한과 별도로 기존 세액 규칙을 적용합니다. 격파당 25%p씩 늘고 7회 이상에서 기본액의 275%로 제한합니다.</td></tr>
+<tr><td>기존 저장</td><td>O</td><td>기존 600초 기준 경과 시간의 날짜와 시간대 비율을 300초 기준으로 변환합니다. 저장된 주기 길이를 기록해 재실행 시 반복 변환하지 않습니다. 짧아진 주기로 인해 이미 잡힌 더 가까운 징수일이 늦어지지 않습니다.</td></tr></table>
+<p><code>Saves/ContentAuthoring/Rules.xlsx</code>의 <code>dayCycle</code>과 <code>TaxCatalog.xlsx</code>의 <code>intervalDays</code>, <code>maximumBurdenTier</code>에서 변경합니다. Saves 편집본과 배포용 기본 파일을 갱신했습니다. Unity의 실제 엑셀 로더에서 300초 경계, 기존 저장 변환 후 재로드, 14일 상한, 세액 7단계 상한을 검사했습니다. 메인 메뉴 Play는 이번 수치 변경에서 다시 실행하지 않았습니다. 새 임시 검사 파일은 없습니다.</p>
+</section>
+<section id="tax-catalog-nov08" class="box">
+<h2>2026-11-08 복수 세목, 보스별 징수 주기, EmacEArt 갱도 하늘</h2>
+<table><tr><th>항목</th><th>O/X</th><th>동작</th></tr>
+<tr><td>세목 등록과 고지</td><td>O</td><td>공통과 갱도 세목 14개를 <code>TaxCatalog.xlsx</code>에 등록했습니다. 활성 세목 9개 중 서로 다른 2~3개를 뽑습니다. 갱도 활성 세목이 있으면 적어도 1개를 포함합니다. 징수 날짜와 회차 시드로 고지서를 확정하고, 세목별 금액·발행 주체·합계를 같은 패널에 표시합니다.</td></tr>
+<tr><td>세금 유형</td><td>O</td><td>인두세는 종류를 섞어 배정하고, 자유세는 한 종류로 전액을 배정합니다. 공납은 고지 시 능력 1종을 지정합니다. 능력세는 고지 시 가장 많이 보유한 능력 코인의 10개당 1개를 요구하며 1~9개면 1개, 동률이면 힘·속도·지능·매력 순을 사용합니다. 전세·토지세, 요역·부역, 군역, 길눈세, 채굴세는 표에 지정된 능력 코인을 요구합니다.</td></tr>
+<tr><td>납부와 저장</td><td>O</td><td>고정 비용을 먼저 확보하고, 자유세·인두세 배정을 이어갑니다. 배정과 되돌아가기는 잔액을 바꾸지 않습니다. 전체 비용을 확인한 뒤 한 번에 차감하고 고지서 종결과 함께 저장합니다. 부족할 때 기존 설득·결투로 대응할 수 있습니다.</td></tr>
+<tr><td>격파 기록과 일정</td><td>O</td><td>첫 순찰은 경과 2일 뒤에 시작합니다. 보스 ID를 회차에 중복 없이 기록하며, 현재 갱도 보스 승리와 이후 챕터 전환이 이 기록을 저장합니다. 새 단계는 다음 고지서에 적용하고 기존 고지서는 보존합니다. 순찰을 피했을 때도 미납 고지서가 다음 순찰에 이어집니다. 달력은 <code>D-2</code> 또는 <code>D-DAY</code>를 표시합니다.</td></tr>
+<tr><td>회색 하늘</td><td>O</td><td>EmacEArt 재질에서 해의 원반 색이 하늘색과 함께 변하게 하고 광륜을 끕니다. 이전에는 원반의 검은색이 하늘에 합성됐습니다. <code>Rules.xlsx</code>의 낮 0.34·밤 0.12를 밝기 계산에 사용합니다.</td></tr>
+<tr><td>미확정 조건</td><td>X</td><td>숨세·울림세의 주석 조건, 그림자세 면제, 직업세의 주력 능력, 반출세 신고 기준이 확정될 때까지 징수 추첨에서 제외합니다. 추가 중간·챕터·최종 보스 콘텐츠 및 보스 간 실제 세금 송금은 후속입니다. 현재 고지 발행 주체는 갱도 감독관입니다.</td></tr></table>
+<h3>격파 수별 주기와 금액</h3>
+<table><tr><th>서로 다른 보스 격파 수</th><th>0</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7 이상</th></tr>
+<tr><td>간격 (게임 일)</td><td>2</td><td>3</td><td>5</td><td>7</td><td>14</td><td>20</td><td>30</td><td>60</td></tr>
+<tr><td>기본 금액 대비</td><td>100%</td><td>125%</td><td>150%</td><td>175%</td><td>200%</td><td>225%</td><td>250%</td><td>275%</td></tr></table>
+<p>세목별 합계를 <code>올림(기본 합계 × (1 + 단계 × 0.25))</code>로 계산합니다. 고정 복수 코인은 종류별 내림값을 만든 다음, 소수점 부분이 큰 종류에 남은 개수를 배분해 세목 합계를 맞춥니다. 이미지 금액이 기본값입니다. 게임 하루는 10분입니다.</p>
+<h3>수정하는 곳</h3>
+<p><code>Saves/ContentAuthoring/TaxCatalog.xlsx → Data → Value</code>에서 <code>intervalDays</code>, <code>increasePerTier</code>, <code>minimumLevies</code>, <code>maximumLevies</code>, <code>levies</code>를 편집하고 게임을 다시 시작합니다. 기존 <code>Taxes.xlsx</code>는 준비 이동·NPC 정지와 조우 거리용입니다. 옛 단일 세금 시험값은 이 고지서 계산에 쓰이지 않습니다.</p>
+<p><code>DecisionScene → Decision_Manager → Chapter Skybox / Chapter Sun / Chapter Calendar</code>에서 씬 참조를 수정합니다. 밝기와 하루 구간 길이는 <code>Rules.xlsx → dayCycle</code>입니다.</p>
+<h3>검증 결과와 게임 화면</h3>
+<p>Unity 컴파일 오류 0. 격리된 새 회차에서 <code>TaxCatalog.xlsx</code>의 세목 14개·활성 9개를 읽었습니다. 120개 시드에서 2~3개 구성, 중복 방지, 갱도 세목 포함, 1단계 증액을 검사했습니다. 공납의 한 종류 지정, 능력세 25개 보유 시 2개와 1~9개 보유 시 1개를 확인했습니다.</p>
+<p>검증 도구로 게임 시간을 경계에 맞춰 경과 2일 전에는 순찰이 없고 2일에 첫 순찰과 고지서가 저장되는 것을 확인했습니다. 5초 시험 재등장을 제거한 뒤 경과 4일의 다음 순찰까지 미납 고지서가 유지됐습니다. 고지서와 지갑을 실제 저장 파일로 다시 읽었습니다. 자유세를 지능으로, 인두세를 힘·매력으로 나눠 배정해 확정 전 잔액 유지와 확정 후 한 번 차감을 확인했습니다. 잔액 부족과 고지서로 돌아가기에서도 차감되지 않았습니다.</p>
+<p>중간 보스는 테스트 ID로 기록 경로를 검사했습니다. 중복 ID는 무시됐고, 격파 1회 후 다음 간격이 3일로 바뀌었습니다. 기존 갱도 보스 승리 저장 경로를 호출했을 때 갱도 보스 ID를 포함해 해안까지 저장됐습니다. 장시간 대기와 보스전 수동 완주는 미검증입니다.</p>
+<p>갱도 전용 <code>MineGraySky.mat</code>의 <code>Exposure</code>는 2.2입니다. 원래 EmacEArt 데모 재질과 셰이더는 이 변경에서 수정하지 않았습니다. 실제 Saves의 새 엑셀만 추가했습니다.</p>
+<figure><img src="37-tax-invoice.png" alt="갱도 감독관의 세 세목과 합계 7개, D-DAY 달력"><figcaption>첫 징수 고지서. 길눈세·능력세·요역/부역의 합계 7개가 표시됩니다.</figcaption></figure>
+<figure><img loading="lazy" src="35-tax-calendar-day.png" alt="해 원반이 없는 낮의 회색 하늘과 D-2 달력"><figcaption>첫날. 밝은 해 원반 없이 어두운 회색 하늘과 달력의 낮 아이콘이 보입니다.</figcaption></figure>
+<figure><img loading="lazy" src="36-tax-calendar-night.png" alt="더 어두운 밤의 갱도 하늘과 달 아이콘"><figcaption>밤. 더 어두운 하늘과 달 아이콘이 보입니다.</figcaption></figure>
+<p>임시 검증 도구 <code>tmp/TaxCollectionReview.cs</code>와 격리 저장 <code>MenuSave-20261108-213807</code>, <code>MenuSave-20261108-213957</code>, <code>MenuSave-20261108-214533</code>는 결과 확인 후 정리 대기입니다.</p>
+</section>
+<section id="open-mine-calendar-nov08" class="box">
+<h2>2026-11-08 갱도 180 Open, v5 달력·자판기, NPC별 징수</h2>
+<table><tr><th>단계</th><th>O/X</th><th>적용 범위와 이유</th></tr>
+<tr><td>갱도 패키지 정리</td><td>O</td><td><code>Assets/AiAsset/MineChunkModularPack180Open</code> 아래로 원본 GUID를 보존해 옮겼습니다. 바닥·암벽·보강목·레일·등불 환경을 50×180 마을·통로 프리팹에 연결했습니다. 기존 네 장소의 건물과 NPC 앵커, 이야기 연결, 보스 청크의 진행 순서를 보존했습니다. 동봉 장소 프리팹 12개는 패키지 폴더에서 확인할 수 있습니다.</td></tr>
+<tr><td>v5 자판기</td><td>O</td><td>패키지 에셋이 프로젝트에 이미 같은 바이트로 들어 있는 것을 확인했습니다. 기존 모델 연결을 유지해 1920×1080 기준 화면 폭 423·높이 490에 맞췄습니다. 본체 하단 뷰포트 Y=0.523, 기존 코인통 상단 Y=0.484. 네 코인통 입구와 버튼이 보입니다.</td></tr>
+<tr><td>달력</td><td>O</td><td>파란 표시 위치에 제공된 <code>DeskCalendar.prefab</code>을 배치하고 갱도 시계에 연결했습니다. 시작일은 프리팹 예시의 1005-01-01을 기본값으로 사용합니다. 시간은 다음 날까지의 분·초를 표시하며 낮·밤에 해·달 아이콘이 전환됩니다.</td></tr>
+<tr><td>징수원 준비 이동·낮밤</td><td>O</td><td><code>MineCollectorProcession</code>이 청크 끝에서 첫 입구 바깥 준비 지점까지 거리÷25초로 이동합니다. 지점 도착 이후 기존 정렬과 대기는 별도입니다. 낮 270초, 해 질 무렵 30초에 감속, 밤 270초 정지, 해 뜰 무렵 30초에 가속을 적용했습니다.</td></tr>
+<tr><td>플레이어와 NPC 징수 순서</td><td>O</td><td>플레이어와 마주치면 현재 대화 위에 징수원 대사·통행세 합계·대납 선택을 표시합니다. 납부 후 기존 대화를 복원하고 징수원은 진행 방향의 실제 NPC 위치에서 각각 2~4초 정지합니다. 플레이어가 해당 NPC 가까이에 있으면 징수원과 NPC 두 줄을 표시합니다. 같은 정지에서 중복 표시하지 않으며 멀면 시간 지연만 적용합니다.</td></tr>
+<tr><td>후속 범위</td><td>X</td><td>잠드는 애니메이션과 야간 전용 대형, NPC 잔액 차감, 복수 세목·최종 징수 주기, 새 장소 12개의 거래·이야기는 미작업입니다. 다음 날까지의 달력 표시와 최종 징수 예정일은 별도입니다.</td></tr>
+</table>
+<h3>Inspector와 엑셀 수정 위치</h3>
+<table><tr><th>대상</th><th>수정 위치</th></tr>
+<tr><td>새 갱도 환경</td><td><code>DecisionScene → EnvController → Ground Entries</code>의 <code>mine_village_180</code>, <code>mine_passage_180</code>. 챕터의 청크 순서와 길이는 <code>Maps.xlsx</code>.</td></tr>
+<tr><td>자판기</td><td><code>DecisionScene → LearningDispenser → Transform</code>. 입력 참조와 배출 경로는 <code>Learning Dispenser View</code>.</td></tr>
+<tr><td>달력</td><td><code>DecisionScene → DeskCalendar → Transform</code>에서 위치·크기, <code>CalendarFace → Countdown → Text Mesh</code>에서 글자 크기. <code>Decision_Manager → Chapter Calendar / Calendar Start Date</code>에서 참조·시작일.</td></tr>
+<tr><td>징수 이동·낮밤</td><td><code>Taxes.xlsx</code>의 준비 시간·NPC 대기 최솟값/최댓값·조우 거리, <code>Rules.xlsx</code>의 하루 주기. Unity의 <code>MineCollectorProcession → Stops / Gathering Distance</code>에서 준비 지점과 통과 경로를 바꿉니다. NPC 실제 위치는 <code>MineNPCPlacement → Places</code>의 스폰 좌표를 사용합니다.</td></tr>
+</table>
+<h3>검증 기록과 실제 화면</h3>
+<p>Unity 컴파일 오류 0. 실제 메인 메뉴의 시작 버튼에서 별도 검증 회차를 시작했습니다. 새 지면과 기존 네 장소의 앵커를 확인했습니다. 씬과 같은 경로를 0.05초 간격으로 진행해 준비 지점 25.00초와 여덟 NPC 정지를 확인했습니다. 정지 시간은 3.24, 2.28, 3.34, 2.39, 3.44, 2.49, 3.54, 2.59초였습니다.</p>
+<p>실행 중 시계를 밤과 다음 날로 옮겨 야간 정지·달 아이콘·날짜 증가를 확인했습니다. 징수 조우는 검사 도구로 NPC 앞 상태를 재현했습니다. 플레이어에게 통행세 1개를 먼저 받고, 도르의 반응을 보여 준 다음 같은 NPC 대사가 반복되거나 코인이 다시 차감되지 않았습니다. 멀리 있는 플레이어에게는 대사가 뜨지 않았습니다. 축소한 자판기의 파란 버튼 좌표에서 입력 영역을 맞히고 책 1개가 생성되는 것도 확인했습니다. 전체 청크 수동 이동과 보스전은 이번 검증 범위 밖입니다.</p>
+<figure><img src="31-open-mine-calendar.png" alt="새 갱도 바닥과 배치된 낮 달력, 423×490 자판기"><figcaption>갱도와 기존 네 장소를 연결한 플레이 화면. 달력은 표시 위치, 자판기는 코인통 위에 배치했습니다.</figcaption></figure>
+<figure><img loading="lazy" src="32-mine-calendar-night.png" alt="밤 상태 달력과 달 표시"><figcaption>밤의 달 표시와 다음 날까지 남은 시간.</figcaption></figure>
+<figure><img loading="lazy" src="33-collector-player-priority.png" alt="플레이어에게 먼저 표시되는 징수원 통행세 대사와 납부 선택지"><figcaption>플레이어 조우 시 우선 표시되는 통행세와 대납 선택지.</figcaption></figure>
+<figure><img loading="lazy" src="34-collector-npc-witness.png" alt="납부 이후 가까운 도르의 징수 반응"><figcaption>플레이어 납부 후 가까운 NPC의 반응. 검증용으로 두 위치를 붙여 재현한 장면입니다.</figcaption></figure>
+<p>임시 씬 적용·검증 도구 <code>tmp/ApplyOpenMineAndCalendar.cs</code>, <code>tmp/OpenMineReview.cs</code>와 격리 저장 <code>MenuSave-20261108-183257</code>, <code>MenuSave-20261108-183727</code>, <code>MenuSave-20261108-184018</code>는 결과 확인 후 정리 대기입니다. 실제 회차는 검증에 사용하지 않았습니다.</p>
+</section>
+<section id="encounter-panel-nov08" class="box">
+<h2>2026-11-08 하단 대화창, 기어, 징수 대사, 검 잡기</h2>
+<p>첫 번째 이미지의 오른쪽 시안을 기준으로 플레이 화면 안 NPC 아래쪽에 공통 패널을 배치했습니다. 기존 챕터·엑셀 작업 기록은 아래에 이어집니다.</p>
+<table><tr><th>단계</th><th>상태</th><th>변경 내용·확인 방법</th></tr>
+<tr><td>일반 대화와 선택지</td><td>O</td><td><code>FloatingDialogueView</code>의 기존 uGUI 패널을 재사용합니다. 대사만 있을 때 발화자와 문장을 가운데 정렬합니다. 선택지가 열리면 현재 발화와 번호가 붙은 선택지를 한 상자에 배치합니다. 선택지는 왼쪽 정렬, 선택 줄에는 ▶ 표시를 사용합니다. 배경 너비와 높이는 글 길이에 맞게 계산합니다.</td></tr>
+<tr><td>기어</td><td>O</td><td><code>JourneyBoardInput</code>이 선택 모드에서 위·아래만 읽습니다. 선택은 1번에서 시작하고 첫 줄과 끝 줄에서 멈춥니다. 한 번 밀면 한 줄, 기어를 중앙으로 되돌리거나 놓아야 다시 이동합니다. 노란 버튼으로 확정합니다.</td></tr>
+<tr><td>장소 대화 종료</td><td>O</td><td>이전 상단 창의 ‘다시 말 걸기’와 ‘다음 장소로 이동’을 같은 하단 패널과 기어 조작으로 연결했습니다.</td></tr>
+<tr><td>징수 대사</td><td>O</td><td>플레이어 조우 시 “세금 걷을 시간이다.”와 현재 요구 코인 종류·액수·대납 선택을 함께 표시합니다. 징수원이 NPC 앞에서 멈춘 동안 플레이어와 조우하면, 가장 가까운 장소 NPC에게 징수하는 대사와 NPC 반응을 먼저 한 줄씩 보여 줍니다. 납부 후 중단된 NPC 선택으로 돌아갑니다.</td></tr>
+<tr><td>검 손잡이 클릭</td><td>O</td><td><code>DuelMouseHandController</code>의 <code>SwordSelection</code>이 검 메시 범위를 사용해 가드·손잡이·끝 장식도 클릭할 수 있게 합니다. 결투의 칼날 접촉 판정은 별도입니다.</td></tr>
+<tr><td>징수 후속 규칙</td><td>X</td><td>복수 세목의 합산, NPC의 실제 자원 차감과 세금 주기 변경은 후속 항목입니다.</td></tr>
+</table>
+<h3>Inspector에서 수정하는 위치</h3>
+<table><tr><th>대상</th><th>설정</th></tr>
+<tr><td><code>DecisionScene → FloatingDialogue</code></td><td><code>Floating Dialogue View</code>의 <code>Panel Anchor</code> 기본 (0.5, 0.08), <code>Font Size</code> 15, <code>Background</code>, <code>Border Color</code>, <code>Text Color</code>, <code>Choice Minimum Width Fraction</code> 0.5, <code>Choice Width Fraction</code> 0.65. 위치는 플레이 화면 기준 비율입니다.</td></tr>
+<tr><td><code>DecisionScene → JourneyBoardInput</code> 컴포넌트 검색</td><td><code>Choice Step Pixels</code> 기본 14픽셀. 중앙 재입력 범위는 이 값의 35%입니다.</td></tr>
+<tr><td><code>DecisionScene → DuelMiniGame</code></td><td>검 클릭 상자는 <code>DuelMouseHandController</code>가 결투 입장 후 <code>Hand → Sword → SwordSelection</code>에 생성합니다. 검 모델 크기를 따라갑니다.</td></tr></table>
+<p>임시 검사 도구 <code>tmp/EncounterPanelReview.cs</code>와 격리 회차 <code>MenuSave-20261108-165734</code>, <code>MenuSave-20261108-170142</code>는 결과 확인 후 정리 대기입니다.</p>
+<h3>검증 결과와 게임 화면</h3>
+<p>Unity 컴파일 오류 0. 메인 메뉴 시작 버튼으로 격리 회차에 진입했습니다. 브룩의 대사 단독 가운데 정렬, 발화와 4개 선택지의 동시 표시, 수평 이동 무시, 아래 입력 유지 시 한 줄, 중앙 복귀 후 재입력, 위 한 줄 복귀를 확인했습니다. NPC 징수 일시 정지 상태를 검사 도구로 만든 뒤 두 대사와 플레이어 납부 문구·금액을 확인했습니다. 납부 뒤 중단된 2번 선택을 복원했고 장소 종료 선택지 두 개도 같은 패널에서 확인했습니다.</p>
+<p>결투 입장 후 실제 검 모델의 끝 장식·손잡이·가드에 각각 화면 좌표로 레이를 쏴 새 클릭 상자가 맞는 것을 확인했습니다. 해당 충돌체의 Unity <code>OnMouseDown</code> 메시지가 손을 잡는 것도 확인했습니다. 물리 마우스 클릭과 전체 결투 수동 플레이는 미검증입니다. 기존 플레이 저장은 검사에 사용하지 않았습니다.</p>
+<figure><img src="28-lower-dialogue.png" alt="브룩 아래쪽의 대사와 번호 선택지"><figcaption>브룩의 대사와 4개 선택지. 기어를 한 칸 이동한 뒤 2번이 선택된 상태.</figcaption></figure>
+<figure><img loading="lazy" src="29-collector-dialogue.png" alt="징수원 대사, 세금 종류와 액수, 대납 선택지"><figcaption>징수원 대사와 납부 선택이 같은 패널에 표시됩니다.</figcaption></figure>
+<figure><img loading="lazy" src="30-revisit-dialogue.png" alt="같은 하단 패널의 장소 대화 종료 안내"><figcaption>장소 대화 종료 후 다시 말 걸기와 다음 장소로 이동.</figcaption></figure>
+</section>
+<section id="chapter-modules-nov08" class="box">
+<h2>2026-11-08 챕터 모듈과 엑셀 적용</h2>
+<p>기본 경로는 50×180 갱도 청크 3개 → 50유닛 보스 청크 → 3D 전투 스테이지 1 → 승리 후 해안 50×120입니다. 해안 맵은 <code>Chapter_Coast</code>에 따로 등록했습니다. 해안에는 제공된 맵만 배치되어 있으며 이야기와 NPC 추가가 남아 있습니다.</p>
+<table><tr><th>작업</th><th>O/X</th><th>적용·검증 내용</th></tr>
+<tr><td>엑셀 적용과 복구</td><td>O</td><td>기본 xlsx 10개에서 JSON 문서 13개와 이야기 102개를 읽습니다. 정상 검증 뒤 <code>AppliedContent.json</code>을 교체합니다. 깨진 Books.xlsx로 이전 정상본이 복구되는 것을 검증했습니다. 파일·시트·행 형식 오류와 누락된 이야기·분기 ID를 검사합니다.</td></tr>
+<tr><td>실제 Saves 편집 파일</td><td>O</td><td><code>C:/Users/유영선/AppData/LocalLow/DefaultCompany/OneWayInVc/Saves/ContentAuthoring/</code>에 초기 파일을 생성했습니다. 게임을 완전히 다시 실행하면 편집값이 반영됩니다. 격리 검증에서 속도 책 보상 2→7 편집값을 실제 학습 작업에 적용했습니다.</td></tr>
+<tr><td>챕터 순서와 보스 결과</td><td>O</td><td>Chapters.xlsx의 챕터 순서·에피소드·bossStage로 진행합니다. 보스 승리 시 다음 챕터 ID와 진입 좌표를 같은 회차에 저장합니다. 패배 또는 마지막 챕터는 기존 회차 종료 흐름을 사용합니다. 해안 연결과 메뉴 재진입을 실제 씬에서 확인했습니다.</td></tr>
+<tr><td>180유닛 시험 청크 3개</td><td>O</td><td>기존 마을의 건물·NPC 위치를 유지하고 환경 메시만 Z 방향 1.5배로 늘린 마을 1개와 통로 2개를 사용합니다. 갱도 끝 Z=540, 보스 청크 끝과 해안 시작 Z=590을 검증했습니다.</td></tr>
+<tr><td>시설 자리 계획</td><td>O</td><td>회차 Seed를 사용해 시설 예정 위치를 계산합니다. 상점은 첫 청크 첫 위치와 마지막 청크를 확보하고, 반복 간격 1~3청크를 사용합니다. 갱도 특화 시설은 유형별 한 번, 같은 청크의 시험 최소 간격은 12유닛입니다. 청크 생성 때 Console에 위치를 기록합니다.</td></tr>
+<tr><td>상점·금고·휴식처 등 실제 시설</td><td>X</td><td>예정 위치는 O. 상점 거래·재고, 시설 오브젝트와 NPC, 지도 표지와 다음 상점 거리, 일반 장소 요구사항과 특수 장소 미니게임의 유형별 연결이 남아 있습니다.</td></tr>
+<tr><td>v3 자판기 배치</td><td>O</td><td>제공 프리팹의 네 버튼과 네 황동 투입구 사용. 본체 하단 뷰포트 Y=0.4918, 코인통 상단 Y=0.4838로 측정. 기존 버튼 입력과 v3 책 배출·흰 보드 드롭을 실제 게임에서 확인했습니다.</td></tr>
+<tr><td>책과 학습 기본 흐름</td><td>O</td><td>책 ID·이름·읽기 요구 지능·비용·시간·보상과 대기 용량을 엑셀에서 읽습니다. 새 책은 배출구에서 기다리고 보드 위에 놓을 때부터 학습합니다. 책 이름 호버, 머리 위 게이지, 책 ID·보드 좌표 저장을 확인했습니다.</td></tr>
+<tr><td>학습 추가 규칙</td><td>X</td><td>투입구 리필 기능과 당일 증가 비용, 책 생성 시간 분리, 학습 실패 확률과 콤보, 지능 구간별 최종 용량·일일 학습량·능력 감소, 가방 보관과 읽기 전용 애니메이션이 남아 있습니다. 현재 시험값은 비용 1, 보상 2, 책별 학습 5초, 배출 0.6초, 동시 1·대기 5입니다.</td></tr>
+<tr><td>낮밤·징수원 기본 이동</td><td>O</td><td>낮 270초, 해 질 무렵 30초, 밤 270초, 해 뜰 무렵 30초. EmacEArt 기반 갱도 회색 하늘과 조명 변화 적용. 징수 이동은 낮 기준 속도에서 해 질 때 감속, 밤 정지, 해 뜰 때 가속합니다. 준비 이동 속도 기준 25초이며 실제 정렬·대기 시간은 별도입니다. 최종 검증에서 NPC 지점의 대기 2.13초가 2~4초 범위에 드는 것을 확인했습니다.</td></tr>
+<tr><td>징수 최종 흐름</td><td>X</td><td>여러 세목의 합산, 보스 처치 수별 일 단위 주기와 강도, 후속 청크 경로, NPC·플레이어 징수 전용 대사 및 별도 구도는 미완료입니다.</td></tr>
+<tr><td>대사·선택지와 카메라</td><td>O</td><td>글자 15와 반투명 검회색 박스, 현재 지원하는 2~4개 선택지 번호 목록, 선택된 줄 표시. 기어를 놓으면 외형이 중앙으로 복귀하고 확정할 선택은 유지됩니다. NPC 카메라 회전과 FOV 보간을 적용했습니다.</td></tr>
+<tr><td>추가 화면·해안 수면</td><td>X</td><td>화면 밖 선택지 화살표·4개 초과 탐색과 징수원·NPC 겹침 회피 구도는 미작업입니다. AQUIS는 제공 후 해안 수면에 적용할 예정입니다.</td></tr></table>
+
+<h3>엑셀과 수정 위치</h3>
+<table><tr><th>파일</th><th>관리 범위</th></tr>
+<tr><td>Chapters.xlsx</td><td>챕터 순서, 시작·종료 범위, 에피소드 ID, 적용 규칙과 보스 스테이지.</td></tr>
+<tr><td>Maps.xlsx</td><td>에피소드별 지형 ID, 청크 개수와 길이.</td></tr>
+<tr><td>Places.xlsx</td><td>장소 정의·위치, 스폰 후보, 시설 예정 위치 규칙.</td></tr>
+<tr><td>NPCs.xlsx</td><td>인물 ID, 이름·역할·공개 및 숨은 설정.</td></tr>
+<tr><td>Story.xlsx</td><td>이야기 등록 ID, 대사 원문, 의미와 생성 설명.</td></tr>
+<tr><td>Choices.xlsx</td><td>선택지 문구, 연결 분기, 지불액·성공·실패 효과.</td></tr>
+<tr><td>Rules.xlsx</td><td>하루 시간·밝기, 노동·휴식·경주 등 챕터 규칙.</td></tr>
+<tr><td>Taxes.xlsx</td><td>징수액·대납, 준비 이동과 NPC 대기 시간.</td></tr>
+<tr><td>Books.xlsx</td><td>책 ID·이름·능력·지능 조건·비용·시간·보상.</td></tr>
+<tr><td>Learning.xlsx</td><td>학습·대기 용량, 랜덤 시간 범위와 배출 시간.</td></tr></table>
+<p>Data 시트의 노란 Value 열을 편집합니다. 구조 키는 Document·Field·Type이며 <code>#0</code>부터 배열 인덱스가 연속됩니다. 원본 프리팹은 Unity의 <code>EnvController → Ground Entries</code>에 먼저 등록해야 합니다. 엑셀에서 새 지형을 참조할 때는 등록된 ID를 입력합니다. 회차·기록 파일과 편집 원본은 Saves 아래에서 분리합니다. 프리팹·씬·재질과 자동 저장되는 회차 상태는 기존 형식을 사용하며, 아래 엑셀은 콘텐츠 편집용입니다.</p>
+<table><tr><th>Unity 설정</th><th>수정 위치</th></tr>
+<tr><td>자판기 배치</td><td>DecisionScene → LearningDispenser → Transform. Model 아래 PressButton·CoinSlot, Learning Dispenser View → Overlay Anchors·Outlet Path·Book Board.</td></tr>
+<tr><td>하늘과 조명</td><td>DecisionScene → DecisionManager → Chapter Skybox(MineGraySky)·Chapter Sun(Directional Light). 시간과 밝기 수치는 Rules.xlsx.</td></tr>
+<tr><td>대사</td><td>DecisionScene → FloatingDialogue → Floating Dialogue View → Font Size(15), Background(0.12, 0.13, 0.14, 0.82), Text Color.</td></tr>
+<tr><td>학습 표시</td><td>LearningDispenser → Learning Dispenser View → Book Hover Label, Student Head, Learning Meter, Learning Fill. Seated Player의 LearningMeterAnchor에서 머리 위 위치를 조정합니다.</td></tr></table>
+
+<h3>검증 방법과 결과</h3>
+<p>Unity 메인 메뉴에서 새 격리 회차를 시작했습니다. 실제 보스와 해안 전환 검증에서는 테스트 도우미로 에피소드 끝에 이동하고 전투 씬의 보스 처치 기능을 호출했습니다. 3청크를 손으로 완주하거나 전투를 수동 플레이한 검증과 구분합니다. 최종 기본 데이터의 해안 체크포인트는 Chapter_Coast, Z=590입니다. 이전 검증용 설정에서도 메뉴 재진입으로 해안이 복원됐습니다. 기존 실제 회차는 검증용으로 사용하지 않았습니다.</p>
+<p>책은 배출구에서 20초를 진행시켜도 남은 시간이 유지됐고, 보드 배치 뒤 게이지가 감소했습니다. 보드 좌표와 책 ID는 배치 직후 디스크 저장을 다시 읽어 확인했습니다. 실제 학습 종료 후 속도 잔액은 4→6으로 증가했습니다. 최종 컴파일 오류 0. 마지막 콘솔에는 구버전 Unity Pipeline의 CLI 명령 이름 불일치 오류 1건과 경고 1건이 표시됐습니다. 해당 CLI 호출은 이 버전에서 지원하는 명령으로 다시 실행했습니다. 격리 Play 모드를 종료하고 기본 저장 경로와 Play 설정을 복원했습니다.</p>
+<figure><img src="24-dispenser-v3.png" alt="v3 자판기 버튼과 투입구, 네 코인통"><figcaption>v3 모델과 네 코인통.</figcaption></figure>
+<figure><img loading="lazy" src="25-coastal-after-boss.png" alt="갱도 보스 전투 후 해안 진입"><figcaption>기본 3청크 경로의 보스 승리 후 해안 진입.</figcaption></figure>
+<figure><img loading="lazy" src="26-night-learning.png" alt="밤의 갱도와 보드 위 책, 학습 게이지"><figcaption>밤의 갱도에서 보드 위 책 학습.</figcaption></figure>
+<figure><img loading="lazy" src="27-dialogue-ordered.png" alt="반투명 배경의 대사와 번호 목록 선택지"><figcaption>브룩 대사와 네 선택지를 번호 순서로 표시.</figcaption></figure>
+<p>실행에 필요한 엑셀 원본은 <code>Assets/StreamingAssets/ContentAuthoring</code>, 재현 도구는 <code>AgentScripts/StoryWorkbook/build-authoring.mjs</code>에 유지합니다. 임시 도우미 <code>tmp/ConfigureDispenserV3.cs</code>, <code>tmp/ApplyChapterPresentation.cs</code>, <code>tmp/ConfigureMineTrialTerrain.cs</code>, <code>tmp/ContentModuleReview.cs</code>는 씬 적용·격리 검증용이며 Git 제외 상태로 결과 확인 후 정리 대기입니다. 검증 저장 <code>AuthoringQA</code>, <code>AuthoringValidationQA</code>, <code>MenuSave-20261108-014938</code>, <code>MenuSave-20261108-015437</code>, <code>MenuSave-20261108-020019</code>(재컴파일 중 초기화 실패), <code>MenuSave-20261108-020321</code>(재검증 통과)도 이 보고서 폴더에 별도 보관합니다.</p>
+</section><div class="box"><b>이 페이지에서 작업 현황·수정 위치·남은 작업을 함께 확인합니다.</b><p>아래는 청크 1의 네 장소와 보스 준비 청크를 작업했던 이전 기록입니다. 조우 UI·손 배치와 제공된 3D 학습 자판기 연결까지 반영했습니다. O는 해당 범위 구현 완료, X는 미작업 또는 최종 수치 미확정입니다. 시험값은 별도로 표시합니다.</p><p>게임 실행은 <code>Assets/Scenes/MainMenuScene.unity</code> → Play → 시작 버튼. 콘텐츠 등록·수식·상세 절차는 같은 폴더의 <a href="usage-guide.html">사용 설명서</a>에서 확인할 수 있습니다.</p></div><section id="payment-latest" class="box"><h2>최신 수정 — 코인 지불액 절반·홀수 올림</h2>
+<p>2026-11-06 사용자 요청. 지불액은 ceil(기존 금액 ÷ 2). 1은 1, 0은 0입니다. 각 경로의 원래 금액을 따로 절반으로 줄였으며 경로별 차이는 유지했습니다.</p>
+<table><tr><th>작업 계획·항목</th><th>O/X</th><th>결과</th></tr>
+<tr><td>이야기 지불액</td><td>O</td><td>Terrain.json의 능력 지불 선택지 60개. 실제 차감·잔액 부족 판정·NPC 수령은 변경된 비용 데이터 사용.</td></tr>
+<tr><td>대사·선택 문구·의미 설명</td><td>O</td><td>Story.json과 Explanation.json의 비용 숫자도 동일한 올림 기준으로 축소. 코인 명칭이 생략된 금액과 ‘동전’ 표기 포함.</td></tr>
+<tr><td>징수·대납</td><td>O</td><td>최종 금액 = ceil((기본 징수량 + 완료 장소 수) × 대납 배율 × 0.5). 곱셈을 마친 뒤 한 번만 올림. 안내와 차감이 같은 함수 사용.</td></tr>
+<tr><td>학습비</td><td>O</td><td>기존 1 → 1. 초기 잔액·학습 보상·활동 보상·피해량은 변경하지 않음.</td></tr>
+<tr><td>검증·문서</td><td>O</td><td>60개 비용 비교, 지불 외 액션 데이터 유지, 대사·선택지·재현 빌더 검사 통과. 메인 메뉴 진입 후 브룩 지불 분기를 도우미로 열어 기존 선택/확인 경로로 속도 5→0 차감 확인. 모든 장소를 다시 수동 완주한 검사는 아님.</td></tr></table>
+<h3>이전 → 현재 금액</h3><table><tr><th>기존</th><th>현재</th></tr><tr><td>1</td><td>1</td></tr><tr><td>4</td><td>2</td></tr><tr><td>5</td><td>3</td></tr><tr><td>6</td><td>3</td></tr><tr><td>7</td><td>4</td></tr><tr><td>8</td><td>4</td></tr><tr><td>10</td><td>5</td></tr><tr><td>12</td><td>6</td></tr><tr><td>15</td><td>8</td></tr><tr><td>20</td><td>10</td></tr></table>
+<p>징수(완료 장소 0~4개): 지정 코인 [1,2,3,4,5] → [1,1,2,2,3], 다른 코인 [2,4,6,8,10] → [1,2,3,4,5]. 올림 때문에 최종 요구량 비율이 정확히 2배가 아닐 수 있어 대납 안내는 선택지의 실제 금액을 표시합니다.</p>
+<h3>다시 수정할 곳</h3><p>이야기: <code>Assets/Decision_YYS/Resources/Chapters/Chapter_01/Terrain.json → actions → choiceRules → abilityCost</code>. 실제 금액을 직접 입력하며 이미 절반 적용된 값입니다. 여기에 다시 자동 반값을 곱하지 않습니다. 문구는 같은 챕터의 <code>Chapter_01_01/FirstMeetings/Story.json</code>, 의미 설명은 <code>Explanation.json</code>에서 함께 수정합니다.</p>
+<p>징수: <code>Assets/Decision_YYS/Resources/Chapters/Chapter_01/Rules.json → taxCostScale=0.5</code>. 기본량 baseTax=1, 대납 배율 alternatePaymentMultiplier=2 유지. 이 값은 Inspector 컴포넌트가 아닌 JSON 설정입니다. 학습비 Inspector는 DecisionScene → _UI/Decision_Canvas/Decision_UI_Root/LearningStation → Mine Learning Station → Costs=[1,1,1,1]입니다.</p>
+<p>재현 도구 <code>AgentScripts/BuildMineChapter.py</code>에도 승인된 수치 변환을 반영했습니다. 이미 수정한 출력 JSON에 재차 변환하는 것이 아니라 원문에서 생성할 때 한 번 적용합니다. 이번 작업에서 새 임시 코드는 만들지 않았습니다. 격리 검증 저장 <code>output/MineChapterReview/MenuSave-20261106-005045</code>, <code>output/MineChapterReview/MenuSave-20261106-005357</code>는 결과 확인 후 정리 대기입니다. 기존 임시 코드 대기 상태는 아래 기록을 유지합니다.</p>
+<p>최종 컴파일·Console 오류 0, 기존 경고 1. 정상 저장과 Play 설정 복원. <a href="payment-halving-check.json">금액별·선택지별 변경과 검증 기록</a></p>
+<figure><img src="23-payment-half.png" alt="속도 코인 5개 지불 선택"><figcaption>실제 게임: 브룩의 속도 코인 지불이 기존 10개에서 5개로 감소. 확인 입력 후 속도 잔액 5→0을 검증했습니다.</figcaption></figure></section><section id="dispenser-latest" class="box">
+<h2>최신 작업 — 제공된 3D 학습 자판기 연결</h2><p>2026-11-05. LearningDispenserPrototype_v1 패키지를 기존 프로젝트의 AiAsset에 정리하고, 참고 이미지처럼 네 코인 공급통 위에 임시 배치했습니다.</p>
+<table><tr><th>계획·작업</th><th>O/X</th><th>결과</th></tr>
+<tr><td>패키지 확인·AiAsset 정리</td><td>O</td><td>동일한 기존 에셋을 GUID 보존 이동. 위치: <code>Assets/AiAsset/LearningDispenserPrototype</code>. Static 프리팹 사용.</td></tr>
+<tr><td>이미지 기준 임시 배치</td><td>O</td><td>기존 네 코인 공급통 위에 네 능력 열 정렬. 왼쪽 대기 통로·하단 배출부 포함. 공급통은 기존 오브젝트 유지.</td></tr>
+<tr><td>초기 빈 대기열·실제 학습 표시</td><td>O</td><td>프리팹의 장식용 39개 큐 타일·낙하 샘플 숨김. 새 게임은 빈 큐. 저장된 작업이 있으면 실제 작업 수만 복원 표시.</td></tr>
+<tr><td>버튼·배출·보상 연결</td><td>O</td><td>기존 MineLearningStation의 비용·시간·보상·저장 유지. 네 UI 버튼을 모델 버튼에 맞춰 연결. 등록 시 큐 타일, 학습 시 배출 책 표시.</td></tr>
+<tr><td>검증·수정 방법 문서화</td><td>O</td><td>메뉴 시작, 네 버튼 Raycast, 1개 진행·5개 대기, 만석 추가 차감 방지, 정지 시 시간 유지, 실제 프레임의 +2 보상·FIFO·표시 개수 확인.</td></tr>
+<tr><td>최종 자판기 외형·학습 성장 구간</td><td>X</td><td>제공 모델을 임시 사용. 최종 아트와 지식별 동시 학습·큐 용량 수치는 사용자 확정 후 적용.</td></tr></table>
+<h3>Inspector에서 수정하는 곳</h3><p>씬: <code>Assets/Scenes/DecisionScene.unity</code>. Play 종료 후 값을 수정하고 씬을 저장하세요.</p>
+<table><tr><th>수정 대상</th><th>Hierarchy → 컴포넌트·필드</th><th>현재 값·방법</th></tr>
+<tr><td>자판기 위치·크기</td><td><code>LearningDispenser → Transform</code></td><td>Position=(4.042904,-4.999969,0.392273), Rotation=(30,0,0), Scale=(0.868950,0.868950,0.868950). 루트 이동 시 버튼·숫자는 앵커를 따라감. 아래 기존 공급통 위치는 별도.</td></tr>
+<tr><td>대기열 시작·간격</td><td><code>LearningDispenser → Learning Dispenser View → Queue Bottom / Queue Step</code></td><td>연결된 QueueBottom의 로컬 Position=(-2,0.25,-0.25). Queue Step=(0,0.126,0). 큐 개수는 실제 대기 수를 사용하며 미리 채우지 않음.</td></tr>
+<tr><td>배출 경로·학습 책 쌓기</td><td><code>LearningDispenser → Learning Dispenser View → Outlet Path / Active Step</code></td><td>OutletPoint_0~3을 Scene에서 이동. 로컬 좌표 (-2,0.25,-0.3) → (-2,-0.35,-0.35) → (-2,-1,-0.4) → (-2,-1.55,-0.3). Active Step=(0,0.32,0).</td></tr>
+<tr><td>책·큐 외형</td><td><code>LearningDispenser → Learning Dispenser View → Queued Tile Prefab / Learning Book Prefabs</code></td><td>AiAsset의 ScheduledTile, LearningBook_0~3 사용. 네 능력 순서: 힘·속도·지능·매력.</td></tr>
+<tr><td>버튼·숫자·시간 위치</td><td><code>LearningDispenser → Learning Dispenser View → Overlays / Overlay Anchors</code></td><td>모델의 PressButton, BalanceAnchor, StatusAnchor, TimerAnchor 위치를 수정. 표시 UI는 LearningDispenserOverlay 아래. RectTransform 위치는 앵커 추종으로 매 프레임 갱신됨. 글자 크기는 해당 TMP의 Font Size 수정.</td></tr>
+<tr><td>용량·비용·보상·시간</td><td><code>_UI / Decision_Canvas / Decision_UI_Root / LearningStation → Mine Learning Station</code></td><td>Capacities: 지식 0부터 동시 1·대기 5. Costs=각 1, Rewards=각 2(시험값). Minimum/Maximum Seconds=5, Random Duration=꺼짐, Delivery Seconds=0.6. 통로 연출도 이 시간을 공유.</td></tr></table>
+<h3>코드와 검증 범위</h3><p><code>MineLearningStation</code>이 기존 경제·FIFO·저장을 담당하고 <code>LearningDispenserView</code>는 실제 작업을 3D로 표시합니다. 기존 평면 책 표시는 Show Flat Books=꺼짐. 새 학습 시스템이나 별도 재화를 만들지 않았습니다. <code>AssetBuild/LearningDispenser/BuildLearningDispenser.cs</code>는 에셋 재현 도구로 유지하며 새 AiAsset 경로를 사용합니다.</p>
+<p>분리된 검증 저장으로 실행. 초기 잔액 [5,5,5,5] → 6개 등록 [4,3,3,4] → 속도 학습 완료 [4,5,3,4]. 다음 지능 학습·대기 4개와 표시 일치. 정지 검사는 Station.Tick의 stop 인자 경로로 확인했으며, 이번에 모든 미니게임을 다시 완주한 검사는 아닙니다. 최종 Console 오류 0, 기존 경고 1. 정상 저장·Play 설정 복원.</p>
+<p><a href="dispenser-check.json">검증 기록</a> · <a href="usage-guide.html#dispenser-model">사용 설명서</a></p>
+<figure><img src="21-dispenser-empty.png" alt="게임 시작 시 빈 학습 대기열"><figcaption>시작 상태: 왼쪽 큐는 비어 있고, 모델은 기존 공급통 위에 정렬됩니다.</figcaption></figure>
+<figure><img loading="lazy" src="22-dispenser-queue.png" alt="학습 한 개와 대기 다섯 개"><figcaption>등록 후: 실제 대기 5개만 쌓이고 첫 학습 책이 왼쪽 아래로 배출됩니다.</figcaption></figure>
+<p>임시 작업 코드: <code>AgentScripts/ConnectLearningDispenser.cs</code> — 씬 연결·검증용, Git 제외, 2026-11-07 삭제 완료. 실행에 필요한 LearningDispenserView와 에셋 재현 도구는 유지합니다. 분리 검증 저장 2개(MenuSave-20261105-013747, MenuSave-20261105-014450)도 2026-11-07 삭제 완료.</p>
+</section><details><summary>이전 작업: NPC 손 배치·용사 이름</summary><section id="npc-hero-latest" class="box"><h2>최신 수정 — 사용자 NPC 손 배치·용사 이름</h2><p>2026-11-04. Play 모드의 DuelNpcHand 배치를 읽어 NPC 기준점에 적용했습니다. 플레이어 손 설정은 유지했습니다.</p><table><tr><th>계획·항목</th><th>O/X</th><th>결과</th></tr><tr><td>사용자 Play 배치 기록</td><td>O</td><td>NPC Position=(-3.37,-5.69,1.546619). 이동·공격 기준점에 이 위치와 기록한 회전 적용. <code>npc-hand-user-pose.json</code> 보존.</td></tr><tr><td>플레이어 손 유지</td><td>O</td><td>조작 Z=-0.78, Held Forward Offset=0.9782 유지. 최초 검 배치·크기·입력 감도 유지.</td></tr><tr><td>NPC 조정 후 입력 방어 검사</td><td>O</td><td>Input System 합성 마우스로 검 클릭·마우스 이동·우클릭 가드 유지. 일반 Update·Animator·실제 칼날 접촉에서 방어 성공. NPC 루트 Z≈1.546619, 플레이어 루트 Z≈-0.78.</td></tr><tr><td>선택지 이름·방향</td><td>O</td><td>선택 중·확정 후 플레이어 발화 이름을 “용사”로 표시. 좌상·좌하·우상·우하 등의 방향 문구 생략. 기어의 선택 매핑과 노란 진행 버튼 입력은 유지.</td></tr><tr><td>전투 전체·모든 타이밍형 패링</td><td>X / 이번 미검증</td><td>이번 확인은 베기/가드 입력 흐름. 모든 공격과 승패를 사람이 수동 완주한 검증은 아님.</td></tr></table><p><b>Inspector:</b> DecisionScene → _Systems / DuelMiniGame → Npc Duel State Machine → Vertical Attack Pose의 연결 오브젝트 <code>NpcVerticalAttackPose</code>. 이동 깊이는 Duel Authoring References → Npc Hand Patrol Pose의 연결 오브젝트. 두 NPC 기준점의 Position=(-3.37,-5.69,1.546619). 플레이어는 Duel Mouse Hand Controller → Held Forward Offset=0.9782.</p><p>손 리그와 애니메이션의 로컬 칼날 오프셋이 달라 두 손 루트의 Z가 달라도 실제 칼날은 접촉할 수 있습니다. 현재 검증한 배치를 기준으로 조절하며 루트 Z만 강제로 같게 맞추지 마세요.</p><p>검증: 선택지에 용사 표시·방향 생략, 배경 자동 크기·하단 위치 유지, NPC 새 위치에서 입력 방어 성공. 컴파일·Console 오류 0. 기존 groundPrefab 경고 1개 유지. 새 에셋 없음.</p><p><a href="npc-hand-user-pose.json">사용자 NPC 배치</a> · <a href="npc-adjusted-input-check.json">새 NPC 배치 입력 방어</a> · <a href="hero-label-check.json">용사·방향 생략 확인</a></p><figure><img src="20-hero-choice.png" alt="용사 이름과 방향 없는 선택지"><figcaption>선택지에는 용사와 문장만 표시. 위치·문장별 배경 크기는 유지합니다.</figcaption></figure><figure><img loading="lazy" src="19-npc-depth-guard.png" alt="사용자 NPC 위치에서 방어 입력 검사"><figcaption>사용자가 옮긴 NPC 손 배치로 입력 방어를 확인한 시점입니다.</figcaption></figure><p>검사는 별도 저장과 임시 합성 마우스로 수행했고 원래 입력 설정을 복원했습니다. 임시 도우미 <code>AgentScripts/UIEncounterRevision.cs</code>는 2026-11-04 사용자 요청으로 삭제 완료했습니다.</p></section></details><details><summary>이전 단계: 플레이어 깊이·선택지 배경 검사</summary><section id="choice-depth-latest" class="box"><h2>최신 수정 — 선택지 자동 크기·하단 배치·손 깊이</h2><p>2026-11-04. 사용자가 Play 모드에서 조정한 DuelPlayerHand의 Z=-0.78을 기록해 적용했습니다. 이전 접촉 검사는 손 위치를 직접 정렬한 검사였으며, 이번에는 마우스 입력 경로를 추가 검증했습니다.</p><table><tr><th>단계·항목</th><th>O/X</th><th>수정·확인 내용</th></tr><tr><td>실행값 조사·보존</td><td>O</td><td>플레이어 손 (-3.766666,-5.95,-0.78) 기록. X/Y는 마우스로 이동하는 값, Z를 조작 기준에 저장.</td></tr><tr><td>선택지 배경 자동 크기</td><td>O</td><td>현재 줄바꿈된 Rect 너비 대신 제한 없는 문장 너비를 먼저 측정. 화면 너비 × Choice Width Fraction까지 가로 확대, 초과 시 줄바꿈·세로 확대. 좌우 여백 각 12로 측정·실제 글자 영역을 일치.</td></tr><tr><td>표시한 하단 중앙 배치</td><td>O</td><td>Player Area Anchor Min=Max=(0.5,0.12), Pivot=(0.5,0.5), Anchored Position=(0,0). 별도 확인 버튼 없음. 기어 선택·노란 버튼 확정 유지.</td></tr><tr><td>플레이어 손 깊이 되돌림</td><td>O</td><td>Held Forward Offset=0.9782 → 기사 Z(-1.7582)+0.9782=-0.78. 이전 1.035282 조작 평면에서 사용자 지정 깊이로 변경.</td></tr><tr><td>NPC 공격 접근</td><td>O</td><td>NpcVerticalAttackPose=(-3.37,-5.69,-0.78). 이동 중 NpcHandPatrolPose는 Z=1.035282 유지하고 공격 준비 때 플레이어 쪽 깊이로 접근. 기존 애니메이션·공격 간격·충돌 규칙 유지.</td></tr><tr><td>일반 마우스 입력 경로의 방어</td><td>O</td><td>Input System 합성 마우스 장치로 실제 클릭 → 검 잡기 → delta 이동 → 우클릭 가드 유지. 일반 Update·Animator·실제 칼날 접촉에서 AttackBlocked=true. 손 Transform 직접 배치·공격 시점 강제 샘플링 없이 통과.</td></tr><tr><td>모든 공격·타이밍형 쳐내기·승패 완주</td><td>X / 이번 미검증</td><td>이번 입력 검사는 베기/가드 한 흐름의 방어 성공까지. 모든 패턴의 수동 플레이 완주를 뜻하지 않음.</td></tr></table><p>선택지 크기 검사: 짧은 문장 너비 120 / 안내 문장 190.6 / 긴 문장 최대 673.4에서 줄바꿈·높이 86.01. 세 경우 모두 글자가 배경 안에 들어오는 것을 확인했습니다. 최종 컴파일 오류 0·Console 오류 0, 기존 groundPrefab 경고 1개 유지.</p><p><a href="choice-sizing-check.json">짧은·보통·긴 문장 검사</a> · <a href="mouse-defense-check.json">일반 입력 경로 방어 검사</a> · <a href="hand-depth-user-pose.json">사용자 Play 배치 기록</a></p><p>입력 검사는 별도 저장·임시 합성 마우스로 수행했습니다. 에디터 포커스에 막히지 않도록 입력 설정을 메모리 복제했으며 검사 후 원본 설정·장치를 복원했습니다. 물리 마우스를 사람이 조작해 완주한 검사와 구분합니다. 새 에셋 없음. 임시 도우미는 기존 <code>AgentScripts/UIEncounterRevision.cs</code>를 이어 사용했고 삭제 완료 상태입니다.</p><figure><img src="17-choice-lower-fit.png" alt="문장에 맞춘 선택지 배경과 하단 중앙 위치"><figcaption>표시한 하단 중앙으로 이동. 안내 문장은 불필요하게 마지막 글자만 줄바꿈하지 않으며 배경이 문장 길이에 맞춰 늘어납니다.</figcaption></figure><figure><img loading="lazy" src="18-mouse-guard.png" alt="마우스 이동과 우클릭으로 칼날 방어"><figcaption>플레이어 손 Z=-0.78에서 일반 입력 경로로 방어 성공한 시점. NPC는 공격할 때 해당 깊이로 접근합니다.</figcaption></figure></section></details><details><summary>이전 단계: 중앙 선택·기존 깊이 접촉 검사 기록</summary><section id="layout-combat-latest" class="box"><h2>2026-11-04 최신: 대사 영역·중앙 선택·결투 접촉</h2><table><tr><th>계획·작업</th><th>O/X</th><th>적용·확인</th></tr><tr><td>실행 중 사용자 NPC 손 위치 기록</td><td>O</td><td>DuelNpcHand=(-3.37,-5.69,1.035282), 회전=(7.965,92.381,273.146). 위치·회전 JSON 기록 후 기준점에 저장.</td></tr><tr><td>대사 영역 이동</td><td>O</td><td>플레이 화면 오른쪽, 왼쪽 맞춤. NPC Area 앵커 Min=(0.62,0.58), Max=(0.92,0.97). Message Gap=12. 폰트 12·문장별 배경·상승·페이드 유지.</td></tr><tr><td>선택지 중앙·확인 버튼 제거</td><td>O</td><td>Player Area 앵커와 Pivot=(0.5,0.5), Position=(0,0). 배경이 문장 길이로 변해도 중앙 유지. 별도 확인 버튼은 비활성화. 기어 선택 → 기존 노란 진행 버튼 확정.</td></tr><tr><td>NPC 이동·공격 기준점 수정</td><td>O</td><td>NpcHandPatrolPose와 NpcVerticalAttackPose에 사용자 NPC 손 배치 적용. 기존 이동 곡선·공격 애니메이션·판정 규칙 유지. 손을 잡은 후 실제 위치 변화 확인.</td></tr><tr><td>양쪽 칼날의 깊이 일치</td><td>O</td><td>기존 공격 기준점 Z=-1.65와 플레이어 조작 평면이 달랐던 부분 수정. 공격/이동 기준점 Z=1.035282. Held Forward Offset=2.793483 → 기사 Z(-1.7582)+오프셋=1.035282.</td></tr><tr><td>실제 칼날 방어 접촉</td><td>O</td><td>원래 Slash·Guard 애니메이션 사용. 설정된 깊이를 유지하며 플레이어 손 X/Y만 조정해 실제 칼날 BoxCollider 접촉 검사. CheckDefenseContact에서 AttackBlocked=true, 방어 성공·접점 효과 확인. 충돌 크기·피해·판정 코드는 변경하지 않음.</td></tr><tr><td>선택 비용 글자 표시</td><td>O</td><td>현재 폰트에 없는 수학 마이너스 대신 일반 하이픈(-)을 표시해 네모 글자 경고 방지.</td></tr><tr><td>전투 전체 승패·찌르기 쳐내기 전체 검증</td><td>X / 이번 미검증</td><td>이번 검사는 이동·베기/가드의 실제 3D 접촉을 대상으로 함. 모든 패턴·타이밍·승패를 수동 플레이로 완주한 의미는 아님.</td></tr></table><p>핵심 코드 변경: <code>FloatingDialogueView</code>의 대사 왼쪽 정렬·간격·확인 버튼 숨김·가운데 선택 표시, <code>DecisionManager.Encounters</code>의 비용 문자. 결투 수정은 기존 씬 기준점과 Inspector 값에 적용했습니다. 새 에셋 없음.</p><p><a href="layout-choice-check.json">중앙·확인 버튼 검사</a> · <a href="duel-movement-check.json">실제 NPC 이동</a> · <a href="duel-contact-check.json">3D 접촉·방어 성공</a> · <a href="duel-user-adjusted-pose.json">사용자 실행 중 배치 기록</a></p><p>최종 컴파일 오류 0·Console 오류 0. 기존 groundPrefab 미지정 경고 1개 유지. 검증은 메인 메뉴 시작·별도 저장으로 수행. 접촉 검사는 원본 애니메이션 시점을 샘플링하고, 설정 깊이에서 X/Y만 조절한 개발용 검사입니다. 사용자의 기존 저장에는 적용하지 않았습니다.</p><figure><img src="15-choice-center.png" alt="오른쪽 대사와 중앙 선택지"><figcaption>오른쪽 대사 영역, 플레이 화면 중앙의 선택 문장. 별도 확인 버튼 없음.</figcaption></figure><figure><img loading="lazy" src="16-duel-contact.png" alt="실제 칼날 접촉과 방어 효과"><figcaption>사용자 배치에 맞춘 NPC 공격과 플레이어 가드의 실제 접점 효과. 검사 시점의 화면입니다.</figcaption></figure></section></details><h2 id="status">작업 현황</h2><p>O는 명시된 기능까지 적용, X는 미작업·후속 범위입니다.</p><div class="table"><table><tr><th>항목</th><th>O/X</th><th>현재 내용·남은 부분</th></tr>
+<tr><td>NPC 대사·플레이어 선택 UI</td><td>O</td><td>화면 안의 불투명 박스·폰트 12. 문장별 배경 너비·높이, 기본 유지 6초·페이드 1.2초. 이전 대사는 위로 이동·소멸. 대사는 지정한 오른쪽 영역에서 왼쪽 정렬. 선택은 표시한 하단 중앙, 문장 길이에 따른 가로·세로 자동 크기, 별도 확인 버튼 없음. 기어·노란 진행 버튼 연결.</td></tr><tr><td>학습 자판기·대기열·저장</td><td>O</td><td>초기 동시 1 / 대기 5 / 5초. FIFO 배출, 비용 1·완료 2 시험값. 이동·대화 중 진행, 요구·미니게임 중 정지 후 재개.</td></tr><tr><td>지식별 학습·대기 용량 / 랜덤 시간</td><td>O</td><td>인스펙터 단계표·시간 범위로 조절. 추가 지식 구간 수치는 미정(X).</td></tr><tr><td>지도 위치·징수 접근 표시</td><td>O</td><td>건물·NPC·플레이어·징수원 마크, 실제 좌표 투영, 분홍 경고 영역·거리·방향.</td></tr><tr><td>앉은 플레이어</td><td>O</td><td>사용자 실행 중 위치·회전·Scale 0.5 저장. X Bot@Sitting Idle 반복. 전용 Avatar 기준 자세를 T 자세로 보정해 양손이 무릎 앞으로 향함. 결투 생성 시 숨김, 정리 후 복원.</td></tr><tr><td>메인 메뉴 시작</td><td>O</td><td>MainMenuScene → 기존 시작 버튼 → DecisionScene.</td></tr>
+<tr><td>갱도 청크·네 장소</td><td>O</td><td>MineChunkModularPack, 길이 120. 브룩·도르 / 모아·피코 / 틸·벨라 / 네아·시아.</td></tr>
+<tr><td>이야기·선택·비용 데이터</td><td>O</td><td>102개 이야기 노드, 발화 카드 332개, 유료 선택 60개 경로. Story / Explanation / Terrain 행동 규칙을 조합.</td></tr>
+<tr><td>고정 대사·첫 만남</td><td>O</td><td>도르 “켄타우로스라고? 진짜 다리가 네 개라고?” 반영. 소문과 네아·시아의 첫 만남은 고정.</td></tr>
+<tr><td>NPC 8명 외형</td><td>O</td><td>제공된 Chunk1StoryNPCPack_Appearance_URP를 AiAsset으로 이동하고 장소별 연결.</td></tr>
+<tr><td>실제 접근·위치 편집</td><td>O</td><td>플레이어가 문을 거쳐 실제 이동. MineNPCPlacement의 장소별 후보 5개 중 선택. 같은 회차 Seed로 위치 복원.</td></tr>
+<tr><td>카메라</td><td>O</td><td>NPC 중앙 정렬·결투 전신 표시·대화 후 +Z 정면 복귀. 1인칭 카메라에서 자기 몸과 검 제외.</td></tr>
+<tr><td>보드 기사·검·손</td><td>O</td><td>기사 크기 0.5. 양쪽 손 시작점 Z=-0.9582, 기사 Z보다 0.8 앞. 잡은 뒤 깊이는 기사 위치 + Held Forward Offset(0.9782) = -0.78. NPC 이동·공격 기준점은 사용자 배치 Z=1.546619. 실제 칼날 접촉으로 방어 확인. 검 클릭 시 양손 표시·기존 조작 연결.</td></tr>
+<tr><td>지불·부족 분기·저장</td><td>O</td><td>능력 차감·NPC 수령 기록·중복 방지. 부족한 지불 시도는 잠금 대신 이야기·결투로 진행.</td></tr>
+<tr><td>노동·경주·동전·피로</td><td>O</td><td>대기·능력 증감·승패·강제 휴식과 기존 보드 연결. 수치는 사용 설명서에 기록.</td></tr>
+<tr><td>징수원 이동·대형·징수</td><td>O</td><td>임시 3~5명. 초기 4→3→2→1, 이후 1→2→3→4. 바깥 가로 이동, 문 앞 일렬, 출구 가로 정렬 후 3초 대기. 조우 후 전진. 징수 대사·선택은 일반 NPC UI와 동일.</td></tr><tr><td>징수 후 퇴장·재등장</td><td>O / 시험값</td><td>청크 끝에서 숨김 → 5초 후 끝에서 4→3→2→1 입장 재시작. 대기 상태 저장. 숨은 동안 지도 마크·접근 경고 없음.</td></tr><tr><td>최종 징수원 재등장 주기</td><td>X</td><td>추후 확정. 현재 Return Delay Seconds=5초 시험값.</td></tr>
+<tr><td>보스 청크·지도 표시</td><td>O</td><td>BossRevealMapPack 사전 로딩. 마지막 장소에서 지형·Boss1 표시. 지도 전방 오프셋 10, Orthographic Size 24.</td></tr>
+<tr><td>Boss1 대기·포효</td><td>O</td><td>중앙 배치, 균일 Scale 약 7.37. 기존 Idle 11.3초 / Sword_Shout 6.2초 반복, 발 높이 보정.</td></tr>
+<tr><td>일반 NPC·징수원 애니메이션</td><td>X</td><td>외형은 연결했으나 리그·대기·걷기·대화 클립 미연결. 징수원 애니메이션은 사용자 지시로 보류.</td></tr>
+<tr><td>노동·휴식·경주·NPC별 결투 연출</td><td>X</td><td>전용 동작·리그 연결 필요. 경주는 게이지, 결투 보드는 공통 기사·손 표현 사용.</td></tr>
+<tr><td>카르덴 전투·징수 실전 강화</td><td>X</td><td>현재 Boss1은 미리보기. 보스전·패턴·강화 적용은 후속 범위.</td></tr>
+<tr><td>전용 성장 미니게임·나이·능력 유지·NPC 성장</td><td>X</td><td>시간형 학습과 이동 병행은 적용. 별도 성장 미니게임, 나이·유지·NPC 성장 반영은 미작업.</td></tr>
+<tr><td>신분 통행료·코인 전체 통합</td><td>X</td><td>신분 가중치는 제안식만 존재. 기존 물리 공급·베팅 전체의 완전 통합 미작업.</td></tr>
+<tr><td>갱도 하늘·로컬 AI 품질 검증</td><td>X</td><td>EmacEArt_sky 미적용. 실제 로컬 모델의 기분별 대사 품질 인증 미실행.</td></tr>
+<tr><td>전체 모듈화·콘텐츠 완전 자동 추가</td><td>X</td><td>현재 JSON·프리팹·인스펙터 연결 방식. 청크 1 전용 조건과 네 장소·두 배우 기준이 남아 있음.</td></tr></table></div>
+<h2 id="inspector-current">수정 가능한 Inspector 위치</h2><p><b>Assets/Scenes/DecisionScene.unity</b>를 열고 Hierarchy에서 아래 오브젝트를 선택하세요. 검색창에 마지막 오브젝트 이름을 입력해도 찾을 수 있습니다. 영구 적용은 <b>Play 종료 → 값 수정 → 씬 저장</b> 순서입니다. Play 중 값 변경은 종료 시 되돌아갑니다.</p><div class="table"><table><tr><th>수정 항목</th><th>Hierarchy 경로</th><th>컴포넌트·필드</th><th>현재 값·방법</th></tr><tr><td>앉은 병사 위치·크기</td><td>KnightCharacter_Copy_Exam</td><td>Transform / Position, Rotation, Scale</td><td>Position=(-6.77601, -7.400184, 0.731844), Rotation Y=167.5517, Scale=(0.5,0.5,0.5). 실행 중 사용자 배치를 저장.</td></tr><tr><td>앉기 리그·애니메이션</td><td>KnightCharacter_Copy_Exam</td><td>Animator / Avatar, Controller</td><td>SeatedKnightAvatar / SeatedKnight. 원본 X Bot@Sitting Idle의 Sitting Idle 반복. Avatar 기준 자세를 보정했으며 원본 FBX·전투 모델은 유지.</td></tr><tr><td>대사 크기·표시 수·페이드</td><td>_UI / Decision_Canvas / Decision_UI_Root / Encounter_Display / Event_View / Walking_View_Back / Walking_View / FloatingDialogue</td><td>Floating Dialogue View / Font Size, Visible Messages, Slide Seconds, Hold Seconds, Fade Seconds, Message Gap, Choice Width Fraction</td><td>12 / 3 / 0.3초 / 6초 / 1.2초 / 간격 12 / 선택 최대 너비 비율 0.65. 문장 길이에 따라 배경 너비·높이를 계산하고 최대 영역을 넘는 긴 문장은 줄바꿈.</td></tr><tr><td>대사·선택 영역 위치</td><td>_UI / Decision_Canvas / Decision_UI_Root / Encounter_Display / Event_View / Walking_View_Back / Walking_View / FloatingDialogue</td><td>Floating Dialogue View / Npc Area, Player Area → 연결된 RectTransform</td><td>Npc Area: Min=(0.62,0.58), Max=(0.92,0.97). Player Area: Anchor Min=Max=(0.5,0.12), Pivot=(0.5,0.5), Position=(0,0). 연결된 RectTransform을 수정. 문장 배경은 실행 중 자동 크기 조절.</td></tr><tr><td>징수원 대형·속도·재등장</td><td>MineTaxCollectors</td><td>Mine Collector Procession / Return Delay Seconds, Row Wait Seconds, Arrival Speed, March Speed, Spacing, Stops</td><td>재등장 시험값 5초 / 출구 정렬 대기 3초 / 초기 이동 3 / 진행 이동 0.25 / 간격 1.2. Stops=네 장소 입출구. 최종 재등장 주기 X·미정.</td></tr><tr><td>플레이어 검 시작점</td><td>_Systems / DuelMiniGame / PlayerHandRestPose</td><td>Transform / Position, Rotation</td><td>현재 (-0.7,-7.51,-0.9582). 손 전체 생성 기준점이므로 검 자식만 옮기지 않기.</td></tr><tr><td>NPC 검 시작점</td><td>NpcHandRoot</td><td>Transform / Position, Rotation</td><td>현재 (-5.36,-7.72,-0.9582). 보드 기사 Z=-1.7582보다 +Z 앞쪽 0.8.</td></tr><tr><td>손을 잡은 뒤 조작 깊이</td><td>_Systems / DuelMiniGame</td><td>Duel Mouse Hand Controller / Held Forward Offset</td><td>현재 0.9782. 조작 평면 Z = 기사 Z(-1.7582)+이 값=-0.78. 플레이어 설정 유지. NPC 이동·공격 기준점 Z=1.546619. 리그별 칼날 오프셋이 달라 루트 Z를 같게 강제하지 않음.</td></tr><tr><td>전투 손 참조·이동 궤적</td><td>_Systems / DuelMiniGame</td><td>Duel Authoring References / Player Hand Start Pose, Npc Hand Start Pose, Npc Hand Patrol Pose; Npc Duel State Machine / Screen Path, Vertical Attack Pose</td><td>최초 검 시작점은 위 참조. Npc Hand Patrol Pose: Position=(-3.37,-5.69,1.546619). Npc Duel State Machine의 Vertical Attack Pose: Position=(-3.37,-5.69,1.546619). 회전은 (7.965,92.381,273.146). 실행 중 손은 복제본이므로 이 기준점을 수정. Screen Path는 이동 곡선 X/Y를 조절.</td></tr><tr><td>보드 플레이어</td><td>_Systems / DuelMiniGame</td><td>Duel Mini Game Bridge / Setup Controller → Tutorial Mini Game Controller / Knight Scale, Knight Spawn Pose</td><td>연결된 KnightCharacter_Copy 기준 위치 (-2.95,-7.895,-1.7582), 크기 0.5. 손 위치를 옮겨도 기사 크기는 유지.</td></tr><tr><td>학습 용량·비용·시간</td><td>_UI / Decision_Canvas / Decision_UI_Root / LearningStation</td><td>Mine Learning Station / Capacities, Costs, Rewards, Minimum Seconds, Maximum Seconds, Random Duration, Delivery Seconds</td><td>초기 동시 1·대기 5, 비용 1·보상 2 시험값, 시간 5초, 통로 0.6초. 지식 증가 구간은 추후 확정.</td></tr><tr><td>지도 마크·접근 경고</td><td>_UI / Decision_Canvas / Decision_UI_Root / RawImage / RawImage_Road_View_And_Map / LiveMapMarkers</td><td>Journey Map Markers / Warning Distance, Marker Size</td><td>현재 40 / 16. 징수원이 사라지면 빨간 위치 마크와 접근 경고도 숨김.</td></tr><tr><td>결투 중 앉은 병사 숨김</td><td>_Systems / DuelMiniGame</td><td>Seated Player Preview / Seated Player, Duel, Mini Games</td><td>Seated Player가 KnightCharacter_Copy_Exam을 참조. 결투 생성 시 숨기고 정리 후 복원.</td></tr></table></div><h2 id="learning-plan">학습 계획과 적용 기준</h2><div class="flow"><span>능력 버튼 선택<br>코인 1 차감</span>→<span>학습 자리 있으면 배출<br>없으면 FIFO 대기(최대 5)</span>→<span>통로 이동 0.6초</span>→<span>학습 5초</span>→<span>같은 능력 코인 2 지급<br>다음 대기 작업 배출</span></div>
+<table><tr><th>구분</th><th>내용</th></tr><tr><td>사용자 확정 동작</td><td>처음에는 한 개씩. 지식 보유량으로 동시 학습·대기 한도 확대. 기본 학습 시간 5초, 시간 랜덤화 설정 제공. 일반 대화는 계속, 미니게임·요구 수행은 정지 후 재개.</td></tr><tr><td>현재 시험 설정</td><td>초기 대기 5개. 비용 1·완료 2는 사용자 예시를 시험값으로 연결. 등록 순간 비용을 선차감하고, 만석·잔액 부족·일시 정지 중 입력은 차감하지 않음.</td></tr><tr><td>미정</td><td>지식 코인 몇 개부터 동시 학습·대기열을 얼마씩 늘릴지, 최종 비용·보상·능력별 시간 구간. 미정 항목은 인스펙터에서 편집 가능하게 분리.</td></tr><tr><td>상한이 내려간 경우</td><td>현재 지식 보유량이 줄어도 이미 비용을 낸 작업을 취소하지 않음. 진행 작업은 마치고, 빈자리 보충·새 등록에 현재 상한 적용.</td></tr><tr><td>코인·사망 규칙</td><td>별도 화폐를 만들지 않고 기존 능력 잔액·공급통과 동기화. 마지막 힘 코인을 학습비로 쓰면 기존 힘 0 사망 규칙 적용.</td></tr></table>
+<h2 id="remaining">남은 작업·사용자 지정이 필요한 에셋</h2><p>2026-11-07 추가: 사용자가 지정한 네 도구를 통한 이야기 관리 계획을 아래 X 항목으로 기록했습니다. 이번 작업은 문서 등록이며 도구 설치·이야기 이전·Unity 연결은 미작업입니다. 기존 실행 코드·데이터 변경과 새 임시 코드 생성은 없습니다.</p><p>아래 순서는 작업 확정이나 자동 착수를 뜻하지 않습니다. 새 콘텐츠·에셋·규칙은 사용자 지정 후 진행합니다.</p><div class="table"><table><tr><th>항목</th><th>O/X</th><th>현재 준비 상태</th><th>앞으로 필요한 결정·제공물</th></tr><tr id="coastal-module-plan"><td>해안 맵 에셋 분리</td><td>O</td><td>해안 패키지를 Assets/AiAsset/CoastalEncounterPackRoofed에 보관. DecisionScene의 EnvController → Ground Entries에 <code>coastal_roofed</code> 등록. 50×120 조립 프리팹의 GUID 유지, Unity에서 프리팹과 렌더러 329개 로드 확인.</td><td><a href="../../Assets/AiAsset/CoastalEncounterPackRoofed/Scenes/CoastalRoofed_MapPreview.unity">해안 미리보기 씬</a>에서 구성 확인.</td></tr>
+<tr><td>해안의 AQUIS 물 표현</td><td>X</td><td>사용자 지정 AQUIS 물 표현 적용 예정. 프로젝트 및 Unity 에셋 캐시에서 패키지 미확인.</td><td>사용자가 AQUIS 설치 또는 패키지 제공 후 해안 수면에 연결.</td></tr>
+<tr><td>갱도 보스 완료 후 해안 연결</td><td>O</td><td>기본 경로의 스테이지 1 승리 후 같은 회차에서 해안 진입.</td><td>해안 이야기·NPC·AQUIS 후속 적용.</td></tr>
+<tr><td>자판기 v3 버튼·코인 투입구</td><td>O</td><td>외형과 책 배출 버튼 연결, 기존 코인통 유지.</td><td>투입구의 리필 기능은 X.</td></tr>
+<tr><td>Saves 콘텐츠 유형별 엑셀</td><td>O</td><td>편집용 xlsx 10개와 검증 후 반영.</td><td><a href="#chapter-modules-nov08">파일별 설정·검증 보기</a>.</td></tr><tr id="place-types-plan"><td>장소 유형 확장: 거주 장소·상점·특수 장소</td><td>X</td><td>2026-11-07 사용자 지정 계획. NPC가 거주하는 일반 건물 외에 상점과 다른 특수 장소를 추가하고 유형에 따라 다른 느낌으로 진행.</td><td>장소 유형 데이터·등록·분류와 유형별 진행 연결 구현 필요. 구체적인 장소 목록·맵 배치·필요 에셋은 사용자 지정 후 적용. 상점의 세부 규칙은 미정.</td></tr>
+<tr><td>일반 NPC 거주 장소: 요구사항 선택지 중심</td><td>X</td><td>여러 요구사항에 대한 선택지를 제시하고 플레이어의 선택에 따라 진행하는 방식으로 구성할 계획.</td><td>요구사항 목록·조건·선택 결과·비용/보상 정의, 이야기·저장 연결 필요. 기존 일부 선택지 구현과 별개로 장소 유형에 따른 공통 진행 구분은 미작업.</td></tr>
+<tr><td>특수 장소: 미니게임 중심</td><td>X</td><td>특수 장소에서는 미니게임을 진행해 일반 거주 장소의 요구사항 선택 흐름과 다른 경험을 제공할 계획.</td><td>장소별 미니게임 종류·진입 조건·규칙·종료/승패 결과와 필요한 에셋 지정, 장소·이야기·저장 연결 필요. 기존 미니게임 존재와 별개로 특수 장소 유형 연결은 미작업.</td></tr><tr id="story-management"><td>Obsidian 이야기 설정 관리</td><td>X</td><td>2026-11-07 사용자 지정 계획. 인물·장소를 링크로 연결해 세계관·NPC 설정·사건 관리.</td><td>관리 공간·문서 양식·인물/장소/사건 연결 규칙 구성. 실제 도입·프로젝트 데이터 연결은 미작업.</td></tr>
+<tr><td>Google Sheets / Excel 대사 목록 관리</td><td>X</td><td>대사 ID·조건·결과를 표로 정리하고 전체 대사 목록·진행 현황 관리.</td><td>관리 표 양식·ID/조건/결과 열 정의, 기존 데이터 가져오기·내보내기 및 검증 연결 미작업.</td></tr>
+<tr><td>Yarn Spinner 대화 구현 관리</td><td>X</td><td>선택지 분기를 확인하고 Unity 대화 구현에 연결하는 관리 계획.</td><td>도입 설정, 기존 이야기·선택지·비용·결과·저장 흐름 연결 및 검증 미작업.</td></tr>
+<tr><td>Ink 분기형 이야기 관리</td><td>X</td><td>조건·변수를 사용하는 복잡한 이야기와 선택 결과 작성·관리 계획.</td><td>도입 설정, 변수·조건·결과 데이터 연결, Yarn Spinner와의 역할·적용 범위 정리 및 검증 미작업.</td></tr>
+<tr><td>징수원 최종 재등장 주기</td><td>X</td><td>퇴장·반복 기능 O, 시험값 5초</td><td>최종 대기 시간. Inspector Return Delay Seconds에서 변경.</td></tr>
+<tr><td>지식별 학습·대기 용량</td><td>X</td><td>단계표 기능 O, 기본 동시 1·대기 5</td><td>지식 코인 임계값별 동시 학습 수와 대기 한도.</td></tr>
+<tr><td>학습 최종 비용·보상·시간</td><td>X</td><td>비용 1·보상 2·시간 5초는 시험값</td><td>능력별 최종 비용·보상, 랜덤 시간 범위.</td></tr>
+<tr><td>일반 NPC·징수원 애니메이션</td><td>X</td><td>제공 외형·임시 징수원 배치 O</td><td>사용자가 지정한 리그 및 Idle·Walk·Talk 클립. 징수원 동작은 보류 중.</td></tr>
+<tr><td>노동·휴식·경주·NPC별 결투 연출</td><td>X</td><td>공통 규칙·보드·승패 연결 O</td><td>사용할 모델·호환 리그·작업/휴식/경주/전투 클립과 연출 지정.</td></tr>
+<tr><td>전용 학습 미니게임·일어나서 작업</td><td>X</td><td>시간형 학습·대기열 O, 앉기 클립 O</td><td>미니게임 규칙과 일어나기·작업 애니메이션.</td></tr>
+<tr><td>카르덴 전투·징수 강화</td><td>X</td><td>BossReveal 맵·Boss1 Idle/포효 미리보기 O</td><td>최종 보스 외형·공격/피격/사망 클립, 패턴·승패·강화 수치.</td></tr>
+<tr><td>나이·능력 유지·NPC 성장</td><td>X</td><td>시간형 학습과 능력 증감 일부 연결</td><td>성장·감소·유지·나이 진행 규칙과 저장 요구.</td></tr>
+<tr><td>신분 통행료·코인 전체 통합</td><td>X</td><td>지불·징수는 능력 잔액 사용</td><td>신분 판정·통행료 공식 확정, 기존 물리 공급·베팅 통합 범위.</td></tr>
+<tr><td>갱도 하늘·조명</td><td>O</td><td>EmacEArt 기반 낮밤 회색 하늘과 조명.</td><td>밝기와 시간은 Rules.xlsx에서 조정.</td></tr>
+<tr><td>새 NPC·장소·챕터 완전 자동 추가</td><td>X</td><td>JSON·프리팹·Inspector 연결로 현재 콘텐츠 확장</td><td>청크 1 전용 조건, 네 장소 경로·두 배우 제한 일반화. 새 콘텐츠 자동 등록 도구는 없음.</td></tr>
+<tr><td>로컬 AI 대사 품질 검증</td><td>X</td><td>고정 첫 만남·데이터 연결 O</td><td>실제 모델의 기분별 대사 품질·원문 유지 검증.</td></tr>
+</table></div><h2 id="structure">핵심 변경 구조</h2><ul><li><code>FloatingDialogueView</code>: 폰트·문장 맞춤 배경·시간 기반 페이드·선택 확인 버튼 크기.</li><li><code>DecisionManager.MineChapter / Encounters</code>: 징수 응답을 기존 Presentation·기어·확인 흐름으로 전달하고 종료 시 원래 선택 상태 복원.</li><li><code>MineCollectorProcession</code>: Finished 단계에 저장된 대기 시간을 사용해 재입장. <code>JourneyMapMarkers</code>는 비활성 징수원 마크를 숨김.</li><li><code>DuelMouseHandController</code>: 고정 깊이 대신 기사 위치와 Held Forward Offset 사용. 씬의 양쪽 시작점 이동.</li><li><code>SeatedKnightAvatar.asset / DecisionScene</code>: 전용 Avatar 기준 자세와 사용자 Transform 저장.</li></ul>
+<h2 id="screens">결과 화면</h2><p>가장 최근 자판기 화면은 <a href="#dispenser-latest">최신 자판기 연결</a>, 이전 손 배치 화면은 <a href="#npc-hero-latest">NPC 손 배치</a>에서 확인합니다. 아래는 이전 단계 기록입니다.</p><figure><img src="../UIRevision/11-dialogue-fit.png" alt="최종 기사와 검 배치"><figcaption>최신 대사 화면: 폰트 12·문장별 배경, 학습 자판기·지도·앉은 플레이어. 앉기 리깅과 사용자 지정 크기 0.5를 적용했습니다.</figcaption></figure>
+<figure><img loading="lazy" src="../UIRevision/10-tax-unified.png" alt="통일된 징수 UI"><figcaption>징수 대사는 NPC 옆, 응답은 일반 선택 영역에 표시됩니다.</figcaption></figure><figure><img loading="lazy" src="../UIRevision/12-duel-hands.png" alt="플레이어 앞 양손과 검"><figcaption>검을 잡은 직후 양손·검이 보드 플레이어 앞에 놓인 상태. 앉은 미리보기는 숨김.</figcaption></figure><details><summary>오래된 대사 페이드·학습 대기열 확인</summary><img loading="lazy" src="../UIRevision/13-oldest-fade.png" alt="오래된 대사 소멸"><img loading="lazy" src="../UIRevision/04-queue.png" alt="학습 대기열"><p>학습 대기열 이미지는 이전 단계 캡처이며, 대사·앉기·손 배치 최신 상태는 위 화면을 기준으로 합니다.</p></details><figure><img loading="lazy" src="../BossDuelFix/06-last-place-map.png" alt="네 번째 장소와 지도 보스"><figcaption>보스 사전 로딩·지도 표시 검증. 기사·검 최종 배치 변경 전 캡처입니다.</figcaption></figure>
+<details><summary>검 클릭 후 손 표시</summary><img loading="lazy" src="../BossDuelFix/03-hands-active.png" alt="검 클릭 후 손 활성화"><p>실제 마우스 입력으로 연결 확인. 최종 위치 변경 전 기록입니다.</p></details>
+<details><summary>징수원 가로 이동 → 일렬 통과</summary><img loading="lazy" src="../MineNpcPlacementFix/04-outside-row.png" alt="가로 대형"><img loading="lazy" src="../MineNpcPlacementFix/05-door-column.png" alt="일렬 통과"></details>
+<details><summary>보스 대기·포효</summary><img loading="lazy" src="../BossDuelFix/04-boss-idle.png" alt="Boss1 Idle"><img loading="lazy" src="../BossDuelFix/05-boss-roar.png" alt="Boss1 포효"><p>기존 클립의 자세 확인용 캡처. 런타임에서는 두 상태를 자동 반복합니다.</p></details>
+<h2 id="expansion">추가하면 자동으로 늘어나는가?</h2><p><b>등록과 연결까지 맞추면 기존 대사·분기 데이터는 늘릴 수 있습니다. 파일이나 모델만 복사해서는 등장하지 않습니다.</b> 새 장소·새 챕터·새 미니게임에는 코드 작업이 필요한 부분이 있습니다.</p><p><a href="usage-guide.html#content">사용 설명서의 콘텐츠 추가 방법</a>에서 파일별 역할·추가 순서·현재 한계를 확인하세요. 이번에는 문서를 갱신했으며, 확장 제한 코드를 새로 개편하거나 콘텐츠를 임의로 추가하지 않았습니다.</p>
+<h2 id="verification">검증 기록</h2><h3>2026-11-04 기능 수정 검증</h3><p>메인 메뉴 StartButton으로 별도 저장 세션을 시작했습니다. 새 조우 검사 13개: 배치·클립·양손 방향, 퇴장·5초 대기·재입장·저장 상태·폰트 12를 통과했습니다. 징수 기어 선택+확인으로 1회만 차감, 대사 배경 너비 차이와 오래된 대사 alpha 감소·새 대사 alpha=1, 검 클릭 후 손의 앞쪽 배치를 확인했습니다. 징수원 비활성화 시 지도 마크와 접근 경고가 숨는 연결 검사도 통과했습니다. 최종 Unity 컴파일 오류 0·Console 오류 0. 기존 groundPrefab 미지정 경고 1개는 유지됩니다. 전투 전체 승패·전체 네 장소 경로는 이번에 다시 검사하지 않았습니다. 아래 이전 범위 검증 기록과 구분합니다.</p>
+<p><a href="../UIRevision/encounter-checks.json">새 검사 13개</a> · <a href="../UIRevision/collector-map-check.json">퇴장 시 지도 표시 검사</a> · <a href="../UIRevision/tax-input-checks.json">징수 입력 검사</a> · <a href="../UIRevision/dialogue-fade-check.json">배경 크기·페이드</a> · <a href="../UIRevision/duel-position-check.json">손 위치</a> · <a href="../UIRevision/inspector-paths.json">실제 씬 경로</a></p>
+<h3>이전 범위 검증</h3><p>콘텐츠·거래 241개 + 배치·징수원 26개 + 학습 17개 = 284개 통과 기록. 메인 메뉴 → 네 장소 → 보스 준비 청크 → 메뉴 복귀, 학습 저장·정지·재개·에피소드 연속성을 확인한 기록입니다. 전체 이동 검증은 능력 각 100의 격리 저장을 사용했습니다. 최신 수정 후 전체 전투·전체 경로를 다시 검사했다는 의미는 아닙니다.</p><p><a href="checks.json">콘텐츠 검사</a> · <a href="../MineChapterRevision/checks.json">배치 검사</a> · <a href="../UIRevision/learning-checks.json">학습 검사</a> · <a href="../UIRevision/full-route.json">이전 전체 경로</a></p><h3>이번 문서 통합</h3><table><tr><th>계획</th><th>상태</th><th>확인</th></tr><tr><td>기존 현황·수정 위치 비교</td><td>O</td><td>폰트 10 등 오래된 항목을 최신 값으로 정정</td></tr><tr><td>현황·Inspector·학습 규칙·남은 작업 통합</td><td>O</td><td>이 페이지에서 직접 확인 가능. 콘텐츠 상세는 같은 폴더 설명서 유지</td></tr><tr><td>문서·이미지·링크 점검</td><td>O</td><td>로컬 파일·페이지 내 이동 검사. 게임 코드는 변경하지 않음</td></tr></table><h2 id="cleanup">임시 작업 정리 상태</h2><p><b>현재 자판기 삭제 대기 없음:</b> 연결용 임시 스크립트·검증 저장 4개·캡처 잔여 메타데이터를 2026-11-07 정리 완료했습니다. 목적·정확한 경로는 <a href="#dispenser-latest">최신 작업</a> 참조. 아래는 이전 작업의 정리 완료 기록입니다.</p><p>2026-11-04 사용자 만족 응답과 정리 요청에 따라 수행했습니다. 실행 의존성이 없는 임시 도우미 1개, 수정 전 백업 3개, 이번 작업의 격리 테스트 저장 폴더 9개를 삭제했습니다. 약 2.56 MiB 정리.</p><table><tr><th>계획</th><th>O/X</th><th>확인</th></tr><tr><td>기록된 임시 경로와 실행 참조 대조</td><td>O</td><td>Assets·Packages·ProjectSettings 및 다른 도우미의 UIEncounterRevision 참조 없음</td></tr><tr><td>정확한 대상만 삭제</td><td>O</td><td>워크스페이스 내부 경로·심볼릭 링크 여부를 확인한 뒤 삭제. 일반 플레이 저장 보존</td></tr><tr><td>보존 파일·보고서 확인</td><td>O</td><td>실행 코드·씬·에셋·애니메이션·설정·의존성·유지 도구 및 HTML·설명서·캡처·검증 JSON 보존. 실행 코드를 변경하지 않아 게임 재실행 검사는 하지 않음</td></tr></table><p><a href="cleanup-result.json">삭제 경로와 보존 범위 기록</a></p><details><summary>삭제한 정확한 경로</summary><ul><li><code>AgentScripts/UIEncounterRevision.cs</code></li><li><code>output/UIRevision/DecisionScene.before-encounter-revision.unity</code></li><li><code>output/UIRevision/SeatedKnightAvatar.before.asset</code></li><li><code>output/MineChapterReview/DecisionScene.before-layout-combat.unity</code></li><li><code>output/MineChapterReview/MenuSave-20261104-041517</code></li><li><code>output/MineChapterReview/MenuSave-20261104-042013</code></li><li><code>output/MineChapterReview/MenuSave-20261104-042456</code></li><li><code>output/MineChapterReview/MenuSave-20261104-043152</code></li><li><code>output/MineChapterReview/MenuSave-20261104-043444</code></li><li><code>output/MineChapterReview/MenuSave-20261104-044637</code></li><li><code>output/MineChapterReview/MenuSave-20261104-045348</code></li><li><code>output/MineChapterReview/MenuSave-20261104-050533</code></li><li><code>output/MineChapterReview/MenuSave-20261104-052013</code></li></ul></details><p>2026-11-04 정리 범위의 삭제 대기 항목은 없습니다. 기존 사용자 파일·다른 작업의 파일·재현에 필요한 빌더·유지 검사 도구는 보존했습니다.</p><p>앞으로의 작업 현황은 이 페이지에 누적합니다. 개별 작업 보고서는 이전 상세 기록으로 보존합니다.</p><p><a href="usage-guide.html">사용 설명서 열기 →</a></p><p><b>2026-11-07 최신 수정:</b> <a href="../../Reports/development-report.html#learning-dispenser-board-revision">자판기 크기·동전통 정렬, 시간 문구 제거, 배출 책을 하얀 보드로 드래그</a> — 실제 화면과 17개 검사 결과.</p><p><b>2026-11-07 독립 에셋:</b> <a href="../../Reports/development-report.html#learning-dispenser-standalone-v2">v2 패키지 다운로드·사용 방법·임시 파일 정리 완료</a></p></body></html>

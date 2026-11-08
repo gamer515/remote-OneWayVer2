@@ -1,11 +1,21 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
+using System.Linq;
 
 /// <summary>
 /// 여러 챕터의 지형을 하나의 전역 청크 공간에 생성하고 재사용합니다.
 /// </summary>
 public sealed class TerrainBuilder
 {
+    internal readonly struct FacilityMarker
+    {
+        internal readonly string Id;
+        internal readonly Vector3 Position;
+        internal readonly bool IsShop;
+        internal FacilityMarker(string id, Vector3 position, bool isShop)
+        { Id = id; Position = position; IsShop = isShop; }
+    }
+
     private sealed class TerrainSegment
     {
         public TerrainData Data;
@@ -16,17 +26,44 @@ public sealed class TerrainBuilder
         public int FirstGlobalChunkIndex;
         public int ChunkCount;
         public int RunSeed;
+        public TerrainFacilityPlan.Slot[] Facilities;
+        public TerrainRoomLayout[] RoomLayouts;
     }
 
     private readonly List<TerrainSegment> segments = new List<TerrainSegment>();
     private readonly Dictionary<int, GameObject> chunkInstances = new Dictionary<int, GameObject>();
+    private readonly Dictionary<string, TerrainFacilityPlan.History> facilityHistory = new Dictionary<string, TerrainFacilityPlan.History>();
+    private readonly List<FacilityMarker> facilityMarkers = new List<FacilityMarker>();
+    internal IReadOnlyList<FacilityMarker> FacilityMarkers => facilityMarkers;
+    internal bool HasChapter(string chapterId) => facilityHistory.ContainsKey(chapterId);
 
     public void RegisterTerrain(TerrainData terrainData, TerrainPlaceRegistry placeRegistry,
         GameObject[] groundPrefabs, TerrainPrefabCatalog prefabCatalog, Transform parent,
-        int firstGlobalChunkIndex, int chunkCount, int runSeed)
+        int firstGlobalChunkIndex, int chunkCount, int runSeed, string chapterId)
+        => RegisterTerrain(terrainData, placeRegistry, groundPrefabs, prefabCatalog, parent, firstGlobalChunkIndex,
+            chunkCount, runSeed, chapterId, null, false);
+
+    internal void RegisterTerrain(TerrainData terrainData, TerrainPlaceRegistry placeRegistry,
+        GameObject[] groundPrefabs, TerrainPrefabCatalog prefabCatalog, Transform parent,
+        int firstGlobalChunkIndex, int chunkCount, int runSeed, string chapterId, TerrainRoomLayout[] roomLayouts, bool capLocations)
     {
         if (terrainData?.places == null || placeRegistry == null || parent == null || chunkCount <= 0)
             return;
+
+        if (!facilityHistory.TryGetValue(chapterId, out var history))
+            facilityHistory[chapterId] = history = new TerrainFacilityPlan.History(firstGlobalChunkIndex);
+        var facilities = TerrainFacilityPlan.Build(terrainData, runSeed, firstGlobalChunkIndex, history, capLocations);
+        foreach (var slot in facilities)
+        {
+            bool isShop = slot.Id == "shop";
+            if (isShop || slot.OptionalCandidate)
+                facilityMarkers.Add(new FacilityMarker($"{firstGlobalChunkIndex + slot.Chunk}:{slot.Id}",
+                    placeRegistry.GetChunkWorldPosition(slot.Chunk) + new Vector3(slot.X, 0, slot.Z), isShop));
+        }
+        if (facilities.Length > 0)
+            Debug.Log($"[장소 배치 예고] {chapterId} · " + string.Join(" / ",
+                facilities.GroupBy(slot => slot.Chunk).Select(group =>
+                    $"청크 {firstGlobalChunkIndex + group.Key + 1}: {string.Join(", ", group.Select(slot => slot.Label))}")));
 
         // 로컬 청크 번호가 같은 챕터끼리 충돌하지 않도록 전역 시작 번호를 함께 저장합니다.
         segments.Add(new TerrainSegment
@@ -38,7 +75,9 @@ public sealed class TerrainBuilder
             Parent = parent,
             FirstGlobalChunkIndex = firstGlobalChunkIndex,
             ChunkCount = chunkCount,
-            RunSeed = runSeed
+            RunSeed = runSeed,
+            Facilities = facilities,
+            RoomLayouts = roomLayouts
         });
     }
 
@@ -60,7 +99,11 @@ public sealed class TerrainBuilder
         chunk.transform.localPosition = Vector3.zero;
 
         GameObject ground = CreateGround(segment, localChunkIndex, chunk.transform);
+        if (ground != null) segment.RoomLayouts?[localChunkIndex]?.Apply(ground.transform);
         CreatePlaces(segment, localChunkIndex, chunk.transform, ground);
+        foreach (var slot in segment.Facilities)
+            if (slot.Chunk == localChunkIndex)
+                Debug.Log($"[장소 예정] {slot.Label} ({slot.Id}) · 청크 {globalChunkIndex + 1} · 로컬 X={slot.X:F1}, Z={slot.Z:F1} · {(slot.OptionalCandidate ? "주요 선택 후보" : "빈 자리 예약")} · 에셋/상호작용 연결 대기");
         chunkInstances.Add(globalChunkIndex, chunk);
         return true;
     }
@@ -111,6 +154,11 @@ public sealed class TerrainBuilder
     {
         foreach (PlaceData place in segment.Data.places)
         {
+            if (place != null && place.originalChunkIndex == localChunkIndex && ground != null)
+            {
+                var old = ground.transform.Find($"Place_{place.placeId}");
+                if (old != null) old.gameObject.SetActive(false);
+            }
             if (place == null || place.chunkIndex != localChunkIndex) continue;
 
             if (segment.PrefabCatalog == null ||
@@ -125,6 +173,15 @@ public sealed class TerrainBuilder
             Transform authoredPlace = ground != null
                 ? ground.transform.Find($"Place_{place.placeId}")
                 : null;
+            if (authoredPlace == null && place.originalChunkIndex >= 0)
+            {
+                var source = segment.GroundPrefabs[place.originalChunkIndex].transform.Find($"Place_{place.placeId}");
+                if (source != null)
+                {
+                    authoredPlace = Object.Instantiate(source, ground != null ? ground.transform : chunkParent);
+                    authoredPlace.name = source.name;
+                }
+            }
             if (authoredPlace != null)
             {
                 authoredPlace.gameObject.SetActive(true);

@@ -394,6 +394,7 @@ public class SaveManager
         cachedProgress.resolvedPlaceIds.Clear();
         cachedProgress.currentEncounterHistory.Clear();
         cachedProgress.finalBattlePending = false;
+        cachedProgress.chapterBossId = null;
         cachedProgress.isCompleted = false;
         cachedProgress.runEndReason = null;
         if (cachedProgress.guideProgress != null)
@@ -448,21 +449,71 @@ public class SaveManager
         Debug.Log($"[Save] {CurrentRun}회차 완료 상태 저장");
     }
 
-    public void BeginFinalBattle(int stage)
+    public void BeginFinalBattle(int stage, string chapterBossId = null)
     {
         if (cachedProgress.isCompleted) throw new System.InvalidOperationException("완료된 회차에서 새 전투를 시작할 수 없습니다.");
         cachedProgress.finalBattlePending = true;
         cachedProgress.finalBattleStage = System.Math.Max(1, stage);
+        cachedProgress.chapterBossId = chapterBossId;
         cachedProgress.interactionPhase = "battle";
         SaveIOService.Instance.SaveRunData(CurrentRun, "Progress", cachedProgress);
+    }
+
+    public bool TryContinueAfterChapterBoss(OmnibusData omnibus)
+    {
+        if (!cachedProgress.finalBattlePending || cachedProgress.isCompleted ||
+            string.IsNullOrEmpty(cachedProgress.chapterBossId) || omnibus?.chapters == null) return false;
+        int completed = omnibus.chapters.FindIndex(chapter => chapter.chapterId == cachedProgress.chapterBossId);
+        if (completed < 0 || cachedProgress.chapterId != cachedProgress.chapterBossId ||
+            completed + 1 >= omnibus.PlayableChapterCount) return false;
+
+        var next = JsonUtility.FromJson<GameProgress>(JsonUtility.ToJson(cachedProgress));
+        AddDefeatedTaxBoss(next, cachedProgress.chapterBossId);
+        next.chapterIndex = completed + 1;
+        next.chapterId = omnibus.chapters[next.chapterIndex].chapterId;
+        next.episodeIndex = 0;
+        next.storyIndex = 0;
+        next.finalBattlePending = false;
+        next.finalBattleWon = true;
+        next.chapterBossId = null;
+        next.runEndReason = null;
+        next.interactionPhase = null;
+        next.activeStoryPath = null;
+        next.activePlaceId = null;
+        next.activeCardIndex = 0;
+        next.resolvedPlaceIds.Clear();
+        next.currentEncounterHistory.Clear();
+        next.pendingEpisodes.Clear();
+        SaveIOService.Instance.SaveRunCheckpoint(CurrentRun, "Progress", next);
+        cachedProgress = next;
+        return true;
     }
 
     public void RecordFinalBattleOutcome(bool won)
     {
         if (!cachedProgress.finalBattlePending) throw new System.InvalidOperationException("진행 중인 최종 전투가 없습니다.");
         cachedProgress.finalBattleWon = won;
+        if (won) AddDefeatedTaxBoss(cachedProgress, cachedProgress.chapterBossId);
         cachedProgress.runEndReason = won ? "3D 전투 보스 처치" : "3D 전투에서 사망";
         SaveIOService.Instance.SaveRunData(CurrentRun, "Progress", cachedProgress);
+    }
+
+    public bool RecordTaxBossDefeat(string bossId)
+    {
+        var next = JsonUtility.FromJson<GameProgress>(JsonUtility.ToJson(cachedProgress));
+        if (!AddDefeatedTaxBoss(next, bossId)) return false;
+        SaveIOService.Instance.SaveRunCheckpoint(CurrentRun, "Progress", next);
+        cachedProgress.defeatedTaxBossIds = next.defeatedTaxBossIds;
+        return true;
+    }
+
+    private static bool AddDefeatedTaxBoss(GameProgress progress, string bossId)
+    {
+        if (string.IsNullOrWhiteSpace(bossId)) return false;
+        progress.defeatedTaxBossIds ??= new System.Collections.Generic.List<string>();
+        if (progress.defeatedTaxBossIds.Contains(bossId)) return false;
+        progress.defeatedTaxBossIds.Add(bossId);
+        return true;
     }
 
     /// <summary>

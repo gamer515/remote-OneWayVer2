@@ -132,9 +132,9 @@ public sealed class EncounterContentRepository
                 return false;
             }
             if (sourceCard.type == "Choice" &&
-                (sourceCard.options == null || sourceCard.options.Length < 2 || sourceCard.options.Length > 4))
+                (sourceCard.options == null || sourceCard.options.Length < 2))
             {
-                error = $"{contentPath}/Story의 {index}번째 선택 카드에는 기어 방향 문구 4개가 필요합니다.";
+                error = $"{contentPath}/Story의 {index}번째 선택 카드에는 선택지가 2개 이상 필요합니다.";
                 cards = null;
                 return false;
             }

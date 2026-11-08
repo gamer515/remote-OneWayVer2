@@ -8,6 +8,11 @@ using UnityEngine;
 {
     public int ability, reward;
     public float duration, remaining, transit;
+    public bool onBoard;
+    public bool requiresBoard;
+    public string bookId, bookName;
+    public float boardU, boardV;
+    [NonSerialized] public bool held;
 }
 [Serializable] public sealed class MineLearningProgress
 {
@@ -18,6 +23,21 @@ using UnityEngine;
 /// <summary>FIFO learning, paid once on entry; capacities and durations are authored in the Inspector.</summary>
 public sealed class MineLearningStation : MonoBehaviour
 {
+    [Serializable] public sealed class BookDefinition
+    {
+        public string id, name;
+        public int ability, requiredKnowledge, cost, reward;
+        public float seconds;
+    }
+
+    [Serializable] public sealed class BookCatalog { public BookDefinition[] books; }
+
+    [Serializable] public sealed class LearningSettings
+    {
+        public CapacityStep[] capacities;
+        public bool randomDuration;
+        public float minimumSeconds, maximumSeconds, deliverySeconds;
+    }
     [Serializable] public sealed class CapacityStep
     {
         [Min(0)] public int knowledgeCoins;
@@ -49,9 +69,23 @@ public sealed class MineLearningStation : MonoBehaviour
     private int seed;
     private bool paused;
     private string notice;
+    private BookDefinition[] authoredBooks;
+    private LearningSettings authoredLearning;
     public MineLearningProgress Progress => progress;
-    public float DeliverySeconds => deliverySeconds;
-    public CapacityStep Capacity => capacities.Where(c=>c.knowledgeCoins <= wallet()[2]).OrderBy(c=>c.knowledgeCoins).LastOrDefault() ?? new CapacityStep();
+    public float DeliverySeconds => authoredLearning?.deliverySeconds ?? deliverySeconds;
+    public bool CanMoveBooks => progress != null && wallet != null && !paused;
+    public void RememberPlacement(MineLearningJob job, float u, float v)
+    {
+        if(progress == null || !progress.active.Contains(job)) return;
+        job.onBoard=true; job.boardU=Mathf.Clamp01(u); job.boardV=Mathf.Clamp01(v); save?.Invoke();
+    }
+    public CapacityStep Capacity => (authoredLearning?.capacities ?? capacities).Where(c=>c.knowledgeCoins <= wallet()[2]).OrderBy(c=>c.knowledgeCoins).LastOrDefault() ?? new CapacityStep();
+
+    public void ConfigureContent(BookCatalog books, LearningSettings settings)
+    {
+        authoredBooks = books?.books;
+        authoredLearning = settings;
+    }
     public void Initialize(MineLearningProgress state, int runSeed, Func<int[]> getWallet, Func<int,int,bool> spend, Action<int,int> reward, Action persist)
     {
         progress=state; seed=runSeed; wallet=getWallet; charge=spend; grant=reward; save=persist;paused=false;notice=null;
@@ -60,15 +94,29 @@ public sealed class MineLearningStation : MonoBehaviour
     }
     public bool Request(int ability)
     {
-        if(progress==null || paused || ability<0 || ability>=4) return false;
+        if(!CanMoveBooks || ability<0 || ability>=4) return false;
         var capacity=Capacity;
         if(progress.active.Count>=capacity.simultaneous && progress.queued.Count>=capacity.waiting) { notice="학습 대기열이 가득 찼습니다."; return false; }
-        int cost=Mathf.Max(0,costs[ability]);
+        var book = authoredBooks?.Where(item => item.ability == ability && item.requiredKnowledge <= wallet()[2])
+            .OrderByDescending(item => item.requiredKnowledge).FirstOrDefault();
+        if (authoredBooks != null && book == null) { notice = "읽을 수 있는 책이 없습니다."; return false; }
+        int cost = book?.cost ?? Mathf.Max(0, costs[ability]);
         if(wallet()[ability]<cost) { notice="선택한 능력 코인이 부족합니다."; return false; }
         if(!charge(ability,cost)) return false;
-        float low=Mathf.Max(.1f,minimumSeconds), high=Mathf.Max(low,maximumSeconds);
-        float seconds=randomDuration ? Mathf.Lerp(low,high,(float)MineChapterSettings.Roll(seed,progress.sequence++,"learning")) : low;
-        progress.queued.Add(new MineLearningJob {ability=ability,reward=Mathf.Max(0,rewards[ability]),duration=seconds,remaining=seconds});
+        float low = Mathf.Max(.1f, authoredLearning?.minimumSeconds ?? minimumSeconds);
+        float high = Mathf.Max(low, authoredLearning?.maximumSeconds ?? maximumSeconds);
+        bool random = authoredLearning?.randomDuration ?? randomDuration;
+        float seconds = random ? Mathf.Lerp(low, high, (float)MineChapterSettings.Roll(seed, progress.sequence++, "learning")) : book?.seconds ?? low;
+        progress.queued.Add(new MineLearningJob
+        {
+            ability = ability,
+            reward = book?.reward ?? Mathf.Max(0, rewards[ability]),
+            duration = seconds,
+            remaining = seconds,
+            bookId = book?.id,
+            bookName = book?.name,
+            requiresBoard = book != null
+        });
         notice=null; FillSlots(); Rebuild(); save(); return true;
     }
     private bool FillSlots()
@@ -76,20 +124,22 @@ public sealed class MineLearningStation : MonoBehaviour
         bool changed=false;
         while(progress.active.Count<Capacity.simultaneous && progress.queued.Count>0)
         {
-            var job=progress.queued[0]; progress.queued.RemoveAt(0); job.transit=deliverySeconds; progress.active.Add(job); changed=true;
+            var job=progress.queued[0]; progress.queued.RemoveAt(0); job.transit=DeliverySeconds; progress.active.Add(job); changed=true;
         }
         return changed;
     }
     public void Tick(float seconds, bool stop)
     {
-        if(progress==null) return;
+        if(progress==null || wallet==null) return;
         paused=stop; bool changed=false;
         if(!stop)
         {
             for(int i=progress.active.Count-1;i>=0;i--)
             {
                 var job=progress.active[i];
+                if(job.held) continue;
                 if(job.transit>0) { job.transit=Mathf.Max(0,job.transit-seconds); continue; }
+                if (job.requiresBoard && !job.onBoard) continue;
                 job.remaining=Mathf.Max(0,job.remaining-seconds);
                 if(job.remaining>0) continue;
                 progress.active.RemoveAt(i); grant(job.ability,job.reward); changed=true;
@@ -107,7 +157,7 @@ public sealed class MineLearningStation : MonoBehaviour
             rect.GetComponentInChildren<TextMeshProUGUI>().text=job.transit>0?"이동 중":job.remaining.ToString("F1")+"초";
             if(job.transit>0 && deliveryPath.Length>1)
             {
-                float t=(1-job.transit/deliverySeconds)*(deliveryPath.Length-1);int segment=Mathf.Min((int)t,deliveryPath.Length-2);
+                float t=(1-job.transit/DeliverySeconds)*(deliveryPath.Length-1);int segment=Mathf.Min((int)t,deliveryPath.Length-2);
                 rect.position=Vector3.Lerp(deliveryPath[segment].position,deliveryPath[segment+1].position,t-segment);
             }
             else PlaceActive(rect,i);

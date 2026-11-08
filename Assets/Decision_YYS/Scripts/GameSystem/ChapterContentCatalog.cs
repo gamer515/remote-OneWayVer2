@@ -17,7 +17,7 @@ public static class ChapterContentCatalog
     private static readonly HashSet<string> ChoiceFields = new HashSet<string>(new[] {
         "choiceID","action","storyPath","relationship","relationshipDelta"});
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-    public static void Reset() { catalog=null; documents.Clear();storyCache.Clear();LocalStoryRewrite.ResetIdentifiers();NarrativeInteractions.ResetCache();LocalStoryPrompt.Reset(); foreach(var a in assets.Values) if(a!=null) {if(Application.isPlaying) UnityEngine.Object.Destroy(a);else UnityEngine.Object.DestroyImmediate(a);} assets.Clear(); }
+    public static void Reset() { catalog=null; documents.Clear();storyCache.Clear();ChapterWorkbookContent.Reset();LocalStoryRewrite.ResetIdentifiers();NarrativeInteractions.ResetCache();LocalStoryPrompt.Reset(); foreach(var a in assets.Values) if(a!=null) {if(Application.isPlaying) UnityEngine.Object.Destroy(a);else UnityEngine.Object.DestroyImmediate(a);} assets.Clear(); }
     public static TextAsset Asset(string path)
     {
         if(assets.TryGetValue(path,out var cached) && cached!=null) return cached;
@@ -35,6 +35,12 @@ public static class ChapterContentCatalog
     private static JObject Document(string resource)
     {
         if(documents.TryGetValue(resource,out var value)) return value;
+        value = ChapterWorkbookContent.Get(resource);
+        if (value != null)
+        {
+            documents.Add(resource, value);
+            return value;
+        }
         var asset=Resources.Load<TextAsset>("Chapters/"+resource);
         if(asset==null) throw new InvalidDataException("챕터 자료가 없습니다: "+resource);
         value=JObject.Parse(asset.text); documents.Add(resource,value); return value;

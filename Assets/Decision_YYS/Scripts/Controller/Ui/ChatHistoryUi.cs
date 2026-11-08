@@ -90,7 +90,7 @@ public sealed class ChatHistoryUi : MonoBehaviour
     {
         if (floatingView != null)
         {
-            floatingView.SetDraft(draftText, draftDirection, composerActive, draftCanConfirm, choiceDraft); return;
+            floatingView.SetDraft(draftText, composerActive, choiceDraft, draftDirection); return;
         }
         draftLayoutDirty = true;
         if (draftLabel != null)

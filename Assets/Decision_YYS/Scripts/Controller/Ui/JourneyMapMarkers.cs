@@ -15,12 +15,15 @@ public sealed class JourneyMapMarkers : MonoBehaviour
     [SerializeField, Min(4)] private float markerSize=16;
     private readonly Dictionary<string,MapSymbolGraphic> markers=new Dictionary<string,MapSymbolGraphic>();
     private Player player;
+    private EnvController environment;
+    private TextMeshProUGUI nextShopText;
     private float nextScan;
     private readonly List<Transform> actors=new List<Transform>();
     private void LateUpdate()
     {
         if(mapCamera==null||placement==null)return;
         if(player==null)player=FindFirstObjectByType<Player>();
+        if(environment==null)environment=FindFirstObjectByType<EnvController>();
         if(Time.unscaledTime>=nextScan)
         {
             nextScan=Time.unscaledTime+1;actors.Clear();
@@ -31,9 +34,13 @@ public sealed class JourneyMapMarkers : MonoBehaviour
             }
         }
         foreach(var place in placement.Places)
-            Position("room:"+place.placeId,placement.transform.TransformPoint((place.entrance+place.exit)*.5f),new Color(.12f,.4f,.9f),true);
+        {
+            var doors = placement.Doors(place);
+            Position("room:"+place.placeId,(doors.entrance+doors.exit)*.5f,new Color(.12f,.4f,.9f),true);
+        }
         foreach(var actor in actors)if(actor!=null)Position("npc:"+actor.GetInstanceID(),actor.position,new Color(.25f,.95f,.68f),false);
         if(player!=null)Position("player",player.transform.position,new Color(1,.72f,.2f),false);
+        UpdateFacilityMarkers();
         foreach(var marker in markers)
             if(marker.Key.StartsWith("collector:"))marker.Value.gameObject.SetActive(false);
         var members=collectors!=null?collectors.GetComponentsInChildren<Transform>():System.Array.Empty<Transform>();
@@ -56,7 +63,41 @@ public sealed class JourneyMapMarkers : MonoBehaviour
             warningText.text="징수원 접근 "+(collectorZ>player.transform.position.z?"↓":"↑")+" / "+nearest.ToString("F0");
         }
     }
-    private void Position(string id,Vector3 world,Color tint,bool building)
+    private void UpdateFacilityMarkers()
+    {
+        if (environment == null || player == null || warningText == null) return;
+        float distance = float.PositiveInfinity;
+        string nearestShop = null;
+        foreach (var facility in environment.FacilityMarkers)
+        {
+            float ahead = facility.Position.z - player.transform.position.z;
+            if (!facility.IsShop || ahead < -1f || ahead >= distance) continue;
+            distance = Mathf.Max(0f, ahead);
+            nearestShop = facility.Id;
+        }
+        foreach (var facility in environment.FacilityMarkers)
+            Position("facility:" + facility.Id, facility.Position,
+                facility.IsShop ? new Color(1f, .68f, .19f) : new Color(.28f, .76f, .92f), true, facility.Id == nearestShop);
+        if (nextShopText == null && float.IsFinite(distance))
+        {
+            nextShopText = Instantiate(warningText, mapArea);
+            nextShopText.name = "NextShopDistance";
+            nextShopText.raycastTarget = false;
+            nextShopText.alignment = TextAlignmentOptions.Center;
+            nextShopText.textWrappingMode = TextWrappingModes.NoWrap;
+            var rect = nextShopText.rectTransform;
+            rect.anchorMin = new Vector2(.08f, .81f);
+            rect.anchorMax = new Vector2(.92f, .81f);
+            rect.pivot = new Vector2(.5f, .5f);
+            rect.sizeDelta = new Vector2(0f, 24f);
+            rect.anchoredPosition = Vector2.zero;
+        }
+        if (nextShopText == null) return;
+        nextShopText.gameObject.SetActive(float.IsFinite(distance));
+        if (nextShopText.gameObject.activeSelf)
+            nextShopText.text = distance < 1f ? "상점 예정지" : $"다음 상점 예정지 {Mathf.CeilToInt(distance)}u";
+    }
+    private void Position(string id,Vector3 world,Color tint,bool building,bool pinToEdge = false)
     {
         if(!markers.TryGetValue(id,out var graphic))
         {
@@ -65,7 +106,12 @@ public sealed class JourneyMapMarkers : MonoBehaviour
             graphic.rectTransform.sizeDelta=Vector2.one*(building?markerSize*1.5f:markerSize);markers.Add(id,graphic);
         }
         Vector3 point=mapCamera.WorldToViewportPoint(world);
-        bool visible=point.z>0&&point.x>=0&&point.x<=1&&point.y>=0&&point.y<=1;
+        if (pinToEdge)
+        {
+            point.x = Mathf.Clamp(point.x, .06f, .94f);
+            point.y = Mathf.Clamp(point.y, .07f, .93f);
+        }
+        bool visible=(point.z>0 || (pinToEdge && mapCamera.orthographic))&&point.x>=0&&point.x<=1&&point.y>=0&&point.y<=1;
         graphic.gameObject.SetActive(visible);
         if(visible) { graphic.rectTransform.anchorMin=graphic.rectTransform.anchorMax=new Vector2(point.x,point.y);graphic.rectTransform.anchoredPosition=Vector2.zero; }
     }

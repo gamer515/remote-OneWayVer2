@@ -1,3 +1,4 @@
+using System.Linq;
 using static Constants;
 
 /// <summary>
@@ -22,16 +23,21 @@ public sealed class DecisionPresentationController
     public void ShowOptions(string[] options, int selectedIndex)
     {
         if (uiController == null) return;
-        if (options == null || options.Length < 2 || options.Length > 4)
+        if (options == null || options.Length < 2)
         {
             uiController.ActiveOptionTextUi(false);
             return;
         }
-        string[] directions = { "좌상", "좌하", "우상", "우하" };
+
         bool selected = selectedIndex >= 0 && selectedIndex < options.Length;
-        string text = selected ? options[selectedIndex] ?? string.Empty : string.Empty;
-        bool canConfirm = selected && !text.EndsWith(" (잠김)", System.StringComparison.Ordinal);
-        uiController.PreviewChoice(text, selected ? directions[selectedIndex] : null, canConfirm);
+        const int visibleOptions = 4;
+        int first = selected ? System.Math.Max(0, selectedIndex - visibleOptions + 1) : 0;
+        int last = System.Math.Min(options.Length, first + visibleOptions);
+        string text = string.Join("\n", options.Select((option, index) =>
+            (selected && index == selectedIndex ? "▶ " : "   ") + (index + 1) + ". " + option).Skip(first).Take(last - first));
+        string overflow = (first > 0 ? "↑" : "") + (last < options.Length ? "↓" : "");
+        bool canConfirm = selected && !(options[selectedIndex] ?? "").EndsWith(" (잠김)", System.StringComparison.Ordinal);
+        uiController.PreviewChoice(text, overflow, canConfirm);
         uiController.ActiveOptionTextUi(true);
     }
 
