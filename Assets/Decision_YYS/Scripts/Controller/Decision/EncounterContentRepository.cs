@@ -105,12 +105,12 @@ public sealed class EncounterContentRepository
         {
             NormalizeOptionalActions(generated);
             bool review=SaveIOService.Instance.NarrativeRequiresReview(runNumber,contentPath,out string reviewError);
-            if (TryApplyGeneratedText(original, generated, out string generatedError,review))
+            bool emotionOnly = SaveIOService.Instance.NarrativeUsesEmotion(runNumber, contentPath);
+            if (TryApplyGeneratedText(original, generated, out string generatedError, review, emotionOnly))
             {
                 if(review)Debug.LogWarning("[LocalStory][검사 실패본 사용] "+runNumber+"회차 / "+contentPath+" / "+reviewError);
-                Debug.Log(
-                    $"[EncounterContentRepository] {runNumber}회차 생성 이야기를 사용합니다: " +
-                    $"{contentPath}/Story");
+                Debug.Log(emotionOnly ? $"[LocalStory][대사 적용] {runNumber}회차 / {contentPath}" :
+                    $"[EncounterContentRepository] {runNumber}회차 생성 이야기를 사용합니다: {contentPath}/Story");
             }
             else
             {
@@ -345,7 +345,7 @@ public sealed class EncounterContentRepository
     private static bool TryApplyGeneratedText(
         EncounterCardRoot original,
         EncounterCardRoot generated,
-        out string error,bool reviewRequired=false)
+        out string error, bool reviewRequired = false, bool emotionOnly = false)
     {
         if (generated?.MainStory == null ||
             generated.MainStory.Count != original.MainStory.Count)
@@ -364,7 +364,7 @@ public sealed class EncounterContentRepository
             EncounterCard originalCard = original.MainStory[index];
             EncounterCard generatedCard = generated.MainStory[index];
             if (originalCard == null || generatedCard == null ||
-                string.IsNullOrWhiteSpace(generatedCard.text))
+                (!emotionOnly && string.IsNullOrWhiteSpace(generatedCard.text)))
             {
                 error = $"{index}번째 생성 카드 또는 text가 비어 있습니다.";
                 return false;
@@ -388,7 +388,8 @@ public sealed class EncounterContentRepository
                 generatedCard.nextStoryPath != originalCard.nextStoryPath ||
                 JsonUtility.ToJson(generatedCard.guideAction) != JsonUtility.ToJson(originalCard.guideAction) ||
                 !ChoiceActionsEqual(generatedCard.choiceActions, originalCard.choiceActions) ||
-                !OptionsPreserveStructure(originalCard.options, generatedCard.options,reviewRequired))
+                (emotionOnly ? !ArrayEquals(originalCard.options, generatedCard.options) :
+                    !OptionsPreserveStructure(originalCard.options, generatedCard.options, reviewRequired)))
             {
                 error = $"{index}번째 카드의 대사/선택지 문구 외 구조가 원본과 다릅니다.";
                 return false;
@@ -399,7 +400,18 @@ public sealed class EncounterContentRepository
                 error = $"{index}번째 카드의 {{ }} 핵심 문자열이 변경되었습니다.";
                 return false;
             }
-            if (!reviewRequired && !LocalStoryRewrite.ValidateCardWording(originalCard, generatedCard, out string wordingError))
+            if (emotionOnly)
+            {
+                if (originalCard.text != generatedCard.text &&
+                    (string.IsNullOrWhiteSpace(originalCard.speakerId) ||
+                      string.Equals(originalCard.speakerId, "Player", StringComparison.OrdinalIgnoreCase) ||
+                      !LocalStoryEmotion.ValidChange(originalCard.text, generatedCard.text)))
+                {
+                    error = $"{index}번째 생성 카드가 NPC 발화 외의 내용을 변경했습니다.";
+                    return false;
+                }
+            }
+            else if (!reviewRequired && !LocalStoryRewrite.ValidateCardWording(originalCard, generatedCard, out string wordingError))
             {
                 error = $"{index}번째 생성 대사: {wordingError}";
                 return false;

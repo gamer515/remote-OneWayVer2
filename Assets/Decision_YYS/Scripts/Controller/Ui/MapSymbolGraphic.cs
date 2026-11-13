@@ -5,6 +5,16 @@ public sealed class MapSymbolGraphic : UnityEngine.UI.MaskableGraphic
 {
     public bool building, warning;
     [Range(0,1)] public float warningHeight=.2f;
+    private bool warningFromTop;
+
+    public void SetWarningFront(float height, bool fromTop)
+    {
+        height = Mathf.Clamp01(height);
+        if (Mathf.Approximately(height, warningHeight) && warningFromTop == fromTop) return;
+        warningHeight = height;
+        warningFromTop = fromTop;
+        SetVerticesDirty();
+    }
     protected override void OnPopulateMesh(UnityEngine.UI.VertexHelper vh)
     {
         vh.Clear();var r=rectTransform.rect;
@@ -16,12 +26,14 @@ public sealed class MapSymbolGraphic : UnityEngine.UI.MaskableGraphic
         if(warning)
         {
             const int segments=32;
+            float edge = warningFromTop ? r.yMax : r.yMin;
+            float amplitude = Mathf.Min(.04f, warningHeight, 1f-warningHeight) * r.height;
             for(int i=0;i<segments;i++)
             {
                 float x1=r.xMin+r.width*i/segments,x2=r.xMin+r.width*(i+1)/segments;
-                float y1=r.yMin+r.height*warningHeight+Mathf.Sin(i*.5f)*r.height*.02f;
-                float y2=r.yMin+r.height*warningHeight+Mathf.Sin((i+1)*.5f)*r.height*.02f;
-                Quad(new Vector2(x1,r.yMin),new Vector2(x2,r.yMin),new Vector2(x2,y2),new Vector2(x1,y1),new Color(.5f,.17f,.46f,.3f));
+                float y1=r.yMin+r.height*warningHeight+Mathf.Sin(i*.5f)*amplitude;
+                float y2=r.yMin+r.height*warningHeight+Mathf.Sin((i+1)*.5f)*amplitude;
+                Quad(new Vector2(x1,edge),new Vector2(x2,edge),new Vector2(x2,y2),new Vector2(x1,y1),new Color(.5f,.17f,.46f,.25f));
                 if(i%2==0)Quad(new Vector2(x1,y1-2),new Vector2(x2,y2-2),new Vector2(x2,y2+2),new Vector2(x1,y1+2),new Color(1,.48f,.73f,.9f));
             }
             return;

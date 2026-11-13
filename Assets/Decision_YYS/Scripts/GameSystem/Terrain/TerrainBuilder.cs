@@ -37,6 +37,19 @@ public sealed class TerrainBuilder
     internal IReadOnlyList<FacilityMarker> FacilityMarkers => facilityMarkers;
     internal bool HasChapter(string chapterId) => facilityHistory.ContainsKey(chapterId);
 
+    internal float? LoadedChunkEndZ(TerrainPlaceRegistry registry)
+    {
+        var segment = segments.Find(candidate => candidate.Registry == registry);
+        if (segment == null) return null;
+        for (int localIndex = segment.ChunkCount - 1; localIndex >= 0; localIndex--)
+        {
+            if (chunkInstances.TryGetValue(segment.FirstGlobalChunkIndex + localIndex, out var chunk) &&
+                chunk != null && chunk.activeInHierarchy)
+                return registry.GetChunkWorldPosition(localIndex + 1).z;
+        }
+        return null;
+    }
+
     public void RegisterTerrain(TerrainData terrainData, TerrainPlaceRegistry placeRegistry,
         GameObject[] groundPrefabs, TerrainPrefabCatalog prefabCatalog, Transform parent,
         int firstGlobalChunkIndex, int chunkCount, int runSeed, string chapterId)

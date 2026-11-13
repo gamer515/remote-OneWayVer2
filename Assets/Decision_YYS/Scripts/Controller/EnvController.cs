@@ -37,12 +37,14 @@ public class EnvController : MonoBehaviour
     [SerializeField] private TerrainGroundEntry[] groundEntries;
     [SerializeField] private TerrainPrefabCatalog terrainPrefabCatalog;
     [SerializeField, Min(0.01f)] private float chunkSize = 50f;
-    [SerializeField, Min(0)] private int loadRadius = 1;
+    [Tooltip("현재 청크 기준 앞과 뒤에 로드할 청크 수")]
+    [SerializeField, Min(0)] private int loadRadius = 4;
 
     public TerrainData TerrainData { get; private set; }
     public TerrainPlaceRegistry PlaceRegistry { get; private set; }
     public float ChunkSize => chunkSize;
     public float CurrentTerrainEndZ { get; private set; }
+    internal float? LoadedChunkEndZ => terrainBuilder.LoadedChunkEndZ(PlaceRegistry);
     public Vector3 TerrainOrigin => environment != null ? environment.transform.position : Vector3.zero;
 
     private TerrainRepository terrainRepository = new TerrainRepository();

@@ -64,8 +64,33 @@ public sealed class BackpackInventoryController : MonoBehaviour
     private Vector3 draggedOriginalPosition;
     private Quaternion draggedOriginalRotation;
     private Plane dragPlane;
+    private MineLearningStation studyStation;
+    private LearningDispenserView studyView;
+    private MineLearningJob draggedStudyBook;
 
     public bool IsOpen => isOpen;
+    public BoxCollider StudyGrid => boardDropArea as BoxCollider;
+
+    public void BindStudyBooks(MineLearningStation station)
+    {
+        if (studyStation != null) studyStation.StoredBooksChanged -= RebuildSlots;
+        studyStation = station;
+        studyView = FindFirstObjectByType<LearningDispenserView>();
+        studyView?.BindBackpack(this);
+        studyStation.StoredBooksChanged += RebuildSlots;
+        if (isOpen) RebuildSlots();
+    }
+
+    public bool IsBookDropTarget(Vector2 point) => IsInsideInventory(point) ||
+        (backpackCollider != null && TryCreateWorldRay(point, out var ray) && backpackCollider.Raycast(ray, out _, 1000));
+
+    public void BeginBookSlotDrag(MineLearningJob book, Vector2 point)
+    {
+        if (!isOpen || inputLocked || studyStation?.CanMoveBooks != true) return;
+        draggedStudyBook = book;
+        draggedSlotIndex = -1;
+        studyView?.ShowStoredBookDrag(book, point);
+    }
 
     private void Awake()
     {
@@ -279,12 +304,24 @@ public sealed class BackpackInventoryController : MonoBehaviour
 
     public void UpdateSlotDrag(Vector2 screenPosition)
     {
+        if (draggedStudyBook != null)
+        {
+            studyView?.ShowStoredBookDrag(draggedStudyBook, screenPosition);
+            return;
+        }
         if (draggedSlotIndex < 0) return;
         dragIconRoot.position = screenPosition;
     }
 
     public void EndSlotDrag(Vector2 screenPosition)
     {
+        if (draggedStudyBook != null)
+        {
+            var book = draggedStudyBook;
+            draggedStudyBook = null;
+            studyView?.RestoreStoredBook(book, screenPosition);
+            return;
+        }
         int index = draggedSlotIndex;
         draggedSlotIndex = -1;
         dragIconRoot.gameObject.SetActive(false);
@@ -398,7 +435,10 @@ public sealed class BackpackInventoryController : MonoBehaviour
         // 아이템이 적어도 인벤토리의 가로 폭은 빈 슬롯으로 채웁니다.
         // 아이템이 폭을 넘기면 마지막 빈 슬롯까지 Content가 늘어나 가로 스크롤됩니다.
         int minimumSlotCount = CalculateMinimumVisibleSlotCount();
-        int emptySlotCount = Mathf.Max(1, minimumSlotCount - storedItemIds.Count);
+        var storedBooks = studyStation?.Progress?.stored;
+        if (storedBooks != null)
+            foreach (var book in storedBooks) Instantiate(slotPrefab, content).BindBook(this, book);
+        int emptySlotCount = Mathf.Max(1, minimumSlotCount - storedItemIds.Count - (storedBooks?.Count ?? 0));
         for (int i = 0; i < emptySlotCount; i++)
             Instantiate(slotPrefab, content).Bind(this, null, -1);
 

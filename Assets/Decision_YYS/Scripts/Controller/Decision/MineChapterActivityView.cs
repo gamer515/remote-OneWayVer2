@@ -9,6 +9,8 @@ public sealed class MineChapterActivityView : MonoBehaviour
     private TextMeshProUGUI text;
     private UnityEngine.UI.Button[] buttons;
     private Action<int> selected;
+    private RectTransform panelRect;
+    private UnityEngine.UI.Image panelBackground;
     public void Initialize()
     {
         var font = FindObjectsByType<TMP_Text>(FindObjectsInactive.Include, FindObjectsSortMode.None).FirstOrDefault(t => t.font != null)?.font;
@@ -19,12 +21,14 @@ public sealed class MineChapterActivityView : MonoBehaviour
         gameObject.AddComponent<UnityEngine.UI.GraphicRaycaster>();
         var panel = new GameObject("ActivityPanel", typeof(RectTransform), typeof(UnityEngine.UI.Image));
         panel.transform.SetParent(transform, false);
-        var rect = (RectTransform)panel.transform;
-        rect.anchorMin = new Vector2(0.02f, 0.72f); rect.anchorMax = new Vector2(0.40f, 0.97f); rect.offsetMin = rect.offsetMax = Vector2.zero;
-        panel.GetComponent<UnityEngine.UI.Image>().color = new Color(0.035f, 0.06f, 0.09f, 0.94f);
+        panelRect = (RectTransform)panel.transform;
+        panelRect.offsetMin = panelRect.offsetMax = Vector2.zero;
+        panelBackground = panel.GetComponent<UnityEngine.UI.Image>();
+        panelBackground.color = new Color(.13f, .14f, .14f, .96f);
         var label = new GameObject("Progress", typeof(RectTransform), typeof(TextMeshProUGUI)); label.transform.SetParent(panel.transform, false);
         var lr = (RectTransform)label.transform; lr.anchorMin = new Vector2(0.03f, 0.48f); lr.anchorMax = new Vector2(0.97f, 0.97f); lr.offsetMin = lr.offsetMax = Vector2.zero;
-        text = label.GetComponent<TextMeshProUGUI>(); text.font = font; text.fontSize = 21; text.raycastTarget = false;
+        text = label.GetComponent<TextMeshProUGUI>(); text.font = font; text.fontSize = 17;
+        text.raycastTarget = false; text.alignment = TextAlignmentOptions.Center;
         buttons = new UnityEngine.UI.Button[4];
         for (int i = 0; i < buttons.Length; i++)
         {
@@ -43,6 +47,12 @@ public sealed class MineChapterActivityView : MonoBehaviour
     public void Show(string message, string[] actions = null, Action<int> onSelect = null)
     {
         gameObject.SetActive(true); text.text = message; selected = onSelect;
+        bool hasActions = actions?.Length > 0;
+        panelRect.anchorMin = new Vector2(.13f, hasActions ? .75f : .865f);
+        panelRect.anchorMax = new Vector2(.43f, .94f);
+        panelBackground.raycastTarget = hasActions;
+        text.rectTransform.anchorMin = new Vector2(.04f, hasActions ? .50f : .08f);
+        text.rectTransform.anchorMax = new Vector2(.96f, .94f);
         for (int i = 0; i < buttons.Length; i++)
         {
             bool visible = i < (actions?.Length ?? 0); buttons[i].gameObject.SetActive(visible);

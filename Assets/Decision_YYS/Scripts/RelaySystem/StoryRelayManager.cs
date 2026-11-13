@@ -4,7 +4,9 @@ using System.Collections.Generic;
 /// <summary>Builds deterministic chapter influence records from player stats.</summary>
 public class StoryRelayManager : MonoBehaviour
 {
-    [SerializeField] private PromptData promptData;
+    private const int NeutralStatValue = 5;
+    private const int ModerateChangeMinStat = 10;
+    private const int StrongChangeMinStat = 20;
 
     public StoryInfluenceProfile CreateInfluenceProfile(
         int[] stats,
@@ -19,7 +21,7 @@ public class StoryRelayManager : MonoBehaviour
             // 저장된 실제 능력치를 기준으로 약점 강도를 계산합니다.
             safeScores[i] = stats != null && i < stats.Length ? stats[i] : 0;
             total += safeScores[i];
-            changeMagnitude += Mathf.Abs(safeScores[i] - promptData.neutralStatValue);
+            changeMagnitude += Mathf.Abs(safeScores[i] - NeutralStatValue);
         }
 
         List<int> ranking = new List<int>();
@@ -41,11 +43,9 @@ public class StoryRelayManager : MonoBehaviour
         int majorWeaknessIndex = chooseAAsMajor ? weakCandidateA : weakCandidateB;
         int minorWeaknessIndex = chooseAAsMajor ? weakCandidateB : weakCandidateA;
 
-        int moderateMinimum = Mathf.Max(0, promptData.moderateChangeMinStat);
-        int strongMinimum = Mathf.Max(moderateMinimum + 1, promptData.strongChangeMinStat);
-        StoryChangeIntensity intensity = changeMagnitude >= strongMinimum
+        StoryChangeIntensity intensity = changeMagnitude >= StrongChangeMinStat
             ? StoryChangeIntensity.Strong
-            : changeMagnitude >= moderateMinimum
+            : changeMagnitude >= ModerateChangeMinStat
                 ? StoryChangeIntensity.Moderate
                 : StoryChangeIntensity.Subtle;
 

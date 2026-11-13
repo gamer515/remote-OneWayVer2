@@ -7,6 +7,40 @@ public partial class DecisionManager
 {
     private static readonly string[] TaxAbilities = { "힘", "속도", "지능", "매력" };
     private ChapterTaxSettings taxRules;
+    private Action commitBoardPayment, cancelBoardPayment;
+
+    private bool TryBeginBoardPayment(int[] cost, Action commit, Action cancel)
+    {
+        if (journeyCoinSupply?.BeginBoardPayment(cost, backpackInventory?.StudyGrid) != true) return false;
+        commitBoardPayment = commit;
+        cancelBoardPayment = cancel;
+        SetYellowInputInteractable(false);
+        journeyBoardInput?.SetChoiceCount(0);
+        presentationController.ExitChoice();
+        presentationController.ShowInteraction($"필요 코인 {DescribeTaxCost(cost)}\n코인통에서 꺼내 초록 보드에 올리세요.\nEsc 취소", "납부");
+        return true;
+    }
+
+    private void FinishBoardPayment() => StartCoroutine(CompleteBoardPayment());
+
+    private System.Collections.IEnumerator CompleteBoardPayment()
+    {
+        yield return journeyCoinSupply.AbsorbBoardPayment(uiController.StoryScreenCenter);
+        uiController.FlashCoinPayment();
+        var commit = commitBoardPayment;
+        commitBoardPayment = cancelBoardPayment = null;
+        SetYellowInputInteractable(true);
+        commit?.Invoke();
+    }
+
+    private void CancelBoardPayment()
+    {
+        journeyCoinSupply.ClearBoardPayment();
+        var cancel = cancelBoardPayment;
+        commitBoardPayment = cancelBoardPayment = null;
+        SetYellowInputInteractable(true);
+        cancel?.Invoke();
+    }
     private int TaxDay => mineRules?.dayCycle is ChapterDayCycle cycle
         ? Mathf.FloorToInt(mine.elapsedSeconds / cycle.DayLength) : 0;
 
@@ -28,28 +62,39 @@ public partial class DecisionManager
     {
         if (taxRules == null || mineCollectors == null || mineRules.dayCycle == null) return;
         UpdateTaxSchedule();
-        if (mine.taxPatrolActive)
+        if (mine.taxPatrolActive && mineCollectors.Finished)
         {
-            if (mineCollectors.Finished)
-            {
-                mine.taxPatrolActive = false;
-                SaveGuideCheckpoint();
-            }
-            return;
+            mine.taxPatrolActive = false;
+            mine.collectorOpeningCompleted = true;
+            SaveGuideCheckpoint();
         }
-        if (daylight < 1f || TaxDay < mine.nextTaxDay) return;
-
+        bool due = TaxDay >= mine.nextTaxDay;
+        if (mineCollectors.CanMeet && !mine.HasTaxInvoice)
+            mine.taxInvoice = taxRules.Announce(session.RunSeed, TaxDay, mine.taxScheduleTier, statContainer.stats);
+        if (daylight < 1f || mine.taxPatrolActive || (!due && mine.collectorOpeningCompleted)) return;
+        if (envController.LoadedChunkEndZ is not float departureZ) return;
         if (!mine.HasTaxInvoice)
             mine.taxInvoice = taxRules.Announce(session.RunSeed, TaxDay, mine.taxScheduleTier, statContainer.stats);
         mine.nextTaxDay = TaxDay + mine.taxScheduleInterval;
         mine.taxPatrolActive = true;
-        mineCollectors.BeginRoute();
+        mineCollectors.BeginRoute(departureZ);
         SaveGuideCheckpoint();
     }
 
     private static string DescribeTaxCost(int[] cost) =>
         string.Join(" + ", cost.Select((amount, index) => (amount, index))
             .Where(item => item.amount > 0).Select(item => $"{TaxAbilities[item.index]} {item.amount}"));
+
+    private static string DescribeCollectorPass(MineTaxInvoice invoice, int available, int largest)
+    {
+        string message = "기준을 넘겼군. 통과해라.\n종류마다 1개를 남기는 기준";
+        string fixedCost = DescribeTaxCost(invoice.FixedCost());
+        if (fixedCost.Length > 0) message += $"\n지정 세금: {fixedCost}";
+        int single = invoice.Single, mixed = invoice.Mixed;
+        if (single > 0) message += $"\n한 종류: 필요 {single}개 / 최대 여유 {largest}개";
+        if (single + mixed > 0) message += $"\n추가 세금: 필요 {single + mixed}개 / 전체 여유 {available}개";
+        return message;
+    }
 
     private void ShowMineTax(string feedback = null)
     {
@@ -110,13 +155,14 @@ public partial class DecisionManager
         });
     }
 
-    private void CommitTaxPayment(int[] cost)
+    private void CommitTaxPayment(int[] cost, bool boardPaid = false)
     {
         if (!mine.HasTaxInvoice || !AbilityPayment.TryPay(statContainer.stats, cost, out var after))
         {
             if (mine.HasTaxInvoice) ShowMineTax("납부에 필요한 코인이 부족합니다.");
             return;
         }
+        if (!boardPaid && TryBeginBoardPayment(cost, () => CommitTaxPayment(cost, true), () => ShowMineTax())) return;
         statContainer.SetStats(after);
         guideProgress.committedStats = after;
         mine.collected += cost.Sum();

@@ -640,7 +640,7 @@ MonoBehaviour:
   entranceBuffer: 1.5
   rowWaitSeconds: 3
   arrivalSpeed: 3
-  marchSpeed: 0.25
+  marchSpeed: 3
   stops:
   - entrance: {fileID: 1344988147}
     exit: {fileID: 790904072}
@@ -3104,6 +3104,7 @@ MonoBehaviour:
   activeStep: {x: 0, y: 0.32, z: 0}
   bookBoard: {fileID: 2146541310}
   bookHoverLabel: {fileID: 1907949578}
+  comboShelfPrefab: {fileID: 6043655441699769691, guid: 1bcbfc6f737711a47927dcf373c668bd, type: 3}
   studentHead: {fileID: 1439667871}
   learningMeter: {fileID: 1522793333}
   learningFill: {fileID: 1174324562}
@@ -7291,7 +7292,7 @@ Transform:
   m_GameObject: {fileID: 993891289}
   serializedVersion: 2
   m_LocalRotation: {x: 0.19936788, y: 0, z: 0, w: 0.97992474}
-  m_LocalPosition: {x: -200, y: 20, z: 82.5}
+  m_LocalPosition: {x: -200, y: 22, z: 82.5}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -7309,7 +7310,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 24c8926add5fe9d44a1a71d94d088e5d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RoadViewCameraController
-  initialCameraPosition: {x: -200, y: 18, z: 10.5}
+  initialCameraPosition: {x: -200, y: 22, z: 10.5}
   playerFollowOffsetZ: 10
   maxDistance: 0
   smoothTime: 0.5
@@ -7357,7 +7358,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fbcadf48b8f031c48b7ba107841fb403, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::StoryRelayManager
-  promptData: {fileID: 11400000, guid: 060bf94dd6fd6b043ae4cb0ae871fce8, type: 2}
 --- !u!1 &1029690183
 GameObject:
   m_ObjectHideFlags: 0
@@ -16093,7 +16093,6 @@ MonoBehaviour:
   mapArea: {fileID: 2134414372}
   warning: {fileID: 1402837046}
   warningText: {fileID: 1190429288}
-  warningDistance: 40
   markerSize: 16
 --- !u!114 &2134414374
 MonoBehaviour:
@@ -38536,7 +38535,7 @@ MonoBehaviour:
   - groundId: mine_village_180
     prefab: {fileID: 7980400746099971014, guid: b3acc4032d3b9ea4abab71f32ba1c7c1, type: 3}
     roomGroup: 02_Buildings
-    roomCompanionGroup:
+    roomCompanionGroup: 03_Decorations
     roomSourceGroundId:
   - groundId: mine_passage_180
     prefab: {fileID: 767602505559344779, guid: 48277c0ef5547ed45b15030cbaec021b, type: 3}
@@ -38551,7 +38550,7 @@ MonoBehaviour:
     - prefabId: mine_anchor
       prefab: {fileID: 850351398783051031, guid: becc8b286a70fe04cbb644201fbcd061, type: 3}
   chunkSize: 50
-  loadRadius: 1
+  loadRadius: 4
 --- !u!1 &9098001529364678249
 GameObject:
   m_ObjectHideFlags: 0

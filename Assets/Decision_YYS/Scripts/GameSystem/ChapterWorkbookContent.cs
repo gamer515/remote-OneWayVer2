@@ -12,7 +12,7 @@ internal static class ChapterWorkbookContent
 {
     private static readonly string[] WorkbookNames =
     {
-        "Chapters", "Maps", "Places", "NPCs", "Story", "Choices", "Rules", "Taxes", "TaxCatalog", "Books", "Learning"
+        "Chapters", "Maps", "Places", "NPCs", "Story", "Choices", "Rules", "Taxes", "TaxCatalog", "Books", "Learning", "Study"
     };
     private static readonly string[] Header = { "Document", "Field", "Type", "Value" };
     private static readonly Regex DocumentName = new Regex(@"^[A-Za-z0-9_-]+(/[A-Za-z0-9_-]+)*$");
@@ -53,6 +53,7 @@ internal static class ChapterWorkbookContent
             }
 
             var candidate = Read(folder);
+            ValidateStudy(candidate);
             Validate(candidate);
             string json = candidate.ToString(Newtonsoft.Json.Formatting.None);
             if (!File.Exists(previous) || File.ReadAllText(previous) != json)
@@ -191,8 +192,12 @@ internal static class ChapterWorkbookContent
                 chapter.episodeIds.Count == 0 || chapter.episodeIds.Distinct().Count() != chapter.episodeIds.Count)
                 throw new InvalidDataException("Chapters.xlsx: 잘못된 챕터/에피소드 ID " + chapter?.chapterId);
             string folder = (string)entry["folder"];
-            if (string.IsNullOrWhiteSpace(folder) || documents[folder + "/Characters"]?["characters"] is not JArray)
+            if (string.IsNullOrWhiteSpace(folder) || documents[folder + "/Characters"]?["characters"] is not JArray characters)
                 throw new InvalidDataException("NPCs.xlsx: 챕터 인물 목록 누락 " + chapter.chapterId);
+            foreach (var character in characters.OfType<JObject>())
+                if (character["autoGenerate"] is JToken enabled && enabled.Type != JTokenType.Boolean ||
+                    character["speechStyle"] is JToken style && style.Type != JTokenType.String)
+                    throw new InvalidDataException("NPCs.xlsx: 자동 생성 설정 또는 말투 형식 오류 " + character["characterId"]);
             if (chapter.bossStage < 0 || !string.IsNullOrEmpty(chapter.rulesDocument) && documents[chapter.rulesDocument] is not JObject ||
                 chapter.rulesEpisodes != null && chapter.rulesEpisodes.Any(id => !chapter.episodeIds.Contains(id)))
                 throw new InvalidDataException("Chapters.xlsx: 보스 또는 규칙 참조 오류 " + chapter.chapterId);
@@ -241,6 +246,9 @@ internal static class ChapterWorkbookContent
         foreach (var entry in storyByPath.Values)
         {
             string path = (string)entry["path"];
+            if (entry["rewriteEmotions"] is JToken emotions && (emotions is not JArray choices || choices.Count == 0 ||
+                choices.Any(value => value.Type != JTokenType.String || string.IsNullOrWhiteSpace((string)value))))
+                throw new InvalidDataException("Story.xlsx: rewriteEmotions에는 비어 있지 않은 감정 문자열 배열을 입력하세요. " + path);
             string key = (string)entry["key"];
             string storyFile = ChapterContentCatalog.SourceFile((JObject)entry);
             string explanationFile = ChapterContentCatalog.SourceFile((JObject)entry, true);
@@ -294,5 +302,46 @@ internal static class ChapterWorkbookContent
             !float.IsFinite(learning.maximumSeconds) || learning.maximumSeconds < learning.minimumSeconds ||
             !float.IsFinite(learning.deliverySeconds) || learning.deliverySeconds <= 0))
             throw new InvalidDataException("Learning.xlsx: 잘못된 용량 또는 시간 " + folder);
+    }
+
+    private static void ValidateStudy(JObject documents)
+    {
+        var books = documents["LearningSystem/Books"]?.ToObject<MineLearningStation.BookCatalog>()?.books;
+        var rules = documents["LearningSystem/Rules"]?.ToObject<MineLearningStation.StudyRules>();
+        bool Positive(float number) => float.IsFinite(number) && number > 0;
+        bool Ordered(IEnumerable<int> values)
+        {
+            var numbers = values.ToArray();
+            return numbers.Length > 0 && numbers[0] >= 0 &&
+                numbers.Zip(numbers.Skip(1), (a, b) => a < b).All(result => result);
+        }
+        if (rules == null || books == null || rules.skills == null || rules.combos == null ||
+            rules.intelligence == null || rules.capacities == null ||
+            rules.enduranceThresholds == null || rules.dailyLimits == null ||
+            rules.startingStock < 0 || rules.refillStock <= 0 || rules.refillBase <= 0 || rules.refillIncrease < 0 ||
+            rules.decayCoins < 0 || rules.healthPerEndurance <= 0 || !Positive(rules.daySeconds) ||
+            !Positive(rules.deliverySeconds) || !Ordered(rules.enduranceThresholds) ||
+            rules.dailyLimits.Length != rules.enduranceThresholds.Length || rules.dailyLimits.Any(value => value <= 0) ||
+            !Ordered(rules.capacities.Select(step => step.knowledgeCoins)) ||
+            rules.capacities.Any(step => step.simultaneous < 1 || step.waiting < 0) ||
+            !Ordered(rules.intelligence.Select(tier => tier.threshold)) ||
+            rules.intelligence.Any(tier => tier.decayDays <= 0 || !float.IsFinite(tier.success) || tier.success < 0 || tier.success > 1))
+            throw new InvalidDataException("Study.xlsx: 학습 단계, 일일 한도 또는 재고 설정 오류");
+        var skills = rules.skills.Select(skill => skill.id).ToHashSet();
+        var ids = books.Select(book => book.id).ToHashSet();
+        if (skills.Count != rules.skills.Length || ids.Count != books.Length ||
+            rules.skills.Any(skill => string.IsNullOrWhiteSpace(skill.id) || string.IsNullOrWhiteSpace(skill.name) ||
+                skill.ability < 0 || skill.ability > 3) ||
+            books.Any(book => string.IsNullOrWhiteSpace(book.id) || string.IsNullOrWhiteSpace(book.name) ||
+                string.IsNullOrWhiteSpace(book.author) || book.ability < 0 || book.ability > 3 ||
+                book.requiredAbility < 0 || book.requiredKnowledge < 0 || book.reward < 0 || book.skillReward < 0 ||
+                !skills.Contains(book.skill) || !Positive(book.seconds) || !Positive(book.generationSeconds)) ||
+            rules.combos.Select(combo => combo.id).Distinct().Count() != rules.combos.Length ||
+            rules.combos.Any(combo => string.IsNullOrWhiteSpace(combo.id) || string.IsNullOrWhiteSpace(combo.name) ||
+                combo.books == null || combo.books.Length < 2 || combo.books.Distinct().Count() != combo.books.Length ||
+                combo.books.Any(id => !ids.Contains(id)) || combo.coins?.Length != 4 ||
+                combo.coins.Any(amount => amount < 0) || combo.skillReward < 0 ||
+                (combo.skillReward > 0 && !skills.Contains(combo.skill))))
+            throw new InvalidDataException("Study.xlsx: 책, 세부 능력 또는 콤보 설정 오류");
     }
 }

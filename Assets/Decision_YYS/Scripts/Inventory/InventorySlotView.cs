@@ -11,6 +11,7 @@ public sealed class InventorySlotView : MonoBehaviour,
     private BackpackInventoryController owner;
     private InventoryItemDefinition definition;
     private int itemIndex = -1;
+    private MineLearningJob studyBook;
 
     public void Bind(
         BackpackInventoryController inventoryOwner,
@@ -32,21 +33,31 @@ public sealed class InventorySlotView : MonoBehaviour,
             itemName.text = definition != null ? definition.DisplayName : string.Empty;
     }
 
+    public void BindBook(BackpackInventoryController inventoryOwner, MineLearningJob book)
+    {
+        owner = inventoryOwner;
+        studyBook = book;
+        if (icon != null) { icon.enabled = false; icon.raycastTarget = false; }
+        if (itemName != null) itemName.text = book.bookName;
+    }
+
     public void OnBeginDrag(PointerEventData eventData)
     {
-        if (definition != null)
+        if (studyBook != null)
+            owner?.BeginBookSlotDrag(studyBook, eventData.position);
+        else if (definition != null)
             owner?.BeginSlotDrag(itemIndex, definition, eventData.position);
     }
 
     public void OnDrag(PointerEventData eventData)
     {
-        if (definition != null)
+        if (definition != null || studyBook != null)
             owner?.UpdateSlotDrag(eventData.position);
     }
 
     public void OnEndDrag(PointerEventData eventData)
     {
-        if (definition != null)
+        if (definition != null || studyBook != null)
             owner?.EndSlotDrag(eventData.position);
     }
 }

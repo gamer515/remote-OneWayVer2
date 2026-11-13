@@ -8,12 +8,14 @@ public class UiController : MonoBehaviour
     public enum DisplayMode { Event, Walking }
 
     public DisplayMode CurrentDisplayMode { get; private set; } = DisplayMode.Event;
+    public Vector2 StoryScreenCenter => viewUi != null ? viewUi.ScreenCenter : new Vector2(Screen.width * .25f, Screen.height * .65f);
 
     [SerializeField] private MainStoryUi mainStoryUi;
     [SerializeField] private ViewUi viewUi;
 
     public event Action<bool> OnPlayerViewChanged;
     public void FlashPlayerHit() => viewUi?.FlashPlayerHit();
+    public void FlashCoinPayment() => viewUi?.FlashCoinPayment();
     public void ClearPlayerHitFlash() => viewUi?.ClearPlayerHitFlash();
 
     public void ActiveOptionTextUi(bool isActive)

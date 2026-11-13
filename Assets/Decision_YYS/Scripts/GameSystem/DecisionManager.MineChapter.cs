@@ -50,6 +50,8 @@ public partial class DecisionManager
             mine.taxChapterId = chapter.chapterId;
             mine.nextTaxDay = 0;
             mine.taxPatrolActive = false;
+            mine.collectorOpeningCompleted = false;
+            mine.collectorReturning = false;
             mine.taxInvoice = null;
         }
         taxRules = ChapterTaxSettings.Load(ChapterContentCatalog.ChapterFolder(chapter.chapterId));
@@ -77,13 +79,11 @@ public partial class DecisionManager
                 .Select(position => envController.PlaceRegistry.GetChunkWorldPosition(place.chunkIndex) + position));
         var placement = envController.NpcPlacement;
         var doors = mine.variedRoomLayout && placement != null ? placement.Places.Select(placement.Doors) : null;
-        float patrolLength = envController.TerrainData.chunkLength;
-        if (doors != null)
-            patrolLength *= Mathf.Max(1, Mathf.CeilToInt((doors.Max(door => door.exit.z) - origin.z) / patrolLength));
+        float patrolLength = (envController.LoadedChunkEndZ ?? envController.CurrentTerrainEndZ) - origin.z;
         mineCollectors?.Initialize(mineCollectorPrefab, mine, origin,
             patrolLength, session.RunSeed, mineRules.collectorArrivalSeconds,
             mineRules.collectorNpcWaitMin, mineRules.collectorNpcWaitMax, npcPositions, doors);
-        mineCollectors?.SetVisible(mine.taxPatrolActive);
+        mineCollectors?.SetVisible(mineCollectors.IsVisible);
     }
 
     private string MineOpeningPath(string place, string fallback)
@@ -256,10 +256,26 @@ public partial class DecisionManager
         TickTaxSchedule(daylight);
         UpdateChapterSky(daylight);
         UpdateChapterCalendar();
-        if (!collectingTax)
+        if (!collectingTax && daylight > 0 && mine.taxPatrolActive &&
+            mineCollectors is { Finished: false } procession)
         {
-            if (daylight > 0 && mine.taxPatrolActive)
-                mineCollectors?.Tick(Time.deltaTime * daylight, Time.deltaTime);
+            var position = playerController.CurrentPosition;
+            bool hasCollection = mine.HasTaxInvoice && procession.CanMeet;
+            var nearby = hasCollection ? procession.MemberInRange(position, mineRules.encounterDistance) : null;
+            if (nearby == null)
+            {
+                procession.Tick(Time.deltaTime * daylight);
+                if (hasCollection) nearby = procession.MemberInRange(position, mineRules.encounterDistance);
+            }
+            if (CanOpenCollectorDialogue())
+            {
+                if (nearby != null) { ResolveCollectorContact(nearby); return; }
+                var witnessCollector = procession.NearestMember(position);
+                if (witnessCollector != null) TryBeginMineWitness(witnessCollector);
+            }
+        }
+        if (!collectingTax && journeyCoinSupply?.HasBoardPayment != true)
+        {
             if (mine.resting)
             {
                 mine.fatigue = Mathf.Max(0, mine.fatigue - mineRules.recoveryPerSecond * Time.deltaTime);
@@ -277,17 +293,11 @@ public partial class DecisionManager
                     Debug.Log("[에셋 필요] 강제 휴식 애니메이션 미지정. 정지 상태로 회복합니다.");
                 }
             }
-            if (daylight <= 0 || !mine.taxPatrolActive || mineCollectors == null || mineCollectors.Finished || currentState == StoryState.Duel ||
-                (currentState == StoryState.Transitioning && !mineLaborInProgress) || guideProgress.allocating) return;
-            var collector = mineCollectors.NearestMember(playerController.CurrentPosition);
-            if (collector == null) return;
-            if (mine.HasTaxInvoice && mineCollectors.CanMeet &&
-                Vector3.Distance(playerController.CurrentPosition, collector.position) <= mineRules.encounterDistance)
-                BeginMineTax(collector);
-            else
-                TryBeginMineWitness(collector);
         }
     }
+
+    private bool CanOpenCollectorDialogue() => journeyCoinSupply?.HasBoardPayment != true && !guideProgress.allocating &&
+        currentState != StoryState.Duel && (currentState != StoryState.Transitioning || mineLaborInProgress);
 
     private void BeginCollectorDialogue(Transform collector, Transform witness = null)
     {
@@ -307,10 +317,24 @@ public partial class DecisionManager
         journeyBoardInput?.SetChoiceCount(0);
     }
 
-    private void BeginMineTax(Transform collector)
+    private void ResolveCollectorContact(Transform collector)
     {
+        var invoice = mine.taxInvoice;
+        if (invoice.CanPass(statContainer.stats, out int available, out int largest))
+        {
+            BeginCollectorDialogue(collector);
+            presentationController.ShowInteraction(DescribeCollectorPass(invoice, available, largest), "징수원");
+            StartCoroutine(FinishCollectorPass());
+            return;
+        }
         BeginCollectorDialogue(collector);
         ShowMineTax();
+    }
+
+    private IEnumerator FinishCollectorPass()
+    {
+        yield return new WaitForSecondsRealtime(5f);
+        FinishMineTax();
     }
 
     private void TryBeginMineWitness(Transform collector)
@@ -439,7 +463,7 @@ public partial class DecisionManager
         }
         else BeginWalkStep();
     }
-    private void LateUpdate() => mineCollectors?.SetVisible(mine?.taxPatrolActive == true);
+    private void LateUpdate() => mineCollectors?.SetVisible(mine != null && mineCollectors.IsVisible);
 
     private void BeginInsufficientPaymentDuel(Dialogue card)
     {

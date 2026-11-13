@@ -3,6 +3,7 @@ using TMPro;
 using UnityEngine;
 
 /// <summary>Projects actual actors and room entrances onto the existing road camera image.</summary>
+[DefaultExecutionOrder(100)]
 public sealed class JourneyMapMarkers : MonoBehaviour
 {
     [SerializeField] private Camera mapCamera;
@@ -11,7 +12,6 @@ public sealed class JourneyMapMarkers : MonoBehaviour
     [SerializeField] private RectTransform mapArea;
     [SerializeField] private MapSymbolGraphic warning;
     [SerializeField] private TextMeshProUGUI warningText;
-    [SerializeField, Min(1)] private float warningDistance=40;
     [SerializeField, Min(4)] private float markerSize=16;
     private readonly Dictionary<string,MapSymbolGraphic> markers=new Dictionary<string,MapSymbolGraphic>();
     private Player player;
@@ -41,27 +41,34 @@ public sealed class JourneyMapMarkers : MonoBehaviour
         foreach(var actor in actors)if(actor!=null)Position("npc:"+actor.GetInstanceID(),actor.position,new Color(.25f,.95f,.68f),false);
         if(player!=null)Position("player",player.transform.position,new Color(1,.72f,.2f),false);
         UpdateFacilityMarkers();
-        foreach(var marker in markers)
-            if(marker.Key.StartsWith("collector:"))marker.Value.gameObject.SetActive(false);
-        var members=collectors!=null?collectors.GetComponentsInChildren<Transform>():System.Array.Empty<Transform>();
-        float nearest=float.MaxValue;float collectorZ=0;
-        foreach(var member in members)
+        UpdateCollectors();
+    }
+
+    private void UpdateCollectors()
+    {
+        bool visible = collectors != null && collectors.Count > 0 && collectors.Members[0].gameObject.activeInHierarchy;
+        Vector3 front = visible ? mapCamera.WorldToViewportPoint(collectors.Members[0].position) : Vector3.zero;
+        bool showCloud = visible && !collectors.IsReturning && front.z > 0 && front.y > 0 && front.y < 1;
+        warning.gameObject.SetActive(showCloud);
+        warningText.gameObject.SetActive(visible);
+        if (!visible)
         {
-            if(!member.name.StartsWith("Collector_"))continue;
-            Position("collector:"+member.GetInstanceID(),member.position,new Color(1,.25f,.35f),false);
-            if(player!=null)
-            {
-                float distance=Vector3.Distance(member.position,player.transform.position);
-                if(distance<nearest) { nearest=distance;collectorZ=member.position.z; }
-            }
+            foreach (var marker in markers)
+                if (marker.Key.StartsWith("collector:") && marker.Value.gameObject.activeSelf)
+                    marker.Value.gameObject.SetActive(false);
+            return;
         }
-        bool approaching=nearest<=warningDistance;
-        warning.gameObject.SetActive(approaching);warningText.gameObject.SetActive(approaching);
-        if(approaching)
+
+        float nearest = float.PositiveInfinity;
+        foreach (var member in collectors.Members)
         {
-            warning.warningHeight=Mathf.Lerp(.08f,.34f,1-nearest/warningDistance);warning.SetVerticesDirty();
-            warningText.text="징수원 접근 "+(collectorZ>player.transform.position.z?"↓":"↑")+" / "+nearest.ToString("F0");
+            Position("collector:" + member.GetInstanceID(), member.position, new Color(1,.25f,.35f), false);
+            if (player != null) nearest = Mathf.Min(nearest, Vector3.Distance(member.position, player.transform.position));
         }
+
+        if (showCloud) warning.SetWarningFront(front.y, true);
+        string phase = collectors.Finished ? "징수원 대기" : collectors.IsReturning ? "징수원 복귀 ↑" : "징수원 접근 ↓";
+        warningText.text = float.IsFinite(nearest) ? $"{phase} / {nearest:F0}u" : phase;
     }
     private void UpdateFacilityMarkers()
     {
@@ -109,10 +116,12 @@ public sealed class JourneyMapMarkers : MonoBehaviour
         if (pinToEdge)
         {
             point.x = Mathf.Clamp(point.x, .06f, .94f);
-            point.y = Mathf.Clamp(point.y, .07f, .93f);
+            point.y = EdgeHeight(point.y);
         }
         bool visible=(point.z>0 || (pinToEdge && mapCamera.orthographic))&&point.x>=0&&point.x<=1&&point.y>=0&&point.y<=1;
         graphic.gameObject.SetActive(visible);
         if(visible) { graphic.rectTransform.anchorMin=graphic.rectTransform.anchorMax=new Vector2(point.x,point.y);graphic.rectTransform.anchoredPosition=Vector2.zero; }
     }
+
+    private static float EdgeHeight(float value) => Mathf.Clamp(value, .07f, .93f);
 }

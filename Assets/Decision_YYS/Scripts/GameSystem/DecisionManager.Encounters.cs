@@ -52,6 +52,7 @@ public partial class DecisionManager
 
     private void HandleEncounterYellowPressed()
     {
+        if (journeyCoinSupply?.HasBoardPayment == true) return;
         if (collectingTax) { ConfirmMineTaxChoice(); return; }
         if (mine?.resting == true) return;
         if (guideProgress?.allocating == true) { ConfirmGuideAllocation(); return; }
@@ -166,7 +167,7 @@ public partial class DecisionManager
         }
     }
 
-    private bool ExecuteStoryChoice(Dialogue card)
+    private bool ExecuteStoryChoice(Dialogue card, bool boardPaid)
     {
         if (card.choiceActions == null || card.choiceActions.Length == 0)
         {
@@ -188,6 +189,13 @@ public partial class DecisionManager
             else BeginInsufficientPaymentDuel(card);
             return true;
         }
+        if (!confirmed && !boardPaid && TryBeginBoardPayment(choice.abilityCost,
+            () => AdvanceEncounterCard(true), () =>
+            {
+                presentationController.ShowDialogue(card);
+                journeyBoardInput?.SetChoiceCount(card.options.Length);
+                RenderEncounterOptions();
+            })) return true;
         RecordStoryChoice(card, choice);
         int relationshipDelta = choice.relationshipDelta *
             (statContainer.stats.Length == 4 && statContainer.stats[3] == 0 ? 2 : 1);
@@ -353,13 +361,13 @@ public partial class DecisionManager
         SetYellowInputInteractable(true);
     }
 
-    private void AdvanceEncounterCard()
+    private void AdvanceEncounterCard(bool boardPaid = false)
     {
         if (currentState == StoryState.WaitingForChoice)
         {
             Dialogue card = activeCards.MainStory[activeCardIndex];
             Debug.Log($"[카드 선택] {activePlaceId}: {card.options[selectedGearIndex]}", this);
-            if (ExecuteStoryChoice(card)) return;
+            if (ExecuteStoryChoice(card, boardPaid)) return;
         }
         Dialogue current = activeCards.MainStory[activeCardIndex];
         if (TryExecuteMineAction(current)) return;
@@ -375,6 +383,7 @@ public partial class DecisionManager
 
     private void HandleEncounterGearSelection(int index)
     {
+        if (journeyCoinSupply?.HasBoardPayment == true) return;
         if (collectingTax)
         {
             taxSelection = index >= 0 && index < (taxOptions?.Length ?? 0) ? index : -1;
@@ -442,11 +451,9 @@ public partial class DecisionManager
             ShowMineRevisit(finished.PlaceId);
             try
             {
-                LocalStoryDialogueQueue.EncounterEnded(SaveIOService.Instance,session.RunNumber,
-                    finished.PlaceId,finished.DisplayName,finished.ContentPath);
-                LocalStoryRuntimeService.TryResumePending();
+                LocalStoryDialogueQueue.EncounterEnded(SaveIOService.Instance, session.RunNumber, finished.PlaceId);
             }
-            catch(Exception e) { LocalStoryLog.Write(LocalStoryLogStage.Failed,"대화 종료 생성 요청: "+e.Message,this); }
+            catch(Exception e) { LocalStoryLog.Write(LocalStoryLogStage.Failed,"대화 종료 기록: "+e.Message,this); }
         }
     }
 

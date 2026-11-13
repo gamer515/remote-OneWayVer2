@@ -109,6 +109,7 @@ public partial class DecisionManager : MonoBehaviour
 
     private void OnDisable()
     {
+        journeyCoinSupply?.ClearBoardPayment();
         StopChapterSky();
         RestoreGuideKneel();
         if (statContainer != null)
@@ -147,12 +148,19 @@ public partial class DecisionManager : MonoBehaviour
     {
         TickMineChapter();
         TickLearning();
+        if (journeyCoinSupply?.HasBoardPayment == true)
+        {
+            journeyCoinSupply.HandleBoardPaymentInput(FinishBoardPayment, CancelBoardPayment);
+            return;
+        }
         if (guideProgress?.allocating == true)
         {
             HandleGuideAllocationInput();
             return;
         }
-        if (currentState != StoryState.MovingToEncounter && currentState != StoryState.Transitioning &&
+        if (journeyCoinSupply?.CanStageCoins == true)
+            journeyCoinSupply.HandleBoardPaymentInput(FinishBoardPayment, CancelBoardPayment);
+        else if (currentState != StoryState.MovingToEncounter && currentState != StoryState.Transitioning &&
             currentState != StoryState.Duel && encounterFlow == null)
             journeyCoinSupply?.HandleInput();
 
@@ -260,6 +268,16 @@ public partial class DecisionManager : MonoBehaviour
             journeyCoinSupply = new JourneyCoinSupplyController(
                 journeyBoardInput, journeyCoinPrefabs, coinDropController,
                 saveService.SaveRemainingCoins);
+            journeyCoinSupply.SetBoardGrid(backpackInventory?.StudyGrid);
+            journeyCoinSupply.DropRunner = this;
+            var dispenser = FindFirstObjectByType<LearningDispenserView>();
+            if (dispenser != null)
+            {
+                journeyCoinSupply.WhiteBoard = dispenser.WhiteBoard;
+                dispenser.BindCoinSupply(journeyCoinSupply);
+                journeyCoinSupply.RefillSlot = dispenser.FindRefillSlot;
+                journeyCoinSupply.RefillBooks = dispenser.TryRefillBooks;
+            }
             if (!journeyCoinSupply.IsReady)
                 Debug.LogError("Journey 코인통·경사로·코인 프리팹 참조를 확인하세요.", this);
             journeyCoinSupply.RefreshDisplay();
@@ -494,7 +512,7 @@ private void SetYellowInputInteractable(bool interactable)
                 () => {
                     saveService?.CompleteCurrentRun();
                     try { LocalStoryDialogueQueue.FinalizeRun(SaveIOService.Instance,session.RunNumber); }
-                    catch(Exception e) { LocalStoryLog.Write(LocalStoryLogStage.Failed,"회차 종료 기억 조건 확인: "+e.Message,this); }
+                    catch(Exception e) { LocalStoryLog.Write(LocalStoryLogStage.Failed,"회차 종료 감정 저장: "+e.Message,this); }
                 },
                 () => { int next = GameManager.Instance.PrepareNextPlaythrough(); LocalStoryRuntimeService.TryResumePending(); return next; },
                 () => sceneTransitionService.LoadMainMenuScene());

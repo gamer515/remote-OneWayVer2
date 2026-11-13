@@ -36,8 +36,6 @@ public sealed class LocalStoryBuild : IPreprocessBuildWithReport, IPostprocessBu
         foreach(string file in new[]{"runtimes/win-x64/native/llamalib_win-x64_tinyblas.dll","runtimes/win-x64/native/llamalib_win-x64_avx2.dll",
             "LICENSE","third_party_licenses/llama.cpp.LICENSE.txt"})
             if(!File.Exists(Path.Combine(SourceRuntime,file))) throw new BuildFailedException("내장 추론 런타임/고지 누락: "+file);
-        foreach(var npc in ChapterContentCatalog.Chapters.SelectMany(c=>LocalStoryNotebook.ReadContexts(LocalStoryNotebook.TemplatePath((string)c["id"]),Array.Empty<string>())).Where(n=>n.autoGenerate))
-            if(npc.model!="Gemma") throw new BuildFailedException("배포 패키지는 Gemma를 포함합니다. 자동 생성 NPC의 모델 설정을 확인하세요: "+npc.characterId+" / "+npc.model);
     }
     public void OnPreprocessBuild(BuildReport report)
     {

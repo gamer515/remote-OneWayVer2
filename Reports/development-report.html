@@ -161,6 +161,88 @@ unity command run_script --caller plugin --skill unity-cli --file AgentScripts/K
 <p><code>DeskCalendarDisplay.cs</code>가 날짜·문구·아이콘을 갱신한다. <code>LearningDispenserAsset.cs</code>의 공통 칸 배치 로직으로 위아래 책꽂이에 책을 맞추고, 이미 차 있는 칸에서는 이전 위치로 복귀한다. 유지 도구 <code>AssetBuild/LearningDispenser/ExportStandaloneV2.cs</code>의 <code>AddEditableCalendarAndLowerShelf</code>가 프리팹과 데모를 갱신하고 패키지를 만든다.</p>
 <p>아래 다섯 칸을 각각 채워 위치를 검증했다. 달력 복제본에 다른 날짜와 D-1을 넣고 낮 아이콘이 켜지는 것도 확인했다. 별도 프로젝트의 Import와 OS 포인터 조작은 검사하지 않았다. 새 임시 코드와 정리 대기 파일은 없다.</p>
 <p><a href="../output/LearningDispenserKit_v5/LearningDispenserKit_v5.unitypackage">Unity 패키지</a> · <a href="../output/LearningDispenserKit_v5/Preview.png">Unity 렌더</a> · <a href="../output/LearningDispenserKit_v5/checks.json">검사 결과</a></p>
+</section>
+<hr>
+<section id="chapter-content-integration">
+<h1>왕국 챕터 추가 경로 점검</h1>
+<p>2026-11-12 (Asia/Seoul). 새 챕터의 콘텐츠와 오브젝트를 현재 프로젝트에 연결하는 조건을 확인했다.</p>
+<table><tr><th>단계</th><th>확인 방법</th><th>결과</th></tr>
+<tr><td>콘텐츠 로드</td><td>런타임 로더와 로컬 적용본 확인</td><td>완료. 저장 폴더의 엑셀을 읽고, 검증한 데이터를 적용본으로 기록한다.</td></tr>
+<tr><td>오브젝트 배치</td><td>적용본의 지형·장소 ID를 DecisionScene과 대조</td><td>완료. 갱도와 해안 지형 ID, 갱도의 장소 4개에 대해 프리팹·좌표·이야기 연결을 확인했다.</td></tr>
+<tr><td>챕터 전환</td><td>챕터 진행 설정과 보스 승리 처리 추적</td><td>완료. 갱도 보스 승리 후 해안으로 이어지는 설정이며, 해안 끝에서 멈춘다.</td></tr></table>
+<h2>실행과 수정 방법</h2>
+<ol>
+<li><a href="../Assets/StreamingAssets/ContentAuthoring/Chapters.xlsx">Chapters.xlsx</a>에 챕터 ID·폴더·에피소드 ID와 진행 순서를 등록한다. 현재 갱도 다음은 해안이다. 갱도에서 왕국으로 바로 진행하려면 왕국을 갱도 다음에 배치한다. 해안 뒤에 배치하려면 해안의 <code>stopAtEnd</code>를 해제한다. 새 챕터가 진행 상한 안에 포함되어야 한다.</li>
+<li><code>Maps.xlsx</code>에 지형 ID와 청크 정보를, <code>Places.xlsx</code>에 장소·좌표·연결 이야기 경로를 작성한다. <code>NPCs.xlsx</code>, <code>Story.xlsx</code>, <code>Choices.xlsx</code>에 인물, 대사, 선택지 데이터를 연결한다. 장소마다 좌표가 있어야 하며, <code>connectStoryCards</code>의 마지막 이름은 <code>placeId</code>와 일치해야 한다.</li>
+<li>새 지형은 <a href="../Assets/Scenes/DecisionScene.unity">DecisionScene</a>의 <code>EnvController &gt; Ground Entries</code>에 <code>groundId</code>로 연결한다. 새 NPC나 상호작용 시설은 <code>Terrain Prefab Catalog</code>의 <code>Character Entries</code> 또는 <code>Building Entries</code>에 <code>prefabId</code>로 연결한다. 배경 장식은 지형 프리팹의 자식으로 배치할 수 있다.</li>
+<li>이 PC의 기존 플레이에서는 <code>%USERPROFILE%\AppData\LocalLow\DefaultCompany\OneWayInVc\Saves\ContentAuthoring</code>의 엑셀을 편집하고 게임 또는 Unity Play 세션을 다시 시작한다. <code>Assets/StreamingAssets/ContentAuthoring</code>은 저장 위치에 해당 엑셀 파일이 없을 때 복사하는 원본이다. 엑셀 검증 실패 시 직전 적용본을 다시 검증해 사용하며, 유효한 적용본이 없으면 리소스 JSON을 읽는다.</li>
+</ol>
+<h2>검증 근거와 현재 범위</h2>
+<p>로컬 <code>AppliedContent.json</code>에는 갱도 <code>Chapter_1</code>과 해안 <code>Chapter_Coast</code>가 있다. 갱도에 등록된 이야기 102개와 NPC 데이터 8개, 해안의 지형 <code>coastal_roofed</code>와 이야기·NPC 데이터 0개를 확인했다. 왕국 데이터는 현재 적용본에 없다. 검증은 소스, 저장된 적용본, 씬 참조 대조로 수행했다. 실제 플레이에서 보스 승리부터 왕국 진입까지는 왕국 콘텐츠가 준비된 뒤 확인할 수 있다.</p>
+<p>지형 생성, 데이터 로드, 챕터 진행은 기존 코드를 사용한다. 새 전투 스테이지나 새 상호작용 방식은 Unity 설정 또는 구현이 필요하다. NPC 대사 카메라와 방향 전환은 정확한 <code>Place_&lt;placeId&gt;</code> 이름으로 오브젝트를 찾지만 동적 생성 경로는 <code>Place_&lt;placeId&gt;_&lt;prefabId&gt;</code> 이름을 사용한다. 새 NPC의 카메라 연출에는 지형 프리팹에 사전 배치하는 경로를 쓰거나 이 이름 규칙을 맞춰야 한다.</p>
+<p><a href="../Assets/Decision_YYS/Scripts/GameSystem/ChapterWorkbookContent.cs">엑셀 로더</a> · <a href="../Assets/Decision_YYS/Scripts/Controller/EnvController.cs">지형과 장소 참조 검증</a> · <a href="../Assets/Decision_YYS/Scripts/GameSystem/Terrain/TerrainBuilder.cs">프리팹 생성</a> · <a href="../Assets/Decision_YYS/Scripts/SaveSystem/SaveManager.cs">보스 승리 후 챕터 저장</a></p>
+<p>게임 코드·씬·저장 데이터 수정 없음. 다음 작업은 왕국 데이터와 프리팹 등록 후 갱도 보스 승리부터 왕국 첫 조우까지 플레이 검증하는 것이다. 임시 코드 파일과 정리 대기 항목은 없다.</p>
+</section>
+<hr>
+<section id="gemma-emotion-dialogue">
+<h1>Gemma 감정 대사와 다음 회차 적용</h1>
+<p>2026-11-12 (Asia/Seoul). 실제 플레이에서 본 NPC 대사를 대상으로 회차 종료 후 감정을 추첨하고, Gemma가 같은 사건을 다른 감정으로 표현하도록 변경했다.</p>
+<p><a href="chapter-dialogue.html">챕터별 원문·NPC·플레이어 선택지 보기</a></p>
+<table><tr><th>단계</th><th>결과</th></tr>
+<tr><td>이야기 데이터</td><td>갱도 이야기 102개, 카드 332개를 챕터·에피소드·이야기별로 펼쳐 볼 수 있다. NPC 발화, 플레이어·지문, 플레이어 선택지와 분기는 별도 열에 표시한다.</td></tr>
+<tr><td>감정과 프롬프트</td><td>회차가 끝날 때 이야기마다 감정 키워드를 균등하게 하나 추첨한다. Gemma 입력은 해당 화자의 설정, 추첨된 감정, 원문 한 줄이다.</td></tr>
+<tr><td>검사와 저장</td><td>코드가 원문 어구와 물음표, 숫자, 고정 문구를 대조하고 Gemma가 감정 표현을 검사한다. 통과한 줄을 다음 회차 생성본과 파인튜닝 후보에 넣는다.</td></tr>
+<tr><td>기존 구조 정리</td><td>실제 플레이의 외부 모델 경쟁, 꿈 기억 규칙, 실패 결과 자동 적용 경로를 제거했다. <code>PromptData</code> ScriptableObject와 에셋 두 개를 삭제하고 실제 씬에서 사용하던 영향도 기준 5/10/20을 <code>StoryRelayManager</code>에 옮겼다. 모델 비교 화면과 과거 테스트 자료는 기존 도구에서 계속 읽을 수 있다.</td></tr></table>
+
+<h2 id="gemma-mine">갱도</h2>
+<p><code>brook</code>을 펼치면 브룩과 도르의 발화를 확인할 수 있다. 브룩이 통행세를 요구하는 카드에서는 브룩의 대사만 바뀔 수 있다. 같은 카드에 붙은 플레이어 선택지 네 개와 해당 분기, 비용, 행동은 원본 카드에서 가져온다. <a href="chapter-dialogue.html#Chapter_1">갱도 원문</a></p>
+
+<h2 id="gemma-coast">해안</h2>
+<p><a href="chapter-dialogue.html#Chapter_Coast">해안 챕터</a>는 현재 지형 데이터가 있으며 등록된 대화는 0개다. 대화와 NPC를 등록하면 해안의 챕터 ID를 기준으로 화자 설정을 읽고 같은 생성 흐름을 사용한다.</p>
+
+<h2 id="gemma-new-chapters">왕국 등 이후 챕터</h2>
+<p>앞 절의 챕터 추가 방법으로 챕터, 에피소드, NPC와 대사를 등록한다. 카드의 <code>speakID</code>가 해당 챕터에 등록된 NPC ID일 때만 후보가 된다. <code>NPCs.xlsx</code>에서 해당 인물의 <code>speechStyle</code>을 작성할 수 있고, 빈 값이면 원문의 말투를 참고한다. 특정 이야기의 <code>rewriteAllowed</code>를 끄거나 NPC의 <code>autoGenerate</code>를 끄면 해당 원문을 유지한다.</p>
+<p>기본 추첨 후보는 화, 겁, 슬픔, 기쁨, 당황, 안도다. 이야기에 어울리는 감정만 고르려면 <code>Story.xlsx</code>의 <code>Catalog</code> 문서에 해당 이야기의 <code>/stories/#번호/rewriteEmotions</code> 행을 <code>json</code> 타입으로 추가한다. 예시는 <code>["화","겁","당황"]</code>이다. 편집한 적용본을 HTML로 다시 보려면 프로젝트 루트에서 <code>node AgentScripts/StoryWorkbook/report-dialogue.mjs "저장폴더/ContentAuthoring/AppliedContent.json"</code>을 실행한다. 인수를 생략하면 프로젝트의 원본 JSON으로 생성한다.</p>
+
+<h2 id="gemma-resume">회차 종료·중단·학습 데이터</h2>
+<ul>
+<li>조우 완료 시 실제 표시된 NPC 카드 ID를 기록한다. 진행 도중 사망 등으로 회차가 종료되면 마지막 조우에서 이미 본 카드도 기록한다. 회차 중 게임을 닫으면 기존 플레이 체크포인트에서 이어진다.</li>
+<li>추첨된 감정과 완료한 문장은 <code>Saves/GeneratedContent/For_Run_02/Queue.json</code>처럼 대상 회차의 큐에 저장된다. 생성 도중 종료되면 다음 실행에서 같은 감정으로 아직 처리되지 않은 문장부터 시작한다.</li>
+<li>생성본은 원문이 같은 경우 다음 회차에 사용할 수 있다. 대화에 들어갈 때 준비된 버전을 고르며, 이미 연 대화는 그때 고른 버전으로 끝까지 이어진다.</li>
+<li>통과한 줄은 <code>Saves/LocalStoryTraining/&lt;챕터ID&gt;/&lt;에피소드ID&gt;/For_Run_02/Encounters/&lt;이야기&gt;.jsonl</code>에 Gemma용 <code>messages</code> 형식으로 저장한다. 자동 문맥 판정은 후보를 거르는 용도다. 파인튜닝 실행은 이 작업 범위에 포함하지 않는다.</li>
+</ul>
+<p>변경 가능한 범위는 감탄사, 말의 쉼과 강조를 표시하는 문장부호, 코드에 등록한 구어 축약이다. 원문의 주요 어구를 보존하는 방향으로 범위를 좁혔다. 첫 실제 추론에서 Gemma가 곡괭이 무게의 뜻을 뒤집거나 통행세 요구를 약하게 쓴 문장까지 스스로 통과시킨 사례를 발견했다. 이 두 응답은 보강된 코드 검사에서 차단되는 것을 확인했다.</p>
+<h2 id="gemma-verified">실제 Gemma 검증</h2>
+<p>최종 검사에서 초안이 원문 어구를 바꿨을 때 Gemma가 선택한 감탄사만 원문에 붙여 감정 표현을 다시 검사했다. 아래 두 문장이 모두 통과했다.</p>
+<table><thead><tr><th>감정</th><th>갱도 원문</th><th>최종 통과 대사</th></tr></thead><tbody>
+<tr><td>겁</td><td>이상하네. 어제까진 이 곡괭이가 이렇게 무겁지 않았는데<del>.</del></td><td><mark>으으, </mark>이상하네. 어제까진 이 곡괭이가 이렇게 무겁지 않았는데<mark>…</mark></td></tr>
+<tr><td>화</td><td>안쪽으로 들어가려면 통행세부터 내<del>.</del></td><td><mark>쯧, </mark>안쪽으로 들어가려면 통행세부터 내<mark>!</mark></td></tr>
+</tbody></table>
+<p>Unity 6000.3.12f1 컴파일 오류 0개. 격리 테스트 25개를 통과했다. 회차 종료 전 추첨 대기, 감정 재추첨 방지, 중단 후 미완료 문장 재개, 기존 큐와 마지막 조우 복구, 선택지·분기 보존, 다음 회차 적용, 통과한 두 줄만 JSONL에 저장되는 것을 확인했다. 실제 모델 검사는 위 브룩 대사 두 줄을 대상으로 했다.</p>
+<p>기존 플레이 저장은 검증에 사용하지 않았다. 학습 결과는 후보 JSONL이며 기존 실험용 Colab 스크립트는 별도의 데이터 형식을 사용한다. 임시 코드 파일은 없다. 격리 테스트 저장과 모델 응답 기록은 <code>tmp/GemmaEmotionChecks/</code>에 정리 대기 상태로 남겼다. <a href="../tmp/GemmaEmotionChecks/Gemma-28f05a7455f74567b2f3b75d2f67600b.json">최종 Gemma 응답 기록</a></p>
+<p>구현 진입점은 <a href="../Assets/Decision_YYS/Scripts/Ai/LocalStoryDialogueQueue.cs">회차 종료와 저장 큐</a>, <a href="../Assets/Decision_YYS/Scripts/Ai/LocalStoryEmotion.cs">Gemma 프롬프트와 결과 검사</a>, <a href="../Assets/Decision_YYS/Scripts/SaveSystem/SaveIOService.Narrative.cs">게임 적용본과 JSONL 저장</a>이다.</p>
+<h2 id="gemma-dialogue-comparison">저장된 변경 대사 확인</h2>
+<p>2026-11-12 (Asia/Seoul). 챕터 페이지를 열면 실제 Gemma로 확인한 브룩 대사 두 쌍이 바로 보인다. 각 쌍은 <strong>원문</strong> 아래에 <strong>변경 대사</strong>를 표시한다. <a href="chapter-dialogue.html#verified-pairs">실제 Gemma 대사 비교</a></p>
+<table><thead><tr><th>단계</th><th>확인 결과</th></tr></thead><tbody>
+<tr><td>즉시 확인</td><td>실제 Gemma 예시 두 쌍이 갱도 섹션 상단에 펼쳐져 있다.</td></tr>
+<tr><td>자동 저장</td><td>게임은 대사 생성본을 저장할 때마다 <code>Saves/LocalStoryTraining/DialogueChanges.html</code>을 자동으로 갱신한다. 회차·이야기·NPC·감정과 함께 원문과 변경 대사를 차례로 표시한다.</td></tr>
+</tbody></table>
+<p>최초 생성본을 저장하면 위 경로에 파일이 생긴다. 이미 열린 HTML에서 최신 내용이 필요하면 브라우저에서 새로고침한다. Unity 격리 테스트 27개가 통과했다. 자동 저장된 HTML에서 통과한 두 대사 쌍과 탈락한 대사의 제외를 확인했다. 이번 변경에서 만든 임시 코드 파일은 없다. <a href="../Assets/Decision_YYS/Scripts/SaveSystem/SaveIOService.DialogueReport.cs">자동 비교 HTML 생성 코드</a></p>
+<h2 id="gemma-dialogue-status">게임 시작 로그와 실제 저장 화면</h2>
+<p>2026-11-12 (Asia/Seoul). <a href="chapter-dialogue.html#live-dialogue">챕터별 HTML의 게임 저장 영역</a>은 이 PC에서 게임이 갱신하는 HTML을 직접 표시한다. 브라우저 새로고침으로 저장된 최신 대사를 읽고, 위쪽 링크로 저장 HTML만 따로 열 수 있다.</p>
+<table><thead><tr><th>단계</th><th>확인 결과</th></tr></thead><tbody>
+<tr><td>저장 데이터와 HTML 연결</td><td>실제 2회차용 3개 이야기, 6줄을 확인했다. Chrome에서 프로젝트 HTML 안에 실제 저장 대사가 표시되는 것을 확인했다.</td></tr>
+<tr><td>로그</td><td>게임 진입의 <code>[대사 생성 상태]</code>와 <code>[대사 비교 HTML]</code>, 회차 종료의 <code>[대사 생성 요청]</code>, 처리 중의 <code>[대사 생성 중]</code>, 결과의 <code>[대사 생성 완료]</code> 또는 <code>[대사 생성 확인 필요]</code>, 게임에서 생성문을 읽는 <code>[대사 적용]</code>을 추가했다. Unity 컴파일을 통과했고 실행 중인 저장의 상태 로그와 HTML 경로를 확인했다.</td></tr>
+</tbody></table>
+<p>진행 중인 플레이를 유지했다. 새 생성 전 과정을 격리 테스트로 다시 재생하는 검증은 플레이가 끝난 뒤 실행할 수 있다. 이번 변경에서 만든 임시 코드 파일은 없다. 브라우저 검증 화면과 프로필은 <code>tmp/GemmaEmotionChecks/BrowserPreview/</code>에 정리 대기 상태로 남겼다.</p>
+<h2 id="gemma-paraphrase">어휘와 어순을 바꾸는 프롬프트</h2>
+<p>2026-11-12 (Asia/Seoul). 이전 프롬프트와 검사에서 원문의 단어 순서를 고정했다. 새 프롬프트는 “같은 내용을 말하면서 어휘나 어순을 바꿔라”라고 요청한다. 입력에 원문, 감정, NPC 설정을 넣고, 필요한 대사에 통행세처럼 유지할 표현이나 무게 비교의 방향을 알려준다. 기존 회차의 저장 대사는 당시 결과이며 변경은 이후 생성 요청에 적용된다.</p>
+<table><thead><tr><th>단계</th><th>변경 및 검증</th></tr></thead><tbody>
+<tr><td>초안</td><td>감탄사와 문장부호만 바뀌면 한 번 다시 쓴다. 숫자·고정 문구·반말과 높임말·게임 용어와 명령 표현을 확인한다.</td></tr>
+<tr><td>검토</td><td>Gemma가 사실, 시간·비교 방향, 발화 의도와 감정을 확인한다. 두 번 안에 통과한 문장이 없으면 게임은 원문을 쓴다.</td></tr>
+<tr><td>실제 결과</td><td>브룩 대사 3개 중 곡괭이 대사가 통과했다. 통행세 대사는 요구 외의 설명을 덧붙였고, 첫 만남 대사는 반말을 높임말로 바꿔 탈락했다. <a href="chapter-dialogue.html#paraphrased-pair">원문과 변경 대사</a></td></tr>
+</tbody></table>
+<p>Unity 컴파일과 의미 검사 대조를 확인했다. 실제 플레이 저장을 수정하지 않고 Gemma의 출력만 검사했다. 임시 코드 파일은 없다. 모델 확인 기록은 <code>tmp/GemmaEmotionChecks/</code>에 남겼다. <a href="../tmp/GemmaEmotionChecks/Gemma-0c3467018378484e962a59003894494a.json">실제 Gemma 결과</a> · <a href="../Assets/Decision_YYS/Scripts/Ai/LocalStoryEmotion.cs">프롬프트 코드</a></p>
 </section></body></html>
 
 

@@ -1,0 +1,1262 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>챕터별 이야기와 변경 대사</title>
+<style>
+:root{color-scheme:light;background:#faf8f2;color:#23303a;font-family:system-ui,sans-serif;line-height:1.6}
+body{max-width:1050px;padding:0 20px 40px;margin:32px auto}section{margin:38px 0}
+nav a{display:inline-block;margin-right:16px}small{font-size:.82em;color:#52636f;font-weight:normal}
+details{border:1px solid #cbc3b4;border-radius:6px;padding:10px 14px;margin:8px 0;background:#fffdf8;overflow:auto}
+summary{cursor:pointer;font-weight:650}table{width:100%;border-collapse:collapse;margin:10px 0}
+td,th{text-align:left;vertical-align:top;padding:8px;border:1px solid #d4ccbf;overflow-wrap:anywhere}
+th{background:#efe9dd}td:first-child{min-width:64px}td{white-space:pre-line}code{overflow-wrap:anywhere}ol{padding-left:20px;margin:0}
+.pair{border:1px solid #cbc3b4;border-radius:8px;padding:10px 16px;margin:10px 0;background:#fff}.pair p{margin:6px 0;white-space:pre-wrap}.pair strong{display:block}.pair p:last-child{background:#e5f2dc;padding:7px 9px;border-radius:4px}
+.live-report{width:100%;height:65vh;min-height:360px;border:1px solid #cbc3b4;border-radius:8px}
+</style></head>
+<body><p><a href="development-report.html#gemma-emotion-dialogue">Gemma 적용 보고서</a></p>
+<h1>챕터별 이야기와 변경 대사</h1>
+<p>게임이 저장한 적용본 · 이야기 102개 · 카드 332개</p>
+<h2 id="live-dialogue">게임에서 저장한 변경 대사</h2>
+<p>생성 완료 로그가 나온 뒤 이 페이지를 새로고침하세요. <a href="../../Users/%EC%9C%A0%EC%98%81%EC%84%A0/AppData/LocalLow/DefaultCompany/OneWayInVc/Saves/LocalStoryTraining/DialogueChanges.html">게임이 저장한 HTML 직접 열기</a></p>
+<iframe class="live-report" src="../../Users/%EC%9C%A0%EC%98%81%EC%84%A0/AppData/LocalLow/DefaultCompany/OneWayInVc/Saves/LocalStoryTraining/DialogueChanges.html" title="게임에서 저장한 원문과 변경 대사"></iframe>
+<nav aria-label="챕터"><a href="#Chapter_1">갱도</a><a href="#Chapter_Coast">해안</a></nav>
+<section id="Chapter_1"><h2>갱도 <small>Chapter_1</small></h2>
+<h3 id="paraphrased-pair">새 프롬프트의 실제 Gemma 검증 예시</h3><article class="pair"><small>brook · 브룩 · 겁</small>
+<p><strong>원문</strong> 이상하네. 어제까진 이 곡괭이가 이렇게 무겁지 않았는데.</p>
+<p><strong>변경 대사</strong> 어… 갑자기 왜 이렇게 무거운 건가? 어제까지만 해도 이 곡괭이가 이렇게 묵직하지 않았는데…</p></article><h3 id="verified-pairs">이전 프롬프트의 검증 예시</h3><article class="pair"><small>brook · 브룩 · 겁</small>
+<p><strong>원문</strong> 이상하네. 어제까진 이 곡괭이가 이렇게 무겁지 않았는데.</p>
+<p><strong>변경 대사</strong> 으으, 이상하네. 어제까진 이 곡괭이가 이렇게 무겁지 않았는데…</p></article>
+<article class="pair"><small>brook · 브룩 · 화</small>
+<p><strong>원문</strong> 안쪽으로 들어가려면 통행세부터 내.</p>
+<p><strong>변경 대사</strong> 쯧, 안쪽으로 들어가려면 통행세부터 내!</p></article>
+
+<details><summary>NPC 설정</summary><table><thead><tr><th>NPC</th><th>역할</th><th>말투·성격</th><th>감정 재작성</th></tr></thead><tbody><tr><td>브룩 <code>Brook</code></td>
+<td>갱도 주민</td><td>원문의 말투 참고</td>
+<td>대상</td></tr>
+<tr><td>도르 <code>Dor</code></td>
+<td>갱도 주민</td><td>원문의 말투 참고</td>
+<td>대상</td></tr>
+<tr><td>모아 <code>Moa</code></td>
+<td>갱도 주민</td><td>원문의 말투 참고</td>
+<td>대상</td></tr>
+<tr><td>피코 <code>Pico</code></td>
+<td>갱도 주민</td><td>원문의 말투 참고</td>
+<td>대상</td></tr>
+<tr><td>틸 <code>Til</code></td>
+<td>갱도 주민</td><td>원문의 말투 참고</td>
+<td>대상</td></tr>
+<tr><td>벨라 <code>Bella</code></td>
+<td>갱도 주민</td><td>원문의 말투 참고</td>
+<td>대상</td></tr>
+<tr><td>네아 <code>Nea</code></td>
+<td>갱도 주민</td><td>원문의 말투 참고</td>
+<td>대상</td></tr>
+<tr><td>시아 <code>Sia</code></td>
+<td>갱도 주민</td><td>원문의 말투 참고</td>
+<td>대상</td></tr></tbody></table></details>
+<h3>Chapter_1_01</h3><details><summary>brook <small>브룩 · 8장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/brook</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>120000</td><td><strong>브룩</strong><br>이상하네. 어제까진 이 곡괭이가 이렇게 무겁지 않았는데.</td>
+<td></td>
+<td></td></tr>
+<tr><td>120001</td><td><strong>도르</strong><br>손잡이가 아니라 당신 팔이 문제야. 이제 인정 좀 해.</td>
+<td></td>
+<td></td></tr>
+<tr><td>120002</td><td><strong>브룩</strong><br>그 말을 헤른이 들으면 당장 나를 해고할 거야.</td>
+<td></td>
+<td></td></tr>
+<tr><td>120003</td><td><strong>브룩</strong><br>난 아직 여기서 할 수 있는 일이 있어. 그렇지?</td>
+<td></td>
+<td></td></tr>
+<tr><td>120004</td><td><strong>브룩</strong><br>어이, 거기. 처음 보는 얼굴인데.</td>
+<td></td>
+<td></td></tr>
+<tr><td>120005</td><td><strong>도르</strong><br>어디서 굴러온 놈이야? 여기로 내려올 정도면 아주 비천하구만.</td>
+<td></td>
+<td></td></tr>
+<tr><td>120006</td><td><strong>브룩</strong><br>뭐 하러 왔든 상관없어. 여긴 우리 작업 구역이니까.</td>
+<td></td>
+<td></td></tr>
+<tr><td>120007</td><td><strong>브룩</strong><br>안쪽으로 들어가려면 통행세부터 내.</td>
+<td></td>
+<td><ol><li>알겠습니다. 얼마를 내면 되죠?<br><code>Chapter_1/Chapter_1_01/Encounters/brook_pay</code></li><li>통행세는 왜 내야 하는 거죠?<br><code>Chapter_1/Chapter_1_01/Encounters/brook_why</code></li><li>잠깐 둘러보기만 할 건데, 안 될까요?<br><code>Chapter_1/Chapter_1_01/Encounters/brook_free</code></li><li>통행세는 내지 않겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/brook_refuse</code></li></ol></td></tr></tbody></table></details>
+<details><summary>brook_pay <small>브룩 · 3장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/brook_pay</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>120100</td><td><strong>브룩</strong><br>코인 3면 돼. 어떤 능력이든 상관없고.</td>
+<td></td>
+<td></td></tr>
+<tr><td>120101</td><td><strong>도르</strong><br>너무 쉽게 내주는 거 아니야? 위층에선 더 비싸게 받을 텐데.</td>
+<td></td>
+<td></td></tr>
+<tr><td>120102</td><td><strong>브룩</strong><br>그런가. 그럼 5개를 내놔. 난 힘이 필요하다고!</td>
+<td></td>
+<td><ol><li>힘 코인으로 내겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/brook_strength</code></li><li>속도 코인으로 내겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/brook_speed</code></li><li>지능 코인으로 내겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/brook_knowledge</code></li><li>매력 코인으로 내겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/brook_charm</code></li></ol></td></tr></tbody></table></details>
+<details><summary>brook_insufficient <small>브룩 · 3장 · 원문 유지</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/brook_insufficient</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>120200</td><td><strong>브룩</strong><br>뭐야 코인이 없잖아! 이게 누구 놀리는 거야?</td>
+<td></td>
+<td></td></tr>
+<tr><td>120201</td><td><strong>도르</strong><br>브룩, 본 때를 보여주라고! 저 자식 우리를 가지고 논거야!</td>
+<td></td>
+<td></td></tr>
+<tr><td>120202</td><td><strong>브룩</strong><br>덤벼 이 자식아!.</td>
+<td></td>
+<td></td></tr></tbody></table></details>
+<details><summary>brook_strength <small>브룩 · 5장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/brook_strength</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>120300</td><td><strong>브룩</strong><br>오, 힘이라고? 그거 좋지!</td>
+<td></td>
+<td></td></tr>
+<tr><td>120301</td><td><strong>도르</strong><br>아주 신났군. 아까는 3개만 받겠다더니.</td>
+<td></td>
+<td></td></tr>
+<tr><td>120302</td><td><strong>브룩</strong><br>시끄러워. 이 정도면 오늘 채굴량은 채울 수 있겠어.</td>
+<td></td>
+<td></td></tr>
+<tr><td>120303</td><td><strong>브룩</strong><br>좋아. 이제 지나가도 돼.</td>
+<td></td>
+<td></td></tr>
+<tr><td>120304</td><td><strong>브룩</strong><br>빨리 사라지라고.</td>
+<td></td>
+<td></td></tr></tbody></table></details>
+<details><summary>brook_speed <small>브룩 · 6장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/brook_speed</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>120400</td><td><strong>브룩</strong><br>속도? 그걸 어디다 쓰라고?</td>
+<td></td>
+<td></td></tr>
+<tr><td>120401</td><td><strong>도르</strong><br>폐석 옮길 때 쓰면 되잖아. 운반도 작업이야.</td>
+<td></td>
+<td></td></tr>
+<tr><td>120402</td><td><strong>브룩</strong><br>난 곡괭이를 휘두를 힘이 필요한데.</td>
+<td></td>
+<td></td></tr>
+<tr><td>120403</td><td><strong>도르</strong><br>운반이 빨리 끝나면 그만큼 쉴 시간도 생기겠지.</td>
+<td></td>
+<td></td></tr>
+<tr><td>120404</td><td><strong>브룩</strong><br>……뭐, 틀린 말은 아니군.</td>
+<td></td>
+<td></td></tr>
+<tr><td>120405</td><td><strong>브룩</strong><br>좋아. 받아 주지. 안쪽으로 들어가.</td>
+<td></td>
+<td></td></tr></tbody></table></details>
+<details><summary>brook_knowledge <small>브룩 · 7장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/brook_knowledge</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>120500</td><td><strong>브룩</strong><br>지능? 나보고 머리라도 쓰라는 거야?</td>
+<td></td>
+<td></td></tr>
+<tr><td>120501</td><td><strong>도르</strong><br>그거 나한테 주게. 새 곡괭이 설계하는 데 필요하거든.</td>
+<td></td>
+<td></td></tr>
+<tr><td>120502</td><td><strong>브룩</strong><br>잠깐, 그건 내 통행세잖아!</td>
+<td></td>
+<td></td></tr>
+<tr><td>120503</td><td><strong>도르</strong><br>내가 자네 곡괭이 고쳐 주면 결국 자네한테 이득이지.</td>
+<td></td>
+<td></td></tr>
+<tr><td>120504</td><td><strong>브룩</strong><br>……그럼 이번 수리비는 안 받는 거지?</td>
+<td></td>
+<td></td></tr>
+<tr><td>120505</td><td><strong>도르</strong><br>그건 별개고.</td>
+<td></td>
+<td></td></tr>
+<tr><td>120506</td><td><strong>브룩</strong><br>이 사기꾼 같은 놈. 됐어! 젠장 너는 못지나 간다!</td>
+<td></td>
+<td></td></tr></tbody></table></details>
+<details><summary>brook_duel_win <small>브룩 · 5장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/brook_duel_win</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>120600</td><td><strong>브룩</strong><br>크윽…… 제법 하는군.</td>
+<td></td>
+<td></td></tr>
+<tr><td>120601</td><td><strong>도르</strong><br>힘이 그렇게 좋다더니, 처음 보는 사람한테 졌네?</td>
+<td></td>
+<td></td></tr>
+<tr><td>120602</td><td><strong>브룩</strong><br>시끄러워! 발을 헛디딘 것뿐이야.</td>
+<td></td>
+<td></td></tr>
+<tr><td>120603</td><td><strong>도르</strong><br>그래, 그래. 그럼 다음엔 안 헛디디겠네.</td>
+<td></td>
+<td></td></tr>
+<tr><td>120604</td><td><strong>브룩</strong><br>젠장…… 마음대로 지나가. 대신 오늘 일은 아무한테도 말하지 마!</td>
+<td></td>
+<td></td></tr></tbody></table></details>
+<details><summary>brook_duel_lose <small>브룩 · 5장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/brook_duel_lose</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>120700</td><td><strong>브룩</strong><br>하하! 봤냐, 도르? 이게 진짜 힘이라는 거야!</td>
+<td></td>
+<td></td></tr>
+<tr><td>120701</td><td><strong>도르</strong><br>처음 보는 사람을 때려눕히고 좋아할 일이냐?</td>
+<td></td>
+<td></td></tr>
+<tr><td>120702</td><td><strong>브룩</strong><br>결투하자고 했을 때 도망갔어야지!</td>
+<td></td>
+<td></td></tr>
+<tr><td>120703</td><td><strong>도르</strong><br>잠깐 저 자식... 체력 코인이 없어 보이는 데?.</td>
+<td></td>
+<td></td></tr>
+<tr><td>120704</td><td><strong>브룩</strong><br>…… 똥 튀기전에 얼릉 일하러 가자구!.</td>
+<td></td>
+<td></td></tr></tbody></table></details>
+<details><summary>brook_charm <small>브룩 · 6장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/brook_charm</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>120800</td><td><strong>브룩</strong><br>매력? 그걸로 돌을 캘 수 있나?</td>
+<td></td>
+<td></td></tr>
+<tr><td>120801</td><td><strong>도르</strong><br>헤른하고 이야기할 때라도 써 봐.</td>
+<td></td>
+<td></td></tr>
+<tr><td>120802</td><td><strong>브룩</strong><br>그 양반이 말 몇 마디로 생각을 바꿀 것 같아?</td>
+<td></td>
+<td></td></tr>
+<tr><td>120803</td><td><strong>도르</strong><br>자네한테서 땀내새가 나니깐 그렇지.</td>
+<td></td>
+<td></td></tr>
+<tr><td>120804</td><td><strong>브룩</strong><br>뭐? 난 냄새 안난다고!</td>
+<td></td>
+<td></td></tr>
+<tr><td>120805</td><td><strong>브룩</strong><br>……젠장. 알았어. 그 코인 내놓고 들어가.</td>
+<td></td>
+<td></td></tr></tbody></table></details>
+<details><summary>brook_charm_after <small>브룩 · 4장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/brook_charm_after</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>120900</td><td><strong>브룩</strong><br>으음? 아까는 멀쩡해 보였는데, 왜 갑자기 이렇게 재수 없게 생겼냐?</td>
+<td></td>
+<td></td></tr>
+<tr><td>120901</td><td><strong>도르</strong><br>그러게. 말투도 괜히 거슬리는 것 같고.</td>
+<td></td>
+<td></td></tr>
+<tr><td>120902</td><td><strong>브룩</strong><br>뭘 멀뚱히 서 있어? 돈 냈으면 썩 꺼져!</td>
+<td></td>
+<td></td></tr>
+<tr><td>120903</td><td><strong>도르</strong><br>하하, 너무 그러진 마. ……근데 나도 좀 눈앞에서 사라져 줬으면 좋겠군.</td>
+<td></td>
+<td></td></tr></tbody></table></details>
+<details><summary>brook_why <small>브룩 · 3장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/brook_why</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>121000</td><td><strong>브룩</strong><br>왜긴. 우리도 위에 코인을 바쳐야 하니까.</td>
+<td></td>
+<td></td></tr>
+<tr><td>121001</td><td><strong>도르</strong><br>우리한테 낸다고 전부 우리 몫이 되는 것도 아니야.</td>
+<td></td>
+<td></td></tr>
+<tr><td>121002</td><td><strong>브룩</strong><br>설명은 됐지? 들어가려면 코인을 얼릉 내놔.</td>
+<td></td>
+<td><ol><li>알겠습니다. 내겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/brook_pay</code></li><li>그렇다면 들어가지 않겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/brook_refuse</code></li></ol></td></tr></tbody></table></details>
+<details><summary>brook_free <small>브룩 · 3장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/brook_free</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>121100</td><td><strong>브룩</strong><br>안 돼. 잠깐이든 하루 종일이든 똑같아.</td>
+<td></td>
+<td></td></tr>
+<tr><td>121101</td><td><strong>도르</strong><br>괜한 실랑이 벌이지 마. 우리도 규칙을 따라야 하니까.</td>
+<td></td>
+<td></td></tr>
+<tr><td>121102</td><td><strong>브룩</strong><br>들어갈 거면 내고, 아니면 돌아가.</td>
+<td></td>
+<td><ol><li>알겠습니다. 내겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/brook_pay</code></li><li>그럼 돌아가겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/brook_refuse</code></li></ol></td></tr></tbody></table></details>
+<details><summary>brook_refuse <small>브룩 · 2장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/brook_refuse</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>121200</td><td><strong>브룩</strong><br>그럼 여기까지야. 더 들어오진 마.</td>
+<td></td>
+<td></td></tr>
+<tr><td>121201</td><td><strong>도르</strong><br>다른 길을 찾든가. 우리도 괜히 문제 만들고 싶진 않아.</td>
+<td></td>
+<td></td></tr></tbody></table></details>
+<details><summary>dor <small>도르 · 4장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/dor</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>121300</td><td><strong>도르</strong><br>어이, 거기. 무슨 일인가?</td>
+<td></td>
+<td></td></tr>
+<tr><td>121301</td><td><strong>도르</strong><br>곡괭이를 고치러 왔나? 아니면 새로 맞추러 왔나?</td>
+<td></td>
+<td></td></tr>
+<tr><td>121302</td><td><strong>도르</strong><br>뭐든 좋지만, 이곳은 아무나 들어갈 수 없어.</td>
+<td></td>
+<td></td></tr>
+<tr><td>121303</td><td><strong>도르</strong><br>들어가려면 코인 5개는 내야 하네.</td>
+<td></td>
+<td><ol><li>알겠습니다. 코인으로 내겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/dor_pay</code></li><li>작업장에 들어가는 데도 돈을 받나요?<br><code>Chapter_1/Chapter_1_01/Encounters/dor_why</code></li><li>돈 대신 일을 도와드리면 안 될까요?<br><code>Chapter_1/Chapter_1_01/Encounters/dor_labor_offer</code></li><li>그렇게까지 하면서 들어가고 싶진 않네요.<br><code>Chapter_1/Chapter_1_01/Encounters/dor_refuse</code></li></ol></td></tr></tbody></table></details>
+<details><summary>dor_pay <small>도르 · 2장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/dor_pay</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>121400</td><td><strong>도르</strong><br>말이 잘 통하는 친구군.</td>
+<td></td>
+<td></td></tr>
+<tr><td>121401</td><td><strong>도르</strong><br>코인은 아무거나 상관없네. 대신 5개는 채워 주게.</td>
+<td></td>
+<td><ol><li>힘 코인으로 내겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/dor_strength</code></li><li>속도 코인으로 내겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/dor_speed</code></li><li>지능 코인으로 내겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/dor_knowledge</code></li><li>매력 코인으로 내겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/dor_charm</code></li></ol></td></tr></tbody></table></details>
+<details><summary>dor_strength <small>도르 · 4장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/dor_strength</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>121500</td><td><strong>도르</strong><br>힘이라! 아주 좋은 선택이야.</td>
+<td></td>
+<td></td></tr>
+<tr><td>121501</td><td><strong>도르</strong><br>요즘 망치 한 번 휘두르는 것도 힘에 부치던 참이었거든.</td>
+<td></td>
+<td></td></tr>
+<tr><td>121502</td><td><strong>도르</strong><br>이 정도면 밀린 작업도 끝낼 수 있겠어.</td>
+<td></td>
+<td></td></tr>
+<tr><td>121503</td><td><strong>도르</strong><br>좋아, 들어오게. 대신 뜨거운 쇳덩이는 조심하고.</td>
+<td></td>
+<td></td></tr></tbody></table></details>
+<details><summary>dor_speed <small>도르 · 4장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/dor_speed</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>121600</td><td><strong>도르</strong><br>속도라. 나쁘지 않군.</td>
+<td></td>
+<td></td></tr>
+<tr><td>121601</td><td><strong>도르</strong><br>요새 수리할 도구가 산더미처럼 쌓였거든.</td>
+<td></td>
+<td></td></tr>
+<tr><td>121602</td><td><strong>도르</strong><br>망치질을 더 빨리하면 작업이 좀 수월해지겠지.</td>
+<td></td>
+<td></td></tr>
+<tr><td>121603</td><td><strong>도르</strong><br>좋아, 안으로 들어오게. 걸리적거리지만 말고.</td>
+<td></td>
+<td></td></tr></tbody></table></details>
+<details><summary>dor_knowledge <small>도르 · 4장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/dor_knowledge</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>121700</td><td><strong>도르</strong><br>지능? 이거야말로 내가 찾던 건데!</td>
+<td></td>
+<td></td></tr>
+<tr><td>121701</td><td><strong>도르</strong><br>마침 새로운 곡괭이를 설계하던 참이었거든.</td>
+<td></td>
+<td></td></tr>
+<tr><td>121702</td><td><strong>도르</strong><br>힘으로 안 되는 일은 머리를 써서 해결해야지.</td>
+<td></td>
+<td></td></tr>
+<tr><td>121703</td><td><strong>도르</strong><br>자네, 보는 눈이 있군. 마음껏 둘러보게!</td>
+<td></td>
+<td></td></tr></tbody></table></details>
+<details><summary>dor_charm <small>도르 · 6장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/dor_charm</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>121800</td><td><strong>도르</strong><br>매력이라…… 그걸로 쇠를 두드릴 수는 없겠지만.</td>
+<td></td>
+<td></td></tr>
+<tr><td>121801</td><td><strong>도르</strong><br>재료상 놈들과 흥정할 때는 쓸 만하겠군.</td>
+<td></td>
+<td></td></tr>
+<tr><td>121802</td><td><strong>도르</strong><br>좋아, 코인은 받았으니 들어오게.</td>
+<td></td>
+<td></td></tr>
+<tr><td>121803</td><td><strong>도르</strong><br>그런데 자네…….</td>
+<td></td>
+<td></td></tr>
+<tr><td>121804</td><td><strong>도르</strong><br>아까부터 왜 그렇게 사람 신경을 긁는 얼굴을 하고 있나?</td>
+<td></td>
+<td></td></tr>
+<tr><td>121805</td><td><strong>도르</strong><br>됐네. 볼일이나 보고 빨리 가 주게.</td>
+<td></td>
+<td></td></tr></tbody></table></details>
+<details><summary>dor_revisit <small>도르 · 2장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/dor_revisit</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>121900</td><td><strong>도르</strong><br>뭔가? 할 말이 있으면 빨리 하게.</td>
+<td></td>
+<td></td></tr>
+<tr><td>121901</td><td><strong>도르</strong><br>괜히 자네를 보고 있으면 짜증이 나서 말이야.</td>
+<td></td>
+<td></td></tr></tbody></table></details>
+<details><summary>dor_why <small>도르 · 4장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/dor_why</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>122000</td><td><strong>도르</strong><br>그럼 공짜로 들여보내 줄 줄 알았나?</td>
+<td></td>
+<td></td></tr>
+<tr><td>122001</td><td><strong>도르</strong><br>여기 있는 도구 하나하나가 내 밥줄이야.</td>
+<td></td>
+<td></td></tr>
+<tr><td>122002</td><td><strong>도르</strong><br>게다가 위층에 내야 할 세금도 만만치 않거든.</td>
+<td></td>
+<td></td></tr>
+<tr><td>122003</td><td><strong>도르</strong><br>그러니까 들어갈 거면 코인 5개를 내게.</td>
+<td></td>
+<td><ol><li>알겠습니다. 코인으로 내겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/dor_pay</code></li><li>그럼 들어가지 않겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/dor_refuse</code></li></ol></td></tr></tbody></table></details>
+<details><summary>dor_labor_offer <small>도르 · 3장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/dor_labor_offer</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>122100</td><td><strong>도르</strong><br>일을 도와주겠다고?</td>
+<td></td>
+<td></td></tr>
+<tr><td>122101</td><td><strong>도르</strong><br>흠…… 마침 제련실에 쌓인 철광석을 옮겨야 하긴 하는데.</td>
+<td></td>
+<td></td></tr>
+<tr><td>122102</td><td><strong>도르</strong><br>좋아. 저기 쌓인 광석을 전부 옮기면 들여보내 주지.</td>
+<td></td>
+<td><ol><li>그 정도라면 해 보겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/dor_labor</code></li><li>생각보다 일이 많네요. 그냥 코인으로 낼게요.<br><code>Chapter_1/Chapter_1_01/Encounters/dor_pay</code></li></ol></td></tr></tbody></table></details>
+<details><summary>dor_labor <small>도르 · 2장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/dor_labor</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>122200</td><td><strong>도르</strong><br>좋아. 저쪽 창고에 있는 광석부터 옮겨 주게.</td>
+<td></td>
+<td></td></tr>
+<tr><td>122201</td><td><strong>도르</strong><br>허리 나가지 않게 조심하고.</td>
+<td></td>
+<td></td></tr></tbody></table></details>
+<details><summary>dor_labor_done <small>도르 · 1장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/dor_labor_done</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>122300</td><td><strong>도르</strong><br>허리 나가지 않게 조심하고.</td>
+<td></td>
+<td></td></tr></tbody></table></details>
+<details><summary>dor_refuse <small>도르 · 3장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/dor_refuse</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>122400</td><td><strong>도르</strong><br>그럼 어쩔 수 없지.</td>
+<td></td>
+<td></td></tr>
+<tr><td>122401</td><td><strong>도르</strong><br>나도 바쁘니까 더 붙잡진 않겠네.</td>
+<td></td>
+<td></td></tr>
+<tr><td>122402</td><td><strong>도르</strong><br>나중에 도구가 필요하면 다시 찾아오게.</td>
+<td></td>
+<td></td></tr></tbody></table></details>
+<details><summary>dor_refuse_retry <small>도르 · 1장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/dor_refuse_retry</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>122500</td><td><strong>도르</strong><br>지불할 테가?</td>
+<td></td>
+<td></td></tr></tbody></table></details>
+<details><summary>moa <small>피코 · 5장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/moa</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>122600</td><td><strong>피코</strong><br>누나! 처음 보는 사람이야!</td>
+<td></td>
+<td></td></tr>
+<tr><td>122601</td><td><strong>모아</strong><br>그러네. 무슨 일이세요?</td>
+<td></td>
+<td></td></tr>
+<tr><td>122602</td><td><strong>피코</strong><br>버섯 사러 오셨어요? 우리 누나 버섯은 엄청 맛있어요!</td>
+<td></td>
+<td></td></tr>
+<tr><td>122603</td><td><strong>모아</strong><br>피코, 잠깐 조용히 해.</td>
+<td></td>
+<td></td></tr>
+<tr><td>122604</td><td><strong>모아</strong><br>여긴 우리 채집 구역이에요. 들어가려면 코인 4개를 내셔야 해요.</td>
+<td></td>
+<td><ol><li>알겠습니다. 코인으로 내겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/moa_pay</code></li><li>버섯밭에 들어가는 데도 돈을 받나요?<br><code>Chapter_1/Chapter_1_01/Encounters/moa_why</code></li><li>코인 대신 일을 도와드리면 안 될까요?<br><code>Chapter_1/Chapter_1_01/Encounters/moa_labor</code></li><li>그럼 들어가지 않겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/moa_refuse</code></li></ol></td></tr></tbody></table></details>
+<details><summary>moa_pay <small>모아 · 3장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/moa_pay</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>122700</td><td><strong>모아</strong><br>좋아요. 어떤 코인이든 괜찮아요.</td>
+<td></td>
+<td></td></tr>
+<tr><td>122701</td><td><strong>피코</strong><br>언니! 힘 코인으로 받자!</td>
+<td></td>
+<td></td></tr>
+<tr><td>122702</td><td><strong>모아</strong><br>넌 좀 가만히 있어.</td>
+<td></td>
+<td><ol><li>힘 코인으로 내겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/moa_strength</code></li><li>속도 코인으로 내겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/moa_speed</code></li><li>지능 코인으로 내겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/moa_knowledge</code></li><li>매력 코인으로 내겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/moa_charm</code></li></ol></td></tr></tbody></table></details>
+<details><summary>moa_strength <small>모아 · 3장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/moa_strength</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>122800</td><td><strong>모아</strong><br>잘됐네요. 무거운 재배 상자를 옮겨야 했거든요.</td>
+<td></td>
+<td></td></tr>
+<tr><td>122801</td><td><strong>피코</strong><br>나도 줘! 나도 힘세지고 싶어!</td>
+<td></td>
+<td></td></tr>
+<tr><td>122802</td><td><strong>모아</strong><br>안 돼. 이건 작업에 써야 해.</td>
+<td></td>
+<td></td></tr></tbody></table></details>
+<details><summary>moa_speed <small>모아 · 3장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/moa_speed</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>122900</td><td><strong>모아</strong><br>수확을 빨리 끝낼 수 있겠네요.</td>
+<td></td>
+<td></td></tr>
+<tr><td>122901</td><td><strong>피코</strong><br>그럼 오늘은 나랑 놀아 줄 거야?</td>
+<td></td>
+<td></td></tr>
+<tr><td>122902</td><td><strong>모아</strong><br>일이 끝나면 생각해 볼게.</td>
+<td></td>
+<td></td></tr></tbody></table></details>
+<details><summary>moa_knowledge <small>모아 · 3장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/moa_knowledge</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>123000</td><td><strong>모아</strong><br>독버섯을 구별하는 데 도움이 되겠어요.</td>
+<td></td>
+<td></td></tr>
+<tr><td>123001</td><td><strong>피코</strong><br>그럼 나도 가르쳐 줘!</td>
+<td></td>
+<td></td></tr>
+<tr><td>123002</td><td><strong>모아</strong><br>위험한 버섯부터 만지지 않겠다고 약속해.</td>
+<td></td>
+<td></td></tr></tbody></table></details>
+<details><summary>moa_charm <small>모아 · 5장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/moa_charm</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>123100</td><td><strong>모아</strong><br>상인들과 흥정할 때 유용하겠네요.</td>
+<td></td>
+<td></td></tr>
+<tr><td>123101</td><td><strong>피코</strong><br>그럼 우리도 부자 되는 거야?</td>
+<td></td>
+<td></td></tr>
+<tr><td>123102</td><td><strong>모아</strong><br>글쎄…… 그런데 손님, 왜 그렇게 기분 나쁘게 쳐다보세요?</td>
+<td></td>
+<td></td></tr>
+<tr><td>123103</td><td><strong>피코</strong><br>맞아! 자꾸 이상하게 웃어!</td>
+<td></td>
+<td></td></tr>
+<tr><td>123104</td><td><strong>모아</strong><br>됐어요. 코인은 받았으니까 들어가세요.</td>
+<td></td>
+<td></td></tr></tbody></table></details>
+<details><summary>moa_why <small>모아 · 4장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/moa_why</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>123200</td><td><strong>모아</strong><br>여긴 우리가 먹고사는 곳이에요.</td>
+<td></td>
+<td></td></tr>
+<tr><td>123201</td><td><strong>모아</strong><br>수확한 버섯도 징수하고 나면 얼마 남지 않거든요.</td>
+<td></td>
+<td></td></tr>
+<tr><td>123202</td><td><strong>피코</strong><br>언니가 엄청 열심히 키웠다고요!</td>
+<td></td>
+<td></td></tr>
+<tr><td>123203</td><td><strong>모아</strong><br>그러니 코인 4개는 내 주세요.</td>
+<td></td>
+<td><ol><li>알겠습니다. 코인으로 내겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/moa_pay</code></li><li>그럼 들어가지 않겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/moa_refuse</code></li></ol></td></tr></tbody></table></details>
+<details><summary>moa_labor <small>모아 · 3장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/moa_labor</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>123300</td><td><strong>모아</strong><br>마침 수확한 버섯을 옮겨야 하는데…….</td>
+<td></td>
+<td></td></tr>
+<tr><td>123301</td><td><strong>피코</strong><br>언니! 저 사람한테 시키자!</td>
+<td></td>
+<td></td></tr>
+<tr><td>123302</td><td><strong>모아</strong><br>좋아요. 저 상자들을 옮겨 주시면 통과시켜 드릴게요.</td>
+<td></td>
+<td></td></tr></tbody></table></details>
+<details><summary>moa_labor_done <small>모아 · 1장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/moa_labor_done</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>123400</td><td><strong>모아</strong><br>좋아요. 저 상자들을 옮겨 주시면 통과시켜 드릴게요.</td>
+<td></td>
+<td></td></tr></tbody></table></details>
+<details><summary>moa_labor_retry <small>모아 · 3장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/moa_labor_retry</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>123500</td><td><strong>모아</strong><br>마침 수확한 버섯을 옮겨야 하는데…….</td>
+<td></td>
+<td></td></tr>
+<tr><td>123501</td><td><strong>피코</strong><br>언니! 저 사람한테 시키자!</td>
+<td></td>
+<td></td></tr>
+<tr><td>123502</td><td><strong>모아</strong><br>좋아요. 저 상자들을 옮겨 주시면 통과시켜 드릴게요.</td>
+<td></td>
+<td><ol><li>다시 해 보겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/moa_labor</code></li><li>코인으로 내겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/moa_pay</code></li></ol></td></tr></tbody></table></details>
+<details><summary>moa_refuse <small>모아 · 2장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/moa_refuse</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>123600</td><td><strong>모아</strong><br>그럼 안쪽으로 들어오실 수 없어요.</td>
+<td></td>
+<td></td></tr>
+<tr><td>123601</td><td><strong>피코</strong><br>맞아요! 여긴 우리 언니 버섯밭이에요!</td>
+<td></td>
+<td></td></tr></tbody></table></details>
+<details><summary>pico <small>피코 · 5장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/pico</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>123700</td><td><strong>피코</strong><br>앗! 거기 멈춰요!</td>
+<td></td>
+<td></td></tr>
+<tr><td>123701</td><td><strong>피코</strong><br>여긴 제 비밀 보물창고예요!</td>
+<td></td>
+<td></td></tr>
+<tr><td>123702</td><td><strong>피코</strong><br>누나도 모르는 곳인데…… 어떻게 찾아왔어요?</td>
+<td></td>
+<td></td></tr>
+<tr><td>123703</td><td><strong>피코</strong><br>들어오고 싶으면 입장료를 내세요!</td>
+<td></td>
+<td></td></tr>
+<tr><td>123704</td><td><strong>피코</strong><br>코인 2개예요! 아무거나 괜찮아요!</td>
+<td></td>
+<td><ol><li>알겠어. 코인으로 줄게.<br><code>Chapter_1/Chapter_1_01/Encounters/pico_pay</code></li><li>어린애가 무슨 입장료를 받아?<br><code>Chapter_1/Chapter_1_01/Encounters/pico_why</code></li><li>코인 대신 보물을 가져오면 안 될까?<br><code>Chapter_1/Chapter_1_01/Encounters/pico_gamble</code></li><li>그럼 들어가지 않을게.<br><code>Chapter_1/Chapter_1_01/Encounters/pico_refuse</code></li></ol></td></tr></tbody></table></details>
+<details><summary>pico_pay <small>피코 · 2장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/pico_pay</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>123800</td><td><strong>피코</strong><br>진짜요? 히히, 나도 이제 돈 벌 수 있다!</td>
+<td></td>
+<td></td></tr>
+<tr><td>123801</td><td><strong>피코</strong><br>어떤 코인으로 주실 거예요?</td>
+<td></td>
+<td><ol><li>힘 코인으로 내겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/pico_strength</code></li><li>속도 코인으로 내겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/pico_speed</code></li><li>지능 코인으로 내겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/pico_knowledge</code></li><li>매력 코인으로 내겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/pico_charm</code></li></ol></td></tr></tbody></table></details>
+<details><summary>pico_strength <small>피코 · 2장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/pico_strength</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>123900</td><td><strong>피코</strong><br>우와! 이거면 나도 무거운 상자를 들 수 있겠죠?</td>
+<td></td>
+<td></td></tr>
+<tr><td>123901</td><td><strong>피코</strong><br>이제 누나도 저한테 일을 맡길 거예요!</td>
+<td></td>
+<td></td></tr></tbody></table></details>
+<details><summary>pico_speed <small>피코 · 2장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/pico_speed</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>124000</td><td><strong>피코</strong><br>속도 코인! 이걸로 틸 언니랑 경주해야겠다!</td>
+<td></td>
+<td></td></tr>
+<tr><td>124001</td><td><strong>피코</strong><br>맨날 나보고 느리다고 놀렸거든요!</td>
+<td></td>
+<td></td></tr></tbody></table></details>
+<details><summary>pico_knowledge <small>피코 · 2장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/pico_knowledge</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>124100</td><td><strong>피코</strong><br>이거면 돌이 얼마나 비싼지 알 수 있을까요?</td>
+<td></td>
+<td></td></tr>
+<tr><td>124101</td><td><strong>피코</strong><br>시아 언니한테 매번 물어보지 않아도 되겠네요!</td>
+<td></td>
+<td></td></tr></tbody></table></details>
+<details><summary>pico_charm <small>피코 · 3장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/pico_charm</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>124200</td><td><strong>피코</strong><br>매력 코인? 이거 쓰면 저도 예뻐져요?</td>
+<td></td>
+<td></td></tr>
+<tr><td>124201</td><td><strong>피코</strong><br>히히! 누나한테 자랑해야지!</td>
+<td></td>
+<td></td></tr>
+<tr><td>124202</td><td><strong>피코</strong><br>……그런데 왜 그렇게 기분 나쁘게 웃어요? 빨리 나가세요!</td>
+<td></td>
+<td></td></tr></tbody></table></details>
+<details><summary>pico_why <small>피코 · 3장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/pico_why</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>124300</td><td><strong>피코</strong><br>어린애라니! 저도 어엿한 채집꾼이에요!</td>
+<td></td>
+<td></td></tr>
+<tr><td>124301</td><td><strong>피코</strong><br>누나도 돈을 벌어야 먹고산다고 했거든요!</td>
+<td></td>
+<td></td></tr>
+<tr><td>124302</td><td><strong>피코</strong><br>그러니까 코인 2개 내세요!</td>
+<td></td>
+<td><ol><li>코인으로 줄게.<br><code>Chapter_1/Chapter_1_01/Encounters/pico_pay</code></li><li>그럼 들어가지 않을게.<br><code>Chapter_1/Chapter_1_01/Encounters/pico_refuse</code></li></ol></td></tr></tbody></table></details>
+<details><summary>pico_gamble <small>피코 · 4장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/pico_gamble</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>124400</td><td><strong>피코</strong><br>다른 방법이요? 흐음…….</td>
+<td></td>
+<td></td></tr>
+<tr><td>124401</td><td><strong>피코</strong><br>아! 그럼 저랑 도박해요!</td>
+<td></td>
+<td></td></tr>
+<tr><td>124402</td><td><strong>피코</strong><br>동전을 던져서 맞히는 사람이 이기는 거예요!</td>
+<td></td>
+<td></td></tr>
+<tr><td>124403</td><td><strong>피코</strong><br>제가 이기면 코인 3개! 손님이 이기면 공짜로 들여보내 줄게요!</td>
+<td></td>
+<td><ol><li>좋아. 앞면에 걸게.<br><code>Chapter_1/Chapter_1_01/Encounters/pico_heads</code></li><li>좋아. 뒷면에 걸게.<br><code>Chapter_1/Chapter_1_01/Encounters/pico_tails</code></li><li>도박은 싫어. 그냥 코인으로 낼게.<br><code>Chapter_1/Chapter_1_01/Encounters/pico_pay</code></li></ol></td></tr></tbody></table></details>
+<details><summary>pico_heads <small>피코 · 4장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/pico_heads</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>124500</td><td><strong>피코</strong><br>다른 방법이요? 흐음…….</td>
+<td></td>
+<td></td></tr>
+<tr><td>124501</td><td><strong>피코</strong><br>아! 그럼 저랑 도박해요!</td>
+<td></td>
+<td></td></tr>
+<tr><td>124502</td><td><strong>피코</strong><br>동전을 던져서 맞히는 사람이 이기는 거예요!</td>
+<td></td>
+<td></td></tr>
+<tr><td>124503</td><td><strong>피코</strong><br>제가 이기면 코인 3개! 손님이 이기면 공짜로 들여보내 줄게요!</td>
+<td></td>
+<td></td></tr></tbody></table></details>
+<details><summary>pico_tails <small>피코 · 4장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/pico_tails</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>124600</td><td><strong>피코</strong><br>다른 방법이요? 흐음…….</td>
+<td></td>
+<td></td></tr>
+<tr><td>124601</td><td><strong>피코</strong><br>아! 그럼 저랑 도박해요!</td>
+<td></td>
+<td></td></tr>
+<tr><td>124602</td><td><strong>피코</strong><br>동전을 던져서 맞히는 사람이 이기는 거예요!</td>
+<td></td>
+<td></td></tr>
+<tr><td>124603</td><td><strong>피코</strong><br>제가 이기면 코인 3개! 손님이 이기면 공짜로 들여보내 줄게요!</td>
+<td></td>
+<td></td></tr></tbody></table></details>
+<details><summary>pico_win <small>피코 · 4장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/pico_win</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>124700</td><td><strong>피코</strong><br>어? 진짜 맞혔네?</td>
+<td></td>
+<td></td></tr>
+<tr><td>124701</td><td><strong>피코</strong><br>으으…… 이번엔 제가 질 줄 몰랐는데.</td>
+<td></td>
+<td></td></tr>
+<tr><td>124702</td><td><strong>피코</strong><br>약속은 약속이니까 들어오세요!</td>
+<td></td>
+<td></td></tr>
+<tr><td>124703</td><td><strong>피코</strong><br>대신 다음엔 제가 이길 거예요!</td>
+<td></td>
+<td></td></tr></tbody></table></details>
+<details><summary>pico_lose <small>피코 · 3장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/pico_lose</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>124800</td><td><strong>피코</strong><br>와아! 제가 이겼어요!</td>
+<td></td>
+<td></td></tr>
+<tr><td>124801</td><td><strong>피코</strong><br>히히! 역시 전 도박에 재능이 있나 봐요!</td>
+<td></td>
+<td></td></tr>
+<tr><td>124802</td><td><strong>피코</strong><br>자, 약속대로 코인 3개 주세요!</td>
+<td></td>
+<td><ol><li>알겠어. 약속대로 낼게.<br><code>Chapter_1/Chapter_1_01/Encounters/pico_pay6</code></li><li>한 번만 더 승부하자.<br><code>Chapter_1/Chapter_1_01/Encounters/pico_rematch</code></li></ol></td></tr></tbody></table></details>
+<details><summary>pico_pay6 <small>피코 · 2장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/pico_pay6</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>124900</td><td><strong>피코</strong><br>에이, 재미없게!</td>
+<td></td>
+<td></td></tr>
+<tr><td>124901</td><td><strong>피코</strong><br>그럼 약속대로 코인 3개 주세요.</td>
+<td></td>
+<td><ol><li>힘 코인으로 내겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/pico_strength</code></li><li>속도 코인으로 내겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/pico_speed</code></li><li>지능 코인으로 내겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/pico_knowledge</code></li><li>매력 코인으로 내겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/pico_charm</code></li></ol></td></tr></tbody></table></details>
+<details><summary>pico_rematch <small>피코 · 3장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/pico_rematch</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>125000</td><td><strong>피코</strong><br>또요? 흐음…….</td>
+<td></td>
+<td></td></tr>
+<tr><td>125001</td><td><strong>피코</strong><br>그럼 동전 하나 더 줘요!</td>
+<td></td>
+<td></td></tr>
+<tr><td>125002</td><td><strong>피코</strong><br>공짜로 다시 해 줄 순 없잖아요!</td>
+<td></td>
+<td><ol><li>알겠어. 동전 하나 더 줄게.<br><code>Chapter_1/Chapter_1_01/Encounters/pico_fee</code></li><li>이번에 이기면 네가 동전을 돌려주는 거야.<br><code>Chapter_1/Chapter_1_01/Encounters/pico_condition</code></li><li>됐어. 그냥 통행세를 낼게.<br><code>Chapter_1/Chapter_1_01/Encounters/pico_pay6</code></li></ol></td></tr></tbody></table></details>
+<details><summary>pico_fee <small>피코 · 2장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/pico_fee</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>125100</td><td><strong>피코</strong><br>히히! 좋아요! 이번에도 제가 이길 거예요!</td>
+<td></td>
+<td></td></tr>
+<tr><td>125101</td><td><strong>피코</strong><br>자, 앞면이에요? 뒷면이에요?</td>
+<td></td>
+<td><ol><li>힘 코인으로 내겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/pico_gamble</code></li><li>속도 코인으로 내겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/pico_gamble</code></li><li>지능 코인으로 내겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/pico_gamble</code></li><li>매력 코인으로 내겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/pico_gamble</code></li></ol></td></tr></tbody></table></details>
+<details><summary>pico_condition <small>피코 · 3장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/pico_condition</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>125200</td><td><strong>피코</strong><br>뭐어? 제가 왜 돌려줘야 해요?</td>
+<td></td>
+<td></td></tr>
+<tr><td>125201</td><td><strong>피코</strong><br>……그럼 제가 이기면 동전 4 개 주세요!</td>
+<td></td>
+<td></td></tr>
+<tr><td>125202</td><td><strong>피코</strong><br>이 정도면 공평하죠?</td>
+<td></td>
+<td><ol><li>좋아. 그 조건으로 하자.<br><code>Chapter_1/Chapter_1_01/Encounters/pico_gamble7</code></li><li>그냥 동전 3 개만 낼게.<br><code>Chapter_1/Chapter_1_01/Encounters/pico_pay6_retry</code></li></ol></td></tr></tbody></table></details>
+<details><summary>pico_gamble7 <small>피코 · 2장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/pico_gamble7</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>125300</td><td><strong>피코</strong><br>히히! 좋아요! 이번에도 제가 이길 거예요!</td>
+<td></td>
+<td></td></tr>
+<tr><td>125301</td><td><strong>피코</strong><br>자, 앞면이에요? 뒷면이에요?</td>
+<td></td>
+<td><ol><li>좋아. 앞면에 걸게.<br><code>Chapter_1/Chapter_1_01/Encounters/pico_heads7</code></li><li>좋아. 뒷면에 걸게.<br><code>Chapter_1/Chapter_1_01/Encounters/pico_tails7</code></li></ol></td></tr></tbody></table></details>
+<details><summary>pico_heads7 <small>피코 · 2장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/pico_heads7</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>125400</td><td><strong>피코</strong><br>히히! 좋아요! 이번에도 제가 이길 거예요!</td>
+<td></td>
+<td></td></tr>
+<tr><td>125401</td><td><strong>피코</strong><br>자, 앞면이에요? 뒷면이에요?</td>
+<td></td>
+<td></td></tr></tbody></table></details>
+<details><summary>pico_tails7 <small>피코 · 2장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/pico_tails7</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>125500</td><td><strong>피코</strong><br>히히! 좋아요! 이번에도 제가 이길 거예요!</td>
+<td></td>
+<td></td></tr>
+<tr><td>125501</td><td><strong>피코</strong><br>자, 앞면이에요? 뒷면이에요?</td>
+<td></td>
+<td></td></tr></tbody></table></details>
+<details><summary>pico_lose7 <small>피코 · 3장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/pico_lose7</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>125600</td><td><strong>피코</strong><br>와아! 제가 이겼어요!</td>
+<td></td>
+<td></td></tr>
+<tr><td>125601</td><td><strong>피코</strong><br>히히! 역시 전 도박에 재능이 있나 봐요!</td>
+<td></td>
+<td></td></tr>
+<tr><td>125602</td><td><strong>피코</strong><br>자, 약속대로 코인 3개 주세요!</td>
+<td></td>
+<td><ol><li>약속대로 코인 4개를 줄게.<br><code>Chapter_1/Chapter_1_01/Encounters/pico_pay7</code></li><li>한 번만 더 승부하자.<br><code>Chapter_1/Chapter_1_01/Encounters/pico_rematch</code></li></ol></td></tr></tbody></table></details>
+<details><summary>pico_pay7 <small>피코 · 2장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/pico_pay7</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>125700</td><td><strong>피코</strong><br>에이, 재미없게!</td>
+<td></td>
+<td></td></tr>
+<tr><td>125701</td><td><strong>피코</strong><br>그럼 약속대로 코인 3개 주세요.</td>
+<td></td>
+<td><ol><li>힘 코인으로 내겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/pico_strength</code></li><li>속도 코인으로 내겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/pico_speed</code></li><li>지능 코인으로 내겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/pico_knowledge</code></li><li>매력 코인으로 내겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/pico_charm</code></li></ol></td></tr></tbody></table></details>
+<details><summary>pico_pay6_retry <small>피코 · 2장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/pico_pay6_retry</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>125800</td><td><strong>피코</strong><br>히히! 좋아요! 이번에도 제가 이길 거예요!</td>
+<td></td>
+<td></td></tr>
+<tr><td>125801</td><td><strong>피코</strong><br>자, 앞면이에요? 뒷면이에요?</td>
+<td></td>
+<td><ol><li>힘 코인으로 내겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/pico_gamble</code></li><li>속도 코인으로 내겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/pico_gamble</code></li><li>지능 코인으로 내겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/pico_gamble</code></li><li>매력 코인으로 내겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/pico_gamble</code></li></ol></td></tr></tbody></table></details>
+<details><summary>pico_refuse <small>피코 · 3장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/pico_refuse</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>125900</td><td><strong>피코</strong><br>흥! 그러세요!</td>
+<td></td>
+<td></td></tr>
+<tr><td>125901</td><td><strong>피코</strong><br>제 보물은 엄청 귀하니까 후회할걸요?</td>
+<td></td>
+<td></td></tr>
+<tr><td>125902</td><td><strong>피코</strong><br>……정말 안 들어올 거예요?</td>
+<td></td>
+<td></td></tr></tbody></table></details>
+<details><summary>til <small>틸 · 4장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/til</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>126000</td><td><strong>틸</strong><br>어이! 거기 서요!</td>
+<td></td>
+<td></td></tr>
+<tr><td>126001</td><td><strong>틸</strong><br>처음 보는 얼굴인데. 새로 온 운반꾼이에요?</td>
+<td></td>
+<td></td></tr>
+<tr><td>126002</td><td><strong>틸</strong><br>뭐, 상관없어요. 여긴 내가 관리하는 급송 선로거든요.</td>
+<td></td>
+<td></td></tr>
+<tr><td>126003</td><td><strong>틸</strong><br>지나가려면 코인 5개 내요.</td>
+<td></td>
+<td><ol><li>알겠습니다. 코인으로 내겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/til_pay</code></li><li>여길 지나가는 데도 통행세를 받나요?<br><code>Chapter_1/Chapter_1_01/Encounters/til_why</code></li><li>통행세 대신 저랑 경주해 보는 건 어때요?<br><code>Chapter_1/Chapter_1_01/Encounters/til_race_offer</code></li><li>그럼 다른 길로 가겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/til_refuse</code></li></ol></td></tr></tbody></table></details>
+<details><summary>til_pay5 <small>틸 · 2장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/til_pay5</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>126100</td><td><strong>틸</strong><br>좋아요! 말이 잘 통하네요.</td>
+<td></td>
+<td></td></tr>
+<tr><td>126101</td><td><strong>틸</strong><br>참고로 속도 코인이면 더 좋고요!</td>
+<td></td>
+<td><ol><li>힘 코인으로 내겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/til_race_retry</code></li><li>속도 코인으로 내겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/til_race_retry</code></li><li>지능 코인으로 내겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/til_race_retry</code></li><li>매력 코인으로 내겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/til_race_retry</code></li></ol></td></tr></tbody></table></details>
+<details><summary>til_pay6 <small>틸 · 2장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/til_pay6</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>126200</td><td><strong>틸</strong><br>좋아요! 말이 잘 통하네요.</td>
+<td></td>
+<td></td></tr>
+<tr><td>126201</td><td><strong>틸</strong><br>참고로 속도 코인이면 더 좋고요!</td>
+<td></td>
+<td><ol><li>힘 코인으로 내겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/til_strength</code></li><li>속도 코인으로 내겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/til_speed</code></li><li>지능 코인으로 내겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/til_knowledge</code></li><li>매력 코인으로 내겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/til_charm</code></li></ol></td></tr></tbody></table></details>
+<details><summary>til_pay <small>틸 · 2장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/til_pay</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>126300</td><td><strong>틸</strong><br>좋아요! 말이 잘 통하네요.</td>
+<td></td>
+<td></td></tr>
+<tr><td>126301</td><td><strong>틸</strong><br>참고로 속도 코인이면 더 좋고요!</td>
+<td></td>
+<td><ol><li>힘 코인으로 내겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/til_strength</code></li><li>속도 코인으로 내겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/til_speed</code></li><li>지능 코인으로 내겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/til_knowledge</code></li><li>매력 코인으로 내겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/til_charm</code></li></ol></td></tr></tbody></table></details>
+<details><summary>til_pay12 <small>틸 · 2장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/til_pay12</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>126400</td><td><strong>틸</strong><br>좋아요! 말이 잘 통하네요.</td>
+<td></td>
+<td></td></tr>
+<tr><td>126401</td><td><strong>틸</strong><br>참고로 속도 코인이면 더 좋고요!</td>
+<td></td>
+<td><ol><li>힘 코인으로 내겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/til_strength</code></li><li>속도 코인으로 내겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/til_speed</code></li><li>지능 코인으로 내겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/til_knowledge</code></li><li>매력 코인으로 내겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/til_charm</code></li></ol></td></tr></tbody></table></details>
+<details><summary>til_pay15 <small>틸 · 2장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/til_pay15</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>126500</td><td><strong>틸</strong><br>좋아요! 말이 잘 통하네요.</td>
+<td></td>
+<td></td></tr>
+<tr><td>126501</td><td><strong>틸</strong><br>참고로 속도 코인이면 더 좋고요!</td>
+<td></td>
+<td><ol><li>힘 코인으로 내겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/til_strength</code></li><li>속도 코인으로 내겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/til_speed</code></li><li>지능 코인으로 내겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/til_knowledge</code></li><li>매력 코인으로 내겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/til_charm</code></li></ol></td></tr></tbody></table></details>
+<details><summary>til_pay20 <small>틸 · 2장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/til_pay20</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>126600</td><td><strong>틸</strong><br>좋아요! 말이 잘 통하네요.</td>
+<td></td>
+<td></td></tr>
+<tr><td>126601</td><td><strong>틸</strong><br>참고로 속도 코인이면 더 좋고요!</td>
+<td></td>
+<td><ol><li>힘 코인으로 내겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/til_strength</code></li><li>속도 코인으로 내겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/til_speed</code></li><li>지능 코인으로 내겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/til_knowledge</code></li><li>매력 코인으로 내겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/til_charm</code></li></ol></td></tr></tbody></table></details>
+<details><summary>til_strength <small>틸 · 3장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/til_strength</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>126700</td><td><strong>틸</strong><br>힘 코인이에요? 음, 뭐 나쁘진 않네요.</td>
+<td></td>
+<td></td></tr>
+<tr><td>126701</td><td><strong>틸</strong><br>무거운 짐을 들고도 빨리 뛸 수 있겠어요!</td>
+<td></td>
+<td></td></tr>
+<tr><td>126702</td><td><strong>틸</strong><br>좋아요. 지나가도 돼요!</td>
+<td></td>
+<td></td></tr></tbody></table></details>
+<details><summary>til_speed <small>틸 · 4장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/til_speed</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>126800</td><td><strong>틸</strong><br>속도 코인이라고요? 진짜요?!</td>
+<td></td>
+<td></td></tr>
+<tr><td>126801</td><td><strong>틸</strong><br>하하! 안 그래도 여기서 내가 제일 빠른데!</td>
+<td></td>
+<td></td></tr>
+<tr><td>126802</td><td><strong>틸</strong><br>이젠 누가 덤벼도 못 이기겠네요!</td>
+<td></td>
+<td></td></tr>
+<tr><td>126803</td><td><strong>틸</strong><br>좋아요! 마음껏 지나가요!</td>
+<td></td>
+<td></td></tr></tbody></table></details>
+<details><summary>til_knowledge <small>틸 · 4장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/til_knowledge</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>126900</td><td><strong>틸</strong><br>지능이요? 그게 달리는 데 도움이 되나?</td>
+<td></td>
+<td></td></tr>
+<tr><td>126901</td><td><strong>틸</strong><br>음…… 길을 더 빨리 찾을 수 있으려나?</td>
+<td></td>
+<td></td></tr>
+<tr><td>126902</td><td><strong>틸</strong><br>뭐, 됐어요! 한번 써 보면 알겠죠.</td>
+<td></td>
+<td></td></tr>
+<tr><td>126903</td><td><strong>틸</strong><br>그럼 지나가세요!</td>
+<td></td>
+<td></td></tr></tbody></table></details>
+<details><summary>til_charm <small>틸 · 6장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/til_charm</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>127000</td><td><strong>틸</strong><br>매력 코인이라…….</td>
+<td></td>
+<td></td></tr>
+<tr><td>127001</td><td><strong>틸</strong><br>이거면 모아한테도 좀 잘 보일 수 있으려나?</td>
+<td></td>
+<td></td></tr>
+<tr><td>127002</td><td><strong>틸</strong><br>헤헤, 좋아요! 지나가도 돼요!</td>
+<td></td>
+<td></td></tr>
+<tr><td>127003</td><td><strong>틸</strong><br>……근데 잠깐.</td>
+<td></td>
+<td></td></tr>
+<tr><td>127004</td><td><strong>틸</strong><br>왜 갑자기 그렇게 재수 없게 웃어요?</td>
+<td></td>
+<td></td></tr>
+<tr><td>127005</td><td><strong>틸</strong><br>됐어요. 돈 냈으면 빨리 가요!</td>
+<td></td>
+<td></td></tr></tbody></table></details>
+<details><summary>til_revisit <small>틸 · 2장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/til_revisit</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>127100</td><td><strong>틸</strong><br>뭐예요? 볼일 없으면 저리 가요.</td>
+<td></td>
+<td></td></tr>
+<tr><td>127101</td><td><strong>틸</strong><br>아, 괜히 기분 나쁘네.</td>
+<td></td>
+<td></td></tr></tbody></table></details>
+<details><summary>til_why <small>틸 · 3장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/til_why</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>127200</td><td><strong>틸</strong><br>당연하죠! 여기 선로 관리하는 게 얼마나 힘든데요.</td>
+<td></td>
+<td></td></tr>
+<tr><td>127201</td><td><strong>틸</strong><br>게다가 나도 위층에 통행료를 내야 한다고요.</td>
+<td></td>
+<td></td></tr>
+<tr><td>127202</td><td><strong>틸</strong><br>자, 설명은 됐죠? 코인 3개예요.</td>
+<td></td>
+<td><ol><li>알겠습니다. 내겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/til_pay6</code></li><li>그럼 다른 길로 가겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/til_refuse</code></li></ol></td></tr></tbody></table></details>
+<details><summary>til_race_offer <small>틸 · 4장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/til_race_offer</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>127300</td><td><strong>틸</strong><br>경주요? 나랑?</td>
+<td></td>
+<td></td></tr>
+<tr><td>127301</td><td><strong>틸</strong><br>하하! 내가 누군지 알고 하는 소리예요?</td>
+<td></td>
+<td></td></tr>
+<tr><td>127302</td><td><strong>틸</strong><br>좋아요! 대신 내가 이기면 코인 6개예요!</td>
+<td></td>
+<td></td></tr>
+<tr><td>127303</td><td><strong>틸</strong><br>당신이 이기면 공짜로 지나가게 해 줄게요.</td>
+<td></td>
+<td><ol><li>좋아요. 시작하죠.<br><code>Chapter_1/Chapter_1_01/Encounters/til_race</code></li><li>6개는 너무 비싸요. 5개로 하죠.<br><code>Chapter_1/Chapter_1_01/Encounters/til_negotiate</code></li><li>생각해 보니 그냥 코인으로 내겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/til_cancel</code></li></ol></td></tr></tbody></table></details>
+<details><summary>til_race <small>틸 · 2장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/til_race</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>127400</td><td><strong>틸</strong><br>하하! 좋아요!</td>
+<td></td>
+<td></td></tr>
+<tr><td>127401</td><td><strong>틸</strong><br>저기 보이는 승강장까지 먼저 도착하면 이기는 거예요!</td>
+<td></td>
+<td></td></tr></tbody></table></details>
+<details><summary>til_negotiate <small>틸 · 3장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/til_negotiate</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>127500</td><td><strong>틸</strong><br>뭐예요? 벌써 자신 없어졌어요?</td>
+<td></td>
+<td></td></tr>
+<tr><td>127501</td><td><strong>틸</strong><br>……좋아요! 그럼 5개로 하죠.</td>
+<td></td>
+<td></td></tr>
+<tr><td>127502</td><td><strong>틸</strong><br>대신 진짜 전력으로 달려야 해요!</td>
+<td></td>
+<td></td></tr></tbody></table></details>
+<details><summary>til_cancel <small>틸 · 2장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/til_cancel</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>127600</td><td><strong>틸</strong><br>에이, 재미없게!</td>
+<td></td>
+<td></td></tr>
+<tr><td>127601</td><td><strong>틸</strong><br>그럼 원래대로 코인 6개 내세요.</td>
+<td></td>
+<td></td></tr></tbody></table></details>
+<details><summary>til_win <small>틸 · 4장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/til_win</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>127700</td><td><strong>틸</strong><br>허억…… 말도 안 돼!</td>
+<td></td>
+<td></td></tr>
+<tr><td>127701</td><td><strong>틸</strong><br>내가 졌다고요? 진짜로?</td>
+<td></td>
+<td></td></tr>
+<tr><td>127702</td><td><strong>틸</strong><br>……좋아요. 약속은 약속이니까!</td>
+<td></td>
+<td></td></tr>
+<tr><td>127703</td><td><strong>틸</strong><br>대신 다음에 만나면 꼭 다시 경주해요!</td>
+<td></td>
+<td></td></tr></tbody></table></details>
+<details><summary>til_lose <small>틸 · 2장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/til_lose</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>127800</td><td><strong>틸</strong><br>하하하! 봤죠? 내가 여기서 제일 빠르다니까!</td>
+<td></td>
+<td></td></tr>
+<tr><td>127801</td><td><strong>틸</strong><br>자, 약속대로 코인 6개 내세요!</td>
+<td></td>
+<td><ol><li>알겠습니다. 코인 10개를 내겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/til_pay20</code></li><li>한 번만 더 경주하죠.<br><code>Chapter_1/Chapter_1_01/Encounters/til_rematch</code></li><li>지금은 코인이 부족합니다.<br><code>Chapter_1/Chapter_1_01/Encounters/til_refuse</code></li></ol></td></tr></tbody></table></details>
+<details><summary>til_lose10 <small>틸 · 2장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/til_lose10</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>127900</td><td><strong>틸</strong><br>하하하! 봤죠? 내가 여기서 제일 빠르다니까!</td>
+<td></td>
+<td></td></tr>
+<tr><td>127901</td><td><strong>틸</strong><br>자, 약속대로 코인 6개 내세요!</td>
+<td></td>
+<td><ol><li>코인 5개를 내겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/til_pay</code></li><li>한 번만 더 경주하죠.<br><code>Chapter_1/Chapter_1_01/Encounters/til_rematch</code></li><li>지금은 코인이 부족합니다.<br><code>Chapter_1/Chapter_1_01/Encounters/til_refuse</code></li></ol></td></tr></tbody></table></details>
+<details><summary>til_rematch <small>틸 · 3장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/til_rematch</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>128000</td><td><strong>틸</strong><br>또요? 지는 게 취미예요?</td>
+<td></td>
+<td></td></tr>
+<tr><td>128001</td><td><strong>틸</strong><br>좋아요! 대신 이번엔 코인 3개를 먼저 내요.</td>
+<td></td>
+<td></td></tr>
+<tr><td>128002</td><td><strong>틸</strong><br>이기면 통행료는 면제! 지면 원래 약속한 8개를 더 내는 거예요.</td>
+<td></td>
+<td><ol><li>좋아요. 코인 3개를 내겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/til_pay5</code></li><li>됐습니다. 여기서 그만하죠.<br><code>Chapter_1/Chapter_1_01/Encounters/til_refuse</code></li></ol></td></tr></tbody></table></details>
+<details><summary>til_race_retry <small>틸 · 2장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/til_race_retry</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>128100</td><td><strong>틸</strong><br>하하! 좋아요!</td>
+<td></td>
+<td></td></tr>
+<tr><td>128101</td><td><strong>틸</strong><br>저기 보이는 승강장까지 먼저 도착하면 이기는 거예요!</td>
+<td></td>
+<td></td></tr></tbody></table></details>
+<details><summary>til_lose15 <small>틸 · 2장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/til_lose15</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>128200</td><td><strong>틸</strong><br>하하하! 봤죠? 내가 여기서 제일 빠르다니까!</td>
+<td></td>
+<td></td></tr>
+<tr><td>128201</td><td><strong>틸</strong><br>자, 약속대로 코인 6개 내세요!</td>
+<td></td>
+<td><ol><li>코인 8개를 내겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/til_pay15</code></li><li>한 번만 더 경주하죠.<br><code>Chapter_1/Chapter_1_01/Encounters/til_rematch</code></li><li>여기서 그만하죠.<br><code>Chapter_1/Chapter_1_01/Encounters/til_refuse</code></li></ol></td></tr></tbody></table></details>
+<details><summary>til_refuse <small>틸 · 2장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/til_refuse</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>128300</td><td><strong>틸</strong><br>그럼 다른 길로 가세요!</td>
+<td></td>
+<td></td></tr>
+<tr><td>128301</td><td><strong>틸</strong><br>에라이, 시간만 낭비했네. 그냥 덤벼, 이 새꺄!</td>
+<td></td>
+<td></td></tr></tbody></table></details>
+<details><summary>til_duel_win <small>틸 · 1장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/til_duel_win</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>128400</td><td><strong>틸</strong><br>아, 젠장! 알았어요! 그냥 지나가요!</td>
+<td></td>
+<td></td></tr></tbody></table></details>
+<details><summary>til_duel_lose <small>틸 · 1장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/til_duel_lose</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>128500</td><td><strong>틸</strong><br>하하! 어디서 까불고 있어!</td>
+<td></td>
+<td></td></tr></tbody></table></details>
+<details><summary>bella <small>벨라 · 6장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/bella</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>128600</td><td><strong>벨라</strong><br>어서 오세요. 처음 보는 얼굴이네요.</td>
+<td></td>
+<td></td></tr>
+<tr><td>128601</td><td><strong>벨라</strong><br>잠자리를 구하러 오셨나요?</td>
+<td></td>
+<td></td></tr>
+<tr><td>128602</td><td><strong>벨라</strong><br>아니면 식사라도 하러 오셨어요?</td>
+<td></td>
+<td></td></tr>
+<tr><td>128603</td><td><strong>벨라</strong><br>아, 안쪽으로 들어가시려는 거군요.</td>
+<td></td>
+<td></td></tr>
+<tr><td>128604</td><td><strong>벨라</strong><br>거긴 광부들이 쉬는 곳이라 함부로 들여보낼 순 없어요.</td>
+<td></td>
+<td></td></tr>
+<tr><td>128605</td><td><strong>벨라</strong><br>코인 5개를 내시면 안내해 드릴게요.</td>
+<td></td>
+<td><ol><li>알겠습니다. 코인으로 내겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/bella_pay</code></li><li>잠깐 들어가는 데도 통행세를 받나요?<br><code>Chapter_1/Chapter_1_01/Encounters/bella_why</code></li><li>코인 대신 일을 도와드려도 될까요?<br><code>Chapter_1/Chapter_1_01/Encounters/bella_labor_offer</code></li><li>그럼 들어가지 않겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/bella_refuse</code></li></ol></td></tr></tbody></table></details>
+<details><summary>bella_pay <small>벨라 · 2장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/bella_pay</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>128700</td><td><strong>벨라</strong><br>고마워요. 요즘은 코인 내는 사람도 드물거든요.</td>
+<td></td>
+<td></td></tr>
+<tr><td>128701</td><td><strong>벨라</strong><br>어떤 코인이든 괜찮아요.</td>
+<td></td>
+<td><ol><li>힘 코인으로 내겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/bella_strength</code></li><li>속도 코인으로 내겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/bella_speed</code></li><li>지능 코인으로 내겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/bella_knowledge</code></li><li>매력 코인으로 내겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/bella_charm</code></li></ol></td></tr></tbody></table></details>
+<details><summary>bella_strength <small>벨라 · 4장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/bella_strength</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>128800</td><td><strong>벨라</strong><br>힘 코인이네요. 잘됐어요.</td>
+<td></td>
+<td></td></tr>
+<tr><td>128801</td><td><strong>벨라</strong><br>부서진 침상도 고쳐야 하고, 옮길 짐도 많거든요.</td>
+<td></td>
+<td></td></tr>
+<tr><td>128802</td><td><strong>벨라</strong><br>이제 다른 사람들한테 부탁하지 않아도 되겠네요.</td>
+<td></td>
+<td></td></tr>
+<tr><td>128803</td><td><strong>벨라</strong><br>고마워요. 안쪽으로 들어가셔도 돼요.</td>
+<td></td>
+<td></td></tr></tbody></table></details>
+<details><summary>bella_speed <small>벨라 · 4장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/bella_speed</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>128900</td><td><strong>벨라</strong><br>속도 코인이군요.</td>
+<td></td>
+<td></td></tr>
+<tr><td>128901</td><td><strong>벨라</strong><br>이거면 광부들이 교대하기 전에 침상을 정리할 수 있겠어요.</td>
+<td></td>
+<td></td></tr>
+<tr><td>128902</td><td><strong>벨라</strong><br>늘 시간이 부족해서 식사도 거를 때가 많았거든요.</td>
+<td></td>
+<td></td></tr>
+<tr><td>128903</td><td><strong>벨라</strong><br>고마워요. 들어가셔도 돼요.</td>
+<td></td>
+<td></td></tr></tbody></table></details>
+<details><summary>bella_knowledge <small>벨라 · 5장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/bella_knowledge</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>129000</td><td><strong>벨라</strong><br>어머, 지능 코인이네요?</td>
+<td></td>
+<td></td></tr>
+<tr><td>129001</td><td><strong>벨라</strong><br>사실 요즘 장부 때문에 골치가 아팠거든요.</td>
+<td></td>
+<td></td></tr>
+<tr><td>129002</td><td><strong>벨라</strong><br>누가 얼마나 밀렸는지도 헷갈릴 정도예요.</td>
+<td></td>
+<td></td></tr>
+<tr><td>129003</td><td><strong>벨라</strong><br>이제 계산 실수는 좀 줄겠네요.</td>
+<td></td>
+<td></td></tr>
+<tr><td>129004</td><td><strong>벨라</strong><br>고마워요. 안쪽으로 들어가셔도 돼요.</td>
+<td></td>
+<td></td></tr></tbody></table></details>
+<details><summary>bella_charm <small>벨라 · 6장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/bella_charm</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>129100</td><td><strong>벨라</strong><br>어머, 매력 코인이네요?</td>
+<td></td>
+<td></td></tr>
+<tr><td>129101</td><td><strong>벨라</strong><br>이거면 성질 고약한 광부들도 좀 얌전해지겠어요.</td>
+<td></td>
+<td></td></tr>
+<tr><td>129102</td><td><strong>벨라</strong><br>고마워요. 편하게 둘러보세요.</td>
+<td></td>
+<td></td></tr>
+<tr><td>129103</td><td><strong>벨라</strong><br>……그런데 손님.</td>
+<td></td>
+<td></td></tr>
+<tr><td>129104</td><td><strong>벨라</strong><br>아까부터 왜 그렇게 사람을 불쾌하게 쳐다보세요?</td>
+<td></td>
+<td></td></tr>
+<tr><td>129105</td><td><strong>벨라</strong><br>됐어요. 코인은 받았으니 들어가세요.</td>
+<td></td>
+<td></td></tr></tbody></table></details>
+<details><summary>bella_revisit <small>벨라 · 3장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/bella_revisit</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>129200</td><td><strong>벨라</strong><br>또 무슨 일이세요?</td>
+<td></td>
+<td></td></tr>
+<tr><td>129201</td><td><strong>벨라</strong><br>볼일이 없다면 저쪽으로 좀 가 주시겠어요?</td>
+<td></td>
+<td></td></tr>
+<tr><td>129202</td><td><strong>벨라</strong><br>손님을 쫓아내려는 건 아닌데, 자꾸 신경이 쓰여서요.</td>
+<td></td>
+<td></td></tr></tbody></table></details>
+<details><summary>bella_why <small>벨라 · 4장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/bella_why</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>129300</td><td><strong>벨라</strong><br>바깥 휴게실은 무료로 이용하셔도 돼요.</td>
+<td></td>
+<td></td></tr>
+<tr><td>129301</td><td><strong>벨라</strong><br>하지만 안쪽은 제가 관리하는 숙영 구역이거든요.</td>
+<td></td>
+<td></td></tr>
+<tr><td>129302</td><td><strong>벨라</strong><br>광부들이 낸 사용료도 징수하고 나면 얼마 남지 않아요.</td>
+<td></td>
+<td></td></tr>
+<tr><td>129303</td><td><strong>벨라</strong><br>죄송하지만 코인 5개는 받아야겠어요.</td>
+<td></td>
+<td><ol><li>알겠습니다. 코인으로 내겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/bella_pay_ack</code></li><li>그럼 안 들어가겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/bella_refuse</code></li></ol></td></tr></tbody></table></details>
+<details><summary>bella_pay_ack <small>벨라 · 2장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/bella_pay_ack</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>129400</td><td><strong>벨라</strong><br>이해해 주셔서 고마워요.</td>
+<td></td>
+<td></td></tr>
+<tr><td>129401</td><td><strong>벨라</strong><br>어떤 코인으로 내시겠어요?</td>
+<td></td>
+<td></td></tr></tbody></table></details>
+<details><summary>bella_refuse <small>벨라 · 2장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/bella_refuse</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>129500</td><td><strong>벨라</strong><br>어쩔 수 없죠.</td>
+<td></td>
+<td></td></tr>
+<tr><td>129501</td><td><strong>벨라</strong><br>그래도 바깥에서 쉬다 가시는 건 괜찮아요.</td>
+<td></td>
+<td></td></tr></tbody></table></details>
+<details><summary>bella_labor_offer <small>벨라 · 3장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/bella_labor_offer</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>129600</td><td><strong>벨라</strong><br>일을요? 흐음…….</td>
+<td></td>
+<td></td></tr>
+<tr><td>129601</td><td><strong>벨라</strong><br>마침 부서진 침상이 몇 개 있긴 한데.</td>
+<td></td>
+<td></td></tr>
+<tr><td>129602</td><td><strong>벨라</strong><br>그것들 좀 고쳐 주실 수 있나요?</td>
+<td></td>
+<td><ol><li>좋아요. 제가 고쳐 보겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/bella_labor</code></li><li>그냥 코인으로 내겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/bella_pay</code></li></ol></td></tr></tbody></table></details>
+<details><summary>bella_labor <small>벨라 · 3장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/bella_labor</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>129700</td><td><strong>벨라</strong><br>일을요? 흐음…….</td>
+<td></td>
+<td></td></tr>
+<tr><td>129701</td><td><strong>벨라</strong><br>마침 부서진 침상이 몇 개 있긴 한데.</td>
+<td></td>
+<td></td></tr>
+<tr><td>129702</td><td><strong>벨라</strong><br>그것들 좀 고쳐 주실 수 있나요?</td>
+<td></td>
+<td></td></tr></tbody></table></details>
+<details><summary>bella_labor_win <small>벨라 · 3장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/bella_labor_win</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>129800</td><td><strong>벨라</strong><br>어머, 정말 고쳐졌네요!</td>
+<td></td>
+<td></td></tr>
+<tr><td>129801</td><td><strong>벨라</strong><br>이제 저쪽 광부들도 바닥에서 자지 않아도 되겠어요.</td>
+<td></td>
+<td></td></tr>
+<tr><td>129802</td><td><strong>벨라</strong><br>고마워요. 안쪽으로 들어가셔도 돼요.</td>
+<td></td>
+<td></td></tr></tbody></table></details>
+<details><summary>bella_labor_lose <small>벨라 · 1장 · 기본 감정 목록</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/bella_labor_lose</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>129900</td><td><strong>벨라</strong><br>아이고, 오히려 더 부서졌네…….</td>
+<td></td>
+<td><ol><li>다시 한번 고쳐 보겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/bella_labor</code></li><li>그냥 코인으로 내겠습니다.<br><code>Chapter_1/Chapter_1_01/Encounters/bella_pay</code></li></ol></td></tr></tbody></table></details>
+<details><summary>rumor_1 <small>브룩 · 7장 · 원문 유지</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/rumor_1</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>130000</td><td><strong>브룩</strong><br>검은 감독관이 오면 쇳발굽 소리가 네 번 울린다더군.</td>
+<td></td>
+<td></td></tr>
+<tr><td>130001</td><td><strong>도르</strong><br>켄타우로스라고? 진짜 다리가 네 개라고?</td>
+<td></td>
+<td></td></tr>
+<tr><td>130002</td><td><strong>브룩</strong><br>그보다 무서운 건, 그 소리를 듣고도 일을 멈추면 안 된다는 거야.</td>
+<td></td>
+<td></td></tr>
+<tr><td>130003</td><td><strong>브룩</strong><br>지난번 점검 때 쓰러진 광부가 하나 있었지.</td>
+<td></td>
+<td></td></tr>
+<tr><td>130004</td><td><strong>브룩</strong><br>감독관은 그 사람의 힘 코인까지 징수하라고 했어.</td>
+<td></td>
+<td></td></tr>
+<tr><td>130005</td><td><strong>도르</strong><br>그럼 그 광부는 다시 일어났어?</td>
+<td></td>
+<td></td></tr>
+<tr><td>130006</td><td><strong>브룩</strong><br>그건 아무도 말하지 않더라.</td>
+<td></td>
+<td></td></tr></tbody></table></details>
+<details><summary>nea_sia <small>네아 · 10장 · 원문 유지</small></summary>
+<p><code>Chapter_1/Chapter_1_01/Encounters/nea_sia</code></p><table><thead><tr><th>카드 ID</th><th>NPC 발화</th><th>플레이어·지문·기타</th><th>플레이어 선택지와 분기</th></tr></thead>
+<tbody><tr><td>130100</td><td><strong>네아</strong><br>며칠 전에 감독관을 직접 봤다는 손님이 왔었어.</td>
+<td></td>
+<td></td></tr>
+<tr><td>130101</td><td><strong>시아</strong><br>나도 그 소문 들었어. 사람처럼 생겼는데, 온몸을 새까만 갑옷으로 감싸고 있다며?</td>
+<td></td>
+<td></td></tr>
+<tr><td>130102</td><td><strong>네아</strong><br>그런데 말이야. 난 그놈이 걷는 소리를 직접 들은 적이 있어.</td>
+<td></td>
+<td></td></tr>
+<tr><td>130103</td><td><strong>시아</strong><br>걷는 소리?</td>
+<td></td>
+<td></td></tr>
+<tr><td>130104</td><td><strong>네아</strong><br>그래. 두 발이 땅을 딛고 나면, 뒤이어 쇳소리가 두 번 더 들리더라고.</td>
+<td></td>
+<td></td></tr>
+<tr><td>130105</td><td><strong>시아</strong><br>에이, 말도 안 돼. 감독관은 갱도 맨 끝에 있다잖아. 네가 거기까지 갔었다고?</td>
+<td></td>
+<td></td></tr>
+<tr><td>130106</td><td><strong>네아</strong><br>아니, 그날 다친 운반꾼을 내가 치료했거든. 그 녀석을 데려오던 놈이 바로 감독관이었어.</td>
+<td></td>
+<td></td></tr>
+<tr><td>130107</td><td><strong>시아</strong><br>그래서? 갑옷이 부딪히는 소리를 잘못 들은 거 아니야?</td>
+<td></td>
+<td></td></tr>
+<tr><td>130108</td><td><strong>네아</strong><br>그럴 수도 있지. 그런데 그 운반꾼 몸에 찍힌 쇳자국이 네 개였어. 꼭 네 개의 발굽으로 짓밟은 것처럼.</td>
+<td></td>
+<td></td></tr>
+<tr><td>130109</td><td><strong>시아</strong><br>잠깐만. 설마 사람처럼 생긴 놈이 네 다리로 걷기라도 한다는 거야?</td>
+<td></td>
+<td></td></tr></tbody></table></details>
+<h3>Chapter_1_BossPreview</h3><p>등록된 대화가 없습니다.</p></section>
+<section id="Chapter_Coast"><h2>해안 <small>Chapter_Coast</small></h2>
+
+
+
+<h3>Chapter_Coast_01</h3><p>등록된 대화가 없습니다.</p></section>
+</body></html>

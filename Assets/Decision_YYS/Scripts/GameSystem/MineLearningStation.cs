@@ -12,22 +12,41 @@ using UnityEngine;
     public bool requiresBoard;
     public string bookId, bookName;
     public float boardU, boardV;
+    public int boardIndex;
+    public float generationRemaining;
+    public bool started;
+    public int studyAttempt;
+    public bool comboStudy;
     [NonSerialized] public bool held;
 }
 [Serializable] public sealed class MineLearningProgress
 {
     public List<MineLearningJob> active = new List<MineLearningJob>(), queued = new List<MineLearningJob>();
     public int sequence;
+    public MineLearningJob producing;
+    public List<MineLearningJob> stored = new List<MineLearningJob>();
+    public List<string> mastered = new List<string>(), rewardedCombos = new List<string>();
+    public List<StudySkillValue> skills = new List<StudySkillValue>();
+    public int[] stock, refills, nextBook, lastStudyDay;
+    public int day = -1, attemptsToday;
+    public int successfulStudies;
+    public bool studySuccessCountInitialized;
+    public float clockDays;
+    public List<string> comboSuccesses = new List<string>();
+    public Vector3 comboBoardPoint;
 }
 
 /// <summary>FIFO learning, paid once on entry; capacities and durations are authored in the Inspector.</summary>
-public sealed class MineLearningStation : MonoBehaviour
+public sealed partial class MineLearningStation : MonoBehaviour
 {
     [Serializable] public sealed class BookDefinition
     {
         public string id, name;
         public int ability, requiredKnowledge, cost, reward;
         public float seconds;
+        public string author, skill;
+        public int requiredAbility, skillReward;
+        public float generationSeconds;
     }
 
     [Serializable] public sealed class BookCatalog { public BookDefinition[] books; }
@@ -68,33 +87,66 @@ public sealed class MineLearningStation : MonoBehaviour
     private Action save;
     private int seed;
     private bool paused;
-    private string notice;
+    private string noticeText;
+    private string notice
+    {
+        get => noticeText;
+        set
+        {
+            noticeText = value;
+            noticeUntil = Time.unscaledTime + 4;
+        }
+    }
+    private float noticeUntil;
     private BookDefinition[] authoredBooks;
     private LearningSettings authoredLearning;
     public MineLearningProgress Progress => progress;
-    public float DeliverySeconds => authoredLearning?.deliverySeconds ?? deliverySeconds;
+    public float DeliverySeconds => study?.deliverySeconds ?? authoredLearning?.deliverySeconds ?? deliverySeconds;
     public bool CanMoveBooks => progress != null && wallet != null && !paused;
-    public void RememberPlacement(MineLearningJob job, float u, float v)
+    public Func<int[]> DisplayCoinCounts { private get; set; }
+    public int[] CurrentCoins => DisplayCoinCounts?.Invoke() ?? wallet?.Invoke();
+    public int TodayLimit => UsesStudyRules && wallet != null ? DailyLimit(wallet()) : 0;
+    private static bool IsReadingPlacement(MineLearningJob job) => job.onBoard && job.boardIndex == 2;
+    public bool IsStudying(MineLearningJob job) => !paused && job != null && job.onBoard && !job.held &&
+        job.transit <= 0 && (study == null ? !job.requiresBoard || job.boardIndex == 1 :
+            IsReadingPlacement(job) && job.started && CanRead(job));
+    public void RememberPlacement(MineLearningJob job, float u, float v, int boardIndex = 0)
     {
         if(progress == null || !progress.active.Contains(job)) return;
-        job.onBoard=true; job.boardU=Mathf.Clamp01(u); job.boardV=Mathf.Clamp01(v); save?.Invoke();
+        job.onBoard=true; job.boardU=Mathf.Clamp01(u); job.boardV=Mathf.Clamp01(v); job.boardIndex=boardIndex; save?.Invoke();
     }
-    public CapacityStep Capacity => (authoredLearning?.capacities ?? capacities).Where(c=>c.knowledgeCoins <= wallet()[2]).OrderBy(c=>c.knowledgeCoins).LastOrDefault() ?? new CapacityStep();
+    public CapacityStep Capacity => (study?.capacities ?? authoredLearning?.capacities ?? capacities)
+        .Where(c => c.knowledgeCoins <= wallet()[2]).OrderBy(c => c.knowledgeCoins).LastOrDefault() ?? new CapacityStep();
 
     public void ConfigureContent(BookCatalog books, LearningSettings settings)
     {
+        study = null;
         authoredBooks = books?.books;
         authoredLearning = settings;
     }
     public void Initialize(MineLearningProgress state, int runSeed, Func<int[]> getWallet, Func<int,int,bool> spend, Action<int,int> reward, Action persist)
     {
         progress=state; seed=runSeed; wallet=getWallet; charge=spend; grant=reward; save=persist;paused=false;notice=null;
+        progress.active ??= new List<MineLearningJob>();
+        progress.queued ??= new List<MineLearningJob>();
+        InitializeStudyState();
+        if (study != null && status != null)
+        {
+            status.gameObject.SetActive(false);
+            status.raycastTarget = false;
+            status.rectTransform.anchorMin = status.rectTransform.anchorMax = new Vector2(.5f, .5f);
+            status.rectTransform.anchoredPosition = new Vector2(-305, -151);
+            status.rectTransform.sizeDelta = new Vector2(580, 44);
+            status.fontSize = 19;
+            status.color = new Color(.24f, .15f, .08f);
+        }
         for(int i=0;i<abilityButtons.Length;i++) { int ability=i; abilityButtons[i].onClick.RemoveAllListeners(); abilityButtons[i].onClick.AddListener(()=>Request(ability)); }
         bookTemplate.gameObject.SetActive(false); Rebuild();
     }
     public bool Request(int ability)
     {
         if(!CanMoveBooks || ability<0 || ability>=4) return false;
+        if(study != null) return ProduceBook(ability);
         var capacity=Capacity;
         if(progress.active.Count>=capacity.simultaneous && progress.queued.Count>=capacity.waiting) { notice="학습 대기열이 가득 찼습니다."; return false; }
         var book = authoredBooks?.Where(item => item.ability == ability && item.requiredKnowledge <= wallet()[2])
@@ -132,14 +184,16 @@ public sealed class MineLearningStation : MonoBehaviour
     {
         if(progress==null || wallet==null) return;
         paused=stop; bool changed=false;
-        if(!stop)
+        if(study != null)
+            changed = TickStudy(seconds, stop);
+        else if(!stop)
         {
             for(int i=progress.active.Count-1;i>=0;i--)
             {
                 var job=progress.active[i];
                 if(job.held) continue;
                 if(job.transit>0) { job.transit=Mathf.Max(0,job.transit-seconds); continue; }
-                if (job.requiresBoard && !job.onBoard) continue;
+                if (job.requiresBoard && (!job.onBoard || job.boardIndex != 1)) continue;
                 job.remaining=Mathf.Max(0,job.remaining-seconds);
                 if(job.remaining>0) continue;
                 progress.active.RemoveAt(i); grant(job.ability,job.reward); changed=true;
@@ -147,10 +201,19 @@ public sealed class MineLearningStation : MonoBehaviour
             changed |= FillSlots();
         }
         if(changed) { Rebuild(); save(); }
-        for(int i=0;i<balances.Length;i++) balances[i].text=wallet()[i].ToString();
+        var amounts = CurrentCoins;
+        for(int i=0;i<balances.Length;i++) balances[i].text=amounts[i].ToString();
         for(int i=0;i<abilityButtons.Length;i++) abilityButtons[i].interactable=!stop;
-        status.text=(stop?"요구 수행 중 / 학습 일시 정지":"학습 "+progress.active.Count+"/"+Capacity.simultaneous+" / 대기 "+progress.queued.Count+"/"+Capacity.waiting)+
-            (notice==null?"":"\n"+notice);
+        if (study == null)
+            status.text = (stop ? "요구 수행 중 / 학습 일시 정지" :
+                $"학습 {progress.active.Count}/{Capacity.simultaneous} / 대기 {progress.queued.Count}/{Capacity.waiting}") +
+                (notice == null ? "" : "\n" + notice);
+        else
+        {
+            bool showNotice = notice != null && Time.unscaledTime < noticeUntil;
+            status.gameObject.SetActive(showNotice);
+            if (showNotice) status.text = notice;
+        }
         for(int i=0;showFlatBooks && i<progress.active.Count;i++)
         {
             var job=progress.active[i];var rect=books[i];

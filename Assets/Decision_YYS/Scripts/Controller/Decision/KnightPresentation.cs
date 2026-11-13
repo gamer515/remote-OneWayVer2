@@ -20,6 +20,18 @@ public sealed class KnightPresentation : MonoBehaviour
     private float dismountProgress;
     private float poseBlendIn;
     private float poseBlendOut;
+    private bool reading;
+    public void SetReading(bool value)
+    {
+        if (reading == value) return;
+        reading = value;
+        if (CurrentPhase == Phase.Seated && animator != null && animator.isActiveAndEnabled)
+        {
+            gesturePlaying = false;
+            animator.CrossFadeInFixedTime("Sitting Idle", blendSeconds, 0, 0f);
+            ScheduleGesture();
+        }
+    }
     public Phase CurrentPhase { get; private set; }
     public int GestureCount { get; private set; }
     public string LastGesture { get; private set; }
@@ -56,7 +68,7 @@ public sealed class KnightPresentation : MonoBehaviour
 
     private void Update()
     {
-        if (CurrentPhase != Phase.Seated || animator == null || !animator.enabled) return;
+        if (reading || CurrentPhase != Phase.Seated || animator == null || !animator.enabled) return;
         var state = animator.GetCurrentAnimatorStateInfo(0);
         if (gesturePlaying)
         {
@@ -76,6 +88,11 @@ public sealed class KnightPresentation : MonoBehaviour
 
     private void LateUpdate()
     {
+        if (reading && CurrentPhase == Phase.Seated && animator != null && animator.isHuman)
+        {
+            var head = animator.GetBoneTransform(HumanBodyBones.Head);
+            if (head != null) head.rotation = Quaternion.AngleAxis(19f, transform.right) * head.rotation;
+        }
         // Keep authored joint motion while aligning the different clips' pelvis reference points.
         // Fade the correction with Animator's blend so it cannot introduce a transition pop.
         Vector3 correction = Vector3.zero;
@@ -95,6 +112,29 @@ public sealed class KnightPresentation : MonoBehaviour
 
     public IEnumerator EnterDuel(Vector3 destination, Quaternion finalRotation)
     {
+        yield return Dismount(destination.y);
+        yield return WalkTo(destination);
+        yield return TurnTo(finalRotation);
+        CurrentPhase = Phase.Warrior;
+        animator.CrossFadeInFixedTime("Warrior Idle", blendSeconds, 0, 0f);
+        yield return new WaitForSeconds(blendSeconds);
+    }
+
+    public IEnumerator FetchBook(Vector3 destination, System.Action collected)
+    {
+        Vector3 seat = transform.position;
+        Quaternion seatedRotation = transform.rotation;
+        yield return Dismount(destination.y);
+        yield return WalkTo(destination);
+        collected();
+        yield return WalkTo(new Vector3(seat.x, destination.y, seat.z));
+        yield return TurnTo(seatedRotation);
+        transform.position = seat;
+        ResetSeated();
+    }
+
+    private IEnumerator Dismount(float floor)
+    {
         CurrentPhase = Phase.Dismount;
         gesturePlaying = false;
         animator.enabled = true;
@@ -104,7 +144,7 @@ public sealed class KnightPresentation : MonoBehaviour
         // Imported forward root motion is extracted and disabled to avoid moving twice.
         Vector3 start = transform.position;
         Vector3 landing = start + transform.forward * (0.45f * transform.lossyScale.y);
-        landing.y = destination.y;
+        landing.y = floor;
         for (float t = 0; t < duration; t += Time.deltaTime)
         {
             dismountProgress = Mathf.Clamp01(t / duration);
@@ -115,6 +155,10 @@ public sealed class KnightPresentation : MonoBehaviour
         }
         transform.position = landing;
         poseBlendOut = blendSeconds;
+    }
+
+    private IEnumerator WalkTo(Vector3 destination)
+    {
         CurrentPhase = Phase.Walking;
         animator.CrossFadeInFixedTime("Walking", blendSeconds, 0, 0f);
         while ((destination - transform.position).sqrMagnitude > 0.0001f)
@@ -130,14 +174,15 @@ public sealed class KnightPresentation : MonoBehaviour
             yield return null;
         }
         transform.position = destination;
+    }
+
+    private IEnumerator TurnTo(Quaternion finalRotation)
+    {
         while (Quaternion.Angle(transform.rotation, finalRotation) > 0.1f)
         {
             transform.rotation = Quaternion.RotateTowards(transform.rotation, finalRotation, turnSpeed * Time.deltaTime);
             yield return null;
         }
         transform.rotation = finalRotation;
-        CurrentPhase = Phase.Warrior;
-        animator.CrossFadeInFixedTime("Warrior Idle", blendSeconds, 0, 0f);
-        yield return new WaitForSeconds(blendSeconds);
     }
 }

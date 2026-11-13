@@ -245,7 +245,8 @@ public partial class SaveIOService
             ["impressions"]=JArray.FromObject(memories),
             ["unlocks"]=JArray.FromObject(jobs.SelectMany(j=>j.snapshot?.earnedUnlocks??Array.Empty<string>()).Distinct()),
             ["stories"]=new JArray(jobs.Select(j=>new JObject { ["storyPath"]=j.storyPath,["chunkIndex"]=(int?)ChapterContentCatalog.Info(j.storyPath)?["chunkIndex"],
-                ["status"]=j.status,["generationWinner"]=j.generationWinner,["additionalContent"]=j.snapshot?.reason??"" })) });
+                ["status"]=j.status,["emotion"]=j.emotion,["generationWinner"]=j.generationWinner,
+                ["additionalContent"]=j.snapshot?.reason??"" })) });
     }
     private LocalStoryDialogueQueueData ReadPackedQueue(int run)
     {
@@ -277,7 +278,8 @@ public partial class SaveIOService
             {
                 var doc=JObject.Parse(File.ReadAllText(story));if((int?)doc["schemaVersion"]!=2) continue;
                 var entries=(JArray)doc["stories"];
-                foreach(var entry in entries.Where(e=>(string)e["origin"]=="Runtime").ToArray()) entry.Remove();
+                foreach (var entry in entries.Where(e => (string)e["origin"] == "Runtime" ||
+                    (string)e["origin"] == LocalStoryEmotion.Origin).ToArray()) entry.Remove();
                 if(entries.Count>0) WriteDocument(story,doc);else File.Delete(story);
             }
             string queue=Path.Combine(dir,"Queue.json");if(File.Exists(queue)) File.Delete(queue);

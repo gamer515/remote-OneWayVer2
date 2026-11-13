@@ -7,7 +7,7 @@ public class RoadViewCameraController : MonoBehaviour
 {
     [Header("Initial Position")]
     [SerializeField] private Vector3 initialCameraPosition =
-        new Vector3(-200f, 18f, 10.5f);
+        new Vector3(-200f, 22f, 10.5f);
     [SerializeField] private float playerFollowOffsetZ = 0.5f;
 
     [Header("Follow Settings")]

@@ -48,12 +48,14 @@ public static class MineChapterRevisionChecks
             var env = UnityEngine.Object.FindFirstObjectByType<EnvController>();
             ctrl.Initialize(model, state, env.TerrainOrigin, 120, 42);
             var members = (Transform[])typeof(MineCollectorProcession).GetField("members", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(ctrl);
-            Check(ctrl.Count >= 3 && ctrl.Count <= 5 && ctrl.CurrentPhase == "Arrival" && !ctrl.CanMeet, "Three to five members arrive from the chunk end without premature tax");
+            state.taxPatrolActive = true;
+            ctrl.BeginRoute(env.TerrainOrigin.z + 120);
+            Check(ctrl.Count >= 3 && ctrl.Count <= 5 && ctrl.CurrentPhase == "RowMarch" && ctrl.CanMeet, "Three to five members start at the loaded boundary and can meet the player while descending");
             float before = state.collectorZ; ctrl.Tick(0.5f);
             Check(state.collectorZ < before, "Start-of-game arrival moves in direction 4 to 1");
             int guard = 0;
-            while (!(ctrl.CurrentPhase == "Wait" && ctrl.CanMeet) && guard++ < 3000) ctrl.Tick(0.1f);
-            Check(ctrl.CurrentPhase == "Wait" && members.All(t => Mathf.Abs(t.position.z - state.collectorZ) < 0.05f) && members.Select(t => t.position.x).Distinct().Count() == ctrl.Count, "Arrival forms a horizontal row outside the first entrance");
+            while (ctrl.CurrentPhase != "Wait" && guard++ < 3000) ctrl.Tick(0.1f);
+            Check(ctrl.CurrentPhase == "Wait" && members.All(t => Mathf.Abs(t.position.z - state.collectorZ) < 0.05f) && members.Select(t => t.position.x).Distinct().Count() == ctrl.Count, "Collectors form a horizontal row after exiting a doorway");
             ctrl.Tick(2.9f); Check(ctrl.CurrentPhase == "Wait", "Row does not leave before three seconds");
             ctrl.Tick(0.11f); guard = 0;
             Check(ctrl.CurrentPhase == "RowMarch", "Outside movement starts in a horizontal row after waiting");
@@ -62,12 +64,12 @@ public static class MineChapterRevisionChecks
             while (ctrl.CurrentPhase != "March" && guard++ < 1000) ctrl.Tick(0.1f);
             Check(ctrl.CurrentPhase == "March" && members.All(t => Mathf.Abs(t.position.x - env.TerrainOrigin.x) < 0.05f), "Members form a single-file line before entering a building");
             before = state.collectorZ; ctrl.Tick(0.5f);
-            Check(state.collectorZ > before, "In-game procession advances in direction 1 to 4");
+            Check(state.collectorZ < before, "In-game procession continues toward the start");
             guard = 0;
             while (!(ctrl.CurrentPhase == "Wait" && state.collectorStop == 1) && guard++ < 4000) ctrl.Tick(0.1f);
             Check(ctrl.CurrentPhase == "Wait" && state.collectorStop == 1 && members.All(t => Mathf.Abs(t.position.z - state.collectorZ) < 0.05f), "After exiting the first building, all members reform a horizontal row");
             before = state.collectorZ; ctrl.ContinueForward(); ctrl.Tick(0.5f);
-            Check(state.collectorZ > before && state.collectorPassedPlayer && !ctrl.CanMeet, "After meeting the player, collectors keep moving forward without retreat or repeat taxation");
+            Check(state.collectorZ < before && state.collectorPassedPlayer && !ctrl.CanMeet, "After meeting the player, collectors keep descending without repeat taxation");
             var restored = JsonUtility.FromJson<MineChapterProgress>(JsonUtility.ToJson(state));
             Check(restored.collectorPhase == state.collectorPhase && restored.collectorCount == state.collectorCount && restored.collectorPassedPlayer, "Procession phase and encounter completion survive save serialization");
         }

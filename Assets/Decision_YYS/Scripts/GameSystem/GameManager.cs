@@ -43,6 +43,7 @@ public class GameManager : MonoBehaviour
     {
         if (instance == null) { instance = this; DontDestroyOnLoad(gameObject); 
             currentState = GameState.Main; saveManager = new SaveManager();
+            SaveIOService.Instance.RefreshDialogueReport();
             LocalStoryRuntimeService.PrepareConfiguredModel();
             LocalStoryRuntimeService.TryResumePending();
         }
@@ -52,6 +53,7 @@ public class GameManager : MonoBehaviour
     public DecisionStartData StartGame()
     {
         Debug.Log($"[GameManager] {saveManager.CurrentRun}회차 시작");
+        LocalStoryRuntimeService.LogDialogueStatus(SaveIOService.Instance, saveManager.CurrentRun);
 
         OmnibusData currentOmnibusData =
             SaveIOService.Instance.LoadResourceData<OmnibusData>("Omnibus_01");
@@ -171,7 +173,7 @@ public class GameManager : MonoBehaviour
                     saveManager.RecordFinalBattleOutcome(won);
                     saveManager.CompleteCurrentRun();
                     try { LocalStoryDialogueQueue.FinalizeRun(SaveIOService.Instance, sourceRun); }
-                    catch (System.Exception e) { LocalStoryLog.Write(LocalStoryLogStage.Failed, "전투 종료 기억 조건 확인: " + e.Message); }
+                    catch (System.Exception e) { LocalStoryLog.Write(LocalStoryLogStage.Failed, "전투 종료 감정 저장: " + e.Message); }
                 },
                 () => { int next = PrepareNextPlaythrough(); LocalStoryRuntimeService.TryResumePending(); return next; },
                 () => {

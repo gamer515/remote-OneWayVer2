@@ -112,6 +112,7 @@ internal sealed class TerrainRoomLayout
             foreach (Transform companion in companions)
             {
                 var room = rooms.OrderBy(item => Mathf.Abs(item.Source.localPosition.z - companion.localPosition.z)).First();
+                if (Mathf.Abs(room.Source.localPosition.z - companion.localPosition.z) > .5f) continue;
                 companion.gameObject.SetActive(offsets.TryGetValue(room.Index, out float offset));
                 companion.localPosition += Vector3.forward * offset;
             }

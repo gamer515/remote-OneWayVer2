@@ -1,60 +1,12 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Newtonsoft.Json.Linq;
 using UnityEngine;
 
-/// <summary>Failed-output diagnostic playback and explicit test-result promotion, with canonical game bindings.</summary>
+/// <summary>Explicit test-result promotion with canonical game bindings.</summary>
 public static class LocalStoryGameApply
 {
-    public static EncounterCardRoot BuildFailedPreview(LocalStoryTestReport report,out string reason)
-    {
-        if(report.reviewRequired && report.reviewGeneratedCards==0)
-            throw new FormatException("모든 구간이 표시 불가 출력이라 원문을 유지합니다.");
-        var source=JsonUtility.FromJson<EncounterCardRoot>(NarrativeInteractions.StorySource(report.storyPath));
-        if(!LocalStoryRewrite.SameBindings(source,report.original))throw new FormatException("실패 결과와 현재 원문의 게임 연결이 다릅니다.");
-        foreach(string raw in new[]{report.reviewRawOutput,report.correctionRawOutput,report.rawOutput}
-            .Where(s=>!string.IsNullOrWhiteSpace(s)).OrderByDescending(s=>LocalStoryTestArchive.RawCards(s)?.Count??0))
-        {
-            if(LocalStoryRewrite.TryBuildForReview(raw,source,out var built,out string partial,true))
-            {
-                report.reviewGeneratedCards=LocalStoryTestArchive.RawCards(raw)?.Count??0;
-                reason=string.Join(" / ",new[]{report.reviewError??report.runtimeError??report.correctionError??report.error??"생성 검사 실패",partial}.Where(s=>!string.IsNullOrWhiteSpace(s)));
-                return built;
-            }
-            if(TryIncompletePreview(raw,source,out built,out int count))
-            {
-                report.reviewGeneratedCards=count;
-                reason=(report.runtimeError??report.correctionError??report.error??"생성 중단")+" / "+count+"/"+source.MainStory.Count+"카드 생성 문구 확인, 나머지는 원문 유지";
-                return built;
-            }
-        }
-        throw new FormatException("실패 원출력이 JSON 카드/선택지 구조에 맞지 않아 표시할 수 없습니다.");
-    }
-    private static bool TryIncompletePreview(string raw,EncounterCardRoot source,out EncounterCardRoot built,out int count)
-    {
-        built=null;count=0;JArray fragments;
-        try{fragments=JObject.Parse(raw)["incompleteSections"] as JArray;}
-        catch(Newtonsoft.Json.JsonException){return false;}
-        if(fragments==null)return false;
-        var candidate=JsonUtility.FromJson<EncounterCardRoot>(JsonUtility.ToJson(source));var used=new HashSet<int>();
-        foreach(var fragment in fragments)
-        {
-            if(fragment["start"]?.Type!=JTokenType.Integer || fragment["count"]?.Type!=JTokenType.Integer)continue;
-            int start=(int)fragment["start"],length=(int)fragment["count"];
-            if(start<0 || length<1 || start>source.MainStory.Count-length)continue;
-            string text=(string)fragment["rawOutput"];int provided=LocalStoryTestArchive.RawCards(text)?.Count??0;
-            if(provided==0 || Enumerable.Range(start,provided).Any(used.Contains) ||
-                !LocalStoryRewrite.TryBuildForReview(text,LocalStorySections.Slice(source,start,length),out var part,out _,true))continue;
-            for(int i=0;i<provided;i++)
-            {
-                candidate.MainStory[start+i].text=part.MainStory[i].text;
-                candidate.MainStory[start+i].options=part.MainStory[i].options;used.Add(start+i);
-            }
-        }
-        count=used.Count;if(count==0)return false;built=candidate;return true;
-    }
     public static int NextRun(LocalStoryTestReport report)
     {
         string profile=Path.Combine(Application.persistentDataPath,"Saves","Profile.json");

@@ -77,7 +77,7 @@ public partial class SaveIOService
         int current = File.Exists(ProfilePath) ? ReadJson<ProfileData>(ProfilePath)?.currentRun ?? 1 : 1;
         int cutoff = Math.Max(2, current - NarrativeRetainedRuns + 1);
         // Old automatic variants are reproducible. Human/imported content and all actual play saves are retained.
-        chapter.stories.RemoveAll(e => e.origin == "Runtime" && e.targetRun < cutoff);
+        chapter.stories.RemoveAll(e => (e.origin == "Runtime" || e.origin == LocalStoryEmotion.Origin) && e.targetRun < cutoff);
         chapter.queues.RemoveAll(q => q.targetRun < cutoff);
         string file = NarrativeChapterPath(chapter.chapterId);
         ParseNarrative(JsonUtility.ToJson(chapter), chapter.chapterId);
@@ -86,7 +86,8 @@ public partial class SaveIOService
     private static NarrativeStoryEntry Entry(int run, string path, string json, string origin, bool enabled,bool reviewRequired=false,string validationError=null)
     {
         string[] parts = path.Split('/');
-        var scene = NarrativeInteractions.Chapter(parts[0])?.scenes?.SingleOrDefault(s => s.storyPath == path);
+        var scene = origin == LocalStoryEmotion.Origin ? null :
+            NarrativeInteractions.Chapter(parts[0])?.scenes?.SingleOrDefault(s => s.storyPath == path);
         var root = JsonUtility.FromJson<EncounterCardRoot>(json);
         if (root?.MainStory == null || root.MainStory.Count == 0) throw new InvalidDataException("이야기 카드가 없습니다.");
         string sourceText = NarrativeInteractions.StorySource(path);
@@ -125,6 +126,48 @@ public partial class SaveIOService
     {
         ImportLegacyNarrative(run, path);
         return ReadNarrativeChapter(path.Split('/')[0]).stories.SingleOrDefault(e => e.targetRun == run && e.storyPath == path);
+    }
+
+    internal void SaveEmotionDialogue(LocalStoryDialogueJob job, EncounterCardRoot cards, LocalStoryEmotionLine[] accepted)
+    {
+        lock (narrativeGate)
+        {
+            string source = ChapterContentCatalog.Story(job.storyPath);
+            if (job.targetRun != job.sourceRun + 1 || !SafeStoryPath(job.storyPath) ||
+                LocalStoryDialogueQueue.Hash(source) != job.sourceHash)
+                throw new InvalidDataException("감정 대사의 회차 또는 원문이 변경되었습니다.");
+
+            var canonical = JsonUtility.FromJson<EncounterCardRoot>(source);
+            foreach (var line in accepted)
+            {
+                var card = canonical.MainStory[line.cardIndex];
+                if (card.speakerId != line.speakerId || LocalStoryEmotion.CreateLine(job.chapterId, card, line.cardIndex) == null ||
+                    !LocalStoryEmotion.ValidChange(card.text, line.generatedText))
+                    throw new InvalidDataException("검사된 NPC 발화와 원문 카드가 일치하지 않습니다.");
+            }
+            string[] examples = accepted.Select(line => LocalStoryEmotion.TrainingExample(job.emotion, line,
+                canonical.MainStory[line.cardIndex].text)).ToArray();
+            foreach (var line in accepted) canonical.MainStory[line.cardIndex].text = line.generatedText;
+            string json = JsonUtility.ToJson(canonical, true);
+            if (json != JsonUtility.ToJson(cards, true) || LocalStoryDialogueQueue.Hash(json) != job.contentHash)
+                throw new InvalidDataException("NPC 발화 외의 게임 데이터가 변경되었습니다.");
+
+            var existing = FindNarrative(job.targetRun, job.storyPath);
+            if (existing == null)
+            {
+                var chapter = EditNarrativeChapter(job.chapterId);
+                chapter.stories.Add(Entry(job.targetRun, job.storyPath, json, LocalStoryEmotion.Origin, true));
+                WriteNarrativeChapter(chapter);
+            }
+            else if (!existing.enabled || existing.origin != LocalStoryEmotion.Origin || existing.contentHash != job.contentHash)
+                throw new InvalidDataException("이야기에 이미 적용된 버전이 있습니다.");
+
+            string[] path = job.storyPath.Split('/');
+            string trainingPath = Path.Combine(BasePath, "LocalStoryTraining", path[0], path[1],
+                $"For_Run_{job.targetRun:D2}", Path.Combine(path.Skip(2).ToArray()) + ".jsonl");
+            WriteTextAtomically(trainingPath, string.Join("\n", examples) + "\n");
+            RefreshDialogueReport();
+        }
     }
     private bool SaveNarrativeContent<T>(int run, string key, T data, bool reviewed,bool reviewRequired=false,string validationError=null)
     {
@@ -165,7 +208,7 @@ public partial class SaveIOService
             {
                 var entry = FindNarrative(run, StoryPath(key));
                 if (entry == null || !entry.enabled || !string.IsNullOrEmpty(entry.preservedPackJson) || entry.contentHash != LocalStoryDialogueQueue.Hash(entry.contentJson)) return false;
-                if(entry.reviewRequired && !LocalStoryPrompt.AllowFailedOutput)return false;
+                if(entry.reviewRequired && (entry.origin != "Review" || !LocalStoryPrompt.AllowFailedOutput))return false;
                 // A prompt/settings edit affects future requests; it does not expire completed stories.
                 string source = NarrativeInteractions.StorySource(entry.storyPath);
                 if (source == null || entry.sourceHash != LocalStoryDialogueQueue.Hash(source)) return false;
@@ -188,6 +231,10 @@ public partial class SaveIOService
     {
         reason=null;if(run<2||!SafeStoryPath(path))return false;
         lock(narrativeGate){var entry=FindNarrative(run,path);reason=entry?.validationError;return entry?.reviewRequired==true;}
+    }
+    internal bool NarrativeUsesEmotion(int run, string path)
+    {
+        lock (narrativeGate) return FindNarrative(run, path)?.origin == LocalStoryEmotion.Origin;
     }
     public bool HasNarrativeContent(int run, string path)
     {
@@ -283,111 +330,22 @@ public partial class SaveIOService
         }
     }
     private string[] NarrativeChapters() => ChapterContentCatalog.Chapters.Select(c=>(string)c["id"]).ToArray();
-    public int ApplySavedFailedOutputs()
-    {
-        if(!LocalStoryPrompt.AllowFailedOutput)return 0;
-        int applied=0;
-        int current=File.Exists(ProfilePath)?ReadJson<ProfileData>(ProfilePath)?.currentRun??1:1;
-        foreach(int run in new[]{Math.Max(1,current-1),current}.Distinct())
-        {
-            var queue=LoadNarrativeQueue(run);if(queue==null)continue;bool changed=false;
-            foreach(var job in queue.jobs.Where(j=>j.status=="Failed"&&!j.failedOutputChecked&&!string.IsNullOrEmpty(j.reportPath)&&File.Exists(j.reportPath)))
-            {
-                if(!LocalStoryDialogueQueue.CanProcess(this,job)||!LocalStoryDialogueQueue.CanReplace(this,job))continue;
-                job.failedOutputChecked=true;changed=true;
-                try
-                {
-                    var report=LocalStoryTestArchive.Load(job.reportPath);
-                    var built=LocalStoryGameApply.BuildFailedPreview(report,out string warning);
-                    if(!SaveGeneratedContentForReview(job.targetRun,"Encounters",job.storyPath+"/Story",built,warning))throw new IOException("실패 문구 저장 실패");
-                    report.saved=true;report.runtimeStage="failed-output";report.reviewRequired=true;report.reviewError=warning;
-                    LocalStoryTestArchive.RecordRuntimeApplication(Path.Combine(StorageRoot,"LocalStoryTests"),job.reportPath,report);
-                    job.status="ReviewRequired";job.error=warning;job.contentHash=NarrativeContentHash(job.targetRun,job.storyPath);
-                    job.generationPart="기존 실패 문구 반영 / "+warning;applied++;
-                    LocalStoryLog.Write(LocalStoryLogStage.Review,job.targetRun+"회차용 / "+job.storyPath+" / 저장된 실패 문구 반영 / "+warning);
-                }
-                catch(Exception e) when(e is IOException||e is FormatException||e is ArgumentException||e is Newtonsoft.Json.JsonException)
-                {job.error="실패 원출력은 보관, 게임 표시 불가: "+e.Message;LocalStoryLog.Write(LocalStoryLogStage.Failed,job.storyPath+" / "+job.error);}
-            }
-            if(changed)SaveNarrativeQueue(queue);
-        }
-        return applied;
-    }
     public LocalStoryDialogueJob NextNarrativeJob()
     {
-        ApplySavedFailedOutputs();
         int current = File.Exists(ProfilePath) ? ReadJson<ProfileData>(ProfilePath)?.currentRun ?? 1 : 1;
-        // Only current and just-completed runs can produce usable work. No scan over the lifetime of Runs.
-        foreach(int run in new[] {Math.Max(1,current-1),current}.Distinct())
+        foreach (int run in new[] { Math.Max(1, current - 1), current }.Distinct())
         {
-            var queue=LoadNarrativeQueue(run); if(queue==null) continue;
-            bool updated=false;
-            foreach(var job in queue.jobs.Where(j=>(j.status=="Pending" || j.status=="Generating") &&
-                ChapterContentCatalog.ResolveStoryPath(j.storyPath,j.targetRun)!=j.storyPath))
-            {
-                job.status="Preserved";job.error="대상 회차는 반복 설명을 생략합니다. 기존 작업을 보관하고 회차용 원문을 사용합니다.";updated=true;
-            }
-            // Recover a legacy requeued job from its already stored result. Never re-run the
-            // model just because the next run started or a prompt/configuration changed.
-            foreach(var job in queue.jobs.Where(j=>j.status=="Pending" || j.status=="Generating"))
-            {
-                NarrativeStoryEntry entry;
-                lock(narrativeGate) entry=FindNarrative(job.targetRun,job.storyPath);
-                if(entry!=null)
-                {
-                    job.status=!entry.enabled || entry.origin!="Runtime" || string.IsNullOrEmpty(entry.contentJson)?"Preserved":entry.reviewRequired?"ReviewRequired":"Ready";
-                    job.contentHash=entry.contentHash;job.sectionCheckpoint=null;job.auditArchived=true;
-                    job.error=entry.reviewRequired?entry.validationError:null;
-                    if(entry.origin=="Runtime" && !string.IsNullOrEmpty(entry.contentJson))
-                        job.reportPath=FindAppliedReport(job,entry)??job.reportPath;
-                    job.generationPart="저장된 결과 사용";updated=true;continue;
-                }
-                if(string.IsNullOrEmpty(job.reportPath) || !File.Exists(job.reportPath))continue;
-                try
-                {
-                    var report=LocalStoryTestArchive.Load(job.reportPath);
-                    if(report.storyPath!=job.storyPath || report.sourceRun!=job.sourceRun || report.targetRun!=job.targetRun)continue;
-                    if(job.status=="Pending" && job.sectionCheckpoint?.accepted?.Count>0 && report.runtimeError=="생성 취소")continue;
-                    if(string.IsNullOrWhiteSpace(report.rawOutput) && string.IsNullOrWhiteSpace(report.correctionRawOutput))continue;
-                    // A report means this attempt already finished. Reuse/inspect it, including
-                    // failures. Only an interrupted section checkpoint without a report resumes.
-                    job.status="Failed";job.failedOutputChecked=false;job.sectionCheckpoint=null;
-                    job.error=report.runtimeError??report.correctionError??report.error??"저장된 결과 확인";
-                    job.generationPart="저장된 결과 확인";updated=true;
-                }
-                catch(Exception e) when(e is IOException || e is Newtonsoft.Json.JsonException || e is ArgumentException)
-                {job.status="Failed";job.error=e.Message;updated=true;}
-            }
-            foreach(var job in queue.jobs.Where(j=>j.status=="Ready" && !string.IsNullOrEmpty(j.error)))
-            {
-                NarrativeStoryEntry entry;lock(narrativeGate)entry=FindNarrative(job.targetRun,job.storyPath);
-                if(entry?.origin!="Runtime" || entry.reviewRequired)continue;
-                job.error=null;job.reportPath=FindAppliedReport(job,entry)??job.reportPath;updated=true;
-            }
-            if(updated) {SaveNarrativeQueue(queue);ApplySavedFailedOutputs();queue=LoadNarrativeQueue(run);}
-            var next=queue.jobs.FirstOrDefault(j=>(j.status=="Pending"||j.status=="Generating")&&LocalStoryDialogueQueue.CanProcess(this,j));
-            if(next!=null) return next;
+            var queue = LoadNarrativeQueue(run);
+            if (queue?.finalized != true) continue;
+            var next = queue.jobs
+                .Where(job => job.status == "Pending" || job.status == "Generating")
+                .OrderBy(job => job.sequence)
+                .FirstOrDefault(job => LocalStoryDialogueQueue.CanProcess(this, job));
+            if (next != null) return next;
         }
         return null;
     }
-    private string FindAppliedReport(LocalStoryDialogueJob job,NarrativeStoryEntry entry)
-    {
-        foreach(string file in LocalStoryTestArchive.List(Path.Combine(StorageRoot,"LocalStoryTests")).OrderByDescending(p=>p,StringComparer.Ordinal))
-        {
-            try
-            {
-                var report=LocalStoryTestArchive.Load(file);
-                if(report.sourceRun!=job.sourceRun || report.targetRun!=job.targetRun || report.storyPath!=job.storyPath)continue;
-                var canonical=JsonUtility.FromJson<EncounterCardRoot>(NarrativeInteractions.StorySource(job.storyPath));
-                foreach(string raw in new[]{report.correctionRawOutput,report.rawOutput}.Where(s=>!string.IsNullOrWhiteSpace(s)))
-                    if(LocalStoryRewrite.TryBuildForReview(raw,canonical,out var candidate,out _,true) &&
-                        LocalStoryDialogueQueue.Hash(JsonUtility.ToJson(candidate,true))==entry.contentHash)return file;
-            }
-            catch(Exception e) when(e is IOException || e is Newtonsoft.Json.JsonException || e is FormatException || e is ArgumentException)
-            {Debug.LogWarning("[Narrative] 결과 연결 확인 보류: "+e.Message);}
-        }
-        return null;
-    }
+
     private LocalStoryRevisionRequest LoadLatestNarrativeRequest()
     {
         foreach(string chapter in NarrativeChapters()) ReadNarrativeChapter(chapter);
@@ -395,9 +353,14 @@ public partial class SaveIOService
             .Select(f=>JsonUtility.FromJson<LocalStoryDialogueQueueData>(File.ReadAllText(f))).OrderByDescending(q=>q.sourceRun).ToArray():Array.Empty<LocalStoryDialogueQueueData>();
         if (queues.Length == 0) return null;
         var queue = LoadNarrativeQueue(queues[0].sourceRun);
-        var summary = queue?.jobs.LastOrDefault()?.snapshot;
+        var latestJob = queue?.jobs.LastOrDefault();
+        var summary = latestJob?.snapshot ?? (latestJob == null ? null : new LocalStoryRevisionRequest
+        {
+            sourceRun = latestJob.sourceRun, targetRun = latestJob.targetRun,
+            chapterId = latestJob.chapterId, characterId = latestJob.characterId,
+            generationTrigger = "RunEndedEmotion", reason = latestJob.emotion
+        });
         if (summary == null) return null;
-        var latestJob = queue.jobs.Last();
         if (latestJob.auditArchived && !string.IsNullOrEmpty(latestJob.reportPath) && File.Exists(latestJob.reportPath))
         {
             var archived = LocalStoryTestArchive.Load(latestJob.reportPath)?.interactionMemory;
@@ -409,9 +372,11 @@ public partial class SaveIOService
         summary.playedCards=played?.guideProgress?.runHistory;
         summary.status = queue.jobs.Any(j => j.status == "Generating") ? "GeneratingDialogues" :
             queue.jobs.Any(j => j.status == "Pending") ? "PendingDialogues" : queue.jobs.Any(j => j.status == "Failed") ? "Failed" :
-            queue.jobs.Any(j=>j.status=="ReviewRequired")?"ReviewRequired":"Ready";
+            queue.jobs.Any(j => j.status == "WaitingForRunEnd") ? "WaitingForRunEnd" :
+            queue.jobs.Any(j => j.status == "Ready") ? "Ready" :
+            queue.jobs.Any(j => j.status == "ReviewRequired") ? "ReviewRequired" : "Rejected";
         summary.generationResults = queue.jobs.Select(j => new LocalStoryRuntimeResult { storyPath = j.storyPath, status = j.status,
-            error = j.error, reportPath = j.reportPath, model = j.snapshot?.npcContexts?.FirstOrDefault(c => c.characterId == j.characterId)?.model }).ToList();
+            error = j.error, reportPath = j.reportPath, model = j.model ?? j.snapshot?.npcContexts?.FirstOrDefault(c => c.characterId == j.characterId)?.model }).ToList();
         return summary;
     }
     private void ImportLegacyNarrative(int run, string path)

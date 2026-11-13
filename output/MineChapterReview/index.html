@@ -24,18 +24,143 @@ a:focus-visible{outline:2px solid #cfe8fb;outline-offset:3px}
 </nav>
 <main>
 <header><p class="kicker">갱도 챕터 보고서</p><h1>현재 작업 현황</h1>
-<p class="lead">2026-11-08 갱신 · 적용 상태와 다음 작업을 빠르게 확인합니다.</p></header>
+<p class="lead">2026-11-13 갱신 · 프로젝트 구조, 갱도 챕터 현황과 AiAsset 정리 기록을 확인합니다.</p></header>
 <div class="grid">
 <article class="box"><h2>작업 이력</h2><p>최근 변경부터 이전 작업까지 상세 기록, 캡처, 검증 로그를 확인합니다.</p><a href="work-history.html">작업 이력 열기 →</a></article>
 <article class="box"><h2>사용 안내</h2><p>실행 방법과 엑셀·Inspector 수정 위치를 확인합니다.</p><a href="usage-guide.html">사용 안내 열기 →</a></article>
+<article class="box"><h2>AiAsset 정리</h2><p>1차 텍스처 정리에 이어 검토한 중복 사본 66개를 통합했습니다.</p><a href="#aiasset-merge-20261113">2차 통합 보기 →</a> · <a href="#aiasset-audit-20261113">중복 조사</a> · <a href="#aiasset-20261113">첫 작업 기록</a></article>
 </div>
 <section id="status"><h2>현재 적용 상태</h2><div class="table">
 <table><thead><tr><th scope="col">항목</th><th scope="col">상태</th><th scope="col">현재 적용</th><th scope="col">상세</th></tr></thead><tbody>
 <tr><th scope="row">청크 장소</th><td class="status-badge">배치 적용</td><td>일반·특화·이야기 장소 합계는 청크당 최대 4곳. 첫 상점은 유지하고 네아·시아는 두 번째 청크에 배치합니다. 갱도와 해안은 실제 건물 사이 거리를 회차마다 바꿉니다.</td><td><a href="work-history.html#variable-room-layout-nov09">최신 배치와 바닥 확인</a> · <a href="work-history.html#shop-map-encounter-nov08">상점 지도</a></td></tr>
-<tr><th scope="row">하루와 징수</th><td class="status-badge">적용</td><td>하루 5분, 징수 간격 최대 14일, 활성 세목에서 2~3개를 고지합니다.</td><td><a href="work-history.html#five-minute-day-nov08">시간·주기</a> · <a href="work-history.html#tax-catalog-nov08">세금</a></td></tr>
-<tr><th scope="row">학습과 조작</th><td class="status-badge">적용</td><td>v5 자판기와 달력, 하단 대화창, 상하 기어 선택을 적용했습니다.</td><td><a href="work-history.html#open-mine-calendar-nov08">자판기·달력</a> · <a href="work-history.html#encounter-panel-nov08">대화·조작</a></td></tr>
+<tr><th scope="row">하루와 징수</th><td class="status-badge">적용</td><td>징수대는 로드된 마지막 갱도 청크의 끝에서 내려와 방향을 바꾼 뒤 출발점까지 걸어서 돌아갑니다. 청크 로드 범위는 현재 기준 앞뒤 4개입니다.</td><td><a href="#collector-pass-20261113">징수 통과 기준</a> · <a href="work-history.html#collector-return-nov13">복귀와 청크 로드</a> · <a href="work-history.html#collector-descent-nov13">조우 판정</a></td></tr>
+<tr><th scope="row">학습과 가방</th><td class="status-badge">적용</td><td>책은 흰 보드에서 대기합니다. 초록 보드에 놓으면 캐릭터가 집어 들고 학습합니다. 책과 코인은 보드 범위 안에서 드래그하고 놓으면 중력으로 떨어집니다.</td><td><a href="#board-study-physics-20261113">보드 조작 수정</a> · <a href="usage-guide.html#book-study">조작 방법</a></td></tr>
 <tr><th scope="row">챕터 전환</th><td class="status-badge">연결 적용</td><td>갱도 보스 승리 후 해안에 진입합니다. 해안의 이야기와 NPC는 후속 작업입니다.</td><td><a href="work-history.html#chapter-modules-nov08">챕터·엑셀</a></td></tr>
 </tbody></table></div></section>
+<section id="project-overview"><h2>프로젝트 구조</h2>
+<div class="table"><table><thead><tr><th scope="col">영역</th><th scope="col">역할과 진입점</th></tr></thead><tbody>
+<tr><th scope="row">Unity 실행</th><td>Unity 6000.3.12f1과 URP 17.3.0을 사용합니다. <a href="../../Assets/Scenes/MainMenuScene.unity">MainMenuScene</a>에서 시작하고, <a href="../../Assets/Scenes/DecisionScene.unity">DecisionScene</a>에서 여정이 진행됩니다. 빌드에는 BattleScene과 3DBattleScene도 포함됩니다. <a href="usage-guide.html#play">실행 방법</a></td></tr>
+<tr><th scope="row">게임 코드</th><td><code>Assets/Decision_YYS/Scripts</code>의 <code>GameManager</code>와 <code>DecisionManager</code>가 게임 상태와 진행을 관리합니다. <code>EnvController</code>와 <code>TerrainBuilder</code>는 지형과 청크를 구성합니다. <code>LocalStoryRuntimeService</code>는 로컬 이야기 생성을 처리하고 <code>SaveIOService</code>는 진행 데이터를 읽고 씁니다.</td></tr>
+<tr><th scope="row">에셋·콘텐츠</th><td><code>Assets/AiAsset</code>에는 갱도·해안·보스·NPC·보드용 팩 12개와 루트 이미지가 있습니다. 편집용 콘텐츠 원본은 <code>Assets/StreamingAssets/ContentAuthoring</code>에 있습니다. <a href="usage-guide.html#content-authoring">콘텐츠 수정 방법</a></td></tr>
+<tr><th scope="row">설정·검증</th><td><a href="../../Packages/manifest.json">패키지 선언</a>과 <a href="../../Packages/packages-lock.json">잠금 파일</a>은 <code>Packages</code>에, 씬 목록과 에디터 설정은 <code>ProjectSettings</code>에 있습니다. <code>AgentScripts</code>에 갱도·UI 검사 도구, <code>Tests/LocalStoryBenchmark</code>에 대사 평가 자료가 있습니다. <a href="usage-guide.html#verify">검증 방법</a></td></tr>
+<tr><th scope="row">작업 기준</th><td><code>feature/final_project</code>의 기준 커밋은 <code>5e075579</code>입니다. 작업 시작 시 게임 코드, DecisionScene, 보고서에 기존 미커밋 변경이 있었습니다. 이 페이지는 Git 추적 대상입니다.</td></tr>
+</tbody></table></div></section>
+<section id="aiasset-20261113"><h2>2026-11-13 AiAsset 1차 정리</h2>
+<p><time datetime="2026-11-13">2026-11-13 (KST)</time> · 프로젝트의 실행·수정 위치를 파악하고 에셋 팩 사이의 중복을 줄였습니다.</p>
+<div class="table"><table><thead><tr><th scope="col">단계</th><th scope="col">작업과 확인 결과</th><th scope="col">상태</th></tr></thead><tbody>
+<tr><th scope="row">구조 파악</th><td>씬과 코드 진입점, 설정, 테스트 자료, 기존 보고서와 Git 상태를 확인했습니다.</td><td class="status-badge">완료</td></tr>
+<tr><th scope="row">중복 조사</th><td><code>.meta</code>를 제외한 2,784개 파일을 비교했습니다. 바이트가 같은 파일이 102그룹이며, 그룹마다 한 파일을 기준으로 계산하면 중복 사본은 341개였습니다.</td><td class="status-badge">완료</td></tr>
+<tr><th scope="row">텍스처 통합</th><td>4개 팩에서 이름, SHA-256, Unity 임포트 설정이 일치하는 PNG 64종을 통합했습니다. 사본 192개(5,290,011바이트)를 줄이고 머티리얼 48개의 참조 144개를 갱신했습니다.</td><td class="status-badge">완료</td></tr>
+<tr><th scope="row">검증·기록</th><td>공용 파일의 내용·GUID·임포트 설정, 제거한 GUID의 잔존 여부, Unity의 실제 머티리얼 연결을 검사하고 이 페이지에 기록했습니다.</td><td class="status-badge">완료</td></tr>
+</tbody></table></div>
+<h3>공용 텍스처 위치와 참조</h3>
+<p><code>BossRevealMapPack</code>, <code>Chunk1StoryNPCPack_Appearance_URP</code>, <code>CoastalEncounterPackRoofed</code>, <code>MineChunkModularPack</code>이 <a href="../../Assets/AiAsset/SharedTextures/">Assets/AiAsset/SharedTextures</a>를 공유합니다. <code>MineChunkModularPack</code>의 PNG와 <code>.meta</code>를 함께 옮겨 기존 GUID를 사용했습니다. 색상·노멀맵·ORM·거칠기 맵이 포함됩니다.</p>
+<h3>검증과 다음 작업</h3>
+<ul>
+<li>프로젝트 소스·설정·개발 도구에서 제거한 텍스처 GUID가 0건임을 확인했습니다. Unity 에디터에서 재임포트한 뒤 공용 텍스처 64개가 로드되고, 4개 팩의 머티리얼 64개에 저장된 텍스처 슬롯 192개가 모두 올바른 에셋을 가리키는 것을 확인했습니다.</li>
+<li>현재 에디터 세션에서 폴더와 파일의 GUID 및 직접 로드는 확인했지만, <code>AssetDatabase.FindAssets</code>의 폴더 검색에는 공용 텍스처가 나타나지 않았습니다. 다음 에디터 재시작 후 검색을 재확인할 예정입니다. Play 모드 화면과 플레이어 빌드 검증도 남아 있습니다.</li>
+<li>바이트 기준 중복 사본은 149개 남았습니다. 다음 검토 대상은 배럴·상자·횃불 등 메시, 보드·코인 물리 머티리얼, 프리뷰 렌더러입니다. 텍스처 중 <code>background.png</code>와 <code>IvoryPaper.png</code>처럼 임포트 설정이 다른 경우는 사용처를 먼저 확인해야 합니다. 120u 갱도 팩은 <code>AgentScripts/PrepareMineChapter.cs</code>와 기존 검사 도구가 경로로 읽으므로 180 Open 팩과의 통합 전에 도구 의존성을 확인해야 합니다.</li>
+</ul>
+<p><small>임시 작업 코드 파일 및 정리 대기 항목 없음.</small></p>
+</section>
+<section id="aiasset-audit-20261113"><h2>2026-11-13 AiAsset 남은 중복 조사</h2>
+<p><time datetime="2026-11-13">2026-11-13 (KST)</time> · 중복 사본 149개에 대해 SHA-256, GUID를 제외한 <code>.meta</code>, 프로젝트의 직렬화 참조와 파일명 사용처를 대조했습니다. 조사 결과를 기록했으며, 에셋 변경은 이번 작업에 포함되지 않았습니다.</p>
+<div class="table"><table><thead><tr><th scope="col">대상</th><th scope="col">사본 수</th><th scope="col">확인 결과와 후속 작업</th></tr></thead><tbody>
+<tr><th scope="row">메시</th><td>39개</td><td>배럴·상자·횃불 등 25종의 내용과 임포트 설정이 같습니다. 프리팹 15개의 메시 슬롯 122개가 이 그룹의 파일을 참조합니다. 공용 메시를 정한 뒤 참조를 옮겨 통합할 수 있습니다.</td></tr>
+<tr><th scope="row">물리 머티리얼</th><td>2개</td><td><code>BoardSurface</code>와 <code>CoinSlide</code>는 각각 두 사본의 물리 설정이 같습니다. 보드·컨트롤러·코인 슈트 프리팹과 빌드 씬 의존성은 <code>JourneyMapKit/Materials</code> 쪽을 사용합니다. <code>JourneyCoinPhysics</code> 쪽은 조사한 프로젝트 파일에서 참조가 발견되지 않았습니다.</td></tr>
+<tr><th scope="row">프리뷰 렌더러</th><td>4개</td><td><code>MinePreview_Renderer.asset</code> 5개가 동일하며 각 팩의 <code>MinePreview_URP.asset</code>이 자기 사본을 참조합니다. 활성 빌드 씬 4개의 Unity 의존성 목록에는 이 프리뷰 에셋들이 없습니다. 통합 시 각 프리뷰 설정의 연결을 확인해야 합니다.</td></tr>
+<tr><th scope="row">설정이 같은 PNG</th><td>21개</td><td>10그룹의 이미지와 임포트 설정이 같습니다. 팩마다 이름이 다른 바닥·암벽·NPC용 노멀맵 등이 포함됩니다. 참조가 있는 머티리얼은 24개이며, 통합 시 텍스처의 용도가 드러나는 이름과 공용 경로를 정해야 합니다.</td></tr>
+<tr><th scope="row">설정이 다른 PNG</th><td>83개</td><td><code>background.png</code>는 <code>DecisionScene</code>의 스프라이트이고 <code>IvoryPaper.png</code>는 보드 머티리얼 등에 연결됩니다. <code>MineChunkModularPack180Open</code>의 일부 텍스처는 공용본과 압축 설정이 다릅니다. Cave Village 텍스처에는 Unity GUID 참조가 발견되지 않았으나 <a href="../../Assets/AiAsset/CaveVillageAssetPack/CaveVillageAssetPack/OBJ/CaveVillage.mtl">CaveVillage.mtl</a>이 이 중 30종을 상대 경로로 읽습니다. 통합하려면 사용처별 임포트 설정과 모델의 경로 참조를 먼저 검증해야 합니다.</td></tr>
+</tbody></table></div>
+<p>구조·내용 비교, 참조 조사, 기록을 완료했습니다. 통합 후보는 66개이며 원본 파일 기준 약 1.76MB입니다. Unity에서 활성 빌드 씬의 의존성과 기존 공용 텍스처 64개의 직접 로드를 확인했습니다. 현재 에디터 세션에서 공용 폴더를 대상으로 한 <code>FindAssets</code> 검색 결과는 여전히 0건입니다.</p>
+<p><small>임시 작업 코드 파일 및 정리 대기 항목 없음.</small></p>
+</section>
+<section id="aiasset-merge-20261113"><h2>2026-11-13 AiAsset 2차 통합</h2>
+<p><time datetime="2026-11-13">2026-11-13 (KST)</time> · 앞선 조사에서 내용과 Unity 임포트 설정이 일치한 사본 66개를 통합했습니다.</p>
+<div class="table"><table><thead><tr><th scope="col">단계</th><th scope="col">작업과 확인 결과</th><th scope="col">상태</th></tr></thead><tbody>
+<tr><th scope="row">후보 확인</th><td>38그룹의 파일 내용과 <code>.meta</code>를 비교하고 프로젝트의 GUID 참조와 파일명 사용처를 확인했습니다.</td><td class="status-badge">완료</td></tr>
+<tr><th scope="row">통합</th><td>메시 39개, PNG 21개, 프리뷰 렌더러 4개, 물리 머티리얼 2개의 중복 사본과 해당 <code>.meta</code>를 제거했습니다. 원본 파일 기준 1,759,816바이트를 줄였습니다. 기존 보존본의 GUID를 사용해 프리팹·머티리얼·프리뷰 설정 28개 파일의 참조 94개를 갱신했습니다.</td><td class="status-badge">완료</td></tr>
+<tr><th scope="row">검증·기록</th><td>제거한 GUID 잔존 0건과 계획 범위의 파일 변경을 확인했습니다. Unity에서 보존본 38개의 GUID·로컬 ID와 수정 파일 28개의 직접 의존성 58쌍을 확인했습니다. Play 모드 및 플레이어 빌드 검증은 남아 있습니다.</td><td class="status-badge">완료</td></tr>
+</tbody></table></div>
+<p>보존본은 기존 경로를 사용합니다. 메시와 프리뷰 렌더러는 <code>MineChunkModularPack</code>, 물리 머티리얼은 <code>JourneyMapKit/Materials</code>, PNG는 <code>MineChunkModularPack/Textures</code>와 <code>SharedTextures</code>에 있습니다.</p>
+<p>통합 후 바이트 기준 중복은 87개입니다. 앞선 조사에서 임포트 설정이 달랐던 PNG 사본 83개와, 렌더러 GUID를 통일하면서 새로 내용이 같아진 <code>MinePreview_URP.asset</code> 사본 4개입니다. 프리뷰 URP 설정의 통합 여부는 후속 검토 대상입니다.</p>
+<p><small>임시 작업 코드 파일 및 정리 대기 항목 없음.</small></p>
+</section>
+<section id="board-study-physics-20261113"><h2>2026-11-13 학습 시작 위치와 보드 물리</h2>
+<p><time datetime="2026-11-13">2026-11-13 (KST)</time> · 흰 보드는 책을 놓아두는 곳이고, 초록 보드는 학습할 책을 전달하는 곳입니다.</p>
+<div class="table"><table><thead><tr><th scope="col">단계</th><th scope="col">변경 및 확인</th><th scope="col">상태</th></tr></thead><tbody>
+<tr><th scope="row">원인 확인</th><td>학습 타이머가 흰 보드 상태를 읽기 대상으로 포함했습니다. 이전 낙하 처리는 충돌 결과와 별개로 위치와 회전을 다시 지정했습니다.</td><td class="status-badge">완료</td></tr>
+<tr><th scope="row">학습 시작</th><td><code>LearningDispenserView</code>는 초록 보드에 착지한 책을 캐릭터에게 전달합니다. <code>MineLearningStation</code>은 캐릭터가 집어 든 책의 학습을 진행합니다. 가방에서 꺼낸 책과 콤보 책에도 같은 초록 보드 경로를 적용했습니다.</td><td class="status-badge">완료</td></tr>
+<tr><th scope="row">보드 물리</th><td><code>BoardItemDrop</code>은 물체 크기를 고려해 드래그를 두 보드의 표면 범위로 제한합니다. 책에는 모델 전체를 감싸는 박스 콜라이더를 만들고, 코인은 기존 볼록 메시 콜라이더를 사용합니다. 놓은 뒤에는 Rigidbody가 낙하와 충돌을 처리합니다.</td><td class="status-badge">완료</td></tr>
+<tr><th scope="row">Play 검증</th><td>1920×1080 DecisionScene에서 흰 보드 착지 후 테스트 책의 학습 시간이 120초로 유지됐고, 같은 책을 초록 보드로 옮겨 캐릭터가 집어 든 후 학습 시간이 줄었습니다. 책과 코인의 드래그 범위 제한, 책의 중력 낙하, 코인의 흰·초록 보드 착지를 확인했습니다. Unity 스크립트 컴파일 오류는 0개였습니다.</td><td class="status-badge">완료</td></tr>
+</tbody></table></div>
+<p>책은 보드에 놓였을 때 읽기 방향으로 넘어지지 않도록 앞뒤·좌우 회전을 제한하고, 코인은 자유 회전을 사용합니다. 콤보·리필의 전체 플레이와 플레이어 빌드는 이번에 검증하지 않았습니다.</p>
+<p>임시 작업 코드 파일은 없습니다. 격리된 Play 모드 검증에는 Git에서 제외된 <code>output/MineChapterReview/BoardPhysicsQA-20261113</code> 저장 복사본을 사용했습니다.</p>
+</section>
+<section id="board-drag-height-20261113"><h2>2026-11-13 드래그 높이와 학습 표시 위치</h2>
+<p><time datetime="2026-11-13">2026-11-13 (KST)</time> · 책과 코인을 위로 더 들어 올릴 수 있게 하고 학습 표시를 캐릭터 쪽으로 내렸습니다.</p>
+<div class="table"><table><thead><tr><th scope="col">단계</th><th scope="col">변경 및 확인</th><th scope="col">상태</th></tr></thead><tbody>
+<tr><th scope="row">기준 확인</th><td>책과 코인은 보드에서 고정 높이 0.20유닛으로 이동했고, 학습 표시 두 종류는 캐릭터 머리 기준점에 양의 오프셋을 사용했습니다.</td><td class="status-badge">완료</td></tr>
+<tr><th scope="row">높이와 위치 수정</th><td><code>BoardItemDrop.PointerLift</code>가 클릭 지점에서 마우스를 위로 올린 거리를 드래그 높이 0.20~1.40유닛으로 변환합니다. 책과 코인은 놓는 순간의 높이에서 낙하합니다. <code>LearningDispenserView</code>의 학습 바와 결과·한도 안내를 각각 UI 좌표 24만큼 내렸습니다.</td><td class="status-badge">완료</td></tr>
+<tr><th scope="row">Unity 검증</th><td>DecisionScene의 격리된 Play 세션에서 책과 코인이 각각 1.40유닛까지 올라가며 보드의 가로 범위에 머물고, 놓은 뒤 내려가는 것을 확인했습니다. 머리 기준점 대비 학습 바 −12, 안내 −16을 확인했습니다. 컴파일 오류는 0개이며 플레이어 빌드는 실행하지 않았습니다.</td><td class="status-badge">완료</td></tr>
+</tbody></table></div>
+<p><small>임시 작업 코드 파일 없음. 기존 Git 제외 검증 저장 복사본 <code>output/MineChapterReview/BoardPhysicsQA-20261113</code>을 재사용했습니다.</small></p>
+</section>
+<section id="combo-shelf-drag-20261113"><h2>2026-11-13 콤보 책장 이동</h2>
+<p><time datetime="2026-11-13">2026-11-13 (KST)</time> · 흰 보드 위 책장의 나무 부분을 마우스로 누른 채 끌면 위치를 옮길 수 있습니다. 책장 전체가 흰 보드 경계 안에 머물고, 슬롯에 꽂힌 책과 함께 읽기 버튼이 따라옵니다. 책을 클릭하면 기존 책 드래그가 우선합니다.</p>
+<div class="table"><table><thead><tr><th scope="col">단계</th><th scope="col">작업과 확인</th><th scope="col">상태</th></tr></thead><tbody>
+<tr><th scope="row">입력 확인</th><td><code>LearningDispenserView</code>의 책 선택, 책장 슬롯과 버튼 배치를 확인했습니다.</td><td class="status-badge">완료</td></tr>
+<tr><th scope="row">드래그 구현</th><td>클릭 지점을 유지하며 보드 표면과 평행하게 이동하고 책장 폭과 깊이로 경계를 제한합니다. 위치는 현재 Play 세션 동안 유지됩니다.</td><td class="status-badge">완료</td></tr>
+<tr><th scope="row">Unity 검증</th><td>격리된 Play 세션에서 책장 선택, 이동, 높이 유지, 경계 제한, 슬롯·책·버튼 이동을 확인했습니다. 컴파일 오류는 0개였습니다.</td><td class="status-badge">완료</td></tr>
+</tbody></table></div>
+<p><small>임시 작업 코드 파일 없음. 기존 검증 저장 복사본을 재사용했습니다.</small></p>
+</section>
+<section id="coin-book-stock-hover-20261113"><h2>2026-11-13 코인통 수량과 자판기 호버</h2>
+<p><time datetime="2026-11-13">2026-11-13 (KST)</time> · 코인을 꺼내면 코인통에서 한 개가 즉시 줄어듭니다. 코인통과 학습 자판기의 각 칸에 커서를 올리면 기존 책 제목과 같은 디자인으로 남은 수량이 표시됩니다.</p>
+<div class="table"><table><thead><tr><th scope="col">단계</th><th scope="col">작업과 확인</th><th scope="col">상태</th></tr></thead><tbody>
+<tr><th scope="row">수량 확인</th><td>보드 위에 꺼낸 코인은 납부·리필 전에 대기 목록에서 관리됩니다.</td><td class="status-badge">완료</td></tr>
+<tr><th scope="row">표시 반영</th><td><code>JourneyCoinSupplyController</code>는 보드에 꺼낸 수량을 뺀 코인통 수량을 표시합니다. <code>LearningDispenserView</code>는 기존 호버 상자로 코인 수, 책 재고, 리필 비용을 표시합니다.</td><td class="status-badge">완료</td></tr>
+<tr><th scope="row">Unity 검증</th><td>격리된 Play 세션에서 코인통 표시와 호버 수량이 7→6→7로 바뀌고, 코인통과 자판기 각각 네 종류의 호버 문구를 확인했습니다. 컴파일 오류는 0개였습니다. 납부·리필 전체 플레이와 빌드 검증은 남아 있습니다.</td><td class="status-badge">완료</td></tr>
+</tbody></table></div>
+<p><small>임시 작업 코드 파일 없음. 기존 검증 저장 복사본을 재사용했습니다.</small></p>
+</section>
+<section id="coin-dispense-limit-20261113"><h2>2026-11-13 코인 배출과 자판기 하단 라벨</h2>
+<p><time datetime="2026-11-13">2026-11-13 (KST)</time> · 코인통의 보드 배출 상한을 없애고 자판기 하단 버튼에 붙은 능력명·권수 라벨을 제거했습니다.</p>
+<div class="table"><table><thead><tr><th scope="col">단계</th><th scope="col">작업과 확인</th><th scope="col">상태</th></tr></thead><tbody>
+<tr><th scope="row">원인 확인</th><td><code>JourneyCoinSupplyController</code>가 일반 배출을 전체 5개로 제한했고, <code>LearningDispenserView</code>가 하단 재고 라벨 네 개를 생성했습니다.</td><td class="status-badge">완료</td></tr>
+<tr><th scope="row">배출·표시 수정</th><td>일반 배출은 종류별 코인통 재고까지 가능합니다. 납부 중에는 요청된 종류별 수량까지 배출할 수 있습니다. 자판기 하단 라벨 생성과 갱신을 제거했습니다. 책 재고는 기존 호버에서 확인할 수 있습니다.</td><td class="status-badge">완료</td></tr>
+<tr><th scope="row">Unity 검증</th><td>격리된 Play 세션에서 재고 22개 전부 배출, 2개 납부 요청 시 세 번째 배출 차단, 하단 라벨 0개, 책 재고 호버 표시를 확인했습니다. 컴파일 오류는 0개였습니다. 플레이어 빌드는 실행하지 않았습니다.</td><td class="status-badge">완료</td></tr>
+</tbody></table></div>
+<p><small>임시 작업 코드 파일 없음. 기존 검증 저장 복사본을 재사용했습니다.</small></p>
+</section>
+<section id="collector-pass-20261113"><h2>2026-11-13 징수 통과 기준</h2>
+<p>징수원과 조우할 때 <code>MineTaxInvoice.CanPass</code>가 현재 보유 코인과 이번 고지서를 비교합니다.</p>
+<ol>
+<li>종류가 지정된 세금을 낸다고 가정했을 때, 해당 종류마다 최소 1개가 남아야 합니다.</li>
+<li>종류별 여유분은 <code>max(0, 보유량 − 해당 종류의 고정 세금 − 1)</code>입니다. 단일 종류로 내야 하는 세금은 가장 큰 여유분 한 종류로 충당할 수 있어야 합니다.</li>
+<li>여유분의 총합은 단일 종류 세금과 여러 종류를 섞어 낼 수 있는 세금의 합 이상이어야 합니다.</li>
+</ol>
+<p>조건을 충족하면 징수원 대사에 “기준을 넘겼군. 통과해라.”와 종류별 1개 보유 기준, 지정 세금, 적용되는 추가 세금의 필요량과 여유량을 표시합니다. 읽을 수 있도록 5초간 표시한 뒤 코인 차감 없이 조우를 끝냅니다. 조건을 충족하지 못하면 징수 선택지가 열립니다.</p>
+<p>현재 Play 세션에서 힘·속도·지능·매력은 각각 5개였습니다. 고지서는 길눈세(속도 1개, 지능 2개)와 인두세(종류를 섞어 2개)였습니다. 종류별 여유분은 4, 3, 2, 4개이고 총 13개여서 통과 판정이 참이었습니다.</p>
+<p>2026-11-13 (KST) · 기존 대화 패널을 확인하고, <code>MineTaxInvoice.CanPass</code>가 계산한 여유량을 통과 대사에 연결했습니다. Unity 컴파일 오류 0개이며, 예시 고지의 필요 2개 / 전체 여유 13개, 단일 종류 세금이 있는 경우, 보유량이 부족한 경우의 판정을 확인했습니다. 실제 조우 화면 재생은 검증하지 않았습니다. 임시 작업 코드 파일 없음.</p>
+</section>
+<section id="shelf-rotation-hover-20261113"><h2>2026-11-13 선반 회전과 호버 글자</h2>
+<div class="table"><table><thead><tr><th scope="col">단계</th><th scope="col">작업과 확인</th><th scope="col">상태</th></tr></thead><tbody>
+<tr><th scope="row">현재 상태 확인</th><td>Play 모드에서 <code>LearningJobs</code> 아래 선반의 로컬 회전이 X −30°, Y 0°, Z 0°임을 확인했습니다. 징수 통과 판정은 이 페이지에 추가했습니다.</td><td class="status-badge">완료</td></tr>
+<tr><th scope="row">수정</th><td><code>LearningDispenserView</code>에서 선반 생성 시 로컬 회전을 적용합니다. 자판기 리필 호버의 가운데점은 슬래시로 바꿨습니다.</td><td class="status-badge">완료</td></tr>
+<tr><th scope="row">검증</th><td>실행 중인 선반이 저장한 각도와 일치하고, 호버의 ChosunCentennial SDF 폰트에 슬래시가 있는 것을 확인했습니다. 현재 일시정지 상태를 유지했으며, 수정 후 새 Play 세션은 실행하지 않았습니다.</td><td class="status-badge">값 확인</td></tr>
+</tbody></table></div>
+<p><small>임시 작업 코드 파일 없음.</small></p>
+</section>
+<section id="coin-return-20261114"><h2>2026-11-14 코인 수량 동기화와 반환</h2>
+<p><time datetime="2026-11-14">2026-11-14 (KST)</time> · 코인통과 학습 상태, 자판기 위 숫자는 보드에 꺼내 둔 코인을 뺀 수량을 표시합니다. 보드의 코인을 같은 색 코인통에 끌어다 놓으면 수량이 한 개 돌아옵니다.</p>
+<div class="table"><table><thead><tr><th scope="col">단계</th><th scope="col">작업과 확인</th><th scope="col">상태</th></tr></thead><tbody>
+<tr><th scope="row">원인 확인</th><td>학습 상태와 자판기 위 숫자는 전체 보유량을 읽고, 코인통은 배출한 수량을 뺀 값을 표시했습니다.</td><td class="status-badge">완료</td></tr>
+<tr><th scope="row">표시·반환</th><td><code>JourneyCoinSupplyController</code>의 통 안 수량을 <code>MineLearningStation</code>의 표시에 연결했습니다. 같은 색 코인통에 놓으면 보드에서 코인을 회수합니다. 학습·납부 판정은 실제 보유량을 사용합니다.</td><td class="status-badge">완료</td></tr>
+<tr><th scope="row">Unity 검증</th><td>격리된 Play 세션에서 코인통·학습 상태·자판기 수량이 배출, 학습 보상 2개 반영, 반환에 따라 7→6→8→9로 일치했습니다. 다른 색 통 반환 거절과 같은 색 반환을 확인했습니다. 컴파일 오류는 0개였습니다. 납부·리필 전체 플레이와 플레이어 빌드 검증은 남아 있습니다.</td><td class="status-badge">완료</td></tr>
+</tbody></table></div>
+<p><small>임시 작업 코드 파일 없음. 기존 검증 저장 복사본을 재사용했습니다.</small></p>
+</section>
 <section id="remaining"><h2>남은 작업</h2>
 <ul><li>예약 시설의 상호작용과 2·3청크 새 필수 조우</li><li>해안 이야기·NPC·수면 연출</li><li>조건부 세목 5개, 추가 보스와 보스 간 송금</li></ul>
 <p><a href="work-history.html#remaining">기존 미작업 기록과 필요한 에셋 보기</a></p></section>

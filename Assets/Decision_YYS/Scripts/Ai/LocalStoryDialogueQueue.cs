@@ -8,13 +8,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
 
-[Serializable] public sealed class LocalStoryDreamRule
-{
-    public string ruleId, characterId, choiceId, kind, result, impression, choiceRole;
-    public string[] requiresUnlocks;
-    public bool enabled, runCompletedOnly, requireRelationshipChoice;
-}
-[Serializable] public sealed class LocalStoryDreamRules { public LocalStoryDreamRule[] rules; }
 [Serializable] public sealed class LocalStoryDreamMemory
 {
     public string ruleId, characterId, eventKey, impression;
@@ -31,9 +24,11 @@ using UnityEngine;
     public string generationPart, model;
     public double seconds;
     public bool auditArchived;
-    public bool failedOutputChecked;
     public LocalStorySectionCheckpoint sectionCheckpoint;
     public LocalStoryRevisionRequest snapshot;
+    public string sourceHash, emotion;
+    public int sequence;
+    public List<LocalStoryEmotionLine> emotionLines;
 }
 [Serializable] public sealed class LocalStoryDialogueQueueData
 {
@@ -57,193 +52,217 @@ public static class LocalStoryDialogueQueue
     {
         store.SaveNarrativeQueue(queue);
     }
-    public static List<LocalStoryDreamMemory> SelectDreamMemories(SaveIOService store,int throughRun,
-        LocalStoryDreamRule[] rules)
+    public static void EncounterEnded(SaveIOService store, int run, string placeId)
     {
-        var result=new List<LocalStoryDreamMemory>();
-        // Rules inspect the same immutable saved runs. Load each run once per selection.
-        var runs=new Dictionary<int,GameProgress>();
-        foreach(var rule in rules??Array.Empty<LocalStoryDreamRule>())
+        var progress = store.LoadRunData<GameProgress>(run, "Progress");
+        if (progress?.unlockedIds?.Contains("event:" + placeId) != true) return;
+        RecordPlayedStories(store, run, progress.guideProgress?.runHistory?.Where(card => card.placeId == placeId));
+    }
+
+    public static void FinalizeRun(SaveIOService store, int run)
+    {
+        var progress = store.LoadRunData<GameProgress>(run, "Progress");
+        if (progress?.isCompleted != true) return;
+        var previous = Load(store, run);
+        var legacy = previous?.jobs.Where(job => string.IsNullOrEmpty(job.sourceHash) &&
+            (job.status == "Pending" || job.status == "Generating")).Select(job => job.storyPath).ToHashSet();
+        if (previous?.finalized == true && legacy.Count == 0 &&
+            !previous.jobs.Any(job => job.status == "WaitingForRunEnd")) return;
+
+        // Recover any encounter saved just before quitting, including the displayed part of a terminal encounter.
+        var completed = new HashSet<string>(progress.unlockedIds ?? new List<string>());
+        RecordPlayedStories(store, run, progress.guideProgress?.runHistory?.Where(card =>
+            card != null && (completed.Contains("event:" + card.placeId) || card.placeId == progress.activePlaceId) &&
+            (previous?.finalized != true || legacy.Contains(card.encounterPath))), previous?.finalized == true);
+
+        var queue = Load(store, run);
+        if (queue == null) return;
+        foreach (var job in queue.jobs.Where(job => string.IsNullOrEmpty(job.sourceHash) &&
+            (job.status == "Pending" || job.status == "Generating")))
         {
-            if(!rule.enabled) continue;
-            if(string.IsNullOrWhiteSpace(rule.ruleId) || string.IsNullOrWhiteSpace(rule.characterId) ||
-                string.IsNullOrWhiteSpace(rule.impression) ||
-                (string.IsNullOrWhiteSpace(rule.choiceId) && string.IsNullOrWhiteSpace(rule.kind)))
-                throw new InvalidDataException("꿈 기억 규칙에는 ID/NPC/인상과 실제 선택ID 또는 사건종류가 필요합니다.");
-            for(int run=1;run<=throughRun;run++)
+            job.status = "Preserved";
+            job.error = "기존 요청의 실제 재생 카드가 없어 작업 기록을 보존합니다.";
+        }
+        var random = new System.Random(Guid.NewGuid().GetHashCode());
+        foreach (var job in queue.jobs.Where(job => job.status == "WaitingForRunEnd"))
+        {
+            var emotions = LocalStoryEmotion.EmotionsFor(job.storyPath);
+            job.emotion = emotions[random.Next(emotions.Length)];
+            job.status = "Pending";
+            job.generationPart = "감정 · " + job.emotion;
+        }
+        queue.finalized = true;
+        Save(store, queue);
+        int pending = queue.jobs.Count(job => job.status == "Pending");
+        LocalStoryLog.Write(LocalStoryLogStage.Request,
+            $"{run}회차 종료 · {pending}개 이야기 / {run + 1}회차용", activity: "대사 생성");
+    }
+
+    public static void RecoverFinishedRuns(SaveIOService store)
+    {
+        int current = CurrentRun(store);
+        if (current > 1) FinalizeRun(store, current - 1);
+        if (current > 0) FinalizeRun(store, current);
+    }
+
+    private static void RecordPlayedStories(SaveIOService store, int run, IEnumerable<PlayedEncounterCardRecord> played,
+        bool migrateFinishedQueue = false)
+    {
+        if (played == null) return;
+        var queue = Load(store, run) ?? new LocalStoryDialogueQueueData { sourceRun = run, targetRun = run + 1 };
+        if (queue.finalized && !migrateFinishedQueue) return;
+        int sequence = queue.jobs.Select(job => job.sequence).DefaultIfEmpty(0).Max();
+        bool changed = false;
+        foreach (var group in played.Where(card => !string.IsNullOrEmpty(card?.encounterPath)).GroupBy(card => card.encounterPath))
+        {
+            string path = group.Key;
+            if (ChapterContentCatalog.Info(path) == null || !ChapterContentCatalog.CanRewrite(path) ||
+                ChapterContentCatalog.ResolveStoryPath(path, run + 1) != path) continue;
+
+            string source = ChapterContentCatalog.Story(path);
+            string sourceHash = Hash(source);
+            var job = queue.jobs.FirstOrDefault(candidate => candidate.jobId == path);
+            bool isEmotionJob = !string.IsNullOrEmpty(job?.sourceHash);
+            if (job != null && !isEmotionJob && job.status != "Pending" && job.status != "Generating")
+                continue; // Keep a completed or manually preserved legacy result.
+            if (isEmotionJob && job.sourceHash != sourceHash) continue;
+
+            var cards = JsonUtility.FromJson<EncounterCardRoot>(source).MainStory;
+            string chapterId = path.Split('/')[0];
+            var lines = isEmotionJob ? job.emotionLines : new List<LocalStoryEmotionLine>();
+            int previousCount = lines.Count;
+            foreach (var record in group)
             {
-                if(!runs.TryGetValue(run,out var progress))
-                {progress=store.LoadRunData<GameProgress>(run,"Progress");runs.Add(run,progress);}
-                if(progress==null || (run<throughRun && !progress.isCompleted) ||
-                    (rule.runCompletedOnly && !progress.isCompleted)) continue;
-                if((rule.requiresUnlocks??Array.Empty<string>()).Any(id =>
-                    string.IsNullOrWhiteSpace(id) || !(progress.unlockedIds??new List<string>()).Contains(id))) continue;
-                foreach(var e in progress.storyEvents??new List<StoryEventRecord>())
-                {
-                    if((rule.characterId!="*" && e.characterId!=rule.characterId) || (!string.IsNullOrEmpty(rule.choiceId) && e.choiceId!=rule.choiceId) ||
-                        (!string.IsNullOrEmpty(rule.kind) && e.kind!=rule.kind) ||
-                        (!string.IsNullOrEmpty(rule.result) && e.reason!=rule.result)) continue;
-                    if(rule.requireRelationshipChoice && string.IsNullOrEmpty(e.relationshipId)) continue;
-                    string role=StoryChoiceRoles.ForMemory(e);
-                    if(!string.IsNullOrEmpty(rule.choiceRole) && role!=rule.choiceRole) continue;
-                    result.Add(new LocalStoryDreamMemory {ruleId=rule.ruleId,characterId=e.characterId,
-                        sourceRun=run,eventKey=e.eventKey,impression=rule.impression});
-                }
+                if (record.cardIndex < 0 || record.cardIndex >= cards.Count ||
+                    lines.Any(line => line.cardIndex == record.cardIndex)) continue;
+                var card = cards[record.cardIndex];
+                if (record.card?.speakerId != card.speakerId || record.card?.eventIdStable != card.eventIdStable)
+                    continue;
+                var line = LocalStoryEmotion.CreateLine(chapterId, card, record.cardIndex);
+                if (line != null) lines.Add(line);
             }
+            if (previousCount == lines.Count) continue;
+
+            if (!isEmotionJob)
+            {
+                if (job != null) queue.jobs.Remove(job);
+                job = new LocalStoryDialogueJob
+                {
+                    jobId = path, storyPath = path, characterId = (string)ChapterContentCatalog.Info(path)["characterId"],
+                    sourceRun = run, targetRun = run + 1, revision = 1, sequence = ++sequence, sourceHash = sourceHash,
+                    inputHash = Hash(sourceHash + "|" + run + "|" + path), model = "Gemma", status = "WaitingForRunEnd",
+                    emotionLines = lines
+                };
+                queue.jobs.Add(job);
+            }
+            changed = true;
         }
-        return result.GroupBy(m=>m.sourceRun+":"+m.ruleId+":"+m.eventKey).Select(g=>g.First()).ToList();
+        if (changed) Save(store, queue);
     }
-    private static LocalStoryDreamRule[] Rules()
+
+    private static int CurrentRun(SaveIOService store)
     {
-        var asset=Resources.Load<TextAsset>("LocalStory/DreamMemoryRules");
-        return asset==null?Array.Empty<LocalStoryDreamRule>():
-            JsonUtility.FromJson<LocalStoryDreamRules>(asset.text)?.rules??Array.Empty<LocalStoryDreamRule>();
+        string profile = Path.Combine(store.StorageRoot, "Profile.json");
+        return File.Exists(profile) ? JsonUtility.FromJson<ProfileData>(File.ReadAllText(profile))?.currentRun ?? 0 : 0;
     }
-    public static void EncounterEnded(SaveIOService store,int run,string placeId,string npc,string basePath)
+
+    public static bool CanProcess(SaveIOService store, LocalStoryDialogueJob job)
     {
-        var progress=store.LoadRunData<GameProgress>(run,"Progress");
-        // The hook is after the completed encounter checkpoint. Opening a dialogue alone is not enough.
-        if(progress==null || !(progress.unlockedIds??new List<string>()).Contains("event:"+placeId)) return;
-        var paths=(progress.guideProgress?.runHistory??new List<PlayedEncounterCardRecord>())
-            .Where(c=>c.placeId==placeId && ChapterContentCatalog.CanRewrite(c.encounterPath))
-            .Select(c=>c.encounterPath).Distinct().ToArray();
-        foreach (var group in paths.GroupBy(p => (string)ChapterContentCatalog.Info(p)?["characterId"] ?? npc))
-            QueuePaths(store,run,group.Key,group.ToArray(),"대화 종료: "+placeId);
+        if (job?.emotionLines?.Count is null or 0 || string.IsNullOrWhiteSpace(job.emotion) ||
+            job.targetRun != job.sourceRun + 1 || ChapterContentCatalog.Info(job.storyPath) == null) return false;
+        int current = CurrentRun(store);
+        return (current == job.sourceRun || current == job.targetRun) &&
+            Load(store, job.sourceRun)?.finalized == true &&
+            store.LoadRunData<GameProgress>(job.sourceRun, "Progress")?.isCompleted == true;
     }
-    public static void FinalizeRun(SaveIOService store,int run)
+
+    public static LocalStoryDialogueJob Next(SaveIOService store) => store.NextNarrativeJob();
+
+    public static async Task Process(SaveIOService store, LocalStoryDialogueJob job,
+        Func<string, string, int, CancellationToken, Task<string>> infer, CancellationToken token)
     {
-        var progress=store.LoadRunData<GameProgress>(run,"Progress");
-        if(progress?.isCompleted!=true) return;
-        // Death/run termination can end the active conversation without the normal Explore checkpoint.
-        // Only enqueue actually displayed paths of that active NPC, never unseen stories.
-        if(!string.IsNullOrEmpty(progress.activePlaceId))
+        if (!CanProcess(store, job)) return;
+        var queue = Load(store, job.sourceRun);
+        job = queue.jobs.First(candidate => candidate.jobId == job.jobId);
+        if (job.status != "Pending" && job.status != "Generating") return;
+
+        string source = ChapterContentCatalog.Story(job.storyPath);
+        if (Hash(source) != job.sourceHash || !ChapterContentCatalog.CanRewrite(job.storyPath) ||
+            ChapterContentCatalog.ResolveStoryPath(job.storyPath, job.targetRun) != job.storyPath ||
+            !store.CanReplaceNarrativeContent(job.targetRun, job.storyPath, job.contentHash))
         {
-            var displayed=(progress.guideProgress?.runHistory??new List<PlayedEncounterCardRecord>())
-                .Where(c=>c.placeId==progress.activePlaceId && c.card!=null && !string.IsNullOrEmpty(c.card.speakerId));
-            foreach(var group in displayed.GroupBy(c=>c.card.speakerId))
-                QueuePaths(store,run,group.Key,group.Select(c=>c.encounterPath).Distinct().ToArray(),"회차 종료로 대화 마침");
-        }
-        var queue=Load(store,run);
-        if(queue==null) return; // No fabricated encounters / legacy saves are not retroactively played.
-        queue.finalized=true; Save(store,queue);
-    }
-    public static void QueuePaths(SaveIOService store,int run,string npc,string[] paths,string reason)
-    {
-        var progress=store.LoadRunData<GameProgress>(run,"Progress");
-        string profile=Path.Combine(store.StorageRoot,"Profile.json");
-        if(progress==null || !File.Exists(profile) ||
-            JsonUtility.FromJson<ProfileData>(File.ReadAllText(profile)).currentRun!=run) return;
-        var queue=Load(store,run)??new LocalStoryDialogueQueueData {sourceRun=run,targetRun=run+1};
-        var requestedPaths=(paths??Array.Empty<string>()).Select(p=>ChapterContentCatalog.ResolveStoryPath(p,run+1)).Distinct()
-            .Where(p=>!queue.jobs.Any(j=>j.storyPath==p)).ToArray();
-        if(requestedPaths.Length==0)return;
-        string[] earned=LocalStoryNotebook.EarnedUnlocks(store,run);
-        var contexts=LocalStoryNotebook.Contexts(store,earned);
-        var person=contexts.FirstOrDefault(c=>c.characterId==npc && c.autoGenerate);
-        if(person==null)
-        {
-            LocalStoryLog.Write(LocalStoryLogStage.Deferred,npc+" / 자동생성 설정 꺼짐. 플레이 기록만 유지.");
+            job.status = "Preserved";
+            job.error = "원문이 바뀌었거나 기존 적용본이 있습니다.";
+            Save(store, queue);
             return;
         }
-        var dreams=SelectDreamMemories(store,run,Rules()).Where(m=>m.characterId==npc).ToList();
-        int added=0;
-        foreach(string path in requestedPaths)
-        {
-            if (!ChapterContentCatalog.CanRewrite(path)) continue;
-            // One immutable request per played story and source run. Completion, later choices and
-            // policy edits must not turn the same next-run story into another generation attempt.
-            if(queue.jobs.Any(j=>j.storyPath==path))continue;
-            string source=NarrativeInteractions.StorySource(path);
-            if(!LocalStoryNotebook.IsStoryPath(path) || source==null || path.Contains("/Variants/")) continue;
-            var original=JsonUtility.FromJson<EncounterCardRoot>(source);
-            if(original?.MainStory==null || original.MainStory.Count==0 ||
-                !original.MainStory.Any(c=>c.speakerId==npc)) continue;
-            // Played cards are evidence/audit only. They are not all NPC memories or a model-written answer.
-            var request=new LocalStoryRevisionRequest {
-                sourceRun=run,targetRun=run+1,characterId=npc,generationTrigger="DialogueEnded",memoryMode="Dream",
-                chapterId=path.Split('/')[0],scenarioPaths=new[]{string.Join("/",path.Split('/').Take(2))},
-                reason=reason,finalStats=store.LoadRunData<PlayerStats>(run,"Stats")?.stats,
-                events=new List<StoryEventRecord>(),
-                dreamMemories=dreams,earnedUnlocks=earned,npcContexts=contexts,
-                ownedItemIds=(progress.storedItemIds??new List<string>()).Concat((progress.worldInventoryItems??new List<WorldInventoryItemState>()).Where(i=>i!=null).Select(i=>i.itemId)).Distinct().ToArray(),
-                // Full dialogue/choice audit is already stored in this source run's Progress.
-                playedCards=null,playEvents=null
-            };
-            int relationshipValue=progress.relationships?.FirstOrDefault(r=>r.id==npc)?.value??0;
-            int relationshipChange=progress.storyEvents.Where(e=>e.kind=="choice" && e.relationshipId==npc).Sum(e=>e.relationshipDelta);
-            string hash=Hash(source+"\n"+JsonUtility.ToJson(person)+"\n"+JsonUtility.ToJson(new DreamEnvelope {memories=dreams})+"\n"+LocalStorySections.GenerationPolicyHash(path)+"\n"+relationshipValue);
-            var job=new LocalStoryDialogueJob {jobId=path,storyPath=path,characterId=npc,sourceRun=run,targetRun=run+1,revision=1,inputHash=hash};
-            queue.jobs.Add(job);added++;
-            job.model=person.model;job.generationPart=null;
-            job.relationshipValue=relationshipValue;job.relationshipChange=relationshipChange;
-            request.dialogueRevision=job.revision; job.snapshot=request;
-            LocalStoryLog.Write(LocalStoryLogStage.Request,run+"회차 "+npc+" 대화 종료 → "+(run+1)+
-                "회차용 / "+path+" / 전달할 꿈 인상 "+dreams.Count+"개");
-        }
-        if(added>0)Save(store,queue);
-    }
-    [Serializable] private sealed class DreamEnvelope { public List<LocalStoryDreamMemory> memories; }
-    public static bool CanProcess(SaveIOService store,LocalStoryDialogueJob job)
-    {
-        string profile=Path.Combine(store.StorageRoot,"Profile.json");
-        if(job==null || job.sourceRun<1 || job.targetRun!=job.sourceRun+1 || !File.Exists(profile)) return false;
-        if (ChapterContentCatalog.Info(job.storyPath) == null) return false;
-        int current=JsonUtility.FromJson<ProfileData>(File.ReadAllText(profile)).currentRun;
-        var progress=store.LoadRunData<GameProgress>(job.sourceRun,"Progress");
-        bool validRun=current==job.sourceRun || (current==job.targetRun && progress?.isCompleted==true);
-        var latest=Load(store,job.sourceRun)?.jobs.FirstOrDefault(j=>j.jobId==job.jobId);
-        return validRun && progress!=null && latest?.revision==job.revision && latest.inputHash==job.inputHash;
-    }
-    public static bool CanReplace(SaveIOService store,LocalStoryDialogueJob job)
-    {
-        return store.CanReplaceNarrativeContent(job.targetRun,job.storyPath,job.contentHash);
-    }
-    public static LocalStoryDialogueJob Next(SaveIOService store)
-    {
-        try { return store.NextNarrativeJob(); }
-        catch(Exception e) { LocalStoryLog.Write(LocalStoryLogStage.Deferred,"생성 큐 읽기 보류: "+e.Message); return null; }
-    }
-    public static bool HasPendingForRun(SaveIOService store,int currentRun)
-    {
-        var q=Load(store,currentRun-1);
-        return q?.jobs.Any(j=>j.targetRun==currentRun && (j.status=="Pending" || j.status=="Generating"))==true;
-    }
-    public static async Task Process(SaveIOService store,LocalStoryDialogueJob job,
-        Func<LocalStoryTestReport,CancellationToken,Task> generate,CancellationToken token)
-    {
-        if(!CanProcess(store,job)) return;
-        var queue=Load(store,job.sourceRun);
-        var latest=queue.jobs.First(j=>j.jobId==job.jobId);
-        if(latest.status!="Pending" && latest.status!="Generating")return;
-        if(!CanReplace(store,latest))
-        {
-            latest.status="Preserved"; latest.error="수동 적용/수정 파일 또는 disabled 복구 보존"; Save(store,queue);
-            LocalStoryLog.Write(LocalStoryLogStage.Deferred,job.characterId+" / "+latest.error); return;
-        }
-        latest.status="Generating"; latest.generationPart="모델 준비 / 이야기 구간 확인"; Save(store,queue);
-        job=JsonUtility.FromJson<LocalStoryDialogueJob>(JsonUtility.ToJson(latest));
-        LocalStoryRuntimeResult result=null;
-        var watch=System.Diagnostics.Stopwatch.StartNew();
+
+        job.status = "Generating";
+        job.error = null;
+        Save(store, queue);
+        int remaining = job.emotionLines.Count(line => !line.finished);
+        LocalStoryLog.Write(LocalStoryLogStage.Working,
+            $"{job.storyPath} / {job.emotion} / {remaining}줄 남음 / {job.targetRun}회차용", activity: "대사 생성");
         try
         {
-            var npc=job.snapshot.npcContexts.First(c=>c.characterId==job.characterId);
-            result=await LocalStoryRuntimePipeline.ProduceDialogue(job.snapshot,npc,job.storyPath,store,generate,token,
-                ()=>CanProcess(store,job) && CanReplace(store,job));
+            var cards = JsonUtility.FromJson<EncounterCardRoot>(source);
+            foreach (var line in job.emotionLines.Where(line => !line.finished))
+            {
+                token.ThrowIfCancellationRequested();
+                var card = cards.MainStory[line.cardIndex];
+                await LocalStoryEmotion.RewriteLine(job, line, card, infer, token);
+                Save(store, queue);
+            }
+
+            token.ThrowIfCancellationRequested();
+            if (!CanProcess(store, job) || Hash(ChapterContentCatalog.Story(job.storyPath)) != job.sourceHash ||
+                !store.CanReplaceNarrativeContent(job.targetRun, job.storyPath, job.contentHash))
+            {
+                job.status = "Preserved";
+                job.error = "생성 도중 적용 조건이 바뀌었습니다.";
+                return;
+            }
+
+            var accepted = job.emotionLines.Where(line => !string.IsNullOrEmpty(line.generatedText)).ToArray();
+            if (accepted.Length == 0)
+            {
+                job.status = "Rejected";
+                job.error = "검사를 통과한 NPC 대사가 없습니다.";
+                LocalStoryLog.Write(LocalStoryLogStage.Review, job.storyPath + " / 검사 탈락 · 원문 사용", activity: "대사 생성");
+                return;
+            }
+
+            foreach (var line in accepted) cards.MainStory[line.cardIndex].text = line.generatedText;
+            job.contentHash = Hash(JsonUtility.ToJson(cards, true));
+            Save(store, queue); // Recover an interrupted commit using the same expected content hash.
+            store.SaveEmotionDialogue(job, cards, accepted);
+            job.status = "Ready";
+            job.generationWinner = "Gemma";
+            job.generationPart = job.emotion + " · " + accepted.Length + "/" + job.emotionLines.Count + "줄";
+            LocalStoryLog.Write(LocalStoryLogStage.Complete,
+                $"{job.storyPath} / {job.generationPart} / {job.targetRun}회차용 / {store.DialogueReportPath}", activity: "대사 생성");
+        }
+        catch (OperationCanceledException)
+        {
+            job.status = "Pending";
+            job.error = "다음 실행에서 남은 문장부터 재개";
+            throw;
+        }
+        catch (InvalidDataException error)
+        {
+            job.status = "Rejected";
+            job.error = error.Message;
+            LocalStoryLog.Write(LocalStoryLogStage.Failed, job.storyPath + " / " + error.Message, activity: "대사 생성");
+        }
+        catch (Exception error)
+        {
+            job.status = "Pending";
+            job.error = error.Message;
+            throw;
         }
         finally
         {
-            queue=Load(store,job.sourceRun); latest=queue.jobs.First(j=>j.jobId==job.jobId);
-            // Newer inputs win; an old in-flight job never marks the newer request completed.
-            if(latest.revision==job.revision)
-            {
-                latest.status=token.IsCancellationRequested?"Pending":result?.status??"Failed";
-                if(latest.status=="Ready"||latest.status=="ReviewRequired") latest.generationPart=latest.generationPart?.Replace("작성 중","작성 완료").Replace("교정 중","교정 완료");
-                latest.error=token.IsCancellationRequested?"중단됨 — 다음 실행에서 재개":result?.error;
-                latest.reportPath=result?.reportPath; latest.seconds=watch.Elapsed.TotalSeconds;
-                latest.generationWinner=result?.model;
-                if(latest.status=="Ready"||latest.status=="ReviewRequired") latest.contentHash=store.NarrativeContentHash(latest.targetRun,latest.storyPath);
-                Save(store,queue);
-            }
+            Save(store, queue);
         }
     }
 }

@@ -341,10 +341,16 @@ public partial class SaveIOService
 
     private static void WriteJsonAtomically<T>(string path, T data)
     {
+        Directory.CreateDirectory(Path.GetDirectoryName(path)); // Progress encoding writes its companion history first.
+        WriteTextAtomically(path, data is GameProgress progress ? ProgressDocument.Encode(path, progress) : JsonUtility.ToJson(data, true));
+    }
+
+    private static void WriteTextAtomically(string path, string text)
+    {
         string directoryPath = Path.GetDirectoryName(path);
         Directory.CreateDirectory(directoryPath);
         string temporaryPath = path + ".tmp";
-        File.WriteAllText(temporaryPath, data is GameProgress progress ? ProgressDocument.Encode(path,progress) : JsonUtility.ToJson(data, true));
+        File.WriteAllText(temporaryPath, text);
 
         if (File.Exists(path))
         {

@@ -5,10 +5,24 @@ public class ViewUi : ParentUi
 {
     [SerializeField] private RectTransform view;
     private UnityEngine.UI.Image hitFlash;
+    private Color flashColor;
     private float hitFlashRemaining;
     private const float HitFlashSeconds = 0.2f;
+    public Vector2 ScreenCenter
+    {
+        get
+        {
+            if (view == null) return new Vector2(Screen.width * .25f, Screen.height * .65f);
+            var canvas = view.GetComponentInParent<Canvas>();
+            Camera camera = canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay ? canvas.worldCamera : null;
+            return RectTransformUtility.WorldToScreenPoint(camera, view.TransformPoint(view.rect.center));
+        }
+    }
 
-    public void FlashPlayerHit()
+    public void FlashPlayerHit() => Flash(new Color(1f, .04f, .02f, .28f));
+    public void FlashCoinPayment() => Flash(new Color(.61f, .36f, .94f, .26f));
+
+    private void Flash(Color color)
     {
         if (view == null) return;
         if (hitFlash == null)
@@ -25,7 +39,8 @@ public class ViewUi : ParentUi
         hitFlash.rectTransform.SetAsLastSibling();
         hitFlashRemaining = HitFlashSeconds;
         hitFlash.enabled = true;
-        hitFlash.color = new Color(1f, 0.04f, 0.02f, 0.28f);
+        flashColor = color;
+        hitFlash.color = color;
     }
 
     public void ClearPlayerHitFlash()
@@ -38,8 +53,8 @@ public class ViewUi : ParentUi
     {
         if (hitFlash == null || hitFlashRemaining <= 0f) return;
         hitFlashRemaining = Mathf.Max(0f, hitFlashRemaining - Time.unscaledDeltaTime);
-        var color = hitFlash.color;
-        color.a = 0.28f * hitFlashRemaining / HitFlashSeconds;
+        var color = flashColor;
+        color.a *= hitFlashRemaining / HitFlashSeconds;
         hitFlash.color = color;
         if (hitFlashRemaining == 0f) hitFlash.enabled = false;
     }

@@ -28,7 +28,7 @@ namespace JourneyMapKit
 
         private bool yellowInteractable = true;
         private bool dragging;
-        private bool choiceStepTaken;
+        private float choiceStepOriginY;
         private int choiceCount;
         private Vector2 dragOrigin;
         private Quaternion restRotation;
@@ -70,7 +70,7 @@ namespace JourneyMapKit
                     if (hit.collider == board.gearHandleCollider)
                     {
                         dragging = true;
-                        choiceStepTaken = false;
+                        choiceStepOriginY = 0f;
                         dragOrigin = pointerPosition;
                         break;
                     }
@@ -119,11 +119,10 @@ namespace JourneyMapKit
             if (choiceCount > 0)
             {
                 board.gear.localRotation = restRotation * Quaternion.Euler(pitch, 0f, 0f);
-                if (Mathf.Abs(dragDelta.y) <= choiceStepPixels * .35f)
-                    choiceStepTaken = false;
-                if (choiceStepTaken || Mathf.Abs(dragDelta.y) < choiceStepPixels) return;
-                choiceStepTaken = true;
-                SelectGear(Mathf.Clamp(SelectedIndex + (dragDelta.y > 0f ? -1 : 1), 0, choiceCount - 1));
+                int steps = (int)((dragDelta.y - choiceStepOriginY) / choiceStepPixels);
+                if (steps == 0) return;
+                choiceStepOriginY += steps * choiceStepPixels;
+                SelectGear(Mathf.Clamp(SelectedIndex - steps, 0, choiceCount - 1));
                 return;
             }
             float roll = Mathf.Clamp(-dragDelta.x * 0.12f, -22f, 22f);

@@ -32,6 +32,24 @@ public sealed class MineTaxInvoice
     public int Single => lines.Where(line => line.kind == "single").Sum(line => line.coins);
     public int Mixed => lines.Where(line => line.kind == "mixed").Sum(line => line.coins);
 
+    public bool CanPass(int[] wallet) => CanPass(wallet, out _, out _);
+
+    public bool CanPass(int[] wallet, out int available, out int largest)
+    {
+        int[] cost = FixedCost();
+        int single = Single, mixed = Mixed;
+        available = 0;
+        largest = 0;
+        for (int i = 0; i < cost.Length; i++)
+        {
+            int surplus = wallet[i] - cost[i] - 1;
+            if (cost[i] > 0 && surplus < 0) return false;
+            available += Mathf.Max(0, surplus);
+            largest = Mathf.Max(largest, surplus);
+        }
+        return largest >= single && available >= single + mixed;
+    }
+
     public int[] FixedCost()
     {
         var result = new int[4];
