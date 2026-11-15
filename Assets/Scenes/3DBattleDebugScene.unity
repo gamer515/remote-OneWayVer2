@@ -344,6 +344,8 @@ GameObject:
   - component: {fileID: 5919944}
   - component: {fileID: 5919943}
   - component: {fileID: 5919950}
+  - component: {fileID: 5919951}
+  - component: {fileID: 5919952}
   m_Layer: 0
   m_Name: New Player - Attack Combo
   m_TagString: Untagged
@@ -369,11 +371,11 @@ MonoBehaviour:
   shield: {fileID: 1704462322}
   shieldAnimationSpeed: 2
   rollAnimationSpeed: 2.5
-  rollDistance: 10
+  rollDistance: 20
   animator: {fileID: 169938461}
   normalAnimationSeconds: 0.5555556
   specialAnimationSeconds: 0.9333334
-  moveSpeed: 6
+  moveSpeed: 10
   attackRange: 3.5
   chargeSeconds: 0.7
   attackCooldown: 0.3
@@ -398,11 +400,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0efc187d020eead47a3338b4bf2badaa, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::OneWay.Battle3D.NewPlayerAttackCombo
-  motions: {fileID: 11400000, guid: dc1f27650ee258645a573909710573bc, type: 2}
+  motions: {fileID: 11400000, guid: e645cac792e078b47b462b6cf89cd002, type: 2}
   playbackSpeed: 1.6
   attackRetreatDistance: 5
   skillDashDistance: 6
-  jumpHeightMultiplier: 20
+  jumpHeightMultiplier: 12
   readMouseInput: 1
 --- !u!114 &5919944
 MonoBehaviour:
@@ -416,7 +418,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8cfbadbf22ac16d47b3711d655149594, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::OneWay.Battle3D.BattleSwordSlashEffect
-  slashPrefab: {fileID: 6445826192643391251, guid: 60d310309985b9d4e9917e6e851e63c9, type: 3}
+  slashPrefab: {fileID: 1928107228785990517, guid: 6f56e7fb17961e64aa31fe0f9d30d298, type: 3}
+  hitFlashPrefab: {fileID: 8075761667601243587, guid: 6e6e47e73220a71429db7c1aee22f967, type: 3}
   sword: {fileID: 567405087}
   startFrames: 340000001400000020000000100000001c000000
   endFrames: 3c0000001c0000002a0000001a00000026000000
@@ -534,6 +537,143 @@ MonoBehaviour:
   heldParryKnockbackDuration: 0.2
   idleShieldRotationOffset: {x: 0, y: 0, z: 41.05}
   idleShieldPositionOffset: {x: -0.42586756, y: 0.10235557, z: -5.5828447}
+  idleShieldClearance: 0.13
+  correctRunningShield: 1
+  runningShieldOutwardTilt: 10
+  runningShieldClearance: 0.06
+  correctRollingShield: 1
+  rollingShieldClearance: 0.09
+  rollingShieldReturnDuration: 0.15
+  shieldRecoveryClearance: 0.17
+--- !u!114 &5919951
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5919941}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dc96840493b872548b2810dca571cf95, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::OneWay.Battle3D.DebugPlayerCombatFeel
+  attacks:
+  - label: 01 - Retreat / rush finisher
+    segments:
+    - endFrame: 13
+      seconds: 0.18
+    - endFrame: 27
+      seconds: 0.11
+    - endFrame: 30
+      seconds: 0.08
+    - endFrame: 33
+      seconds: 0.07
+    - endFrame: 86
+      seconds: 0.16
+    - endFrame: 0
+      seconds: 0.22
+    stepDistance: 0
+  - label: 02 - Upward slash
+    segments:
+    - endFrame: 13
+      seconds: 0.14
+    - endFrame: 21
+      seconds: 0.105
+    - endFrame: 0
+      seconds: 0.24
+    stepDistance: 0.65
+  - label: 03 - Double slash
+    segments:
+    - endFrame: 17
+      seconds: 0.16
+    - endFrame: 25
+      seconds: 0.1
+    - endFrame: 33
+      seconds: 0.105
+    - endFrame: 41
+      seconds: 0.1
+    - endFrame: 0
+      seconds: 0.24
+    stepDistance: 0.8
+  - label: 04 - Side slash
+    segments:
+    - endFrame: 6
+      seconds: 0.095
+    - endFrame: 14
+      seconds: 0.105
+    - endFrame: 0
+      seconds: 0.2
+    stepDistance: 0.55
+  - label: 05 - Skill 03
+    segments:
+    - endFrame: 6
+      seconds: 0.085
+    - endFrame: 10
+      seconds: 0.06
+    - endFrame: 16
+      seconds: 0.075
+    - endFrame: 0
+      seconds: 0.22
+    stepDistance: 0
+  - label: 06 - Jump slam
+    segments:
+    - endFrame: 10
+      seconds: 0.12
+    - endFrame: 16.5
+      seconds: 0.19
+    - endFrame: 17
+      seconds: 0.05
+    - endFrame: 19.692308
+      seconds: 0.1
+    - endFrame: 27
+      seconds: 0.11
+    - endFrame: 0
+      seconds: 0.26
+    stepDistance: 0.8
+  linkSeconds: 0.065
+  inputBufferSeconds: 0.15
+  jumpTakeoffFrame: 10
+  jumpPeakFrame: 17
+  jumpLandingFrame: 19.692308
+  jumpHeightScale: 1
+  cancelledJumpGravity: 55
+  jumpCameraFollow: 0.3
+  cameraRiseSmooth: 0.12
+  cameraFallSmooth: 0.18
+  lightShake: 0.025
+  heavyShake: 0.075
+  shakeSeconds: 0.12
+  hitStop: 1
+  lightHitStop: 0.035
+  heavyHitStop: 0.065
+  slashTailSeconds: 0.045
+  lightSlashScale: 0.9
+  heavySlashScale: 1.15
+  swingSound: {fileID: 0}
+  hitSound: {fileID: 0}
+  heavyHitSound: {fileID: 0}
+  generatedSoundFallback: 1
+  soundVolume: 0.22
+--- !u!114 &5919952
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5919941}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff9b896e49c584c40b39912c23bc0798, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::OneWay.Battle3D.DebugPlayerSpecialCombo
+  alwaysFullGauge: 1
+  maxGauge: 100
+  currentGauge: 100
+  holdRecognitionSeconds: 0.2
+  specialEntryWindow: 0.3
+  finisherHoldSeconds: 0.8
+  finisherPoseFrame: 26
+  cancelBlendSeconds: 0.12
 --- !u!1 &7046370
 GameObject:
   m_ObjectHideFlags: 0
@@ -1751,6 +1891,7 @@ MonoBehaviour:
   weapon: {fileID: 1413614682}
   localCenter: {x: 0, y: 0.10313505, z: 0}
   localSize: {x: 0.14, y: 0.91651106, z: 0.81203544}
+  parrySizeMultiplier: 1
 --- !u!114 &60177384
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1995,6 +2136,8 @@ MonoBehaviour:
   - 4.9204893
   - 5.619835
   parryWindow: 0.22
+  lateParryStartRotation: 2
+  lateParryWindow: 0.4
   failureDamage: 20
   pushDistance: 3
   pushDuration: 0.18
@@ -6840,7 +6983,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::OneWay.Battle3D.BattleFollowCamera
   target: {fileID: 5919949}
   offset: {x: 0, y: 3, z: -9.54}
-  lookOffset: {x: 0, y: 1, z: 0}
+  lookOffset: {x: 0, y: 1.6, z: 0}
   smoothTime: 0.16
   mouseSensitivity: 0.15
   invertY: 0
@@ -17768,6 +17911,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::OneWay.Battle3D.BattleSwordSlashEffect
   slashPrefab: {fileID: 6445826192643391251, guid: 60d310309985b9d4e9917e6e851e63c9, type: 3}
+  hitFlashPrefab: {fileID: 0}
   sword: {fileID: 1233022862}
   startFrames: 340000001400000020000000100000001c000000
   endFrames: 3c0000001c0000002a0000001a00000026000000

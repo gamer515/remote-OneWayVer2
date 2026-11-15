@@ -7,6 +7,7 @@ namespace OneWay.Battle3D
     public sealed class BattleSwordSlashEffect : MonoBehaviour
     {
         public GameObject slashPrefab;
+        public GameObject hitFlashPrefab;
         public Transform sword;
         public int[] startFrames = {52,20,32,16,28};
         public int[] endFrames = {60,28,42,26,38};
@@ -17,15 +18,30 @@ namespace OneWay.Battle3D
         GameObject active;
         Vector3 anchorOffset;
         void Awake() => player = GetComponent<BattlePlayerController>();
-        public void PlayAuthoredSwing(float seconds)
+        public void PlayHitFlash(BattleBoss boss)
+        {
+            if (hitFlashPrefab == null || boss == null) return;
+            Vector3 sample = sword != null ? sword.position : transform.position + Vector3.up;
+            Vector3 point = boss.hitbox != null ? boss.hitbox.ClosestPoint(sample) : boss.transform.position + Vector3.up;
+            var camera = player != null && player.viewCamera != null ? player.viewCamera : Camera.main;
+            Quaternion rotation = camera != null ? camera.transform.rotation : transform.rotation;
+            var effect = Instantiate(hitFlashPrefab, point, rotation);
+            effect.name = "Player Sword Hit Flash";
+            effect.transform.localScale = hitFlashPrefab.transform.localScale * effectScale;
+            foreach (var ps in effect.GetComponentsInChildren<ParticleSystem>()) ps.Play(false);
+            Destroy(effect, .65f);
+        }
+        public void PlayAuthoredSwing(float seconds, float tailSeconds = .1f, float scaleMultiplier = 1f)
         {
             if (slashPrefab == null) return;
             Vector3 center = sword != null ? sword.position : transform.position + Vector3.up;
             Quaternion rotation = sword != null ? sword.rotation : transform.rotation;
             var effect = Instantiate(slashPrefab, center, rotation);
             effect.name = "NewPlayer Sword Slash";
-            effect.transform.localScale = slashPrefab.transform.localScale * effectScale;
-            float lifetime = Mathf.Max(.01f, seconds) + .1f;
+            effect.transform.localScale = slashPrefab.transform.localScale * effectScale * Mathf.Max(.01f, scaleMultiplier);
+            float lifetime = Mathf.Max(.01f, seconds) + Mathf.Max(0, tailSeconds);
+            effect.GetComponent<BattleRefractiveSlash>()?.Initialize(lifetime);
+            ConfigureParticles(effect, lifetime);
             foreach (var vfx in effect.GetComponentsInChildren<VisualEffect>()) vfx.playRate = 1f / lifetime;
             Destroy(effect, lifetime);
         }
@@ -70,6 +86,8 @@ namespace OneWay.Battle3D
                 float swingSeconds = (endFrames[pending] - startFrames[pending]) /
                     (clip.frameRate * Mathf.Max(.1f, player.normalAttackSpeed));
                 float lifetime = swingSeconds + .1f;
+                active.GetComponent<BattleRefractiveSlash>()?.Initialize(lifetime);
+                ConfigureParticles(active, lifetime);
                 foreach (var vfx in active.GetComponentsInChildren<VisualEffect>())
                     vfx.playRate = 1f / lifetime;
                 // Account for a render frame arriving slightly after the authored start frame.
@@ -78,6 +96,16 @@ namespace OneWay.Battle3D
                 Destroy(active, Mathf.Max(.1f, remaining));
             }
             if (active != null) active.transform.position = transform.position + anchorOffset;
+        }
+        static void ConfigureParticles(GameObject effect, float lifetime)
+        {
+            // The package's principal slash lasts half a second; fit it to the swing window.
+            foreach (var particles in effect.GetComponentsInChildren<ParticleSystem>())
+            {
+                var main = particles.main;
+                main.simulationSpeed = .5f / Mathf.Max(.01f, lifetime);
+                particles.Play(false);
+            }
         }
         public void Cancel()
         {

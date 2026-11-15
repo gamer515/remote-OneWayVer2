@@ -13,6 +13,22 @@ namespace OneWay.Battle3D
         [Tooltip("Local shield rotation offset used only while standing idle in defense mode.")]
         public Vector3 idleShieldRotationOffset;
         public Vector3 idleShieldPositionOffset;
+        [Min(0), Tooltip("Outward clearance from the left forearm while standing, in world units.")]
+        public float idleShieldClearance = .13f;
+        [Header("Running shield")]
+        [Tooltip("Turn the left wrist so the shield stays outside the torso while the arm swings.")]
+        public bool correctRunningShield = true;
+        [Range(0, 30), Tooltip("Lean the top of the running shield away from the body, in degrees.")]
+        public float runningShieldOutwardTilt = 10f;
+        [Min(0)] public float runningShieldClearance = .06f;
+        [Header("Rolling shield")]
+        public bool correctRollingShield = true;
+        [Min(0), Tooltip("Extra outward clearance from the left forearm during a roll, in world units.")]
+        public float rollingShieldClearance = .09f;
+        [Min(.01f), Tooltip("Blend back to the normal shield pose after the roll-to-run/idle transition finishes.")]
+        public float rollingShieldReturnDuration = .15f;
+        [Min(0), Tooltip("Clearance while blending from movement back to the standing pose.")]
+        public float shieldRecoveryClearance = .17f;
         public float ShieldHeldSeconds { get; private set; }
         public bool KnockedBack => knockbackRemaining > 0;
         public bool DefenseMode { get; private set; }
@@ -30,6 +46,11 @@ namespace OneWay.Battle3D
         Quaternion shieldAttachmentRotation;
         Vector3 shieldAttachmentPosition;
         float idleShieldBlend;
+        Transform runningShieldTorso, correctedHand;
+        Quaternion authoredHandRotation, appliedHandRotation;
+        float runningShieldBlend;
+        float rollingShieldBlend;
+        bool handCorrectionApplied;
         void Awake()
         {
             player = GetComponent<BattlePlayerController>();
@@ -50,16 +71,75 @@ namespace OneWay.Battle3D
             }
             idleShieldBlend = 0;
         }
-        void LateUpdate()
+        void LateUpdate() => ApplyShieldPose(Time.deltaTime);
+        void ApplyShieldPose(float delta)
         {
+            RestoreCorrectedHand();
             CacheShieldAttachment();
             if (shieldTransform == null) return;
             bool idle = DefenseMode && !Parrying && !Rolling && !Running && (combo == null || !combo.IsActive);
             // Return to the authored attachment immediately for parry/other motions.
-            idleShieldBlend = idle ? Mathf.MoveTowards(idleShieldBlend, 1, Time.deltaTime / .1f) : 0;
+            idleShieldBlend = idle ? Mathf.MoveTowards(idleShieldBlend, 1, delta / .1f) : 0;
             shieldTransform.localRotation = shieldAttachmentRotation *
                 Quaternion.Slerp(Quaternion.identity, Quaternion.Euler(idleShieldRotationOffset), idleShieldBlend);
             shieldTransform.localPosition = shieldAttachmentPosition + idleShieldPositionOffset * idleShieldBlend;
+            bool canCorrect = DefenseMode && !Parrying && (combo == null || !combo.IsActive);
+            bool rolling = correctRollingShield && canCorrect && Rolling;
+            if (rolling) rollingShieldBlend = 1;
+            else if (!correctRollingShield || !canCorrect) rollingShieldBlend = 0;
+            else if (player.animator == null || !player.animator.IsInTransition(0))
+                rollingShieldBlend = Mathf.MoveTowards(rollingShieldBlend, 0, Mathf.Max(0, delta) / Mathf.Max(.01f, rollingShieldReturnDuration));
+            bool running = correctRunningShield && canCorrect && Running && !Rolling;
+            runningShieldBlend = running ? Mathf.MoveTowards(runningShieldBlend, 1, Mathf.Max(0, delta) / .1f) : 0;
+            if (running && rollingShieldBlend > 0) runningShieldBlend = 1;
+            if (!running && rollingShieldBlend <= 0)
+            {
+                if (idle) shieldTransform.position -= shieldTransform.right * idleShieldClearance;
+                return;
+            }
+            if (shieldTransform.parent == null || shieldTransform.parent.name != "LeftHand") return;
+            if (runningShieldTorso == null && player.animator != null)
+                foreach (var bone in player.animator.GetComponentsInChildren<Transform>(true))
+                    if (bone.name == "UpperChest") { runningShieldTorso = bone; break; }
+            if (runningShieldTorso == null) return;
+
+            correctedHand = shieldTransform.parent;
+            authoredHandRotation = correctedHand.localRotation;
+            // Shield local X points inward and local Z follows its long edge.
+            Vector3 toTorso = runningShieldTorso.position - correctedHand.position;
+            Vector3 inward = Vector3.ProjectOnPlane(toTorso, Vector3.up);
+            if (running && inward.sqrMagnitude > .0001f)
+            {
+                Quaternion runningRotation = Quaternion.LookRotation(Vector3.up, Vector3.Cross(Vector3.up, inward.normalized))
+                    * Quaternion.AngleAxis(-runningShieldOutwardTilt, Vector3.up);
+                correctedHand.rotation = Quaternion.Slerp(correctedHand.rotation,
+                    runningRotation * Quaternion.Inverse(shieldAttachmentRotation), runningShieldBlend);
+            }
+            if (rollingShieldBlend > 0 && correctedHand.parent != null)
+            {
+                // Follow the forearm through the somersault instead of using world-up.
+                Vector3 alongArm = (correctedHand.parent.position - correctedHand.position).normalized;
+                inward = Vector3.ProjectOnPlane(toTorso, alongArm);
+                if (inward.sqrMagnitude < .0001f) inward = Vector3.ProjectOnPlane(runningShieldTorso.right, alongArm);
+                if (alongArm.sqrMagnitude > .0001f && inward.sqrMagnitude > .0001f)
+                {
+                    Quaternion rollingRotation = Quaternion.LookRotation(alongArm, Vector3.Cross(alongArm, inward.normalized));
+                    correctedHand.rotation = Quaternion.Slerp(correctedHand.rotation,
+                        rollingRotation * Quaternion.Inverse(shieldTransform.localRotation), rollingShieldBlend);
+                }
+            }
+            float baseClearance = idle ? idleShieldClearance : running ? runningShieldClearance : 0;
+            float recoveryClearance = idle ? shieldRecoveryClearance : rollingShieldClearance;
+            shieldTransform.position -= shieldTransform.right * Mathf.Lerp(baseClearance, recoveryClearance, rollingShieldBlend);
+            appliedHandRotation = correctedHand.localRotation;
+            handCorrectionApplied = true;
+        }
+        void RestoreCorrectedHand()
+        {
+            // A newly sampled parry/roll pose takes precedence over the previous overlay.
+            if (handCorrectionApplied && correctedHand != null && Quaternion.Angle(correctedHand.localRotation, appliedHandRotation) < .01f)
+                correctedHand.localRotation = authoredHandRotation;
+            handCorrectionApplied = false;
         }
         public void SetDefenseMode(bool defense)
         {
@@ -86,6 +166,7 @@ namespace OneWay.Battle3D
                 }
                 else if (attackDown && !KnockedBack) { Stop(); combo.RequestAttack(); }
             }
+            combo.SetAttackHeld(!DefenseMode && !Rolling && !KnockedBack && (attackHeld || attackDown));
         }
         void FaceForward()
         {
@@ -186,6 +267,7 @@ namespace OneWay.Battle3D
         public void Stop(bool cancelKnockback = true)
         {
             bool wasMoving = Rolling || Parrying || Running;
+            if (correctRollingShield && DefenseMode && (Rolling || Running)) rollingShieldBlend = 1;
             Rolling = Parrying = Running = false;
             MotionTime = 0;
             ShieldHeldSeconds = 0;
@@ -199,12 +281,15 @@ namespace OneWay.Battle3D
         void OnDisable()
         {
             Stop();
+            RestoreCorrectedHand();
             if (shieldTransform != null)
             {
                 shieldTransform.localRotation = shieldAttachmentRotation;
                 shieldTransform.localPosition = shieldAttachmentPosition;
             }
             idleShieldBlend = 0;
+            runningShieldBlend = 0;
+            rollingShieldBlend = 0;
         }
     }
 }

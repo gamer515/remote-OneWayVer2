@@ -1,0 +1,86 @@
+로딩 화면 연결 안내
+
+1. 담당 범위와 현재 연결 상태
+
+Loading 폴더: 목적지 전달, 로딩 화면, 문구, 비동기 씬 준비를 담당합니다.
+3DBattle 폴더: 전투 시작 정보 전달과 단독 전투 종료 후 Decision 복귀를 연결했습니다.
+Decision_YYS 및 MainMenu 코드는 변경하지 않았습니다. 아래 호출부를 담당자가 연결해야 합니다.
+정식 최종 전투의 승패 저장/회차 완료/다음 회차 준비는 기존 GameManager가 계속 담당합니다.
+기존 TryFinishFinalBattle을 건너뛰거나 무조건 Decision으로 돌리면 안 됩니다.
+
+2. 빌드 설정 (필수, 이 작업에서는 ProjectSettings를 수정하지 않음)
+
+File > Build Profiles > Scene List에 아래 씬을 등록하고 활성화합니다.
+Assets/Scenes/LoadingScene.unity
+Assets/Scenes/3DBattleScene.unity
+Assets/Scenes/DecisionScene.unity
+Assets/Scenes/MainMenuScene.unity
+
+에디터 Play에서는 미등록 씬도 에디터 전용 API로 테스트할 수 있습니다.
+이 편의 기능은 빌드에 포함되지 않습니다. 빌드에서는 미등록 씬 요청을 거절하고 오류를 표시합니다.
+LoadingScene을 시작 씬으로 지정할 필요는 없습니다. 기존 MainMenu 시작 순서를 유지하세요.
+
+3. Decision_YYS 담당자가 연결할 두 곳
+
+파일: Assets/Decision_YYS/Scripts/GameSystem/SceneTransitionService.cs
+
+A) LoadFinalBattleScene(Battle3DStartData data)
+기존 SetNext(data) 및 SceneManager.LoadScene(FinalBattleSceneName) 호출을 다음으로 교체합니다.
+
+    if (!OneWay.Battle3D.Battle3DEntry.OpenThroughLoading(data))
+        throw new System.InvalidOperationException("3D 전투 로딩 요청이 거절되었습니다.");
+
+보스 번호와 성향 값은 data에 그대로 전달합니다. 중복 요청은 첫 요청의 데이터를 덮어쓰지 않습니다.
+GameManager.EnterFinalBattle / BeginFinalBattle / ResumeFinalBattle의 저장 및 재개 처리는 유지합니다.
+
+B) LoadMainMenuScene()
+기존 SceneManager.LoadScene(MainMenuSceneName)을 다음으로 교체합니다.
+
+    if (!OneWay.Loading.LoadingScreenController.Open(OneWay.Loading.LoadingDestination.MainMenu))
+        throw new System.InvalidOperationException("메인메뉴 로딩 요청이 거절되었습니다.");
+
+이 연결이 완료되면 정식 최종 전투 종료도 승패 저장 후 LoadingScene을 거쳐 MainMenu로 이동합니다.
+연결 전에는 기존대로 메인메뉴로 직접 이동합니다.
+
+주의: 같은 파일의 LoadBattleScene()은 별도 2D BattleScene용입니다.
+LoadingDestination.Battle은 3DBattleScene을 뜻하므로 해당 2D 경로를 이 값으로 교체하지 마세요.
+
+4. 다른 씬에서 Decision으로 이동할 때
+
+    bool accepted = OneWay.Loading.LoadingScreenController.Open(
+        OneWay.Loading.LoadingDestination.Decision);
+
+accepted가 false면 요청은 수락되지 않았습니다. 버튼을 연속 클릭해도 중복 전환되지 않습니다.
+MainMenu 시작 버튼도 로딩을 거치려면 MainMenu 담당자가 위 호출로 연결하면 됩니다.
+별도로 LoadingScene을 먼저 열거나 목적지 씬을 다시 LoadScene 하면 안 됩니다.
+전환 중 여부는 LoadingScreenController.IsTransitioning으로 확인할 수 있습니다.
+
+5. 로딩 화면 동작
+
+Open()은 목적지를 먼저 보관하고 LoadingScene을 엽니다.
+LoadingScene은 목적지를 비동기로 준비하면서 처음 5초 동안 빈 로딩바를 표시합니다.
+5초 후 준비 진행률에 맞춰 로딩바를 채웁니다. 100%를 표시한 뒤 목적지를 활성화하고 화면을 페이드합니다.
+Preview Duration은 촬영 미리보기에만 적용되며 실제 로딩 길이를 강제로 늘리지 않습니다.
+목적지 Start에서 즉시 다른 씬으로 로딩을 요청하는 재개 흐름은 현재 전환 완료 후 한 번 이어서 처리합니다.
+
+Battle 문구: Assets/Loading/LoadingText/LoadBattleScene/*.txt
+Decision 문구: Assets/Loading/LoadingText/LoadDecisionScene/*.txt
+MainMenu 문구: 표시하지 않음
+문구 폴더에 비어 있지 않은 UTF-8 txt를 추가하면 에디터에서 목록을 자동 갱신합니다.
+
+LoadingScene을 직접 Play하면 Inspector의 Destination으로 실제 이동합니다.
+촬영용으로 로딩바만 보려면 LoadingScreen의 Preview Only를 켜세요.
+Open()을 통해 들어오면 Preview Only 설정과 관계없이 실제 목적지로 이동합니다.
+
+6. 확인 방법
+
+LoadingScene을 열고 LoadingScreen의 Destination을 MainMenu/Battle/Decision으로 바꾸어 Play합니다.
+씬을 직접 실행하는 Battle은 전투 시작 정보가 없으면 3DBattleScene에 선택된 보스로 시작합니다.
+정식 전투 데이터 전달 테스트는 OpenThroughLoading(data)를 사용하세요.
+단독 3DBattle 전투 종료: 5초 후 Loading -> Decision.
+정식 전투 종료: 팀원의 3-B 연결 후 저장/회차 처리 -> Loading -> MainMenu.
+
+자동 검증 도구: Assets/Loading/Authoring~/VerifyLoadingFlow.cs
+Unity Pipeline run_script로 CheckContracts, RunTransitions를 실행할 수 있습니다.
+RunTransitions는 Play 중 테스트 전용 씬에서 실행합니다. 목적지의 플레이 로직을 끄고
+전환/문구/5초 지연/중복 요청/연속 재개/데이터 전달만 검증합니다. 실행 후 Play를 종료하세요.

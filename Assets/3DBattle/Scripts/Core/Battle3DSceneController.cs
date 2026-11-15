@@ -1,5 +1,5 @@
 using UnityEngine;
-using UnityEngine.SceneManagement;
+using OneWay.Loading;
 
 namespace OneWay.Battle3D
 {
@@ -14,7 +14,6 @@ namespace OneWay.Battle3D
         public Battle3DStartData StartData { get; private set; }
         public BattleStage CurrentStage => FindStage(selectedStageIndex);
         public event System.Action<BattleStage> StageSelected;
-        const string ReturnScene = "DecisionScene";
         const double ReturnDelay = 5d;
         double returnAt = -1d;
         bool battleReady, returnRequested;
@@ -42,21 +41,11 @@ namespace OneWay.Battle3D
             var finalBoss = CurrentStage?.boss;
             var finalHealth = player != null ? player.GetComponent<BattlePlayerHealth>() : null;
             bool won = finalBoss != null && !finalBoss.IsAlive && (finalHealth == null || finalHealth.IsAlive);
+            // Decision_YYS owns final-result saving and the MainMenu route.
+            // Its SceneTransitionService can call LoadingScreenController.Open(MainMenu).
             if (finishFinalBattle(won)) return;
-            if (!Application.CanStreamedLevelBeLoaded(ReturnScene))
-            {
-                Debug.LogError("DecisionScene is not available in the active build scene list.", this);
-                return;
-            }
-            Cursor.lockState = CursorLockMode.None;
-            Cursor.visible = true;
-            var loading = SceneManager.LoadSceneAsync(ReturnScene, LoadSceneMode.Single);
-            if (loading != null) loading.completed += _ =>
-            {
-                // The battle intro/camera can restore a locked cursor during scene teardown.
-                Cursor.lockState = CursorLockMode.None;
-                Cursor.visible = true;
-            };
+            if (!LoadingScreenController.Open(LoadingDestination.Decision))
+                Debug.LogError("DecisionScene 로딩 전환을 시작하지 못했습니다. 로딩 설정을 확인하세요.", this);
         }
 
         public bool DefeatCurrentBoss()

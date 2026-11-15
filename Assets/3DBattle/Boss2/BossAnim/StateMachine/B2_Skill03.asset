@@ -1,0 +1,77 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 08bcac48a19579645ae8b4b2f58e2fca, type: 3}
+  m_Name: B2_Skill03
+  m_EditorClassIdentifier: Assembly-CSharp::OneWay.Battle3D.BossWeaponAttackPattern
+  displayName: B2 Skill03
+  damage: 20
+  windupSeconds: 0.7
+  recoverySeconds: 0
+  animationState: Base Layer.Skill03
+  clip: {fileID: 7400000, guid: 4acce1e9242f1ef428a078ff0d6145b5, type: 2}
+  travelX:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  travelZ:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  hitStartSeconds: 0.85
+  hitEndSeconds: 1.45
+  downwardExtension: 0
+  hitWindows:
+  - startSeconds: 0.31666666
+    endSeconds: 0.62666667
+    downwardExtension: 1.5
+  independentStrikes: 1
+  stepDecisionSeconds: []

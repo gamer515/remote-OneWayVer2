@@ -7,12 +7,16 @@ namespace OneWay.Battle3D
         public GameObject effectPrefab;
         public GameObject secondaryEffectPrefab;
         public Transform shield;
-        public bool TryParry(float damage)
+        public bool CanParry(float damage)
         {
             var health = GetComponent<BattlePlayerHealth>();
             var player = GetComponent<BattlePlayerController>();
-            if (damage <= 0 || health == null || !health.IsAlive || health.ignoreDamage ||
-                player == null || player.IsDashing || !player.IsBlocking) return false;
+            return damage > 0 && health != null && health.IsAlive && !health.ignoreDamage &&
+                player != null && !player.IsDashing && player.IsBlocking;
+        }
+        public bool TryParry(float damage)
+        {
+            if (!CanParry(damage)) return false;
             GetComponent<NewPlayerLocomotion>()?.OnSuccessfulParry();
             PlaySuccessEffect();
             return true;

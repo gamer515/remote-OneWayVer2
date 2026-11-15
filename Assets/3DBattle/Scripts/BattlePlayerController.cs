@@ -287,7 +287,10 @@ namespace OneWay.Battle3D
                 direction.y = 0f;
                 if (Vector3.Angle(transform.forward, direction) <= 75f)
                 {
+                    float healthBefore = boss.Health;
                     boss.TakeDamage(special ? specialDamage : normalDamage);
+                    if (boss.Health < healthBefore)
+                        GetComponent<BattleSwordSlashEffect>()?.PlayHitFlash(boss);
                     feedback?.ShowAttack(boss.transform.position + Vector3.up, special);
                 }
             }
@@ -355,6 +358,7 @@ namespace OneWay.Battle3D
             if (wasEnabled) controller.enabled = false;
             if (spawn != null) transform.SetPositionAndRotation(spawn.position, spawn.rotation);
             if (wasEnabled) controller.enabled = true;
+            if (authoredCombo != null && authoredCombo.CombatFeel != null) authoredCombo.ResetAirRecovery();
             GetComponent<BattlePlayerHealth>()?.ResetHealth();
             if (animator != null && animator.runtimeAnimatorController != null)
             {

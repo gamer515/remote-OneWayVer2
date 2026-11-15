@@ -15,6 +15,10 @@ namespace OneWay.Battle3D
         public float[] rotationStarts = new float[10];
         public float[] strikeTimes = new float[7];
         [Min(.01f)] public float parryWindow = .22f;
+        [Header("Early parry input (seconds at current animation speed)")]
+        [Range(2, 8)] public int lateParryStartRotation = 2;
+        [Min(.01f), Tooltip("Accept an early click for the next strike, even before its rotation begins.")]
+        public float lateParryWindow = .4f;
         [Min(0)] public float failureDamage = 20;
         [Min(0)] public float pushDistance = 1.2f;
         [Min(.01f)] public float pushDuration = .18f;
@@ -31,7 +35,7 @@ namespace OneWay.Battle3D
         public int Failures { get; private set; }
         public string Status { get; private set; } = "Ready";
         public bool OwnsAttack => isActiveAndEnabled && entryRunning;
-        public bool Invulnerable => Locked && TimeInAttack < rotationStarts[8];
+        public bool Invulnerable => Locked && (!TryGetAttackTime(out float time) || time < rotationStarts[8]);
         BossPhaseTwo phase;
         BattleBoss boss;
         BossActionController actions;
@@ -48,8 +52,18 @@ namespace OneWay.Battle3D
         Vector3 facing, savedCameraOffset, returnStart;
         Quaternion savedCameraRotation, returnRotation;
         float savedAnimatorSpeed;
-        float TimeInAttack => boss != null && phase.entryAttack != null ?
-            boss.animator.GetCurrentAnimatorStateInfo(0).normalizedTime * phase.entryAttack.clip.length : 0;
+        bool TryGetAttackTime(out float time)
+        {
+            time = 0;
+            if (boss == null || phase == null || phase.entryAttack == null ||
+                phase.entryAttack.clip == null || boss.animator == null) return false;
+            var state = boss.animator.GetCurrentAnimatorStateInfo(0);
+            // Play is requested during Update, before the Animator evaluates the new state.
+            // Until then normalizedTime belongs to the previous idle/approach animation.
+            if (state.fullPathHash != Animator.StringToHash(phase.entryAttack.animationState)) return false;
+            time = Mathf.Max(0, state.normalizedTime) * phase.entryAttack.clip.length;
+            return true;
+        }
         void Awake() { phase=GetComponent<BossPhaseTwo>();boss=GetComponent<BattleBoss>();actions=GetComponent<BossActionController>(); }
         bool Bind()
         {
@@ -111,7 +125,7 @@ namespace OneWay.Battle3D
             if(player==null || health==null || !health.IsAlive || !boss.IsAlive || !phase.enabled ||
                 actions.Current!=BossActionKind.Attack || GetComponent<BossPatternRunner>().CurrentPattern!=phase.entryAttack)
             {Abort();return;}
-            float time=TimeInAttack;
+            if(!TryGetAttackTime(out float time))return;
             Rotation=1;for(int i=1;i<10;i++)if(time>=rotationStarts[i])Rotation=i+1;
             if(!Locked)return;
             if(time>=rotationStarts[8]){Release(false);Status="Rotation 9: controls released";return;}
@@ -121,17 +135,31 @@ namespace OneWay.Battle3D
         }
         public bool PressParry(float clipTime)
         {
-            if(!Locked)return false;
+            if(!Locked || !TryGetAttackTime(out _))return false;
             hitElapsed=-1;HoldGuard();
             int turn=0;for(int i=1;i<10;i++)if(clipTime>=rotationStarts[i])turn=i;
-            if(turn<1 || turn>7 || clicked[turn])return false;
+            if(turn>7)return false;
+            // Buffer against the upcoming strike time, including rotation2's window
+            // during the end of the harmless first rotation.
+            for(int i=0;i<strikeTimes.Length;i++)
+            {
+                if(resolved[i] || clipTime>strikeTimes[i])continue;
+                int rotation=i+2;
+                if(rotation<lateParryStartRotation)break;
+                float lead=(strikeTimes[i]-clipTime)/Mathf.Max(.01f,boss.animator.speed);
+                if(lead>GetParryWindow(rotation) || clicked[i+1])return false;
+                clicked[i+1]=true;clickTimes[i+1]=clipTime;return true;
+            }
+            if(turn<1 || turn+1>=lateParryStartRotation || clicked[turn] || resolved[turn-1])return false;
             clicked[turn]=true;clickTimes[turn]=clipTime;return true;
         }
+        float GetParryWindow(int rotation) => rotation>=lateParryStartRotation
+            ? Mathf.Max(parryWindow,lateParryWindow) : parryWindow;
         void ResolveStrike(int index)
         {
             resolved[index]=true;int turn=index+1;
             float age=(strikeTimes[index]-clickTimes[turn])/Mathf.Max(.01f,boss.animator.speed);
-            bool success=clicked[turn] && age>=0 && age<=parryWindow;
+            bool success=clicked[turn] && age>=0 && age<=GetParryWindow(turn+1);
             if(success){Successes++;hitElapsed=-1;player.GetComponent<BattleParryEffect>()?.PlaySuccessEffect();}
             else {Failures++;health.TakeGimmickDamage(failureDamage);if(health.IsAlive)hitElapsed=0;}
             if(!health.IsAlive){Abort();return;}
