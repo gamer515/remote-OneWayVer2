@@ -2,6 +2,7 @@
 
 public class SaveManager
 {
+    internal const string CoastEndingPhase = "coast-ending";
     private readonly ProfileData profile;
     private GameProgress cachedProgress;
 
@@ -459,7 +460,7 @@ public class SaveManager
         SaveIOService.Instance.SaveRunData(CurrentRun, "Progress", cachedProgress);
     }
 
-    public bool TryContinueAfterChapterBoss(OmnibusData omnibus)
+    public bool TryContinueAfterChapterBoss(OmnibusData omnibus, bool showCoastEnding = false)
     {
         if (!cachedProgress.finalBattlePending || cachedProgress.isCompleted ||
             string.IsNullOrEmpty(cachedProgress.chapterBossId) || omnibus?.chapters == null) return false;
@@ -477,7 +478,12 @@ public class SaveManager
         next.finalBattleWon = true;
         next.chapterBossId = null;
         next.runEndReason = null;
-        next.interactionPhase = null;
+        next.interactionPhase = showCoastEnding && next.chapterId == "Chapter_Coast" ? CoastEndingPhase : null;
+        if (next.interactionPhase == CoastEndingPhase)
+        {
+            next.currentPosition = null;
+            next.currentRotation = null;
+        }
         next.activeStoryPath = null;
         next.activePlaceId = null;
         next.activeCardIndex = 0;

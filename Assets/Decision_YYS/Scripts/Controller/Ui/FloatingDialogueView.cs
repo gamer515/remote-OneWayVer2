@@ -19,6 +19,108 @@ public sealed class FloatingDialogueView : MonoBehaviour
     private string draft;
     private bool showingChoices;
     private TextMeshProUGUI overflowText;
+    private TextMeshProUGUI storyHeading, storyNotice;
+    private TextMeshProUGUI choiceHint;
+    private System.Func<int, string> getChoiceHint;
+    private string clueTarget;
+    private System.Func<string> revealClue;
+    private int firstChoice, choiceCount;
+
+    internal void SetDialogueClue(string target, System.Func<string> reveal)
+    {
+        clueTarget = target;
+        revealClue = reveal;
+    }
+
+    internal void SetChoiceHints(System.Func<int, string> hint, int first, int count)
+    {
+        getChoiceHint = hint;
+        firstChoice = first;
+        choiceCount = count;
+    }
+
+    private void LateUpdate()
+    {
+        string hint = null;
+        var mouse = UnityEngine.InputSystem.Mouse.current;
+        if (mouse != null && playerText.isActiveAndEnabled && playerText.canvas != null)
+        {
+            var canvas = playerText.canvas;
+            var camera = canvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : canvas.worldCamera;
+            var position = mouse.position.ReadValue();
+            if (RectTransformUtility.RectangleContainsScreenPoint(playerText.rectTransform, position, camera))
+            {
+                if (showingChoices && getChoiceHint != null)
+                {
+                    int line = TMP_TextUtilities.FindIntersectingLine(playerText, position, camera);
+                    if (line >= 0 && line < playerText.textInfo.lineCount)
+                    {
+                        int character = playerText.textInfo.lineInfo[line].firstCharacterIndex;
+                        int offset = playerText.textInfo.characterInfo[character].index;
+                        int optionStart = playerText.text.Length - draft.Length;
+                        if (offset >= optionStart)
+                        {
+                            int row = 0;
+                            for (int i = optionStart; i < offset; i++)
+                                if (playerText.text[i] == '\n') row++;
+                            if (row < choiceCount) hint = getChoiceHint(firstChoice + row);
+                        }
+                    }
+                }
+                else if (!string.IsNullOrEmpty(clueTarget) && revealClue != null)
+                {
+                    int start = playerText.text.IndexOf(clueTarget, System.StringComparison.Ordinal);
+                    int hit = TMP_TextUtilities.FindIntersectingCharacter(playerText, position, camera, true);
+                    if (start >= 0 && hit >= 0)
+                    {
+                        int character = playerText.textInfo.characterInfo[hit].index;
+                        if (character >= start && character < start + clueTarget.Length) hint = revealClue();
+                    }
+                }
+            }
+        }
+        if (choiceHint == null && !string.IsNullOrEmpty(hint))
+        {
+            choiceHint = Instantiate(playerText, playerArea);
+            choiceHint.name = "ChoiceHint";
+            choiceHint.alignment = TextAlignmentOptions.Bottom;
+            choiceHint.color = new Color(1f, .88f, .57f);
+            choiceHint.fontSize = 16;
+            var rect = choiceHint.rectTransform;
+            rect.anchorMin = new Vector2(0, 1);
+            rect.anchorMax = Vector2.one;
+            rect.pivot = new Vector2(.5f, 0);
+            rect.sizeDelta = new Vector2(0, 24);
+            rect.anchoredPosition = new Vector2(0, 5);
+        }
+        if (choiceHint == null) return;
+        choiceHint.text = hint ?? "";
+        choiceHint.gameObject.SetActive(!string.IsNullOrEmpty(hint));
+    }
+
+    public void SetStoryHeading(string text) => SetStoryLabel(ref storyHeading, "StoryHeading", text, .95f, 19f);
+    public void SetStoryNotice(string text) => SetStoryLabel(ref storyNotice, "StoryNotice", text, .045f, 15f);
+
+    private void SetStoryLabel(ref TextMeshProUGUI label, string objectName, string text, float height, float size)
+    {
+        if (label == null && string.IsNullOrEmpty(text)) return;
+        if (label == null)
+        {
+            label = Instantiate(playerText, playerArea.parent);
+            label.name = objectName;
+            label.alignment = TextAlignmentOptions.Center;
+            label.raycastTarget = false;
+            label.fontSize = size;
+            var rect = label.rectTransform;
+            rect.anchorMin = new Vector2(.08f, height);
+            rect.anchorMax = new Vector2(.92f, height);
+            rect.pivot = new Vector2(.5f, .5f);
+            rect.sizeDelta = new Vector2(0f, 28f);
+            rect.anchoredPosition = Vector2.zero;
+        }
+        label.text = text;
+        label.gameObject.SetActive(!string.IsNullOrEmpty(text));
+    }
 
     public int MessageCount { get; private set; }
 
@@ -44,6 +146,8 @@ public sealed class FloatingDialogueView : MonoBehaviour
     public void SetVisible(bool visible)
     {
         if (visible) return;
+        SetStoryHeading(null);
+        SetStoryNotice(null);
         speech = draft = null;
         showingChoices = false;
         if (overflowText != null) overflowText.gameObject.SetActive(false);

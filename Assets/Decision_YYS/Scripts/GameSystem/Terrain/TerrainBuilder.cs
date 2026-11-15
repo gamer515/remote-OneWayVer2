@@ -66,6 +66,9 @@ public sealed class TerrainBuilder
         if (!facilityHistory.TryGetValue(chapterId, out var history))
             facilityHistory[chapterId] = history = new TerrainFacilityPlan.History(firstGlobalChunkIndex);
         var facilities = TerrainFacilityPlan.Build(terrainData, runSeed, firstGlobalChunkIndex, history, capLocations);
+        foreach (var place in terrainData.places.Where(place => place.storyLocationShop))
+            facilityMarkers.Add(new FacilityMarker($"{firstGlobalChunkIndex + place.chunkIndex}:shop",
+                placeRegistry.GetWorldPosition(place), true));
         foreach (var slot in facilities)
         {
             bool isShop = slot.Id == "shop";
@@ -99,12 +102,9 @@ public sealed class TerrainBuilder
         TerrainSegment segment = FindSegment(globalChunkIndex);
         if (segment == null) return false;
 
-        // 멀어져 회수된 청크는 새로 만들지 않고 다시 활성화합니다.
-        if (chunkInstances.TryGetValue(globalChunkIndex, out GameObject cachedChunk))
-        {
-            cachedChunk.SetActive(true);
+        if (chunkInstances.TryGetValue(globalChunkIndex, out GameObject loadedChunk) && loadedChunk != null)
             return true;
-        }
+        chunkInstances.Remove(globalChunkIndex);
 
         int localChunkIndex = globalChunkIndex - segment.FirstGlobalChunkIndex;
         GameObject chunk = new GameObject($"Chunk_{globalChunkIndex}");
@@ -113,7 +113,22 @@ public sealed class TerrainBuilder
 
         GameObject ground = CreateGround(segment, localChunkIndex, chunk.transform);
         if (ground != null) segment.RoomLayouts?[localChunkIndex]?.Apply(ground.transform);
+        if (ground != null && segment.Data.places.Any(place => place.storyActors != null))
+            foreach (Transform child in ground.transform)
+                if (child.name.StartsWith("Place_", System.StringComparison.Ordinal))
+                    child.gameObject.SetActive(false);
+        if (ground != null && segment.Data.places.Any(place => place.authoredLocationId != null))
+        {
+            // The story layout owns the locations and NPCs on this ground.
+            ground.transform.Find("02_Buildings")?.gameObject.SetActive(false);
+            ground.transform.Find("04_NPCs")?.gameObject.SetActive(false);
+            var decorations = ground.transform.Find("03_Decorations");
+            if (decorations != null)
+                foreach (Transform decoration in decorations)
+                    if (decoration.name != "Decor_MineEdges") decoration.gameObject.SetActive(false);
+        }
         CreatePlaces(segment, localChunkIndex, chunk.transform, ground);
+        CreateMineRoadsideDecorations(segment, localChunkIndex, chunk.transform);
         foreach (var slot in segment.Facilities)
             if (slot.Chunk == localChunkIndex)
                 Debug.Log($"[장소 예정] {slot.Label} ({slot.Id}) · 청크 {globalChunkIndex + 1} · 로컬 X={slot.X:F1}, Z={slot.Z:F1} · {(slot.OptionalCandidate ? "주요 선택 후보" : "빈 자리 예약")} · 에셋/상호작용 연결 대기");
@@ -121,12 +136,69 @@ public sealed class TerrainBuilder
         return true;
     }
 
+    private static void CreateMineRoadsideDecorations(TerrainSegment segment, int chunkIndex, Transform chunk)
+    {
+        var decorations = segment.PrefabCatalog?.MineRoadsideDecorations;
+        if (decorations == null || decorations.Count == 0) return;
+        var places = segment.Data.places.Where(place => place.chunkIndex == chunkIndex &&
+            place.authoredLocationId != null && place.placeId == place.sharedStoryVisualId).ToArray();
+        if (places.Length == 0) return;
+
+        var occupied = places.Select(place => new Vector2(place.position.z + place.storyLocationDepth.x,
+            place.position.z + place.storyLocationDepth.y))
+            .Concat(segment.Facilities.Where(slot => slot.Chunk == chunkIndex)
+                .Select(slot => new Vector2(slot.Z - 6f, slot.Z + 6f)))
+            .OrderBy(span => span.x).ToArray();
+        float length = segment.Data.chunkLength;
+        Vector3 origin = segment.Registry.GetChunkWorldPosition(chunkIndex);
+        for (int gap = 1; gap < occupied.Length; gap++)
+        {
+            float end = Mathf.Min(occupied[gap].x - 2f, length - 6f);
+            float start = occupied[gap - 1].y + 2f;
+            if (end <= start) continue;
+            int count = Mathf.Max(1, Mathf.FloorToInt((end - start) / 16f));
+            for (int slot = 0; slot < count; slot++)
+            {
+                string key = $"mine-roadside:{gap}:{slot}";
+                int index = Mathf.Min(decorations.Count - 1, (int)(MineChapterSettings.Roll(
+                    segment.RunSeed, chunkIndex, key) * decorations.Count));
+                float slotStart = Mathf.Lerp(start, end, (float)slot / count);
+                float slotEnd = Mathf.Lerp(start, end, (slot + 1f) / count);
+                var prefab = Enumerable.Range(0, decorations.Count)
+                    .Select(offset => decorations[(index + offset) % decorations.Count])
+                    .FirstOrDefault(candidate => candidate != null &&
+                        MineAuthoredStory.RenderedBounds(candidate).extents.z <= (end - start) / (2f * count));
+                if (prefab == null) continue;
+                var localBounds = MineAuthoredStory.RenderedBounds(prefab);
+                var candidates = new[] { new Vector2(-4f, .30f), new Vector2(4f, .30f),
+                    new Vector2(-5f, .70f), new Vector2(5f, .70f) };
+                int pointIndex = Mathf.Min(candidates.Length - 1, (int)(MineChapterSettings.Roll(
+                    segment.RunSeed, chunkIndex, key + ":point") * candidates.Length));
+                Vector2 point = candidates[pointIndex];
+                float z = Mathf.Lerp(slotStart + localBounds.extents.z, slotEnd - localBounds.extents.z, point.y);
+                float side = Mathf.Sign(point.x);
+                float x = side * Mathf.Max(Mathf.Abs(point.x), 2.5f + localBounds.extents.x);
+                Vector3 center = origin + new Vector3(x, 0f, z);
+                Quaternion rotation = side < 0f ? Quaternion.Euler(0f, 180f, 0f) : Quaternion.identity;
+                var offset = new Vector3(localBounds.center.x, localBounds.min.y, localBounds.center.z);
+                var instance = Object.Instantiate(prefab, center - rotation * offset, rotation, chunk);
+                instance.name = "Roadside_" + prefab.name;
+            }
+        }
+    }
+
     public void UnloadOutsideRange(int minimumChunkIndex, int maximumChunkIndex)
     {
-        foreach (KeyValuePair<int, GameObject> pair in chunkInstances)
+        // 등록된 지형과 배치 정보는 인스턴스보다 오래 유지되어 같은 청크를 다시 생성할 수 있습니다.
+        var unloadedIndices = chunkInstances.Keys
+            .Where(index => index < minimumChunkIndex || index > maximumChunkIndex).ToArray();
+        foreach (int index in unloadedIndices)
         {
-            bool shouldRemainLoaded = pair.Key >= minimumChunkIndex && pair.Key <= maximumChunkIndex;
-            if (!shouldRemainLoaded && pair.Value != null) pair.Value.SetActive(false);
+            GameObject chunk = chunkInstances[index];
+            chunkInstances.Remove(index);
+            if (chunk == null) continue;
+            chunk.SetActive(false);
+            Object.Destroy(chunk);
         }
     }
 
@@ -173,6 +245,27 @@ public sealed class TerrainBuilder
                 if (old != null) old.gameObject.SetActive(false);
             }
             if (place == null || place.chunkIndex != localChunkIndex) continue;
+            if (place.storyActors != null)
+            {
+                if (place.sharedStoryVisualId != null && place.placeId != place.sharedStoryVisualId) continue;
+                var group = new GameObject("Place_" + place.placeId).transform;
+                group.SetParent(chunkParent, false);
+                group.position = segment.Registry.GetWorldPosition(place);
+                if (place.authoredLocationId != null && segment.PrefabCatalog != null &&
+                    segment.PrefabCatalog.TryGetPrefab(place.authoredLocationId, out var locationPrefab))
+                    Object.Instantiate(locationPrefab, group);
+                for (int index = 0; index < place.storyActors.Length; index++)
+                {
+                    var actor = place.storyActors[index];
+                    var socket = new GameObject("ActorSocket_" + actor.name).transform;
+                    socket.SetParent(group, false);
+                    socket.localPosition = place.authoredLocationId != null ? actor.position : new Vector3(0, 0, index * 1.5f);
+                    // These appearance prefabs face local -Z. The dialogue socket faces +Z toward the player.
+                    var model = Object.Instantiate(actor.prefab, socket);
+                    model.transform.localRotation = Quaternion.Euler(0f, 180f, 0f) * model.transform.localRotation;
+                }
+                continue;
+            }
 
             if (segment.PrefabCatalog == null ||
                 !segment.PrefabCatalog.TryGetPrefab(place.prefabId, out GameObject placePrefab))

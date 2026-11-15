@@ -50,7 +50,7 @@ public sealed partial class MineLearningStation
     public string StudyResult { get; private set; }
     public bool StudyResultSucceeded { get; private set; }
     public float StudyResultUntil { get; private set; }
-    public bool IsDailyLimitBlocking => study != null && !paused && progress != null &&
+    public bool IsDailyLimitBlocking => study != null && CanStudyBooks &&
         progress.attemptsToday >= TodayLimit &&
         progress.active.Any(job => job.onBoard && (job.boardIndex == 1 || IsReadingPlacement(job)) &&
             !job.started && !job.held && CanRead(job));
@@ -63,11 +63,14 @@ public sealed partial class MineLearningStation
     {
         study = catalog?.books?.Length > 0 ? rules : null;
         authoredBooks = catalog?.books;
+        if (study != null) ConfigureReading();
         studyDaySeconds = calendarDaySeconds > 0 ? calendarDaySeconds : study?.daySeconds ?? 0;
+        usesChapterCalendar = calendarDaySeconds > 0;
         initialCalendarDays = Mathf.Max(0, calendarDays);
     }
 
     private float initialCalendarDays;
+    private bool usesChapterCalendar;
 
     private void InitializeStudyState()
     {
@@ -75,6 +78,15 @@ public sealed partial class MineLearningStation
         nextStudySave = 0;
         StudyResult = null;
         progress.stored ??= new List<MineLearningJob>();
+        foreach (var job in progress.active.Concat(progress.queued).Concat(progress.stored).Append(progress.producing))
+        {
+            if (job == null) continue;
+            job.bookId = CurrentReadingBookId(job);
+            job.bookName = GetBookDisplayName(job);
+        }
+        progress.pendingReading ??= new List<string>();
+        progress.completedReading ??= new List<string>();
+        progress.claimedReadingCombos ??= new List<string>();
         progress.mastered ??= new List<string>();
         if (!progress.studySuccessCountInitialized)
         {
@@ -84,11 +96,12 @@ public sealed partial class MineLearningStation
         progress.rewardedCombos ??= new List<string>();
         progress.comboSuccesses ??= new List<string>();
         progress.skills ??= new List<StudySkillValue>();
-        progress.stock ??= Enumerable.Repeat(study.startingStock, 4).ToArray();
-        progress.refills ??= new int[4];
-        progress.nextBook ??= new int[4];
-        progress.clockDays = Mathf.Max(progress.clockDays, initialCalendarDays);
-        progress.lastStudyDay ??= Enumerable.Repeat(Mathf.FloorToInt(progress.clockDays), 4).ToArray();
+        if (progress.stock?.Length != 4) progress.stock = Enumerable.Repeat(study.startingStock, 4).ToArray();
+        if (progress.refills?.Length != 4) progress.refills = new int[4];
+        if (progress.nextBook?.Length != 4) progress.nextBook = new int[4];
+        progress.clockDays = usesChapterCalendar ? initialCalendarDays : Mathf.Max(progress.clockDays, initialCalendarDays);
+        if (progress.lastStudyDay?.Length != 4)
+            progress.lastStudyDay = Enumerable.Repeat(Mathf.FloorToInt(progress.clockDays), 4).ToArray();
         RefreshDay();
     }
 
@@ -97,25 +110,35 @@ public sealed partial class MineLearningStation
         int day = Mathf.FloorToInt(progress.clockDays);
         if (day == progress.day) return false;
         progress.day = day;
-        progress.attemptsToday = 0;
+        ReplenishStudy();
         Array.Clear(progress.refills, 0, progress.refills.Length);
         return true;
     }
 
+    public void ReplenishStudy()
+    {
+        if (study == null || progress == null) return;
+        progress.attemptsToday = 0;
+        notice = null;
+    }
+
     private int Skill(string id) => progress.skills.Find(value => value.id == id)?.value ?? 0;
+    private bool FirstStudyDay => study != null && progress?.day == 0 && readingBooks.Count > 0;
 
     private int DailyLimit(int[] amounts)
     {
         int endurance = Skill("endurance") + amounts[0] / study.healthPerEndurance;
         int index = Array.FindLastIndex(study.enduranceThresholds, threshold => endurance >= threshold);
-        return study.dailyLimits[Mathf.Max(0, index)];
+        int limit = study.dailyLimits[Mathf.Max(0, index)];
+        return FirstStudyDay ? Mathf.Max(2, limit) : limit;
     }
 
     private StudyTier Intelligence(int knowledge) =>
         study.intelligence.LastOrDefault(tier => knowledge >= tier.threshold) ?? study.intelligence[0];
 
     private bool CanRead(BookDefinition book, int[] amounts) =>
-        amounts[2] >= book.requiredKnowledge && amounts[book.ability] >= book.requiredAbility;
+        (FirstStudyDay && (book.id == FirstComboBook || book.id == SecondComboBook)) ||
+        (amounts[2] >= book.requiredKnowledge && amounts[book.ability] >= book.requiredAbility);
 
     private bool CanRead(MineLearningJob job)
     {
@@ -156,14 +179,13 @@ public sealed partial class MineLearningStation
     public bool Refill(int ability, int insertedCoins = 1)
     {
         if (!UsesStudyRules || !CanMoveBooks || ability < 0 || ability >= 4) return false;
-        if (Stock(ability) > 0) return Explain("남은 책을 모두 뽑으면 리필할 수 있습니다.");
         int cost = RefillCost(ability);
         if (insertedCoins < cost) return Explain($"코인 {cost}개를 넣어야 리필됩니다.");
         int available = wallet()[ability];
         if (available < cost || (ability == 0 && available == cost))
             return Explain("리필할 능력 코인이 부족합니다.");
         if (!charge(ability, cost)) return false;
-        progress.stock[ability] = study.refillStock;
+        progress.stock[ability] += study.refillStock;
         progress.refills[ability]++;
         notice = $"책 {study.refillStock}권 리필 / 코인 {cost}개 사용";
         save?.Invoke();
@@ -172,12 +194,18 @@ public sealed partial class MineLearningStation
 
     public bool SubmitShelf(Vector3 pickupPoint)
     {
-        if (!UsesStudyRules || !CanMoveBooks || HasComboStudy) return false;
+        if (!UsesStudyRules || !CanStudyBooks || HasComboStudy) return false;
         var batch = progress.active.Where(job => job.boardIndex == 3 && !job.started).ToArray();
+        if (batch.Length < 2)
+            return Explain("책장에 책을 두 권 이상 올려 주세요.");
         if (!study.combos.Any(combo => !progress.rewardedCombos.Contains(combo.id) &&
-            combo.books.All(id => batch.Any(job => job.bookId == id))))
-            return Explain("책장에 콤보 조합을 모아 주세요.");
-        if (batch.Length < 2 || batch.Length > Capacity.simultaneous ||
+            combo.books.All(id => batch.Any(job => job.bookId == id))) &&
+            !readingCombos.Any(combo => !progress.claimedReadingCombos.Contains((string)combo["id"]) &&
+                combo["condition"]["bookIds"].Values<string>().Count(id =>
+                    batch.Any(job => job.bookId == id) || progress.completedReading.Contains(id)) >=
+                (int)combo["condition"]["minCompleted"]))
+            return Explain("이 조합으로는 콤보가 발동하지 않습니다.");
+        if (batch.Length > Capacity.simultaneous ||
             batch.Length > TodayLimit - progress.attemptsToday || !batch.All(CanRead))
             return Explain("콤보 학습에는 함께 읽을 자리와 오늘의 학습량이 필요합니다.");
         progress.comboSuccesses.Clear();
@@ -198,7 +226,7 @@ public sealed partial class MineLearningStation
         if (!CanMoveBooks || job == null || job.comboStudy || !job.onBoard || !progress.active.Remove(job)) return false;
         job.onBoard = job.held = false;
         progress.stored.Add(job);
-        notice = $"{job.bookName} / 가방에 보관";
+        notice = $"{GetBookDisplayName(job)} / 가방에 보관";
         Rebuild();
         save?.Invoke();
         StoredBooksChanged?.Invoke();
@@ -218,9 +246,9 @@ public sealed partial class MineLearningStation
         return true;
     }
 
-    private bool TickStudy(float seconds, bool stop)
+    private bool TickStudy(float seconds, bool stop, float? calendarDays)
     {
-        progress.clockDays += seconds / studyDaySeconds;
+        progress.clockDays = calendarDays ?? (progress.clockDays + seconds / studyDaySeconds);
         bool changed = RefreshDay();
         var amounts = wallet();
         int decayDays = Intelligence(amounts[2]).decayDays;
@@ -253,9 +281,9 @@ public sealed partial class MineLearningStation
             {
                 var job = progress.active[i];
                 if (job.transit > 0) job.transit = Mathf.Max(0, job.transit - seconds);
-                else if (!job.held && IsReadingPlacement(job))
+                else if (!studyPaused && !job.held && IsReadingPlacement(job))
                 {
-                    if (!CanRead(job)) notice = $"{job.bookName} / 읽기 능력치 부족";
+                    if (!CanRead(job)) notice = $"{GetBookDisplayName(job)} / 읽기 능력치 부족";
                     else if (job.started || progress.attemptsToday < DailyLimit(wallet()))
                     {
                         if (!job.started)
@@ -291,6 +319,13 @@ public sealed partial class MineLearningStation
 
     private void CompleteStudy(MineLearningJob job)
     {
+        if (readingBooks.ContainsKey(job.bookId ?? ""))
+        {
+            if (!progress.completedReading.Contains(job.bookId) && !progress.pendingReading.Contains(job.bookId))
+                progress.pendingReading.Add(job.bookId);
+            else ShowStudyResult(true, "이미 보상을 받은 책이거나 선택을 기다리고 있습니다.");
+            return;
+        }
         var book = authoredBooks.FirstOrDefault(item => item.id == job.bookId);
         var tier = Intelligence(wallet()[2]);
         if (book != null && MineChapterSettings.Roll(seed, job.studyAttempt, "study:" + book.id) >= tier.success)

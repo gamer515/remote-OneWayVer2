@@ -9,6 +9,8 @@ using UnityEngine.Serialization;
 public class EnvController : MonoBehaviour
 {
     [SerializeField] private MineNpcPlacement npcPlacement;
+    [SerializeField] private GameObject[] authoredMineActors;
+    internal MineAuthoredStory AuthoredMine { get; private set; }
     public MineNpcPlacement NpcPlacement => npcPlacement;
     [System.Serializable]
     private sealed class TerrainGroundEntry
@@ -38,7 +40,7 @@ public class EnvController : MonoBehaviour
     [SerializeField] private TerrainPrefabCatalog terrainPrefabCatalog;
     [SerializeField, Min(0.01f)] private float chunkSize = 50f;
     [Tooltip("현재 청크 기준 앞과 뒤에 로드할 청크 수")]
-    [SerializeField, Min(0)] private int loadRadius = 4;
+    [SerializeField, Range(0, TerrainStreamingController.MaximumLoadRadius)] private int loadRadius = TerrainStreamingController.MaximumLoadRadius;
 
     public TerrainData TerrainData { get; private set; }
     public TerrainPlaceRegistry PlaceRegistry { get; private set; }
@@ -99,7 +101,7 @@ public class EnvController : MonoBehaviour
             return true;
         }
 
-        TerrainData terrainData = terrainRepository.Load(terrainPath);
+        TerrainData terrainData = LoadTerrain(terrainPath);
         int chunkCount = GetChunkCount(terrainData);
         if (terrainData == null || chunkCount == 0)
         {
@@ -128,7 +130,8 @@ public class EnvController : MonoBehaviour
             Debug.LogError($"청크당 장소 상한 안에서 필수 장소를 모두 배치할 수 없습니다: {terrainPath}", this);
             return false;
         }
-        var roomLayouts = varyRooms ? PlanRoomLayouts(terrainData, selectedGroundPrefabs, segmentChunkSize) : null;
+        var roomLayouts = varyRooms && terrainPath != MineAuthoredStory.Episode + "/Terrain"
+            ? PlanRoomLayouts(terrainData, selectedGroundPrefabs, segmentChunkSize) : null;
         if (roomLayouts != null)
             foreach (var place in terrainData.places)
             {
@@ -187,6 +190,7 @@ public class EnvController : MonoBehaviour
         contentSeed = runSeed;
         this.varyRooms = varyRooms;
         terrainRepository = new TerrainRepository(contentRun, contentSeed);
+        AuthoredMine = authoredMineActors?.Length > 0 ? new MineAuthoredStory(authoredMineActors) : null;
     }
 
     public bool TryValidateAllContent(OmnibusData omnibus, out string errorMessage)
@@ -218,7 +222,7 @@ public class EnvController : MonoBehaviour
             foreach (string episodeId in chapter.episodeIds)
             {
                 string terrainPath = CreateTerrainPath(chapter.chapterId, episodeId);
-                TerrainData terrainData = terrainRepository.Load(terrainPath);
+                TerrainData terrainData = LoadTerrain(terrainPath);
                 if (terrainData == null)
                 {
                     errorMessage = $"지형을 불러올 수 없습니다: {terrainPath}";
@@ -259,6 +263,14 @@ public class EnvController : MonoBehaviour
 
         playerTransform = player.transform;
         terrainStreamingController?.UpdatePlayerPosition(playerTransform.position.z);
+    }
+
+    private TerrainData LoadTerrain(string path)
+    {
+        var terrain = terrainRepository.Load(path);
+        if (terrain != null && path == MineAuthoredStory.Episode + "/Terrain")
+            AuthoredMine?.ApplyLayout(terrain, contentSeed, terrainPrefabCatalog, npcPlacement);
+        return terrain;
     }
 
     private static string CreateTerrainPath(string chapterName, string episodeTitle)
@@ -305,6 +317,7 @@ public class EnvController : MonoBehaviour
                 errorMessage = "places 배열에 null 항목이 있습니다.";
                 return false;
             }
+            if (place.storyActors != null) continue;
 
             if (!terrainPrefabCatalog.TryGetPrefab(place.prefabId, out _))
             {
@@ -453,6 +466,8 @@ public sealed class TerrainPrefabCatalog
 
     [Header("Characters")]
     [SerializeField] private TerrainPrefabEntry[] characterEntries;
+    [SerializeField] private GameObject[] mineRoadsideDecorations;
+    internal IReadOnlyList<GameObject> MineRoadsideDecorations => mineRoadsideDecorations;
 
     private Dictionary<string, GameObject> prefabsById;
 

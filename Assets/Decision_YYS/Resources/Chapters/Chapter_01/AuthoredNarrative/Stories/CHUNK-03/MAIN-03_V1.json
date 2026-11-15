@@ -1,0 +1,427 @@
+{
+  "story_id": "MAIN-03",
+  "title": "외상 장부의 마지막 줄",
+  "opening": [
+    {
+      "speaker_id": "NPC-04",
+      "text": "장부에 이름은 많은데 밥그릇은 적네."
+    },
+    {
+      "speaker_id": "NPC-22",
+      "text": "손님들 줄이 벌써 길어요."
+    },
+    {
+      "speaker_id": "NPC-04",
+      "text": "브룩 몫을 또 외상으로 적으면 내일 밀가루가 모자라."
+    },
+    {
+      "speaker_id": "NPC-04",
+      "text": "그렇다고 굶는 사람을 눈앞에서 돌려보내긴 싫어."
+    },
+    {
+      "speaker_id": "NPC-04",
+      "text": "식재료를 마련할 코인을 내면 우선 밥은 지킬 수 있어."
+    }
+  ],
+  "choices": [
+    {
+      "id": "C1",
+      "text": "통행세 내기",
+      "coin_options": [
+        {
+          "id": "strength",
+          "text": "힘 지불",
+          "dialogue": [
+            {
+              "speaker_id": "NPC-04",
+              "text": "곡식 포대는 조금 덜 힘들게 옮기겠네."
+            }
+          ],
+          "result": {
+            "stats": {
+              "strength": -2
+            },
+            "main_progress": true,
+            "access": true,
+            "resolution": "paid"
+          },
+          "condition": {
+            "coin_at_least": {
+              "strength": 2
+            }
+          },
+          "on_insufficient_coins": "COIN_SHORTAGE"
+        },
+        {
+          "id": "speed",
+          "text": "속도 지불",
+          "dialogue": [
+            {
+              "speaker_id": "NPC-04",
+              "text": "줄이 길어지기 전에 솥을 하나 더 끓이겠어."
+            }
+          ],
+          "result": {
+            "stats": {
+              "speed": -2
+            },
+            "main_progress": true,
+            "access": true,
+            "resolution": "paid"
+          },
+          "condition": {
+            "coin_at_least": {
+              "speed": 2
+            }
+          },
+          "on_insufficient_coins": "COIN_SHORTAGE"
+        },
+        {
+          "id": "intelligence",
+          "text": "지능 지불",
+          "dialogue": [
+            {
+              "speaker_id": "NPC-04",
+              "text": "외상 계산이 틀린 곳부터 찾아봐야겠네."
+            }
+          ],
+          "result": {
+            "stats": {
+              "intelligence": -2
+            },
+            "main_progress": true,
+            "access": true,
+            "resolution": "paid"
+          },
+          "condition": {
+            "coin_at_least": {
+              "intelligence": 2
+            }
+          },
+          "on_insufficient_coins": "COIN_SHORTAGE"
+        },
+        {
+          "id": "charm",
+          "text": "매력 지불",
+          "dialogue": [
+            {
+              "speaker_id": "NPC-04",
+              "text": "거래처한테 한 번 더 부탁해 볼 수 있겠어."
+            }
+          ],
+          "result": {
+            "stats": {
+              "charm": -2
+            },
+            "main_progress": true,
+            "access": true,
+            "resolution": "paid"
+          },
+          "condition": {
+            "coin_at_least": {
+              "charm": 2
+            }
+          },
+          "on_insufficient_coins": "COIN_SHORTAGE"
+        }
+      ],
+      "insufficient_coins_branch_id": "COIN_SHORTAGE",
+      "coin_shortage_trigger": "balance_of_selected_coin_below_required",
+      "price": {
+        "base_fee": 2,
+        "negotiated_fee": 1,
+        "accepted_coin_ids": [
+          "strength",
+          "speed",
+          "intelligence",
+          "charm"
+        ]
+      },
+      "negotiation": {
+        "id": "NEGOTIATE",
+        "text": "가격 협상",
+        "available_before_coin_selection": true,
+        "once_per_encounter": true,
+        "discounted_fee": 1,
+        "routes": [
+          {
+            "id": "N_INT",
+            "text": "근거 제시",
+            "condition": {
+              "intelligence_at_least": 3
+            },
+            "player_dialogue": "장부에 남길 액수보다 오늘 먹을 몫이 먼저죠. 지불액을 조정해 주세요.",
+            "success": {
+              "dialogue": [
+                {
+                  "speaker_id": "NPC-04",
+                  "text": "외상 장부를 쓰는 사람이 그 말에 반박하긴 어렵겠네. 조금 낮출게요."
+                }
+              ],
+              "payment_override": {
+                "amount": 1,
+                "apply_to": [
+                  "coin_at_least",
+                  "negative_stat_delta"
+                ],
+                "scope": "selected_coin_only"
+              },
+              "goto_coin_choice_id": "C1",
+              "set_flag": "NEGOTIATED_FEE"
+            },
+            "failure": {
+              "dialogue": [
+                {
+                  "speaker_id": "NPC-04",
+                  "text": "좋은 마음만으론 솥이 안 끓어."
+                }
+              ],
+              "goto_coin_choice_id": "C1",
+              "payment_fee": 2
+            }
+          },
+          {
+            "id": "N_CHARM",
+            "text": "사정 호소",
+            "condition": {
+              "charm_at_least": 3
+            },
+            "player_dialogue": "여기서 가진 걸 다 내면 다음 사람을 돕기도 어려워요.",
+            "success": {
+              "dialogue": [
+                {
+                  "speaker_id": "NPC-04",
+                  "text": "그 마음이 진심이라면 적게 받아도 되겠어요."
+                }
+              ],
+              "payment_override": {
+                "amount": 1,
+                "apply_to": [
+                  "coin_at_least",
+                  "negative_stat_delta"
+                ],
+                "scope": "selected_coin_only"
+              },
+              "goto_coin_choice_id": "C1",
+              "set_flag": "NEGOTIATED_FEE"
+            },
+            "failure": {
+              "dialogue": [
+                {
+                  "speaker_id": "NPC-04",
+                  "text": "좋은 마음만으론 솥이 안 끓어."
+                }
+              ],
+              "goto_coin_choice_id": "C1",
+              "payment_fee": 2
+            }
+          },
+          {
+            "id": "N_CANCEL",
+            "text": "원래대로 지불",
+            "goto_coin_choice_id": "C1"
+          }
+        ],
+        "on_no_affordable_coin": "COIN_SHORTAGE"
+      },
+      "dialogue": []
+    },
+    {
+      "id": "C2",
+      "text": "미니게임",
+      "dialogue": [
+        {
+          "speaker_id": "NPC-04",
+          "text": "그럼 동전으로 승부를 보죠. 앞면인지 뒷면인지 맞히면 통행 대가는 없어요."
+        }
+      ],
+      "mini_game": {
+        "id": "MAIN-03_COIN_TOSS",
+        "type": "gambling",
+        "implementation": "coin_toss",
+        "rules_ref": "00_implementation_rules.json#minigames.gambling",
+        "bet_options": [
+          {
+            "id": "HEADS",
+            "text": "앞면"
+          },
+          {
+            "id": "TAILS",
+            "text": "뒷면"
+          }
+        ],
+        "win_probability": 0.5,
+        "no_additional_coin_cost": true,
+        "on_failure": "return_to_four_choices",
+        "success": {
+          "dialogue": [
+            {
+              "speaker_id": "NPC-04",
+              "text": "맞혔네요. 제가 졌어요. 약속한 대로 이번 대가는 받지 않겠어요."
+            }
+          ],
+          "result": {
+            "stats": {},
+            "resolution": "won_minigame",
+            "retry": false,
+            "main_progress": true,
+            "access": true
+          }
+        },
+        "failure": {
+          "dialogue": [
+            {
+              "speaker_id": "NPC-04",
+              "text": "이번엔 틀렸네요. 다시 내기하거나 다른 방법을 선택하세요."
+            }
+          ],
+          "result": {
+            "stats": {},
+            "retry": true,
+            "main_progress": false,
+            "access": false
+          }
+        }
+      }
+    },
+    {
+      "id": "C3",
+      "text": "요구사항 들어주기",
+      "dialogue": [
+        {
+          "speaker_id": "NPC-04",
+          "text": "한 톨이라도 잘못 세면 누군가 굶는 거야."
+        }
+      ],
+      "requirement": {
+        "type": "stat_probability",
+        "task": "빈 통과 남은 곡식을 세어 배급표를 만들어 줘.",
+        "required_stats": {
+          "primary": "intelligence",
+          "secondary": "speed"
+        },
+        "check": {
+          "rules_ref": "00_implementation_rules.json#requirement_probability",
+          "difficulty": 3,
+          "read_current_stats_at_attempt": true,
+          "roll_once_per_attempt": true
+        },
+        "duration_seconds": 41,
+        "collector_continues": true,
+        "stat_growth_paused": true,
+        "success": {
+          "dialogue": [
+            {
+              "speaker_id": "NPC-04",
+              "text": "좋아, 오늘은 누구도 줄 끝에서 빈 그릇을 들진 않겠네."
+            }
+          ],
+          "result": {
+            "stats": {
+              "strength": -2,
+              "speed": -1,
+              "intelligence": 1,
+              "charm": 1
+            },
+            "main_progress": true,
+            "access": true,
+            "resolution": "worked"
+          }
+        },
+        "failure": {
+          "dialogue": [
+            {
+              "speaker_id": "NPC-04",
+              "text": "계산이 맞지 않아. 내가 다시 확인해야겠어."
+            }
+          ],
+          "result": {
+            "stats": {
+              "strength": -3,
+              "speed": -1,
+              "charm": -1
+            },
+            "main_progress": false,
+            "access": false,
+            "retry": true
+          }
+        },
+        "story_prompt": "외상 기록을 지워 주는 게 도움일까?",
+        "npc_advice_on_success": [
+          {
+            "speaker_id": "NPC-04",
+            "text": "그게 낫겠네. 빚을 지운 척하면 내일은 더 큰 빚이 되니까."
+          }
+        ],
+        "npc_advice_on_failure": [
+          {
+            "speaker_id": "NPC-04",
+            "text": "좋은 마음만으론 솥이 안 끓어."
+          }
+        ]
+      }
+    },
+    {
+      "id": "C4",
+      "text": "샛길로 가기",
+      "shortcut": {
+        "type": "log_only",
+        "enabled": false,
+        "log_level": "info",
+        "log_event": "SIDE_PATH_SELECTED_NOT_IMPLEMENTED",
+        "log_message": "MAIN-03: 샛길 선택됨. 아직 이동 구현 없음. 원래 선택지로 복귀.",
+        "movement": false,
+        "scene_transition": false,
+        "unlock": false,
+        "emit_npc_dialogue": false,
+        "return_to_choice_id": "ROOT_CHOICES"
+      },
+      "result": {
+        "stats": {},
+        "access": false,
+        "retry": true,
+        "main_progress": false
+      }
+    }
+  ],
+  "pet_on_complete": {
+    "paid": "MAIN-03: 낯선 이가 코인으로 약속을 이행했다. 외상 장부의 마지막 줄에 관한 판단이 남아 있다.",
+    "worked": "MAIN-03: 요구사항을 능력치 판정으로 완료했다는 소식을 펫이 전했다.",
+    "reasoned": "MAIN-03: 낯선 이가 위험과 책임의 기준을 따져 답했다. 외상 장부의 마지막 줄의 기록을 검토해 달라.",
+    "won_minigame": "MAIN-03: 코인 대신 미니게임에서 이겨 통행 대가를 면제받았다는 소식을 펫이 전했다.",
+    "persuaded": "MAIN-03: 낯선 사람이 판단을 제시했고, 현장 담당자가 이를 받아들였다."
+  },
+  "stat_change_policy": "clamp_at_zero",
+  "branches": {
+    "COIN_SHORTAGE": {
+      "trigger": {
+        "selected_coin_below_payment_amount": true
+      },
+      "dialogue": [
+        {
+          "speaker_id": "NPC-04",
+          "text": "지금 코인이 없다고요? 그렇다면 다른 방법을 찾아보죠."
+        },
+        {
+          "speaker_id": "NPC-04",
+          "text": "사람들에게 피해를 남기지만 않으면 됩니다."
+        }
+      ],
+      "goto_choice_id": "ROOT_CHOICES",
+      "available_choices": [
+        "C1",
+        "C2",
+        "C3",
+        "C4"
+      ],
+      "note": "현재 통행세를 낼 수 없으면 미니게임, 요구사항, 샛길 로그를 선택할 수 있음"
+    }
+  },
+  "choice_order": [
+    "C1",
+    "C2",
+    "C3",
+    "C4"
+  ],
+  "choice_policy_ref": "00_implementation_rules.json#choice_policy"
+}

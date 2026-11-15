@@ -8,6 +8,10 @@ public sealed class ChapterDayCycle
     public float daylightSky = .34f, nightSky = .12f, nightLightMultiplier = .28f;
 
     public float DayLength => daySeconds + duskSeconds + nightSeconds + dawnSeconds;
+    public float ElapsedDays(float elapsedSeconds) => elapsedSeconds / DayLength;
+    public int DayIndex(float elapsedSeconds) => Mathf.FloorToInt(ElapsedDays(elapsedSeconds));
+    public bool IsAfterSunset(float elapsedSeconds) => Mathf.Repeat(elapsedSeconds, DayLength) >= daySeconds + duskSeconds;
+    public float NextSunrise(float elapsedSeconds) => (DayIndex(elapsedSeconds) + 1) * DayLength;
     public bool IsValid => FinitePositive(daySeconds) && FinitePositive(duskSeconds) &&
         FinitePositive(nightSeconds) && FinitePositive(dawnSeconds) && float.IsFinite(DayLength) &&
         InRange(daylightSky) && InRange(nightSky) && InRange(nightLightMultiplier);

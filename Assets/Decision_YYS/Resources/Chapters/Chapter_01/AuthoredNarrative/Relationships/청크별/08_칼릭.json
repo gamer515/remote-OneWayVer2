@@ -1,0 +1,234 @@
+{
+  "chunk_id": "CHUNK-08",
+  "order": 8,
+  "chunk_type": "main",
+  "main_npc_id": "NPC-08",
+  "main_npc_name": "칼릭",
+  "main_npc_fixed_location_id": "LOC-09",
+  "main_npc_fixed_location_name": "밀수 장터",
+  "story_topic_only": "불법 코인이 생존을 돕는 동시에 사람을 착취하는 문제",
+  "location_ids": [
+    "LOC-09",
+    "LOC-08"
+  ],
+  "locations": [
+    {
+      "location_id": "LOC-09",
+      "name": "밀수 장터",
+      "fixed_npc_ids": [
+        "NPC-08",
+        "NPC-26",
+        "NPC-27"
+      ],
+      "fixed_npc_names": [
+        "칼릭",
+        "세온",
+        "우르"
+      ]
+    },
+    {
+      "location_id": "LOC-08",
+      "name": "막장 패거리",
+      "fixed_npc_ids": [
+        "NPC-24",
+        "NPC-25"
+      ],
+      "fixed_npc_names": [
+        "카본",
+        "드빈"
+      ]
+    }
+  ],
+  "fixed_npcs": [
+    {
+      "npc_id": "NPC-08",
+      "name": "칼릭",
+      "role": "main",
+      "origin": "existing",
+      "social_class": "관리 특권층",
+      "stance": "기회주의파",
+      "fixed_chunk": "CHUNK-08",
+      "fixed_location_id": "LOC-09",
+      "fixed_location_name": "밀수 장터",
+      "movement": "none",
+      "character_traits": [
+        "계산적",
+        "설득력",
+        "기회주의"
+      ],
+      "personality": "계산적이고 세련되며 설득력이 뛰어나다. 타인의 약점을 잘 이용한다.",
+      "speech_style": "공손하고 여유 있는 존댓말. 모든 상황을 가치·계산·교환의 언어로 설명.",
+      "conversation_topic": "비공식 코인 거래의 이익과 착취",
+      "pet_links": [
+        {
+          "npc_id": "NPC-01",
+          "name": "헤른",
+          "relation_hint": "운영을 위한 공식 협력자."
+        },
+        {
+          "npc_id": "NPC-09",
+          "name": "제크",
+          "relation_hint": "비공식 거래 공범."
+        },
+        {
+          "npc_id": "NPC-14",
+          "name": "가렌",
+          "relation_hint": "거래를 방해하는 징수원."
+        },
+        {
+          "npc_id": "NPC-04",
+          "name": "벨라",
+          "relation_hint": "자금 대출을 받은 채무자."
+        }
+      ]
+    },
+    {
+      "npc_id": "NPC-26",
+      "name": "세온",
+      "role": "supporting",
+      "origin": "new",
+      "social_class": "생활 노동층",
+      "stance": "기회주의파",
+      "fixed_chunk": "CHUNK-08",
+      "fixed_location_id": "LOC-09",
+      "fixed_location_name": "밀수 장터",
+      "movement": "none",
+      "character_traits": [
+        "유쾌함",
+        "계산적",
+        "능청스러움"
+      ],
+      "personality": "유쾌하고 붙임성이 좋지만 계산적이다.",
+      "speech_style": "친근한 상인 말투. 칭찬과 농담으로 경계를 풀고 핵심 가격은 늦게 밝힘.",
+      "conversation_topic": "물자 부족을 이용한 밀수 거래와 의존 관계",
+      "pet_links": [
+        {
+          "npc_id": "NPC-08",
+          "name": "칼릭",
+          "relation_hint": "자금을 대는 배후."
+        },
+        {
+          "npc_id": "NPC-09",
+          "name": "제크",
+          "relation_hint": "보호 대가를 지불하고 약점을 공유하는 상대."
+        },
+        {
+          "npc_id": "NPC-27",
+          "name": "우르",
+          "relation_hint": "위험한 심부름을 시키는 고용인."
+        }
+      ]
+    },
+    {
+      "npc_id": "NPC-27",
+      "name": "우르",
+      "role": "supporting",
+      "origin": "new",
+      "social_class": "채집 생계층",
+      "stance": "생존 우선·중립",
+      "fixed_chunk": "CHUNK-08",
+      "fixed_location_id": "LOC-09",
+      "fixed_location_name": "밀수 장터",
+      "movement": "none",
+      "character_traits": [
+        "재치",
+        "불안",
+        "눈치"
+      ],
+      "personality": "눈치가 빠르고 재치 있지만 쉽게 불안해한다.",
+      "speech_style": "빠르고 눈치 보는 말투. 주변 반응에 따라 말끝을 바꿈.",
+      "conversation_topic": "다음 영역으로 떠나기 위한 코인과 위험한 심부름",
+      "pet_links": [
+        {
+          "npc_id": "NPC-26",
+          "name": "세온",
+          "relation_hint": "위험한 심부름을 시키는 고용주."
+        },
+        {
+          "npc_id": "NPC-07",
+          "name": "틸",
+          "relation_hint": "동경하지만 경쟁심을 느끼는 운반꾼."
+        },
+        {
+          "npc_id": "NPC-09",
+          "name": "제크",
+          "relation_hint": "두려워하는 징수원."
+        }
+      ]
+    },
+    {
+      "npc_id": "NPC-24",
+      "name": "카본",
+      "role": "supporting",
+      "origin": "new",
+      "social_class": "최하층 채굴민",
+      "stance": "저항·자치파",
+      "fixed_chunk": "CHUNK-08",
+      "fixed_location_id": "LOC-08",
+      "fixed_location_name": "막장 패거리",
+      "movement": "none",
+      "character_traits": [
+        "공격성",
+        "카리스마",
+        "자존심"
+      ],
+      "personality": "카리스마가 강하고 공격적이며 자존심이 높다.",
+      "speech_style": "거칠고 강압적인 반말. 짧은 단언과 명령형 표현을 선호.",
+      "conversation_topic": "약자를 위한 저항과 자신이 징수하는 통행료의 모순",
+      "pet_links": [
+        {
+          "npc_id": "NPC-02",
+          "name": "브룩",
+          "relation_hint": "존경했으나 온건함에 실망한 선배."
+        },
+        {
+          "npc_id": "NPC-14",
+          "name": "가렌",
+          "relation_hint": "지속적으로 충돌하는 징수원."
+        },
+        {
+          "npc_id": "NPC-25",
+          "name": "드빈",
+          "relation_hint": "오른팔처럼 여기는 동료."
+        }
+      ]
+    },
+    {
+      "npc_id": "NPC-25",
+      "name": "드빈",
+      "role": "supporting",
+      "origin": "new",
+      "social_class": "최하층 채굴민",
+      "stance": "저항·자치파",
+      "fixed_chunk": "CHUNK-08",
+      "fixed_location_id": "LOC-08",
+      "fixed_location_name": "막장 패거리",
+      "movement": "none",
+      "character_traits": [
+        "충직함",
+        "과묵함",
+        "온순함"
+      ],
+      "personality": "덩치가 크고 충직하지만 마음이 여리다.",
+      "speech_style": "묵직하고 말수가 적은 반말. 짧게 답하며 충돌 상황에서 더 조용해짐.",
+      "conversation_topic": "은혜에 대한 충성심과 폭력에 대한 거부감",
+      "pet_links": [
+        {
+          "npc_id": "NPC-24",
+          "name": "카본",
+          "relation_hint": "은인인 우두머리."
+        },
+        {
+          "npc_id": "NPC-04",
+          "name": "벨라",
+          "relation_hint": "가족의 외상 빚이 남은 식당 주인."
+        }
+      ]
+    }
+  ],
+  "rules": {
+    "npc_movement": "none",
+    "within_chunk_coordinates": "runtime_random",
+    "pet_remote_dialogue": true
+  }
+}

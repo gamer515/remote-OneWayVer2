@@ -1,0 +1,850 @@
+{
+  "story_id": "SIDE-25",
+  "title": "막지 못한 주먹",
+  "opening": [
+    {
+      "speaker_id": "NPC-25",
+      "text": "나 혼자 막지 않게 거들어 주겠다는 거군."
+    },
+    {
+      "speaker_id": "NPC-25",
+      "text": "그렇다면 카본의 먼저 나가는 주먹부터 같이 풀어 볼래?"
+    }
+  ],
+  "choices": [
+    {
+      "id": "C1",
+      "text": "통행세 내기",
+      "dialogue": [
+        {
+          "speaker_id": "NPC-25",
+          "text": "울타리 끈값이 코인 2개야. 빚을 늘리기 싫어서."
+        }
+      ],
+      "coin_options": [
+        {
+          "id": "strength",
+          "text": "힘 지불",
+          "dialogue": [
+            {
+              "speaker_id": "NPC-25",
+              "text": "힘까지 보태 주겠다고? 카본의 먼저 나가는 주먹 때문에 난처했는데, 이 호의는 기억할게."
+            }
+          ],
+          "condition": {
+            "coin_at_least": {
+              "strength": 2
+            }
+          },
+          "result": {
+            "stats": {
+              "strength": -2
+            },
+            "reward_flags": [
+              "SIDE-25_TRADE_V1"
+            ],
+            "side_completed": true
+          },
+          "on_insufficient_coins": "COIN_SHORTAGE",
+          "hover": {
+            "trigger": "mouse_hover",
+            "hide_on": "mouse_exit",
+            "calculate_from_current_stats": true,
+            "source": "payment_affordability_for_strength",
+            "display": "probability_band",
+            "bands": [
+              {
+                "min_inclusive": 0,
+                "max_exclusive": 25,
+                "text": "가능성 없을 것 같아"
+              },
+              {
+                "min_inclusive": 25,
+                "max_exclusive": 50,
+                "text": "괜찮은데"
+              },
+              {
+                "min_inclusive": 50,
+                "max_exclusive": 75,
+                "text": "충분하군"
+              },
+              {
+                "min_inclusive": 75,
+                "max_inclusive": 100,
+                "text": "쌉가능"
+              }
+            ]
+          }
+        },
+        {
+          "id": "speed",
+          "text": "속도 지불",
+          "dialogue": [
+            {
+              "speaker_id": "NPC-25",
+              "text": "속도까지 보태 주겠다고? 카본의 먼저 나가는 주먹 때문에 난처했는데, 이 호의는 기억할게."
+            }
+          ],
+          "condition": {
+            "coin_at_least": {
+              "speed": 2
+            }
+          },
+          "result": {
+            "stats": {
+              "speed": -2
+            },
+            "reward_flags": [
+              "SIDE-25_TRADE_V1"
+            ],
+            "side_completed": true
+          },
+          "on_insufficient_coins": "COIN_SHORTAGE",
+          "hover": {
+            "trigger": "mouse_hover",
+            "hide_on": "mouse_exit",
+            "calculate_from_current_stats": true,
+            "source": "payment_affordability_for_speed",
+            "display": "probability_band",
+            "bands": [
+              {
+                "min_inclusive": 0,
+                "max_exclusive": 25,
+                "text": "가능성 없을 것 같아"
+              },
+              {
+                "min_inclusive": 25,
+                "max_exclusive": 50,
+                "text": "괜찮은데"
+              },
+              {
+                "min_inclusive": 50,
+                "max_exclusive": 75,
+                "text": "충분하군"
+              },
+              {
+                "min_inclusive": 75,
+                "max_inclusive": 100,
+                "text": "쌉가능"
+              }
+            ]
+          }
+        },
+        {
+          "id": "intelligence",
+          "text": "지능 지불",
+          "dialogue": [
+            {
+              "speaker_id": "NPC-25",
+              "text": "지능까지 보태 주겠다고? 카본의 먼저 나가는 주먹 때문에 난처했는데, 이 호의는 기억할게."
+            }
+          ],
+          "condition": {
+            "coin_at_least": {
+              "intelligence": 2
+            }
+          },
+          "result": {
+            "stats": {
+              "intelligence": -2
+            },
+            "reward_flags": [
+              "SIDE-25_TRADE_V1"
+            ],
+            "side_completed": true
+          },
+          "on_insufficient_coins": "COIN_SHORTAGE",
+          "hover": {
+            "trigger": "mouse_hover",
+            "hide_on": "mouse_exit",
+            "calculate_from_current_stats": true,
+            "source": "payment_affordability_for_intelligence",
+            "display": "probability_band",
+            "bands": [
+              {
+                "min_inclusive": 0,
+                "max_exclusive": 25,
+                "text": "가능성 없을 것 같아"
+              },
+              {
+                "min_inclusive": 25,
+                "max_exclusive": 50,
+                "text": "괜찮은데"
+              },
+              {
+                "min_inclusive": 50,
+                "max_exclusive": 75,
+                "text": "충분하군"
+              },
+              {
+                "min_inclusive": 75,
+                "max_inclusive": 100,
+                "text": "쌉가능"
+              }
+            ]
+          }
+        },
+        {
+          "id": "charm",
+          "text": "매력 지불",
+          "dialogue": [
+            {
+              "speaker_id": "NPC-25",
+              "text": "매력까지 보태 주겠다고? 카본의 먼저 나가는 주먹 때문에 난처했는데, 이 호의는 기억할게."
+            }
+          ],
+          "condition": {
+            "coin_at_least": {
+              "charm": 2
+            }
+          },
+          "result": {
+            "stats": {
+              "charm": -2
+            },
+            "reward_flags": [
+              "SIDE-25_TRADE_V1"
+            ],
+            "side_completed": true
+          },
+          "on_insufficient_coins": "COIN_SHORTAGE",
+          "hover": {
+            "trigger": "mouse_hover",
+            "hide_on": "mouse_exit",
+            "calculate_from_current_stats": true,
+            "source": "payment_affordability_for_charm",
+            "display": "probability_band",
+            "bands": [
+              {
+                "min_inclusive": 0,
+                "max_exclusive": 25,
+                "text": "가능성 없을 것 같아"
+              },
+              {
+                "min_inclusive": 25,
+                "max_exclusive": 50,
+                "text": "괜찮은데"
+              },
+              {
+                "min_inclusive": 50,
+                "max_exclusive": 75,
+                "text": "충분하군"
+              },
+              {
+                "min_inclusive": 75,
+                "max_inclusive": 100,
+                "text": "쌉가능"
+              }
+            ]
+          }
+        }
+      ],
+      "insufficient_coins_branch_id": "COIN_SHORTAGE",
+      "coin_shortage_trigger": "balance_of_selected_coin_below_required",
+      "price": {
+        "base_fee": 2,
+        "negotiated_fee": 1,
+        "accepted_coin_ids": [
+          "strength",
+          "speed",
+          "intelligence",
+          "charm"
+        ]
+      },
+      "negotiation": {
+        "id": "NEGOTIATE",
+        "text": "가격 협상",
+        "available_before_coin_selection": true,
+        "once_per_encounter": true,
+        "discounted_fee": 1,
+        "routes": [
+          {
+            "id": "N_INT",
+            "text": "근거 제시",
+            "condition": {
+              "intelligence_at_least": 3
+            },
+            "player_dialogue": "근거 제시",
+            "success": {
+              "dialogue": [
+                {
+                  "speaker_id": "NPC-25",
+                  "text": "나 혼자 막지 않게 거들어 주겠다는 거군. 이번만큼은 네 사정을 봐서 약속한 할인으로 받겠어."
+                }
+              ],
+              "payment_override": {
+                "amount": 1,
+                "apply_to": [
+                  "coin_at_least",
+                  "negative_stat_delta"
+                ],
+                "scope": "selected_coin_only"
+              },
+              "goto_coin_choice_id": "C2",
+              "set_flag": "NEGOTIATED_FEE"
+            },
+            "failure": {
+              "dialogue": [
+                {
+                  "speaker_id": "NPC-25",
+                  "text": "나 혼자 막지 않게 거들어 주겠다는 거군. 그래도 정해진 비용을 전부 면제할 순 없어."
+                }
+              ],
+              "goto_coin_choice_id": "C2",
+              "payment_fee": 2
+            },
+            "hover": {
+              "trigger": "mouse_hover",
+              "hide_on": "mouse_exit",
+              "calculate_from_current_stats": true,
+              "source": "original_negotiation_condition_or_rule",
+              "display": "probability_band",
+              "bands": [
+                {
+                  "min_inclusive": 0,
+                  "max_exclusive": 25,
+                  "text": "가능성 없을 것 같아"
+                },
+                {
+                  "min_inclusive": 25,
+                  "max_exclusive": 50,
+                  "text": "괜찮은데"
+                },
+                {
+                  "min_inclusive": 50,
+                  "max_exclusive": 75,
+                  "text": "충분하군"
+                },
+                {
+                  "min_inclusive": 75,
+                  "max_inclusive": 100,
+                  "text": "쌉가능"
+                }
+              ],
+              "when_unavailable": "산출 불가 (확률 규칙 미정)"
+            }
+          },
+          {
+            "id": "N_CHARM",
+            "text": "사정 호소",
+            "condition": {
+              "charm_at_least": 3
+            },
+            "player_dialogue": "사정 호소",
+            "success": {
+              "dialogue": [
+                {
+                  "speaker_id": "NPC-25",
+                  "text": "나 혼자 막지 않게 거들어 주겠다는 거군. 이번만큼은 네 사정을 봐서 약속한 할인으로 받겠어."
+                }
+              ],
+              "payment_override": {
+                "amount": 1,
+                "apply_to": [
+                  "coin_at_least",
+                  "negative_stat_delta"
+                ],
+                "scope": "selected_coin_only"
+              },
+              "goto_coin_choice_id": "C2",
+              "set_flag": "NEGOTIATED_FEE"
+            },
+            "failure": {
+              "dialogue": [
+                {
+                  "speaker_id": "NPC-25",
+                  "text": "나 혼자 막지 않게 거들어 주겠다는 거군. 그래도 정해진 비용을 전부 면제할 순 없어."
+                }
+              ],
+              "goto_coin_choice_id": "C2",
+              "payment_fee": 2
+            },
+            "hover": {
+              "trigger": "mouse_hover",
+              "hide_on": "mouse_exit",
+              "calculate_from_current_stats": true,
+              "source": "original_negotiation_condition_or_rule",
+              "display": "probability_band",
+              "bands": [
+                {
+                  "min_inclusive": 0,
+                  "max_exclusive": 25,
+                  "text": "가능성 없을 것 같아"
+                },
+                {
+                  "min_inclusive": 25,
+                  "max_exclusive": 50,
+                  "text": "괜찮은데"
+                },
+                {
+                  "min_inclusive": 50,
+                  "max_exclusive": 75,
+                  "text": "충분하군"
+                },
+                {
+                  "min_inclusive": 75,
+                  "max_inclusive": 100,
+                  "text": "쌉가능"
+                }
+              ],
+              "when_unavailable": "산출 불가 (확률 규칙 미정)"
+            }
+          },
+          {
+            "id": "N_CANCEL",
+            "text": "원래대로 지불",
+            "goto_coin_choice_id": "C2",
+            "hover": {
+              "trigger": "mouse_hover",
+              "hide_on": "mouse_exit",
+              "calculate_from_current_stats": true,
+              "source": "original_negotiation_condition_or_rule",
+              "display": "probability_band",
+              "bands": [
+                {
+                  "min_inclusive": 0,
+                  "max_exclusive": 25,
+                  "text": "가능성 없을 것 같아"
+                },
+                {
+                  "min_inclusive": 25,
+                  "max_exclusive": 50,
+                  "text": "괜찮은데"
+                },
+                {
+                  "min_inclusive": 50,
+                  "max_exclusive": 75,
+                  "text": "충분하군"
+                },
+                {
+                  "min_inclusive": 75,
+                  "max_inclusive": 100,
+                  "text": "쌉가능"
+                }
+              ],
+              "when_unavailable": "산출 불가 (확률 규칙 미정)"
+            }
+          },
+          {
+            "id": "N_CHARM_EMPATHY",
+            "text": "공감",
+            "condition": {
+              "charm_at_least": 3
+            },
+            "player_dialogue": "공감",
+            "success": {
+              "dialogue": [
+                {
+                  "speaker_id": "NPC-25",
+                  "text": "나 혼자 막지 않게 거들어 주겠다는 거군. 이렇게 내 이야기를 들어준다면 약속한 할인 정도는 해 줄 수 있지."
+                }
+              ],
+              "payment_override": {
+                "amount": 1,
+                "apply_to": [
+                  "coin_at_least",
+                  "negative_stat_delta"
+                ],
+                "scope": "selected_coin_only"
+              },
+              "goto_coin_choice_id": "C2",
+              "set_flag": "NEGOTIATED_FEE"
+            },
+            "failure": {
+              "dialogue": [
+                {
+                  "speaker_id": "NPC-25",
+                  "text": "나 혼자 막지 않게 거들어 주겠다는 거군. 지금은 물러설 수 없는 조건도 있다는 걸 이해해 줘."
+                }
+              ],
+              "goto_coin_choice_id": "C2",
+              "payment_fee": 2
+            },
+            "hover": {
+              "trigger": "mouse_hover",
+              "hide_on": "mouse_exit",
+              "calculate_from_current_stats": true,
+              "source": "original_negotiation_condition_or_rule",
+              "display": "probability_band",
+              "bands": [
+                {
+                  "min_inclusive": 0,
+                  "max_exclusive": 25,
+                  "text": "가능성 없을 것 같아"
+                },
+                {
+                  "min_inclusive": 25,
+                  "max_exclusive": 50,
+                  "text": "괜찮은데"
+                },
+                {
+                  "min_inclusive": 50,
+                  "max_exclusive": 75,
+                  "text": "충분하군"
+                },
+                {
+                  "min_inclusive": 75,
+                  "max_inclusive": 100,
+                  "text": "쌉가능"
+                }
+              ],
+              "when_unavailable": "산출 불가 (확률 규칙 미정)"
+            }
+          },
+          {
+            "id": "N_CHARM_HELP",
+            "text": "도움 제안",
+            "condition": {
+              "charm_at_least": 3
+            },
+            "player_dialogue": "도움 제안",
+            "dialogue": [
+              {
+                "speaker_id": "NPC-25",
+                "text": "카본의 먼저 나가는 주먹 때문에 막막했어. 그럼 부서진 울타리 수리하기"
+              }
+            ],
+            "goto_choice_id": "C3",
+            "hover": {
+              "trigger": "mouse_hover",
+              "hide_on": "mouse_exit",
+              "calculate_from_current_stats": true,
+              "source": "original_negotiation_condition_or_rule",
+              "display": "probability_band",
+              "bands": [
+                {
+                  "min_inclusive": 0,
+                  "max_exclusive": 25,
+                  "text": "가능성 없을 것 같아"
+                },
+                {
+                  "min_inclusive": 25,
+                  "max_exclusive": 50,
+                  "text": "괜찮은데"
+                },
+                {
+                  "min_inclusive": 50,
+                  "max_exclusive": 75,
+                  "text": "충분하군"
+                },
+                {
+                  "min_inclusive": 75,
+                  "max_inclusive": 100,
+                  "text": "쌉가능"
+                }
+              ],
+              "when_unavailable": "산출 불가 (확률 규칙 미정)"
+            }
+          }
+        ],
+        "on_no_affordable_coin": "COIN_SHORTAGE"
+      },
+      "hover": {
+        "trigger": "mouse_hover",
+        "hide_on": "mouse_exit",
+        "calculate_from_current_stats": true,
+        "source": "selected_coin_balance_and_actual_fee",
+        "display": "probability_band",
+        "bands": [
+          {
+            "min_inclusive": 0,
+            "max_exclusive": 25,
+            "text": "가능성 없을 것 같아"
+          },
+          {
+            "min_inclusive": 25,
+            "max_exclusive": 50,
+            "text": "괜찮은데"
+          },
+          {
+            "min_inclusive": 50,
+            "max_exclusive": 75,
+            "text": "충분하군"
+          },
+          {
+            "min_inclusive": 75,
+            "max_inclusive": 100,
+            "text": "쌉가능"
+          }
+        ]
+      }
+    },
+    {
+      "id": "C2",
+      "text": "미니게임",
+      "dialogue": [
+        {
+          "speaker_id": "NPC-25",
+          "text": "자네라면 약속을 지키겠지. 승부로 결정하되 카본의 먼저 나가는 주먹에 대한 마음까지 걸지는 말자."
+        }
+      ],
+      "mini_game": {
+        "id": "SIDE-25_DUEL",
+        "type": "duel",
+        "implementation": "existing_duel_system",
+        "rules_ref": "00_implementation_rules.json#minigames.duel",
+        "winner_condition": "player_wins_existing_duel",
+        "loser_condition": "player_loses_existing_duel",
+        "no_additional_coin_cost": true,
+        "on_failure": "return_to_four_choices",
+        "success": {
+          "dialogue": [
+            {
+              "speaker_id": "NPC-25",
+              "text": "훌륭한 승부였어. 면제는 약속대로고, 다음에 만나도 반갑겠군."
+            }
+          ],
+          "result": {
+            "stats": {},
+            "resolution": "won_minigame",
+            "retry": false,
+            "side_completed": true,
+            "reward_flags": [
+              "SIDE-25_MINIGAME_WON"
+            ]
+          }
+        },
+        "failure": {
+          "dialogue": [
+            {
+              "speaker_id": "NPC-25",
+              "text": "아쉽지만 결과는 결과야. 그래도 나를 도울 마음이라면 다른 길이 있어."
+            }
+          ],
+          "result": {
+            "stats": {},
+            "retry": true,
+            "side_completed": false
+          }
+        }
+      },
+      "hover": {
+        "trigger": "mouse_hover",
+        "hide_on": "mouse_exit",
+        "calculate_from_current_stats": true,
+        "source": "existing_duel_system_win_probability_if_available",
+        "when_unavailable": "산출 불가 (승률 API 미제공)",
+        "display": "probability_band",
+        "bands": [
+          {
+            "min_inclusive": 0,
+            "max_exclusive": 25,
+            "text": "가능성 없을 것 같아"
+          },
+          {
+            "min_inclusive": 25,
+            "max_exclusive": 50,
+            "text": "괜찮은데"
+          },
+          {
+            "min_inclusive": 50,
+            "max_exclusive": 75,
+            "text": "충분하군"
+          },
+          {
+            "min_inclusive": 75,
+            "max_inclusive": 100,
+            "text": "쌉가능"
+          }
+        ]
+      }
+    },
+    {
+      "id": "C3",
+      "text": "요구사항 들어주기",
+      "dialogue": [],
+      "requirement": {
+        "type": "stat_probability",
+        "task": "부서진 울타리 수리하기",
+        "required_stats": {
+          "primary": "strength",
+          "secondary": "speed"
+        },
+        "check": {
+          "rules_ref": "00_implementation_rules.json#requirement_probability",
+          "difficulty": 5,
+          "read_current_stats_at_attempt": true,
+          "roll_once_per_attempt": true
+        },
+        "duration_seconds": 25,
+        "collector_continues": true,
+        "stat_growth_paused": true,
+        "success": {
+          "dialogue": [
+            {
+              "speaker_id": "NPC-25",
+              "text": "끝까지 거들어 주다니 고마워. 카본의 먼저 나가는 주먹을 혼자 감당하지 않아도 되겠군."
+            }
+          ],
+          "result": {
+            "stats": {
+              "strength": -2,
+              "speed": -1,
+              "intelligence": 1,
+              "charm": 1
+            },
+            "side_completed": true,
+            "reward_flags": [
+              "SIDE-25_AID_V1"
+            ]
+          }
+        },
+        "failure": {
+          "dialogue": [
+            {
+              "speaker_id": "NPC-25",
+              "text": "카본의 먼저 나가는 주먹은 뜻대로 되진 않았네. 그래도 책임지고 도우려 한 마음까지 잊진 않겠어."
+            }
+          ],
+          "result": {
+            "stats": {
+              "strength": -2,
+              "speed": -1,
+              "charm": -1
+            },
+            "side_completed": false,
+            "retry": true
+          }
+        },
+        "story_prompt_dialogue": [
+          {
+            "speaker_id": "NPC-25",
+            "text": "카본을 말릴 수 있나요?"
+          }
+        ],
+        "npc_advice_on_success": [
+          {
+            "speaker_id": "NPC-25",
+            "text": "...말은 해 보겠다."
+          }
+        ],
+        "npc_advice_on_failure": [
+          {
+            "speaker_id": "NPC-25",
+            "text": "의리도 한계가 있어."
+          }
+        ]
+      },
+      "hover": {
+        "trigger": "mouse_hover",
+        "hide_on": "mouse_exit",
+        "calculate_from_current_stats": true,
+        "source": "00_implementation_rules.json#requirement_probability.probability_formula",
+        "calculate": "clamp(0.50 + 0.10 * (0.75 * current_primary + 0.25 * current_secondary - difficulty), 0.10, 0.90)",
+        "recalculate_on_attempt": true,
+        "display": "probability_band",
+        "bands": [
+          {
+            "min_inclusive": 0,
+            "max_exclusive": 25,
+            "text": "가능성 없을 것 같아"
+          },
+          {
+            "min_inclusive": 25,
+            "max_exclusive": 50,
+            "text": "괜찮은데"
+          },
+          {
+            "min_inclusive": 50,
+            "max_exclusive": 75,
+            "text": "충분하군"
+          },
+          {
+            "min_inclusive": 75,
+            "max_inclusive": 100,
+            "text": "쌉가능"
+          }
+        ]
+      }
+    },
+    {
+      "id": "C4",
+      "text": "샛길로 가기",
+      "shortcut": {
+        "type": "log_only",
+        "enabled": false,
+        "log_level": "info",
+        "log_event": "SIDE_PATH_SELECTED_NOT_IMPLEMENTED",
+        "log_message": "SIDE-25: 샛길 선택됨. 아직 이동 구현 없음. 원래 선택지로 복귀.",
+        "movement": false,
+        "scene_transition": false,
+        "unlock": false,
+        "emit_npc_dialogue": false,
+        "return_to_choice_id": "ROOT_CHOICES"
+      },
+      "result": {
+        "stats": {},
+        "access": false,
+        "retry": true,
+        "side_completed": false
+      },
+      "hover": {
+        "trigger": "mouse_hover",
+        "hide_on": "mouse_exit",
+        "calculate_from_current_stats": true,
+        "source": "00_implementation_rules.json#shortcut",
+        "when_unavailable": "미구현 — 실제 샛길 이동 없음",
+        "display": "미구현",
+        "bands": [
+          {
+            "min_inclusive": 0,
+            "max_exclusive": 25,
+            "text": "가능성 없을 것 같아"
+          },
+          {
+            "min_inclusive": 25,
+            "max_exclusive": 50,
+            "text": "괜찮은데"
+          },
+          {
+            "min_inclusive": 50,
+            "max_exclusive": 75,
+            "text": "충분하군"
+          },
+          {
+            "min_inclusive": 75,
+            "max_inclusive": 100,
+            "text": "쌉가능"
+          }
+        ]
+      }
+    }
+  ],
+  "pet_on_help": {
+    "receiver_id": "NPC-24",
+    "text": "막지 못한 주먹: 낯선 이가 부서진 울타리 수리하기를 도와줬다."
+  },
+  "stat_change_policy": "clamp_at_zero",
+  "branches": {
+    "COIN_SHORTAGE": {
+      "trigger": {
+        "selected_coin_below_payment_amount": true
+      },
+      "dialogue": [
+        {
+          "speaker_id": "NPC-25",
+          "text": "코인이 부족하구나. 카본의 먼저 나가는 주먹을 돕겠다면 다른 방법을 같이 찾자."
+        },
+        {
+          "speaker_id": "NPC-25",
+          "text": "말은 필요 없어."
+        }
+      ],
+      "goto_choice_id": "ROOT_CHOICES",
+      "available_choices": [
+        "C1",
+        "C2",
+        "C3",
+        "C4"
+      ],
+      "note": "현재 통행세를 낼 수 없으면 미니게임, 요구사항, 샛길 로그를 선택할 수 있음"
+    }
+  },
+  "choice_order": [
+    "C1",
+    "C2",
+    "C3",
+    "C4"
+  ],
+  "choice_policy_ref": "00_implementation_rules.json#choice_policy"
+}

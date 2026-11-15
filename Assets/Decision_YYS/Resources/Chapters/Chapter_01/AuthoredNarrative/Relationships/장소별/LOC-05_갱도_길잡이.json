@@ -1,0 +1,82 @@
+{
+  "location_id": "LOC-05",
+  "name": "갱도 길잡이",
+  "origin": "existing",
+  "fixed_chunk": "CHUNK-10",
+  "place_position_rule": "청크 내부 위치는 랜덤. NPC는 배치된 장소에 고정",
+  "location_description": "길 안내와 경계 표식 해석을 담당한다. 오래된 안내 기록과 새로운 지도가 맞지 않는다.",
+  "fixed_npcs": [
+    {
+      "npc_id": "NPC-16",
+      "name": "라스크",
+      "role": "supporting",
+      "origin": "existing",
+      "social_class": "기록 보존층",
+      "stance": "진실 추구파",
+      "fixed_chunk": "CHUNK-10",
+      "fixed_location_id": "LOC-05",
+      "fixed_location_name": "갱도 길잡이",
+      "movement": "none",
+      "character_traits": [
+        "과묵함",
+        "의심",
+        "약자 보호"
+      ],
+      "personality": "과묵하고 의심이 많지만 약자에게 친절하다.",
+      "speech_style": "과묵하고 느릿한 말투. 오래된 표현과 자신이 본 광경을 근거로 말함.",
+      "conversation_topic": "현행 지도와 기억 속 표지의 불일치",
+      "pet_links": [
+        {
+          "npc_id": "NPC-11",
+          "name": "미라",
+          "relation_hint": "기록과 기억을 두고 다투는 친구."
+        },
+        {
+          "npc_id": "NPC-10",
+          "name": "루멘",
+          "relation_hint": "잘못된 지도 문제로 충돌."
+        },
+        {
+          "npc_id": "NPC-21",
+          "name": "로크",
+          "relation_hint": "자신의 기술을 배우는 젊은 길잡이."
+        }
+      ]
+    },
+    {
+      "npc_id": "NPC-21",
+      "name": "로크",
+      "role": "supporting",
+      "origin": "new",
+      "social_class": "생활 노동층",
+      "stance": "기회주의파",
+      "fixed_chunk": "CHUNK-10",
+      "fixed_location_id": "LOC-05",
+      "fixed_location_name": "갱도 길잡이",
+      "movement": "none",
+      "character_traits": [
+        "야심",
+        "친화력",
+        "허풍"
+      ],
+      "personality": "야심 차고 말재주가 좋다.",
+      "speech_style": "유쾌하고 자신만만한 말투. 친해지려는 농담과 약간의 허풍을 섞음.",
+      "conversation_topic": "안전한 길 안내와 출세 욕망의 충돌",
+      "pet_links": [
+        {
+          "npc_id": "NPC-16",
+          "name": "라스크",
+          "relation_hint": "가르침을 받지만 답답해하는 스승."
+        },
+        {
+          "npc_id": "NPC-09",
+          "name": "제크",
+          "relation_hint": "좋은 일을 얻으려 친해지는 징수원."
+        }
+      ]
+    }
+  ],
+  "main_npc_ids": [],
+  "pet_remote_conversation": true,
+  "notice": "이 장소 JSON에는 방문 NPC를 넣지 않음. 다른 NPC와의 관계는 PET 연결로만 표현"
+}

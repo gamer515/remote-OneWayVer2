@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-/// <summary>Patrols toward the player, then walks back to the departure point.</summary>
+/// <summary>Patrols from the far edge of a chunk and marches forward after turning.</summary>
 public sealed class MineCollectorProcession : MonoBehaviour
 {
     [Serializable] public struct Stop { public Transform entrance, exit; }
@@ -29,17 +29,17 @@ public sealed class MineCollectorProcession : MonoBehaviour
     private Transform[] members;
     private MineChapterProgress progress;
     private Vector3 origin;
-    private float chunkEnd, preparationZ;
+    private float chunkStart, chunkEnd, preparationZ;
     private float firstPassSpeed, firstPassSeconds, npcWaitMin, npcWaitMax;
     private int routeSeed;
-    private Vector3[][] npcTargets;
+    private Vector3[][] npcTargets, routeNpcTargets;
     private (Vector3 position, Quaternion rotation)[] dialoguePoses;
     public float RowWaitSeconds => rowWaitSeconds;
     public int Count => members?.Length ?? 0;
     public bool Finished => progress != null && (Phase)progress.collectorPhase == Phase.Finished;
     public bool IsOnPatrol => progress?.taxPatrolActive == true && !Finished;
     public bool IsReturning => progress?.collectorReturning == true;
-    public bool IsVisible => IsOnPatrol || (IsReturning && Finished);
+    public bool IsVisible => IsOnPatrol;
     public IReadOnlyList<Transform> Members => members ?? Array.Empty<Transform>();
     public string CurrentPhase => progress == null ? "NotStarted" : ((Phase)progress.collectorPhase).ToString();
     public bool CanMeet => IsOnPatrol && !IsReturning && !progress.collectorPassedPlayer;
@@ -63,8 +63,8 @@ public sealed class MineCollectorProcession : MonoBehaviour
         {
             int stop = progress.collectorNpcPauseIndex - 1;
             int actor = progress.collectorNpcActorIndex - 1;
-            return stop >= 0 && stop < npcTargets.Length && actor >= 0 && actor < npcTargets[stop].Length
-                ? npcTargets[stop][npcTargets[stop].Length - 1 - actor] : null;
+            return stop >= 0 && stop < routeNpcTargets.Length && actor >= 0 && actor < routeNpcTargets[stop].Length
+                ? routeNpcTargets[stop][routeNpcTargets[stop].Length - 1 - actor] : null;
         }
     }
 
@@ -77,35 +77,31 @@ public sealed class MineCollectorProcession : MonoBehaviour
         this.firstPassSeconds = firstPassSeconds;
         authoredDoors = placedDoors?.OrderBy(door => door.entrance.z).Select(door => (door.entrance.z, door.exit.z)).ToArray();
         if (authoredDoors == null || authoredDoors.Length == 0)
-            authoredDoors = stops.Where(stop => stop.entrance != null && stop.exit != null)
+            authoredDoors = (stops ?? Array.Empty<Stop>()).Where(stop => stop.entrance != null && stop.exit != null)
                 .OrderBy(stop => stop.entrance.position.z).Select(stop => (stop.entrance.position.z, stop.exit.position.z)).ToArray();
-        if (authoredDoors.Length == 0) throw new InvalidOperationException("징수원 경로의 입출구 앵커가 필요합니다.");
         npcWaitMin = minimumNpcWait;
         npcWaitMax = maximumNpcWait;
         routeSeed = seed;
         var midpoints = authoredDoors.Select(door => (door.entrance + door.exit) * .5f).ToArray();
-        var targets = (npcPositions ?? midpoints.Select(z => new Vector3(start.x, start.y, z)))
+        var targets = (midpoints.Length == 0 ? Enumerable.Empty<Vector3>() :
+                npcPositions ?? midpoints.Select(z => new Vector3(start.x, start.y, z)))
             .Distinct().OrderBy(point => point.z).ThenBy(point => point.x)
             .ToLookup(point => Enumerable.Range(0, midpoints.Length)
                 .OrderBy(index => Mathf.Abs(midpoints[index] - point.z)).First());
         npcTargets = Enumerable.Range(0, authoredDoors.Length).Select(index => targets[index].ToArray()).ToArray();
         float endZ = (state.taxPatrolActive || state.collectorOpeningCompleted) && state.collectorRouteEndZ > start.z
             ? state.collectorRouteEndZ : start.z + length;
-        if (state.collectorRouteVersion != 3)
+        if (state.collectorRouteVersion != 4)
         {
-            state.collectorRouteVersion = 3;
+            state.collectorRouteVersion = 4;
             if (state.collectorCount == 0)
                 state.collectorCount = new System.Random(seed).Next(minimumCount, Mathf.Max(minimumCount, maximumCount) + 1);
             bool settled = state.taxPatrolActive && state.collectorPassedPlayer;
-            BeginRoute(endZ);
+            BeginRoute(start.z, endZ);
             state.collectorPassedPlayer = settled;
         }
-        else ConfigureRoute(endZ);
-        if (Finished && !IsReturning && (state.taxPatrolActive || state.collectorOpeningCompleted))
-        {
-            state.taxPatrolActive = true;
-            BeginReturn();
-        }
+        else ConfigureRoute(state.collectorRouteStartZ > start.z ? state.collectorRouteStartZ : start.z, endZ);
+        if (Finished && !IsReturning && state.taxPatrolActive) BeginReturn();
         if (members != null) return;
         members = new Transform[state.collectorCount];
         for (int i = 0; i < members.Length; i++)
@@ -117,19 +113,25 @@ public sealed class MineCollectorProcession : MonoBehaviour
             members[i].SetPositionAndRotation(Desired(i), Heading());
         }
     }
-    private void ConfigureRoute(float endZ)
+    private void ConfigureRoute(float startZ, float endZ)
     {
+        chunkStart = startZ;
         chunkEnd = endZ;
-        routeDoors = authoredDoors.TakeWhile(door => door.exit <= endZ).ToArray();
-        preparationZ = routeDoors.Length > 0 ? Mathf.Max(origin.z, routeDoors[0].entrance - gatheringDistance) : origin.z;
+        var route = Enumerable.Range(0, authoredDoors.Length)
+            .Where(index => authoredDoors[index].entrance >= startZ && authoredDoors[index].exit <= endZ)
+            .ToArray();
+        routeDoors = route.Select(index => authoredDoors[index]).ToArray();
+        routeNpcTargets = route.Select(index => npcTargets[index]).ToArray();
+        preparationZ = routeDoors.Length > 0 ? Mathf.Max(chunkStart, routeDoors[0].entrance - gatheringDistance) : chunkStart;
         float tail = (progress.collectorCount - 1) * spacing;
         float formationTravel = 2f * routeDoors.Length * new Vector2(tail, tail * .5f).magnitude;
         firstPassSpeed = firstPassSeconds > 0 ? (chunkEnd - preparationZ + formationTravel) / firstPassSeconds : arrivalSpeed;
     }
 
-    public void BeginRoute(float? endZ = null)
+    public void BeginRoute(float startZ, float endZ)
     {
-        ConfigureRoute(endZ ?? chunkEnd);
+        ConfigureRoute(startZ, endZ);
+        progress.collectorRouteStartZ = chunkStart;
         progress.collectorRouteEndZ = chunkEnd;
         progress.collectorZ = chunkEnd;
         progress.collectorReturning = false;
@@ -152,15 +154,15 @@ public sealed class MineCollectorProcession : MonoBehaviour
         float z = progress.collectorZ - (row ? 0 : Direction * index * spacing);
         return new Vector3(origin.x + x, origin.y, z);
     }
-    public void Tick(float seconds, float waitSeconds = -1f)
+    public void Tick(float seconds, float waitSeconds = -1f, bool skipNpcStops = false)
     {
         if (progress == null || members == null) return;
         if (waitSeconds < 0) waitSeconds = seconds;
         if (Finished) return;
         if (progress.collectorNpcPause > 0)
         {
-            progress.collectorNpcPause = Mathf.Max(0, progress.collectorNpcPause - waitSeconds);
-            return;
+            progress.collectorNpcPause = skipNpcStops ? 0 : Mathf.Max(0, progress.collectorNpcPause - waitSeconds);
+            if (!skipNpcStops) return;
         }
         var phase = (Phase)progress.collectorPhase;
         float speed = IsReturning ? marchSpeed : phase == Phase.FormRow || phase == Phase.FormColumn ? firstPassSpeed :
@@ -168,7 +170,7 @@ public sealed class MineCollectorProcession : MonoBehaviour
         switch (phase)
         {
             case Phase.Arrival:
-                MoveLeader(preparationZ, firstPassSpeed, seconds, Phase.FormRow);
+                MoveLeader(preparationZ, firstPassSpeed, seconds, routeDoors.Length == 0 ? Phase.Leave : Phase.FormRow);
                 if ((Phase)progress.collectorPhase == Phase.FormRow) progress.collectorStop = -1;
                 break;
             case Phase.RowMarch:
@@ -195,7 +197,7 @@ public sealed class MineCollectorProcession : MonoBehaviour
                         nextStop < routeDoors.Length ? routeDoors[nextStop].entrance - entranceBuffer : chunkEnd))
                     : Mathf.Min(progress.collectorZ, Mathf.Max(currentDoor.entrance - clearance,
                         nextStop >= 0 ? routeDoors[nextStop].exit + entranceBuffer : preparationZ));
-                if (IsReturning || !TryPauseAtNpc(exit, speed * seconds))
+                if (IsReturning || skipNpcStops || !TryPauseAtNpc(exit, speed * seconds))
                     MoveLeader(exit, speed, seconds, Phase.FormRow);
                 break;
             case Phase.Leave:
@@ -203,7 +205,7 @@ public sealed class MineCollectorProcession : MonoBehaviour
                     MoveLeader(chunkEnd, speed, seconds, Phase.Finished);
                 else
                 {
-                    float turnaround = origin.z - entranceOvershoot;
+                    float turnaround = chunkStart - entranceOvershoot;
                     MoveLeader(turnaround, speed, seconds, Phase.Leave);
                     if (Mathf.Approximately(progress.collectorZ, turnaround)) BeginReturn();
                 }
@@ -234,8 +236,7 @@ public sealed class MineCollectorProcession : MonoBehaviour
     private void BeginReturn()
     {
         progress.collectorReturning = true;
-        progress.collectorPhase = (int)Phase.RowMarch;
-        progress.collectorStop = 0;
+        progress.collectorPhase = (int)Phase.Leave;
         progress.collectorNpcPause = 0;
         foreach (var member in Members) member.rotation = Heading();
     }
@@ -244,7 +245,7 @@ public sealed class MineCollectorProcession : MonoBehaviour
         if (npcWaitMax <= 0) return false;
         int stop = progress.collectorStop;
         float entry = routeDoors[stop].exit + entranceBuffer;
-        var points = npcTargets[stop];
+        var points = routeNpcTargets[stop];
         while (progress.collectorNpcActorIndex < points.Length)
         {
             int actor = points.Length - 1 - progress.collectorNpcActorIndex;

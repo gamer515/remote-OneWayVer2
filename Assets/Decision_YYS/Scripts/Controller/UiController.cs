@@ -38,12 +38,19 @@ public class UiController : MonoBehaviour
 
     public void AppendPlayerChoice(string text) => mainStoryUi?.AppendPlayerChoice(SanitizeText(text));
     public void AppendInteraction(string text, string speakerId) => mainStoryUi?.AppendInteraction(SanitizeText(text), speakerId);
+    public void SetStoryHeading(string text) => mainStoryUi?.SetStoryHeading(SanitizeText(text));
+    public void SetStoryNotice(string text) => mainStoryUi?.SetStoryNotice(SanitizeText(text));
+    internal bool IsReadingOpen => mainStoryUi != null && mainStoryUi.IsReadingOpen;
+    internal void ShowReading(MineLearningStation station, bool available) => mainStoryUi?.ShowReading(station, available);
+    internal void SetChoiceHints(Func<int, string> hint, int first, int count) => mainStoryUi?.SetChoiceHints(hint, first, count);
+    internal void SetDialogueClue(string target, Func<string> reveal) => mainStoryUi?.SetDialogueClue(target, reveal);
 
     private string SanitizeText(string text)
     {
         return string.IsNullOrEmpty(text)
             ? string.Empty
-            : text.Replace("{", "").Replace("}", "");
+            : text.Replace("{", "").Replace("}", "").Replace("「", "\"").Replace("」", "\"")
+                .Replace("『", "\"").Replace("』", "\"").Replace("·", "/").Replace("≥", "이상");
     }
 
     public void TurnOn_Off3DView()

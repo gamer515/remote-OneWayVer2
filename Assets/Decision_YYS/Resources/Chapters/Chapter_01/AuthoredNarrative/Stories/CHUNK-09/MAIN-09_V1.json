@@ -1,0 +1,427 @@
+{
+  "story_id": "MAIN-09",
+  "title": "같은 광석 다른 숫자",
+  "opening": [
+    {
+      "speaker_id": "NPC-10",
+      "text": "같은 광석에 서로 다른 등급이 기재됐습니다."
+    },
+    {
+      "speaker_id": "NPC-20",
+      "text": "시료 번호를 다시 대조하겠습니다."
+    },
+    {
+      "speaker_id": "NPC-10",
+      "text": "수분량과 경도가 동일한데 감정 결과만 다릅니다."
+    },
+    {
+      "speaker_id": "NPC-10",
+      "text": "단순한 오류라면 왜 특정 날짜에만 반복될까요?"
+    },
+    {
+      "speaker_id": "NPC-10",
+      "text": "재검정 비용이 필요합니다."
+    }
+  ],
+  "choices": [
+    {
+      "id": "C1",
+      "text": "통행세 내기",
+      "coin_options": [
+        {
+          "id": "strength",
+          "text": "힘 지불",
+          "dialogue": [
+            {
+              "speaker_id": "NPC-10",
+              "text": "표본 분쇄 작업에 사용하겠습니다."
+            }
+          ],
+          "result": {
+            "stats": {
+              "strength": -4
+            },
+            "main_progress": true,
+            "access": true,
+            "resolution": "paid"
+          },
+          "condition": {
+            "coin_at_least": {
+              "strength": 4
+            }
+          },
+          "on_insufficient_coins": "COIN_SHORTAGE"
+        },
+        {
+          "id": "speed",
+          "text": "속도 지불",
+          "dialogue": [
+            {
+              "speaker_id": "NPC-10",
+              "text": "측정 횟수를 늘릴 수 있겠습니다."
+            }
+          ],
+          "result": {
+            "stats": {
+              "speed": -4
+            },
+            "main_progress": true,
+            "access": true,
+            "resolution": "paid"
+          },
+          "condition": {
+            "coin_at_least": {
+              "speed": 4
+            }
+          },
+          "on_insufficient_coins": "COIN_SHORTAGE"
+        },
+        {
+          "id": "intelligence",
+          "text": "지능 지불",
+          "dialogue": [
+            {
+              "speaker_id": "NPC-10",
+              "text": "유의미한 재검정이 가능하겠습니다."
+            }
+          ],
+          "result": {
+            "stats": {
+              "intelligence": -4
+            },
+            "main_progress": true,
+            "access": true,
+            "resolution": "paid"
+          },
+          "condition": {
+            "coin_at_least": {
+              "intelligence": 4
+            }
+          },
+          "on_insufficient_coins": "COIN_SHORTAGE"
+        },
+        {
+          "id": "charm",
+          "text": "매력 지불",
+          "dialogue": [
+            {
+              "speaker_id": "NPC-10",
+              "text": "증인 확보에 활용할 수 있겠군요."
+            }
+          ],
+          "result": {
+            "stats": {
+              "charm": -4
+            },
+            "main_progress": true,
+            "access": true,
+            "resolution": "paid"
+          },
+          "condition": {
+            "coin_at_least": {
+              "charm": 4
+            }
+          },
+          "on_insufficient_coins": "COIN_SHORTAGE"
+        }
+      ],
+      "insufficient_coins_branch_id": "COIN_SHORTAGE",
+      "coin_shortage_trigger": "balance_of_selected_coin_below_required",
+      "price": {
+        "base_fee": 4,
+        "negotiated_fee": 2,
+        "accepted_coin_ids": [
+          "strength",
+          "speed",
+          "intelligence",
+          "charm"
+        ]
+      },
+      "negotiation": {
+        "id": "NEGOTIATE",
+        "text": "가격 협상",
+        "available_before_coin_selection": true,
+        "once_per_encounter": true,
+        "discounted_fee": 2,
+        "routes": [
+          {
+            "id": "N_INT",
+            "text": "근거 제시",
+            "condition": {
+              "intelligence_at_least": 4
+            },
+            "player_dialogue": "같은 광석의 값이 다르게 적혔어요. 검증하기 전에는 전액을 낼 수 없습니다.",
+            "success": {
+              "dialogue": [
+                {
+                  "speaker_id": "NPC-10",
+                  "text": "측정값이 불확실한데 전액을 받긴 어렵군요. 줄이겠습니다."
+                }
+              ],
+              "payment_override": {
+                "amount": 2,
+                "apply_to": [
+                  "coin_at_least",
+                  "negative_stat_delta"
+                ],
+                "scope": "selected_coin_only"
+              },
+              "goto_coin_choice_id": "C1",
+              "set_flag": "NEGOTIATED_FEE"
+            },
+            "failure": {
+              "dialogue": [
+                {
+                  "speaker_id": "NPC-10",
+                  "text": "그 결론은 아직 검증되지 않았습니다."
+                }
+              ],
+              "goto_coin_choice_id": "C1",
+              "payment_fee": 4
+            }
+          },
+          {
+            "id": "N_CHARM",
+            "text": "사정 호소",
+            "condition": {
+              "charm_at_least": 4
+            },
+            "player_dialogue": "제게도 남길 능력이 있어야 이 문제를 끝까지 확인할 수 있어요.",
+            "success": {
+              "dialogue": [
+                {
+                  "speaker_id": "NPC-10",
+                  "text": "그렇군요. 오늘은 그만큼만 받도록 하죠."
+                }
+              ],
+              "payment_override": {
+                "amount": 2,
+                "apply_to": [
+                  "coin_at_least",
+                  "negative_stat_delta"
+                ],
+                "scope": "selected_coin_only"
+              },
+              "goto_coin_choice_id": "C1",
+              "set_flag": "NEGOTIATED_FEE"
+            },
+            "failure": {
+              "dialogue": [
+                {
+                  "speaker_id": "NPC-10",
+                  "text": "그 결론은 아직 검증되지 않았습니다."
+                }
+              ],
+              "goto_coin_choice_id": "C1",
+              "payment_fee": 4
+            }
+          },
+          {
+            "id": "N_CANCEL",
+            "text": "원래대로 지불",
+            "goto_coin_choice_id": "C1"
+          }
+        ],
+        "on_no_affordable_coin": "COIN_SHORTAGE"
+      },
+      "dialogue": []
+    },
+    {
+      "id": "C2",
+      "text": "미니게임",
+      "dialogue": [
+        {
+          "speaker_id": "NPC-10",
+          "text": "그럼 동전으로 승부를 보죠. 앞면인지 뒷면인지 맞히면 통행 대가는 없어요."
+        }
+      ],
+      "mini_game": {
+        "id": "MAIN-09_COIN_TOSS",
+        "type": "gambling",
+        "implementation": "coin_toss",
+        "rules_ref": "00_implementation_rules.json#minigames.gambling",
+        "bet_options": [
+          {
+            "id": "HEADS",
+            "text": "앞면"
+          },
+          {
+            "id": "TAILS",
+            "text": "뒷면"
+          }
+        ],
+        "win_probability": 0.5,
+        "no_additional_coin_cost": true,
+        "on_failure": "return_to_four_choices",
+        "success": {
+          "dialogue": [
+            {
+              "speaker_id": "NPC-10",
+              "text": "맞혔네요. 제가 졌어요. 약속한 대로 이번 대가는 받지 않겠어요."
+            }
+          ],
+          "result": {
+            "stats": {},
+            "resolution": "won_minigame",
+            "retry": false,
+            "main_progress": true,
+            "access": true
+          }
+        },
+        "failure": {
+          "dialogue": [
+            {
+              "speaker_id": "NPC-10",
+              "text": "이번엔 틀렸네요. 다시 내기하거나 다른 방법을 선택하세요."
+            }
+          ],
+          "result": {
+            "stats": {},
+            "retry": true,
+            "main_progress": false,
+            "access": false
+          }
+        }
+      }
+    },
+    {
+      "id": "C3",
+      "text": "요구사항 들어주기",
+      "dialogue": [
+        {
+          "speaker_id": "NPC-10",
+          "text": "장부 번호와 시료 봉인 번호를 함께 확인하십시오."
+        }
+      ],
+      "requirement": {
+        "type": "stat_probability",
+        "task": "표본을 순서대로 다시 무게 재어 주세요.",
+        "required_stats": {
+          "primary": "intelligence",
+          "secondary": "strength"
+        },
+        "check": {
+          "rules_ref": "00_implementation_rules.json#requirement_probability",
+          "difficulty": 5,
+          "read_current_stats_at_attempt": true,
+          "roll_once_per_attempt": true
+        },
+        "duration_seconds": 53,
+        "collector_continues": true,
+        "stat_growth_paused": true,
+        "success": {
+          "dialogue": [
+            {
+              "speaker_id": "NPC-10",
+              "text": "측정값이 일치합니다. 누군가 기록을 바꿨다는 가설이 강해졌습니다."
+            }
+          ],
+          "result": {
+            "stats": {
+              "strength": -2,
+              "speed": -1,
+              "intelligence": 1,
+              "charm": 1
+            },
+            "main_progress": true,
+            "access": true,
+            "resolution": "worked"
+          }
+        },
+        "failure": {
+          "dialogue": [
+            {
+              "speaker_id": "NPC-10",
+              "text": "측정 조건이 다릅니다. 재검정해야 합니다."
+            }
+          ],
+          "result": {
+            "stats": {
+              "strength": -3,
+              "speed": -1,
+              "charm": -1
+            },
+            "main_progress": false,
+            "access": false,
+            "retry": true
+          }
+        },
+        "story_prompt": "이 자료에서 먼저 검증할 가설은?",
+        "npc_advice_on_success": [
+          {
+            "speaker_id": "NPC-10",
+            "text": "옳습니다. 결론은 증거가 감당할 만큼만 내리겠습니다."
+          }
+        ],
+        "npc_advice_on_failure": [
+          {
+            "speaker_id": "NPC-10",
+            "text": "그 결론은 아직 검증되지 않았습니다."
+          }
+        ]
+      }
+    },
+    {
+      "id": "C4",
+      "text": "샛길로 가기",
+      "shortcut": {
+        "type": "log_only",
+        "enabled": false,
+        "log_level": "info",
+        "log_event": "SIDE_PATH_SELECTED_NOT_IMPLEMENTED",
+        "log_message": "MAIN-09: 샛길 선택됨. 아직 이동 구현 없음. 원래 선택지로 복귀.",
+        "movement": false,
+        "scene_transition": false,
+        "unlock": false,
+        "emit_npc_dialogue": false,
+        "return_to_choice_id": "ROOT_CHOICES"
+      },
+      "result": {
+        "stats": {},
+        "access": false,
+        "retry": true,
+        "main_progress": false
+      }
+    }
+  ],
+  "pet_on_complete": {
+    "paid": "MAIN-09: 낯선 이가 코인으로 약속을 이행했다. 같은 광석 다른 숫자에 관한 판단이 남아 있다.",
+    "worked": "MAIN-09: 요구사항을 능력치 판정으로 완료했다는 소식을 펫이 전했다.",
+    "reasoned": "MAIN-09: 낯선 이가 위험과 책임의 기준을 따져 답했다. 같은 광석 다른 숫자의 기록을 검토해 달라.",
+    "won_minigame": "MAIN-09: 코인 대신 미니게임에서 이겨 통행 대가를 면제받았다는 소식을 펫이 전했다.",
+    "persuaded": "MAIN-09: 낯선 사람이 판단을 제시했고, 현장 담당자가 이를 받아들였다."
+  },
+  "stat_change_policy": "clamp_at_zero",
+  "branches": {
+    "COIN_SHORTAGE": {
+      "trigger": {
+        "selected_coin_below_payment_amount": true
+      },
+      "dialogue": [
+        {
+          "speaker_id": "NPC-10",
+          "text": "코인을 납부하기 어렵다면 측정으로 근거를 남기십시오."
+        },
+        {
+          "speaker_id": "NPC-10",
+          "text": "검증 결과가 나오면 재고하겠습니다."
+        }
+      ],
+      "goto_choice_id": "ROOT_CHOICES",
+      "available_choices": [
+        "C1",
+        "C2",
+        "C3",
+        "C4"
+      ],
+      "note": "현재 통행세를 낼 수 없으면 미니게임, 요구사항, 샛길 로그를 선택할 수 있음"
+    }
+  },
+  "choice_order": [
+    "C1",
+    "C2",
+    "C3",
+    "C4"
+  ],
+  "choice_policy_ref": "00_implementation_rules.json#choice_policy"
+}

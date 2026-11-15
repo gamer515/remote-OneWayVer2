@@ -1,0 +1,427 @@
+{
+  "story_id": "MAIN-08",
+  "title": "상자 안의 가격표",
+  "opening": [
+    {
+      "speaker_id": "NPC-08",
+      "text": "같은 약이 두 가지 가격으로 적혀 있습니다."
+    },
+    {
+      "speaker_id": "NPC-26",
+      "text": "가격표가 두 개면 선택할 수 있다는 뜻이죠."
+    },
+    {
+      "speaker_id": "NPC-08",
+      "text": "공식 가격과 긴급 거래 가격이지요."
+    },
+    {
+      "speaker_id": "NPC-08",
+      "text": "급하다는 사실도 자원이라면, 누가 누구의 시간을 소유하는 걸까요?"
+    },
+    {
+      "speaker_id": "NPC-08",
+      "text": "상자 개봉 보증금을 받아야겠습니다."
+    }
+  ],
+  "choices": [
+    {
+      "id": "C1",
+      "text": "통행세 내기",
+      "coin_options": [
+        {
+          "id": "strength",
+          "text": "힘 지불",
+          "dialogue": [
+            {
+              "speaker_id": "NPC-08",
+              "text": "현물 운송비를 낮출 수 있겠군요."
+            }
+          ],
+          "result": {
+            "stats": {
+              "strength": -3
+            },
+            "main_progress": true,
+            "access": true,
+            "resolution": "paid"
+          },
+          "condition": {
+            "coin_at_least": {
+              "strength": 3
+            }
+          },
+          "on_insufficient_coins": "COIN_SHORTAGE"
+        },
+        {
+          "id": "speed",
+          "text": "속도 지불",
+          "dialogue": [
+            {
+              "speaker_id": "NPC-08",
+              "text": "납품 시간이 줄어들겠지요."
+            }
+          ],
+          "result": {
+            "stats": {
+              "speed": -3
+            },
+            "main_progress": true,
+            "access": true,
+            "resolution": "paid"
+          },
+          "condition": {
+            "coin_at_least": {
+              "speed": 3
+            }
+          },
+          "on_insufficient_coins": "COIN_SHORTAGE"
+        },
+        {
+          "id": "intelligence",
+          "text": "지능 지불",
+          "dialogue": [
+            {
+              "speaker_id": "NPC-08",
+              "text": "위험 비용을 다시 산정할 수 있겠습니다."
+            }
+          ],
+          "result": {
+            "stats": {
+              "intelligence": -3
+            },
+            "main_progress": true,
+            "access": true,
+            "resolution": "paid"
+          },
+          "condition": {
+            "coin_at_least": {
+              "intelligence": 3
+            }
+          },
+          "on_insufficient_coins": "COIN_SHORTAGE"
+        },
+        {
+          "id": "charm",
+          "text": "매력 지불",
+          "dialogue": [
+            {
+              "speaker_id": "NPC-08",
+              "text": "협상장에서 가치가 큰 자산이군요."
+            }
+          ],
+          "result": {
+            "stats": {
+              "charm": -3
+            },
+            "main_progress": true,
+            "access": true,
+            "resolution": "paid"
+          },
+          "condition": {
+            "coin_at_least": {
+              "charm": 3
+            }
+          },
+          "on_insufficient_coins": "COIN_SHORTAGE"
+        }
+      ],
+      "insufficient_coins_branch_id": "COIN_SHORTAGE",
+      "coin_shortage_trigger": "balance_of_selected_coin_below_required",
+      "price": {
+        "base_fee": 3,
+        "negotiated_fee": 2,
+        "accepted_coin_ids": [
+          "strength",
+          "speed",
+          "intelligence",
+          "charm"
+        ]
+      },
+      "negotiation": {
+        "id": "NEGOTIATE",
+        "text": "가격 협상",
+        "available_before_coin_selection": true,
+        "once_per_encounter": true,
+        "discounted_fee": 2,
+        "routes": [
+          {
+            "id": "N_INT",
+            "text": "근거 제시",
+            "condition": {
+              "intelligence_at_least": 3
+            },
+            "player_dialogue": "위험과 비용이 공개돼야 공정한 거래겠죠. 지금 요구액은 낮춰 주세요.",
+            "success": {
+              "dialogue": [
+                {
+                  "speaker_id": "NPC-08",
+                  "text": "공정함을 입에 올렸으니 나도 계산을 다시 해 보죠. 할인하겠습니다."
+                }
+              ],
+              "payment_override": {
+                "amount": 2,
+                "apply_to": [
+                  "coin_at_least",
+                  "negative_stat_delta"
+                ],
+                "scope": "selected_coin_only"
+              },
+              "goto_coin_choice_id": "C1",
+              "set_flag": "NEGOTIATED_FEE"
+            },
+            "failure": {
+              "dialogue": [
+                {
+                  "speaker_id": "NPC-08",
+                  "text": "보상 없는 친절은 오래가지 않는 법입니다."
+                }
+              ],
+              "goto_coin_choice_id": "C1",
+              "payment_fee": 3
+            }
+          },
+          {
+            "id": "N_CHARM",
+            "text": "사정 호소",
+            "condition": {
+              "charm_at_least": 3
+            },
+            "player_dialogue": "누군가의 생계를 돕는 거래라면 저도 무너지지 않게 해 주세요.",
+            "success": {
+              "dialogue": [
+                {
+                  "speaker_id": "NPC-08",
+                  "text": "서로 굶지 않자는 얘기군요. 적게 받겠습니다."
+                }
+              ],
+              "payment_override": {
+                "amount": 2,
+                "apply_to": [
+                  "coin_at_least",
+                  "negative_stat_delta"
+                ],
+                "scope": "selected_coin_only"
+              },
+              "goto_coin_choice_id": "C1",
+              "set_flag": "NEGOTIATED_FEE"
+            },
+            "failure": {
+              "dialogue": [
+                {
+                  "speaker_id": "NPC-08",
+                  "text": "보상 없는 친절은 오래가지 않는 법입니다."
+                }
+              ],
+              "goto_coin_choice_id": "C1",
+              "payment_fee": 3
+            }
+          },
+          {
+            "id": "N_CANCEL",
+            "text": "원래대로 지불",
+            "goto_coin_choice_id": "C1"
+          }
+        ],
+        "on_no_affordable_coin": "COIN_SHORTAGE"
+      },
+      "dialogue": []
+    },
+    {
+      "id": "C2",
+      "text": "미니게임",
+      "dialogue": [
+        {
+          "speaker_id": "NPC-08",
+          "text": "그럼 동전으로 승부를 보죠. 앞면인지 뒷면인지 맞히면 통행 대가는 없어요."
+        }
+      ],
+      "mini_game": {
+        "id": "MAIN-08_COIN_TOSS",
+        "type": "gambling",
+        "implementation": "coin_toss",
+        "rules_ref": "00_implementation_rules.json#minigames.gambling",
+        "bet_options": [
+          {
+            "id": "HEADS",
+            "text": "앞면"
+          },
+          {
+            "id": "TAILS",
+            "text": "뒷면"
+          }
+        ],
+        "win_probability": 0.5,
+        "no_additional_coin_cost": true,
+        "on_failure": "return_to_four_choices",
+        "success": {
+          "dialogue": [
+            {
+              "speaker_id": "NPC-08",
+              "text": "맞혔네요. 제가 졌어요. 약속한 대로 이번 대가는 받지 않겠어요."
+            }
+          ],
+          "result": {
+            "stats": {},
+            "resolution": "won_minigame",
+            "retry": false,
+            "main_progress": true,
+            "access": true
+          }
+        },
+        "failure": {
+          "dialogue": [
+            {
+              "speaker_id": "NPC-08",
+              "text": "이번엔 틀렸네요. 다시 내기하거나 다른 방법을 선택하세요."
+            }
+          ],
+          "result": {
+            "stats": {},
+            "retry": true,
+            "main_progress": false,
+            "access": false
+          }
+        }
+      }
+    },
+    {
+      "id": "C3",
+      "text": "요구사항 들어주기",
+      "dialogue": [
+        {
+          "speaker_id": "NPC-08",
+          "text": "한 상자라도 누락되면 이야기가 달라집니다."
+        }
+      ],
+      "requirement": {
+        "type": "stat_probability",
+        "task": "운반 명세와 실제 물량을 세어 주세요.",
+        "required_stats": {
+          "primary": "intelligence",
+          "secondary": "charm"
+        },
+        "check": {
+          "rules_ref": "00_implementation_rules.json#requirement_probability",
+          "difficulty": 5,
+          "read_current_stats_at_attempt": true,
+          "roll_once_per_attempt": true
+        },
+        "duration_seconds": 61,
+        "collector_continues": true,
+        "stat_growth_paused": true,
+        "success": {
+          "dialogue": [
+            {
+              "speaker_id": "NPC-08",
+              "text": "맞습니다. 사라진 물량은 가격표보다 중요한 질문을 남기는군요."
+            }
+          ],
+          "result": {
+            "stats": {
+              "strength": -2,
+              "speed": -1,
+              "intelligence": 2,
+              "charm": 1
+            },
+            "main_progress": true,
+            "access": true,
+            "resolution": "worked"
+          }
+        },
+        "failure": {
+          "dialogue": [
+            {
+              "speaker_id": "NPC-08",
+              "text": "수량이 맞지 않습니다. 아직 판단할 때가 아니에요."
+            }
+          ],
+          "result": {
+            "stats": {
+              "strength": -3,
+              "speed": -1,
+              "charm": -1
+            },
+            "main_progress": false,
+            "access": false,
+            "retry": true
+          }
+        },
+        "story_prompt": "긴급 환자에게 가격을 더 받는 게 정당한가?",
+        "npc_advice_on_success": [
+          {
+            "speaker_id": "NPC-08",
+            "text": "그 원칙을 공개해야 저도 반박할 수 있겠군요."
+          }
+        ],
+        "npc_advice_on_failure": [
+          {
+            "speaker_id": "NPC-08",
+            "text": "보상 없는 친절은 오래가지 않는 법입니다."
+          }
+        ]
+      }
+    },
+    {
+      "id": "C4",
+      "text": "샛길로 가기",
+      "shortcut": {
+        "type": "log_only",
+        "enabled": false,
+        "log_level": "info",
+        "log_event": "SIDE_PATH_SELECTED_NOT_IMPLEMENTED",
+        "log_message": "MAIN-08: 샛길 선택됨. 아직 이동 구현 없음. 원래 선택지로 복귀.",
+        "movement": false,
+        "scene_transition": false,
+        "unlock": false,
+        "emit_npc_dialogue": false,
+        "return_to_choice_id": "ROOT_CHOICES"
+      },
+      "result": {
+        "stats": {},
+        "access": false,
+        "retry": true,
+        "main_progress": false
+      }
+    }
+  ],
+  "pet_on_complete": {
+    "paid": "MAIN-08: 낯선 이가 코인으로 약속을 이행했다. 상자 안의 가격표에 관한 판단이 남아 있다.",
+    "worked": "MAIN-08: 요구사항을 능력치 판정으로 완료했다는 소식을 펫이 전했다.",
+    "reasoned": "MAIN-08: 낯선 이가 위험과 책임의 기준을 따져 답했다. 상자 안의 가격표의 기록을 검토해 달라.",
+    "won_minigame": "MAIN-08: 코인 대신 미니게임에서 이겨 통행 대가를 면제받았다는 소식을 펫이 전했다.",
+    "persuaded": "MAIN-08: 낯선 사람이 판단을 제시했고, 현장 담당자가 이를 받아들였다."
+  },
+  "stat_change_policy": "clamp_at_zero",
+  "branches": {
+    "COIN_SHORTAGE": {
+      "trigger": {
+        "selected_coin_below_payment_amount": true
+      },
+      "dialogue": [
+        {
+          "speaker_id": "NPC-08",
+          "text": "코인이 부족하다면 거래 조건을 바꿀 수는 있습니다."
+        },
+        {
+          "speaker_id": "NPC-08",
+          "text": "증명할 수 있는 가치가 있다면 고려하지요."
+        }
+      ],
+      "goto_choice_id": "ROOT_CHOICES",
+      "available_choices": [
+        "C1",
+        "C2",
+        "C3",
+        "C4"
+      ],
+      "note": "현재 통행세를 낼 수 없으면 미니게임, 요구사항, 샛길 로그를 선택할 수 있음"
+    }
+  },
+  "choice_order": [
+    "C1",
+    "C2",
+    "C3",
+    "C4"
+  ],
+  "choice_policy_ref": "00_implementation_rules.json#choice_policy"
+}

@@ -2,7 +2,7 @@ using TMPro;
 using UnityEngine;
 using static Constants;
 
-public class MainStoryUi : ParentUi
+public partial class MainStoryUi : ParentUi
 {
     [SerializeField] private TextMeshProUGUI front_Dialogue_Text;
     [SerializeField] private TextMeshProUGUI option_Text;
@@ -74,6 +74,11 @@ public class MainStoryUi : ParentUi
 
     public void AppendPlayerChoice(string text) => chatHistory?.AppendPlayerChoice(text);
     public void AppendInteraction(string text, string speakerId) => chatHistory?.AppendDialogue(text, speakerId);
+    public void SetStoryHeading(string text) => chatHistory?.SetStoryHeading(text);
+    public void SetStoryNotice(string text) => chatHistory?.SetStoryNotice(text);
+    internal void SetChoiceHints(System.Func<int, string> hint, int first, int count) =>
+        chatHistory?.SetChoiceHints(hint, first, count);
+    internal void SetDialogueClue(string target, System.Func<string> reveal) => chatHistory?.SetDialogueClue(target, reveal);
 
     private TextMeshProUGUI GetTextTarget(TextTarget target)
     {

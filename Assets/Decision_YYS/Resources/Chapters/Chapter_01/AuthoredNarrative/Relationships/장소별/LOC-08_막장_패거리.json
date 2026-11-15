@@ -1,0 +1,82 @@
+{
+  "location_id": "LOC-08",
+  "name": "막장 패거리",
+  "origin": "existing",
+  "fixed_chunk": "CHUNK-08",
+  "place_position_rule": "청크 내부 위치는 랜덤. NPC는 배치된 장소에 고정",
+  "location_description": "능력을 잃은 광부들이 점유한 막장 구역. 비공식 통행 대가를 요구한다.",
+  "fixed_npcs": [
+    {
+      "npc_id": "NPC-24",
+      "name": "카본",
+      "role": "supporting",
+      "origin": "new",
+      "social_class": "최하층 채굴민",
+      "stance": "저항·자치파",
+      "fixed_chunk": "CHUNK-08",
+      "fixed_location_id": "LOC-08",
+      "fixed_location_name": "막장 패거리",
+      "movement": "none",
+      "character_traits": [
+        "공격성",
+        "카리스마",
+        "자존심"
+      ],
+      "personality": "카리스마가 강하고 공격적이며 자존심이 높다.",
+      "speech_style": "거칠고 강압적인 반말. 짧은 단언과 명령형 표현을 선호.",
+      "conversation_topic": "약자를 위한 저항과 자신이 징수하는 통행료의 모순",
+      "pet_links": [
+        {
+          "npc_id": "NPC-02",
+          "name": "브룩",
+          "relation_hint": "존경했으나 온건함에 실망한 선배."
+        },
+        {
+          "npc_id": "NPC-14",
+          "name": "가렌",
+          "relation_hint": "지속적으로 충돌하는 징수원."
+        },
+        {
+          "npc_id": "NPC-25",
+          "name": "드빈",
+          "relation_hint": "오른팔처럼 여기는 동료."
+        }
+      ]
+    },
+    {
+      "npc_id": "NPC-25",
+      "name": "드빈",
+      "role": "supporting",
+      "origin": "new",
+      "social_class": "최하층 채굴민",
+      "stance": "저항·자치파",
+      "fixed_chunk": "CHUNK-08",
+      "fixed_location_id": "LOC-08",
+      "fixed_location_name": "막장 패거리",
+      "movement": "none",
+      "character_traits": [
+        "충직함",
+        "과묵함",
+        "온순함"
+      ],
+      "personality": "덩치가 크고 충직하지만 마음이 여리다.",
+      "speech_style": "묵직하고 말수가 적은 반말. 짧게 답하며 충돌 상황에서 더 조용해짐.",
+      "conversation_topic": "은혜에 대한 충성심과 폭력에 대한 거부감",
+      "pet_links": [
+        {
+          "npc_id": "NPC-24",
+          "name": "카본",
+          "relation_hint": "은인인 우두머리."
+        },
+        {
+          "npc_id": "NPC-04",
+          "name": "벨라",
+          "relation_hint": "가족의 외상 빚이 남은 식당 주인."
+        }
+      ]
+    }
+  ],
+  "main_npc_ids": [],
+  "pet_remote_conversation": true,
+  "notice": "이 장소 JSON에는 방문 NPC를 넣지 않음. 다른 NPC와의 관계는 PET 연결로만 표현"
+}

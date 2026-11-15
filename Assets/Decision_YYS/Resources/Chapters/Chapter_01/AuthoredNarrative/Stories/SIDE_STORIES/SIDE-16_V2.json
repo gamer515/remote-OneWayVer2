@@ -1,0 +1,422 @@
+{
+  "story_id": "SIDE-16",
+  "title": "안 돌아온 길잡이",
+  "opening": [
+    {
+      "speaker_id": "NPC-16",
+      "text": "한때 이 길을 안내했던 사람이 있었지."
+    },
+    {
+      "speaker_id": "NPC-16",
+      "text": "지도에서 지워진 날, 그 사람도 기록에서 지워졌어."
+    }
+  ],
+  "choices": [
+    {
+      "id": "C1",
+      "text": "통행세 내기",
+      "dialogue": [
+        {
+          "speaker_id": "NPC-16",
+          "text": "낡은 이정표를 다시 세울 코인 3개는 필요하네."
+        }
+      ],
+      "coin_options": [
+        {
+          "id": "strength",
+          "text": "힘 지불",
+          "dialogue": [
+            {
+              "speaker_id": "NPC-16",
+              "text": "힘. 쓰러진 표식을 세울 수 있겠군."
+            }
+          ],
+          "condition": {
+            "coin_at_least": {
+              "strength": 3
+            }
+          },
+          "result": {
+            "stats": {
+              "strength": -3
+            },
+            "reward_flags": [
+              "SIDE-16_TRADE_V2"
+            ],
+            "side_completed": true
+          },
+          "on_insufficient_coins": "COIN_SHORTAGE"
+        },
+        {
+          "id": "speed",
+          "text": "속도 지불",
+          "dialogue": [
+            {
+              "speaker_id": "NPC-16",
+              "text": "속도. 길 잃은 사람을 빨리 찾겠어."
+            }
+          ],
+          "condition": {
+            "coin_at_least": {
+              "speed": 3
+            }
+          },
+          "result": {
+            "stats": {
+              "speed": -3
+            },
+            "reward_flags": [
+              "SIDE-16_TRADE_V2"
+            ],
+            "side_completed": true
+          },
+          "on_insufficient_coins": "COIN_SHORTAGE"
+        },
+        {
+          "id": "intelligence",
+          "text": "지능 지불",
+          "dialogue": [
+            {
+              "speaker_id": "NPC-16",
+              "text": "지능. 기억과 지도를 다시 맞춰 보겠네."
+            }
+          ],
+          "condition": {
+            "coin_at_least": {
+              "intelligence": 3
+            }
+          },
+          "result": {
+            "stats": {
+              "intelligence": -3
+            },
+            "reward_flags": [
+              "SIDE-16_TRADE_V2"
+            ],
+            "side_completed": true
+          },
+          "on_insufficient_coins": "COIN_SHORTAGE"
+        },
+        {
+          "id": "charm",
+          "text": "매력 지불",
+          "dialogue": [
+            {
+              "speaker_id": "NPC-16",
+              "text": "매력. 누군가의 증언을 얻는 데 쓰지."
+            }
+          ],
+          "condition": {
+            "coin_at_least": {
+              "charm": 3
+            }
+          },
+          "result": {
+            "stats": {
+              "charm": -3
+            },
+            "reward_flags": [
+              "SIDE-16_TRADE_V2"
+            ],
+            "side_completed": true
+          },
+          "on_insufficient_coins": "COIN_SHORTAGE"
+        }
+      ],
+      "insufficient_coins_branch_id": "COIN_SHORTAGE",
+      "coin_shortage_trigger": "balance_of_selected_coin_below_required",
+      "price": {
+        "base_fee": 3,
+        "negotiated_fee": 2,
+        "accepted_coin_ids": [
+          "strength",
+          "speed",
+          "intelligence",
+          "charm"
+        ]
+      },
+      "negotiation": {
+        "id": "NEGOTIATE",
+        "text": "가격 협상",
+        "available_before_coin_selection": true,
+        "once_per_encounter": true,
+        "discounted_fee": 2,
+        "routes": [
+          {
+            "id": "N_INT",
+            "text": "근거 제시",
+            "condition": {
+              "intelligence_at_least": 4
+            },
+            "player_dialogue": "옛 표식을 확인한 뒤 새 표지를 만들면 자재가 줄겠죠. 값을 낮춰 주세요.",
+            "success": {
+              "dialogue": [
+                {
+                  "speaker_id": "NPC-16",
+                  "text": "같은 표지를 두 번 만들 이유는 없지. 적게 받겠네."
+                }
+              ],
+              "payment_override": {
+                "amount": 2,
+                "apply_to": [
+                  "coin_at_least",
+                  "negative_stat_delta"
+                ],
+                "scope": "selected_coin_only"
+              },
+              "goto_coin_choice_id": "C2",
+              "set_flag": "NEGOTIATED_FEE"
+            },
+            "failure": {
+              "dialogue": [
+                {
+                  "speaker_id": "NPC-16",
+                  "text": "다시 말하고 싶지 않아."
+                }
+              ],
+              "goto_coin_choice_id": "C2",
+              "payment_fee": 3
+            }
+          },
+          {
+            "id": "N_CHARM",
+            "text": "사정 호소",
+            "condition": {
+              "charm_at_least": 4
+            },
+            "player_dialogue": "길을 잃는 사람이 더 생기지 않았으면 해요. 조금만 내면 안 될까요?",
+            "success": {
+              "dialogue": [
+                {
+                  "speaker_id": "NPC-16",
+                  "text": "그 뜻은 알겠네. 이번에는 덜 받지."
+                }
+              ],
+              "payment_override": {
+                "amount": 2,
+                "apply_to": [
+                  "coin_at_least",
+                  "negative_stat_delta"
+                ],
+                "scope": "selected_coin_only"
+              },
+              "goto_coin_choice_id": "C2",
+              "set_flag": "NEGOTIATED_FEE"
+            },
+            "failure": {
+              "dialogue": [
+                {
+                  "speaker_id": "NPC-16",
+                  "text": "다시 말하고 싶지 않아."
+                }
+              ],
+              "goto_coin_choice_id": "C2",
+              "payment_fee": 3
+            }
+          },
+          {
+            "id": "N_CANCEL",
+            "text": "원래대로 지불",
+            "goto_coin_choice_id": "C2"
+          }
+        ],
+        "on_no_affordable_coin": "COIN_SHORTAGE"
+      }
+    },
+    {
+      "id": "C2",
+      "text": "미니게임",
+      "dialogue": [
+        {
+          "speaker_id": "NPC-16",
+          "text": "그럼 동전으로 승부를 보죠. 앞면인지 뒷면인지 맞히면 통행 대가는 없어요."
+        }
+      ],
+      "mini_game": {
+        "id": "SIDE-16_COIN_TOSS",
+        "type": "gambling",
+        "implementation": "coin_toss",
+        "rules_ref": "00_implementation_rules.json#minigames.gambling",
+        "bet_options": [
+          {
+            "id": "HEADS",
+            "text": "앞면"
+          },
+          {
+            "id": "TAILS",
+            "text": "뒷면"
+          }
+        ],
+        "win_probability": 0.5,
+        "no_additional_coin_cost": true,
+        "on_failure": "return_to_four_choices",
+        "success": {
+          "dialogue": [
+            {
+              "speaker_id": "NPC-16",
+              "text": "맞혔네요. 제가 졌어요. 약속한 대로 이번 대가는 받지 않겠어요."
+            }
+          ],
+          "result": {
+            "stats": {},
+            "resolution": "won_minigame",
+            "retry": false,
+            "side_completed": true,
+            "reward_flags": [
+              "SIDE-16_MINIGAME_WON"
+            ]
+          }
+        },
+        "failure": {
+          "dialogue": [
+            {
+              "speaker_id": "NPC-16",
+              "text": "이번엔 틀렸네요. 다시 내기하거나 다른 방법을 선택하세요."
+            }
+          ],
+          "result": {
+            "stats": {},
+            "retry": true,
+            "side_completed": false
+          }
+        }
+      }
+    },
+    {
+      "id": "C3",
+      "text": "요구사항 들어주기",
+      "dialogue": [],
+      "requirement": {
+        "type": "stat_probability",
+        "task": "남겨진 경로 표식을 세기",
+        "required_stats": {
+          "primary": "intelligence",
+          "secondary": "speed"
+        },
+        "check": {
+          "rules_ref": "00_implementation_rules.json#requirement_probability",
+          "difficulty": 5,
+          "read_current_stats_at_attempt": true,
+          "roll_once_per_attempt": true
+        },
+        "duration_seconds": 35,
+        "collector_continues": true,
+        "stat_growth_paused": true,
+        "success": {
+          "dialogue": [
+            {
+              "speaker_id": "NPC-16",
+              "text": "그 사람이 마지막에 남긴 방향이 보이는군."
+            }
+          ],
+          "result": {
+            "stats": {
+              "strength": -2,
+              "speed": -1,
+              "intelligence": 1,
+              "charm": 1
+            },
+            "side_completed": true,
+            "reward_flags": [
+              "SIDE-16_AID_V2"
+            ]
+          }
+        },
+        "failure": {
+          "dialogue": [
+            {
+              "speaker_id": "NPC-16",
+              "text": "하나를 놓쳤어. 이름까지 틀릴 순 없지."
+            }
+          ],
+          "result": {
+            "stats": {
+              "strength": -2,
+              "speed": -1,
+              "charm": -1
+            },
+            "side_completed": false,
+            "retry": true
+          }
+        },
+        "story_prompt_dialogue": [
+          {
+            "speaker_id": "NPC-16",
+            "text": "미라에게 증언을 보내 줄까요?"
+          }
+        ],
+        "npc_advice_on_success": [
+          {
+            "speaker_id": "NPC-16",
+            "text": "보내게. 이름만큼은 잃지 않도록."
+          }
+        ],
+        "npc_advice_on_failure": [
+          {
+            "speaker_id": "NPC-16",
+            "text": "다시 말하고 싶지 않아."
+          }
+        ]
+      }
+    },
+    {
+      "id": "C4",
+      "text": "샛길로 가기",
+      "shortcut": {
+        "type": "log_only",
+        "enabled": false,
+        "log_level": "info",
+        "log_event": "SIDE_PATH_SELECTED_NOT_IMPLEMENTED",
+        "log_message": "SIDE-16: 샛길 선택됨. 아직 이동 구현 없음. 원래 선택지로 복귀.",
+        "movement": false,
+        "scene_transition": false,
+        "unlock": false,
+        "emit_npc_dialogue": false,
+        "return_to_choice_id": "ROOT_CHOICES"
+      },
+      "result": {
+        "stats": {},
+        "access": false,
+        "retry": true,
+        "side_completed": false
+      }
+    }
+  ],
+  "pet_on_help": {
+    "receiver_id": "NPC-11",
+    "text": "안 돌아온 길잡이: 낯선 이가 남겨진 경로 표식을 세기를 도와줬다."
+  },
+  "stat_change_policy": "clamp_at_zero",
+  "branches": {
+    "COIN_SHORTAGE": {
+      "trigger": {
+        "selected_coin_below_payment_amount": true
+      },
+      "dialogue": [
+        {
+          "speaker_id": "NPC-16",
+          "text": "돈이 없다면... 발자국부터 보게."
+        },
+        {
+          "speaker_id": "NPC-16",
+          "text": "길을 읽을 눈이 있는지 확인하겠네."
+        }
+      ],
+      "goto_choice_id": "ROOT_CHOICES",
+      "available_choices": [
+        "C1",
+        "C2",
+        "C3",
+        "C4"
+      ],
+      "note": "현재 통행세를 낼 수 없으면 미니게임, 요구사항, 샛길 로그를 선택할 수 있음"
+    }
+  },
+  "choice_order": [
+    "C1",
+    "C2",
+    "C3",
+    "C4"
+  ],
+  "choice_policy_ref": "00_implementation_rules.json#choice_policy"
+}

@@ -45,7 +45,7 @@ using UnityEngine;
     public string taxChapterId;
     public bool taxPatrolActive;
     public bool collectorOpeningCompleted;
-    public float collectorRouteEndZ;
+    public float collectorRouteStartZ, collectorRouteEndZ;
     public bool collectorReturning;
     public MineTaxInvoice taxInvoice;
     public bool HasTaxInvoice => taxInvoice?.lines?.Length > 0;

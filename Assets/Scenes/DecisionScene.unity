@@ -3105,6 +3105,7 @@ MonoBehaviour:
   bookBoard: {fileID: 2146541310}
   bookHoverLabel: {fileID: 1907949578}
   comboShelfPrefab: {fileID: 6043655441699769691, guid: 1bcbfc6f737711a47927dcf373c668bd, type: 3}
+  comboShelfLocalPosition: {x: 1.10763788, y: -4.51, z: -0.57}
   studentHead: {fileID: 1439667871}
   learningMeter: {fileID: 1522793333}
   learningFill: {fileID: 1174324562}
@@ -7985,6 +7986,18 @@ PrefabInstance:
       propertyPath: m_Enabled
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 2171028013401945527, guid: 3d2f120cd9a86db4793e7d8d3748130a, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: -0.285
+      objectReference: {fileID: 0}
+    - target: {fileID: 2171028013401945527, guid: 3d2f120cd9a86db4793e7d8d3748130a, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -0.37
+      objectReference: {fileID: 0}
+    - target: {fileID: 5626907338841546001, guid: 3d2f120cd9a86db4793e7d8d3748130a, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: -0.35
+      objectReference: {fileID: 0}
     - target: {fileID: 3546157544098104257, guid: 3d2f120cd9a86db4793e7d8d3748130a, type: 3}
       propertyPath: m_LocalScale.x
       value: 0.76348287
@@ -8003,11 +8016,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3546157544098104257, guid: 3d2f120cd9a86db4793e7d8d3748130a, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -4.29
+      value: -4.77
       objectReference: {fileID: 0}
     - target: {fileID: 3546157544098104257, guid: 3d2f120cd9a86db4793e7d8d3748130a, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 0.78001297
+      value: 1.57
       objectReference: {fileID: 0}
     - target: {fileID: 3546157544098104257, guid: 3d2f120cd9a86db4793e7d8d3748130a, type: 3}
       propertyPath: m_LocalRotation.w
@@ -8519,11 +8532,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3197252930042103710, guid: 1529c8c371a3ecf469ce1051658737bd, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -6.309082
+      value: -7.16
       objectReference: {fileID: 0}
     - target: {fileID: 3197252930042103710, guid: 1529c8c371a3ecf469ce1051658737bd, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -0.6522827
+      value: 0.85
       objectReference: {fileID: 0}
     - target: {fileID: 3197252930042103710, guid: 1529c8c371a3ecf469ce1051658737bd, type: 3}
       propertyPath: m_LocalRotation.w
@@ -14534,6 +14547,7 @@ MonoBehaviour:
   calendarStartDate: 1005-01-01
   learningStation: {fileID: 1280839299}
   mineCollectorPrefab: {fileID: 8398363589134432289, guid: 210556ed9ba47f3478a9f0a578c061ec, type: 3}
+  storyPetModel: {fileID: 919132149155446097, guid: 0264fb09c753d0c4c9c9210916f9786e, type: 3}
   guideKneelClip: {fileID: 7400000, guid: 099b770cf7399804b830b32787c8ab1b, type: 2}
   journeyBoardInput: {fileID: 283936616}
   uiController: {fileID: 604054470}
@@ -14547,6 +14561,7 @@ MonoBehaviour:
   - {fileID: 2228296959942073957, guid: 1060863729afa0d48a194644c67c3f64, type: 3}
   - {fileID: 4175986872745981016, guid: 4e80f42c6ed1dfc4ba59b0c29906cf62, type: 3}
   - {fileID: 6036098065384900409, guid: 6b2ac23ed5681bd4ea54dc3798fec096, type: 3}
+  journeyCoinRamp: {fileID: 4444094929848534543}
   backpackInventory: {fileID: 1771321779}
   tutorialMiniGames: {fileID: 1880279078}
   duelMiniGame: {fileID: 1587089771}
@@ -38514,6 +38529,40 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnvController
   npcPlacement: {fileID: 126628741}
+  authoredMineActors:
+  - {fileID: 467962815086302204, guid: 0724e56c773e6f645829aaabdc484bdb, type: 3}
+  - {fileID: 15235795736789254, guid: 6e4cc6281270ed44c8731c4b64cbe4b7, type: 3}
+  - {fileID: 1223682444445356092, guid: 15d54b81eece38541a7ea53fe0e458b9, type: 3}
+  - {fileID: 3815132925385919771, guid: 3efc2385b4ffe4d4aadec1120126bed2, type: 3}
+  - {fileID: 5909981508023100752, guid: ff38e67197b3b4d4ea33e859f32458f1, type: 3}
+  - {fileID: 819244874667510859, guid: 80b753db772be7647afb82cc535d9a0a, type: 3}
+  - {fileID: 24734142792244694, guid: da443f20f1b965444935c09948e6ba9c, type: 3}
+  - {fileID: 4681016675706594778, guid: d877bc138c75d3b4daca199a53833663, type: 3}
+  - {fileID: 3230765165372647235, guid: 11922364e09219e43b1a64082bee18d1, type: 3}
+  - {fileID: 5074602891831321829, guid: 3d9d4ea871c9f3a4dab86e8ea1470e09, type: 3}
+  - {fileID: 6292939695798113152, guid: 2a6b7c095fe2eef4c9342e2eaa6a19f3, type: 3}
+  - {fileID: 9043727808400801971, guid: 49fb46057cea9c346a83e964711c73e3, type: 3}
+  - {fileID: 829246312344189384, guid: 212e10f263e920143b42d6274d85f646, type: 3}
+  - {fileID: 1242986801892081457, guid: b85e473bf2ef86c4796083c7ddcbc730, type: 3}
+  - {fileID: 6372181476407749882, guid: 87e00adf795fada488db1f73e1aded9d, type: 3}
+  - {fileID: 4432533406104492402, guid: e82bfbfd3db6c6948891ca95637b0768, type: 3}
+  - {fileID: 4049464687843382365, guid: e7ff2b98c0d3ede4fa005e3ddb918da9, type: 3}
+  - {fileID: 6354189611052841764, guid: 832c3d68a7ffca9459dda26b0eb4ff17, type: 3}
+  - {fileID: 6254270355644412558, guid: a538dbd77aeb5bd44bfabf3373d509a6, type: 3}
+  - {fileID: 698599781876039789, guid: a39c72cbe96e02a4ebdcf1a201528d6c, type: 3}
+  - {fileID: 7284323660720018877, guid: d71f320729def9a4ebf3aa92ea683a15, type: 3}
+  - {fileID: 4667344349358752841, guid: 7324352cc4ecd9d4f8883b6dd2e924a6, type: 3}
+  - {fileID: 3627584508961623825, guid: c62d942dc59884d4db9b3f3a58b01a9d, type: 3}
+  - {fileID: 5628446732784356233, guid: 373183c9d764e344ebaf7a5450fff750, type: 3}
+  - {fileID: 5103012612772392591, guid: d67cdf16d82e4c740902aaf2b7b66ac8, type: 3}
+  - {fileID: 2480551811898093405, guid: edd64cfbf5fd7064d928630423a35056, type: 3}
+  - {fileID: 8042000170919454171, guid: 2fa5e1d895c274846bad75e81e157b72, type: 3}
+  - {fileID: 8367300569774817661, guid: cec968b41738abb4fa19a4cb2a0f3bf8, type: 3}
+  - {fileID: 1545853572719976082, guid: f8fcb53c24f2cf448aee27f7214d5601, type: 3}
+  - {fileID: 1994274683417661234, guid: 48caa86c29e5dc2438267ab358a34eb3, type: 3}
+  - {fileID: 8231714939645270947, guid: 304298eaa7f028a45bc4f72c5cab0a7f, type: 3}
+  - {fileID: 3320314267488538635, guid: 46e11618f40b8d14fa837fb919f2eadd, type: 3}
+  - {fileID: 4069119065770655352, guid: b93f4b72f5a1b4049a8a023996972d96, type: 3}
   environment: {fileID: 9096609592010750968}
   groundPrefab: {fileID: 6926542323555967691, guid: de97a86b347a1664bbf94e3522c0b134, type: 3}
   groundEntries:
@@ -38527,10 +38576,10 @@ MonoBehaviour:
     roomGroup:
     roomCompanionGroup:
     roomSourceGroundId:
-  - groundId: coastal_roofed
-    prefab: {fileID: 6083040472554003286, guid: 95d7d2835a67044458d0fca8eab1ae09, type: 3}
-    roomGroup: Buildings
-    roomCompanionGroup: Roofs
+  - groundId: coastal_assembly_180
+    prefab: {fileID: 8291529625445787332, guid: def25677410c1e14aa6d53afe0acaec3, type: 3}
+    roomGroup:
+    roomCompanionGroup:
     roomSourceGroundId:
   - groundId: mine_village_180
     prefab: {fileID: 7980400746099971014, guid: b3acc4032d3b9ea4abab71f32ba1c7c1, type: 3}
@@ -38543,14 +38592,47 @@ MonoBehaviour:
     roomCompanionGroup:
     roomSourceGroundId: mine_village_180
   terrainPrefabCatalog:
-    buildingEntries: []
+    buildingEntries:
+    - prefabId: LOC-01
+      prefab: {fileID: 1311974900084773638, guid: abd8b1f78da2cee4688ce30479554c72, type: 3}
+    - prefabId: LOC-02
+      prefab: {fileID: 3594143584723278663, guid: 578b41d3f8cbd6449893abdc4c6e1887, type: 3}
+    - prefabId: LOC-03
+      prefab: {fileID: 6497889216307121757, guid: c9416b445b328fc49a9a053d0e347d59, type: 3}
+    - prefabId: LOC-04
+      prefab: {fileID: 4668225456330041037, guid: 83b0ed47da9e84e40973eee40778b245, type: 3}
+    - prefabId: LOC-05
+      prefab: {fileID: 2962712363196449068, guid: 36dfa0c4e69b66248893934437102a62, type: 3}
+    - prefabId: LOC-06
+      prefab: {fileID: 6967557431120580335, guid: 648a6dd912fbcf341a4a2905db7b0328, type: 3}
+    - prefabId: LOC-07
+      prefab: {fileID: 6551408112486714414, guid: a9fd04675b0f10f4a8744e7b24f0854b, type: 3}
+    - prefabId: LOC-08
+      prefab: {fileID: 6912185623642088443, guid: 1826cdfd81d243449a667ccd26a80930, type: 3}
+    - prefabId: LOC-09
+      prefab: {fileID: 1460099278733601565, guid: 177acb12b5b4c1042bd5d178f16b2e21, type: 3}
+    - prefabId: LOC-10
+      prefab: {fileID: 2108652888378726078, guid: b4111da8fd533f549a325eec14846d3a, type: 3}
+    - prefabId: LOC-11
+      prefab: {fileID: 5590540462492981054, guid: e71e278e849109745929218b570f6f4c, type: 3}
+    - prefabId: LOC-12
+      prefab: {fileID: 2081618038028186790, guid: 129f2324041a39d42ba81d8f750e2828, type: 3}
     characterEntries:
     - prefabId: mine_miner
       prefab: {fileID: 7427648295388352340, guid: d2999e5c39a09f74b81aee34fc212078, type: 3}
     - prefabId: mine_anchor
       prefab: {fileID: 850351398783051031, guid: becc8b286a70fe04cbb644201fbcd061, type: 3}
+    mineRoadsideDecorations:
+    - {fileID: 8301979455790299248, guid: 4e333d90d82f57f4e94932edced2dd14, type: 3}
+    - {fileID: 5825863930691963264, guid: 6869c1d8ad32e8943b8f87abe94e030f, type: 3}
+    - {fileID: 299732798335093787, guid: 95eeadd2042faea468f67bde6fc05a55, type: 3}
+    - {fileID: 2749776845490891853, guid: 0d39ffbb9b27d9444aa6a3a27e216cd9, type: 3}
+    - {fileID: 3880840629303825020, guid: 7cef4d773d2a06a4496945effc0cdbfe, type: 3}
+    - {fileID: 2647917646918608202, guid: b7d15f4e2413bdf418264a52f5804773, type: 3}
+    - {fileID: 457402958955252870, guid: 157a366e0ab31de4dbb57b5e16c82fe1, type: 3}
+    - {fileID: 2770980604582970278, guid: 39cf94fb2d781b84594236c2bfb186fd, type: 3}
   chunkSize: 50
-  loadRadius: 4
+  loadRadius: 2
 --- !u!1 &9098001529364678249
 GameObject:
   m_ObjectHideFlags: 0

@@ -1,0 +1,413 @@
+{
+  "story_id": "SIDE-24",
+  "title": "우리가 걷는 통행세",
+  "opening": [
+    {
+      "speaker_id": "NPC-24",
+      "text": "관리자들이 우리 걸 다 가져가는데 난 왜 받으면 안 돼?"
+    },
+    {
+      "speaker_id": "NPC-24",
+      "text": "이 길은 내가 지키니까 당연히 대가가 있어야지."
+    }
+  ],
+  "choices": [
+    {
+      "id": "C1",
+      "text": "통행세 내기",
+      "dialogue": [
+        {
+          "speaker_id": "NPC-24",
+          "text": "여기 구역을 지나려면 코인 2개 내. 우린 공짜로 길을 지키지 않아."
+        }
+      ],
+      "coin_options": [
+        {
+          "id": "strength",
+          "text": "힘 지불",
+          "dialogue": [
+            {
+              "speaker_id": "NPC-24",
+              "text": "힘이냐. 힘만 믿는 건 아니지만 쓸 데는 있지."
+            }
+          ],
+          "condition": {
+            "coin_at_least": {
+              "strength": 2
+            }
+          },
+          "result": {
+            "stats": {
+              "strength": -2
+            },
+            "reward_flags": [
+              "SIDE-24_TRADE_V1"
+            ],
+            "side_completed": true
+          },
+          "on_insufficient_coins": "COIN_SHORTAGE"
+        },
+        {
+          "id": "speed",
+          "text": "속도 지불",
+          "dialogue": [
+            {
+              "speaker_id": "NPC-24",
+              "text": "속도라, 쫓아오는 징수원을 따돌리겠군."
+            }
+          ],
+          "condition": {
+            "coin_at_least": {
+              "speed": 2
+            }
+          },
+          "result": {
+            "stats": {
+              "speed": -2
+            },
+            "reward_flags": [
+              "SIDE-24_TRADE_V1"
+            ],
+            "side_completed": true
+          },
+          "on_insufficient_coins": "COIN_SHORTAGE"
+        },
+        {
+          "id": "intelligence",
+          "text": "지능 지불",
+          "dialogue": [
+            {
+              "speaker_id": "NPC-24",
+              "text": "지능? 녀석들 장부부터 뒤집어 봐야지."
+            }
+          ],
+          "condition": {
+            "coin_at_least": {
+              "intelligence": 2
+            }
+          },
+          "result": {
+            "stats": {
+              "intelligence": -2
+            },
+            "reward_flags": [
+              "SIDE-24_TRADE_V1"
+            ],
+            "side_completed": true
+          },
+          "on_insufficient_coins": "COIN_SHORTAGE"
+        },
+        {
+          "id": "charm",
+          "text": "매력 지불",
+          "dialogue": [
+            {
+              "speaker_id": "NPC-24",
+              "text": "매력이라. 사람을 모을 때 쓰겠어."
+            }
+          ],
+          "condition": {
+            "coin_at_least": {
+              "charm": 2
+            }
+          },
+          "result": {
+            "stats": {
+              "charm": -2
+            },
+            "reward_flags": [
+              "SIDE-24_TRADE_V1"
+            ],
+            "side_completed": true
+          },
+          "on_insufficient_coins": "COIN_SHORTAGE"
+        }
+      ],
+      "insufficient_coins_branch_id": "COIN_SHORTAGE",
+      "coin_shortage_trigger": "balance_of_selected_coin_below_required",
+      "price": {
+        "base_fee": 2,
+        "negotiated_fee": 1,
+        "accepted_coin_ids": [
+          "strength",
+          "speed",
+          "intelligence",
+          "charm"
+        ]
+      },
+      "negotiation": {
+        "id": "NEGOTIATE",
+        "text": "가격 협상",
+        "available_before_coin_selection": true,
+        "once_per_encounter": true,
+        "discounted_fee": 1,
+        "routes": [
+          {
+            "id": "N_INT",
+            "text": "근거 제시",
+            "condition": {
+              "intelligence_at_least": 3
+            },
+            "player_dialogue": "방책을 직접 점검해 보면 필요한 만큼만 걷어도 되겠지?",
+            "success": {
+              "dialogue": [
+                {
+                  "speaker_id": "NPC-24",
+                  "text": "흥, 따져 보자는 거군. 낭비가 없다면 값을 낮추지."
+                }
+              ],
+              "payment_override": {
+                "amount": 1,
+                "apply_to": [
+                  "coin_at_least",
+                  "negative_stat_delta"
+                ],
+                "scope": "selected_coin_only"
+              },
+              "goto_coin_choice_id": "C2",
+              "set_flag": "NEGOTIATED_FEE"
+            },
+            "failure": {
+              "dialogue": [
+                {
+                  "speaker_id": "NPC-24",
+                  "text": "헛소리 말고 비켜."
+                }
+              ],
+              "goto_coin_choice_id": "C2",
+              "payment_fee": 2
+            }
+          },
+          {
+            "id": "N_CHARM",
+            "text": "사정 호소",
+            "condition": {
+              "charm_at_least": 3
+            },
+            "player_dialogue": "길을 지키는 수고는 알아. 그렇지만 코인을 다 줄 순 없어.",
+            "success": {
+              "dialogue": [
+                {
+                  "speaker_id": "NPC-24",
+                  "text": "좋아, 이번에는 절반쯤 봐주지. 대신 약속은 지켜."
+                }
+              ],
+              "payment_override": {
+                "amount": 1,
+                "apply_to": [
+                  "coin_at_least",
+                  "negative_stat_delta"
+                ],
+                "scope": "selected_coin_only"
+              },
+              "goto_coin_choice_id": "C2",
+              "set_flag": "NEGOTIATED_FEE"
+            },
+            "failure": {
+              "dialogue": [
+                {
+                  "speaker_id": "NPC-24",
+                  "text": "헛소리 말고 비켜."
+                }
+              ],
+              "goto_coin_choice_id": "C2",
+              "payment_fee": 2
+            }
+          },
+          {
+            "id": "N_CANCEL",
+            "text": "원래대로 지불",
+            "goto_coin_choice_id": "C2"
+          }
+        ],
+        "on_no_affordable_coin": "COIN_SHORTAGE"
+      }
+    },
+    {
+      "id": "C2",
+      "text": "미니게임",
+      "dialogue": [
+        {
+          "speaker_id": "NPC-24",
+          "text": "코인 대신 결투라? 좋아. 네가 이기면 이번 대가는 받지 않겠어."
+        }
+      ],
+      "mini_game": {
+        "id": "SIDE-24_DUEL",
+        "type": "duel",
+        "implementation": "existing_duel_system",
+        "rules_ref": "00_implementation_rules.json#minigames.duel",
+        "winner_condition": "player_wins_existing_duel",
+        "loser_condition": "player_loses_existing_duel",
+        "no_additional_coin_cost": true,
+        "on_failure": "return_to_four_choices",
+        "success": {
+          "dialogue": [
+            {
+              "speaker_id": "NPC-24",
+              "text": "내가 졌군. 약속은 약속이지. 이번 건은 네 승리로 인정하겠어."
+            }
+          ],
+          "result": {
+            "stats": {},
+            "resolution": "won_minigame",
+            "retry": false,
+            "side_completed": true,
+            "reward_flags": [
+              "SIDE-24_MINIGAME_WON"
+            ]
+          }
+        },
+        "failure": {
+          "dialogue": [
+            {
+              "speaker_id": "NPC-24",
+              "text": "아직 실력이 부족하군. 다른 방법을 고르거나 다시 도전해."
+            }
+          ],
+          "result": {
+            "stats": {},
+            "retry": true,
+            "side_completed": false
+          }
+        }
+      }
+    },
+    {
+      "id": "C3",
+      "text": "요구사항 들어주기",
+      "dialogue": [],
+      "requirement": {
+        "type": "stat_probability",
+        "task": "무너진 방책 다시 세우기",
+        "required_stats": {
+          "primary": "strength",
+          "secondary": "intelligence"
+        },
+        "check": {
+          "rules_ref": "00_implementation_rules.json#requirement_probability",
+          "difficulty": 5,
+          "read_current_stats_at_attempt": true,
+          "roll_once_per_attempt": true
+        },
+        "duration_seconds": 25,
+        "collector_continues": true,
+        "stat_growth_paused": true,
+        "success": {
+          "dialogue": [
+            {
+              "speaker_id": "NPC-24",
+              "text": "좋아. 네가 손을 보탠 건 인정하지."
+            }
+          ],
+          "result": {
+            "stats": {
+              "strength": -2,
+              "speed": -1,
+              "intelligence": 1,
+              "charm": 1
+            },
+            "side_completed": true,
+            "reward_flags": [
+              "SIDE-24_AID_V1"
+            ]
+          }
+        },
+        "failure": {
+          "dialogue": [
+            {
+              "speaker_id": "NPC-24",
+              "text": "그 정도론 못 버텨."
+            }
+          ],
+          "result": {
+            "stats": {
+              "strength": -2,
+              "speed": -1,
+              "charm": -1
+            },
+            "side_completed": false,
+            "retry": true
+          }
+        },
+        "story_prompt_dialogue": [
+          {
+            "speaker_id": "NPC-24",
+            "text": "네 통행세도 같은 착취 아닌가?"
+          }
+        ],
+        "npc_advice_on_success": [
+          {
+            "speaker_id": "NPC-24",
+            "text": "...그 말을 내 앞에서 하는 놈은 드물지."
+          }
+        ],
+        "npc_advice_on_failure": [
+          {
+            "speaker_id": "NPC-24",
+            "text": "헛소리 말고 비켜."
+          }
+        ]
+      }
+    },
+    {
+      "id": "C4",
+      "text": "샛길로 가기",
+      "shortcut": {
+        "type": "log_only",
+        "enabled": false,
+        "log_level": "info",
+        "log_event": "SIDE_PATH_SELECTED_NOT_IMPLEMENTED",
+        "log_message": "SIDE-24: 샛길 선택됨. 아직 이동 구현 없음. 원래 선택지로 복귀.",
+        "movement": false,
+        "scene_transition": false,
+        "unlock": false,
+        "emit_npc_dialogue": false,
+        "return_to_choice_id": "ROOT_CHOICES"
+      },
+      "result": {
+        "stats": {},
+        "access": false,
+        "retry": true,
+        "side_completed": false
+      }
+    }
+  ],
+  "pet_on_help": {
+    "receiver_id": "NPC-02",
+    "text": "우리가 걷는 통행세: 낯선 이가 무너진 방책 다시 세우기를 도와줬다."
+  },
+  "stat_change_policy": "clamp_at_zero",
+  "branches": {
+    "COIN_SHORTAGE": {
+      "trigger": {
+        "selected_coin_below_payment_amount": true
+      },
+      "dialogue": [
+        {
+          "speaker_id": "NPC-24",
+          "text": "코인도 없으면서 뭘 요구해? 좋다, 승부로 정하자."
+        },
+        {
+          "speaker_id": "NPC-24",
+          "text": "제대로 보여 주면 지나가게 해 주지."
+        }
+      ],
+      "goto_choice_id": "ROOT_CHOICES",
+      "available_choices": [
+        "C1",
+        "C2",
+        "C3",
+        "C4"
+      ],
+      "note": "현재 통행세를 낼 수 없으면 미니게임, 요구사항, 샛길 로그를 선택할 수 있음"
+    }
+  },
+  "choice_order": [
+    "C1",
+    "C2",
+    "C3",
+    "C4"
+  ],
+  "choice_policy_ref": "00_implementation_rules.json#choice_policy"
+}

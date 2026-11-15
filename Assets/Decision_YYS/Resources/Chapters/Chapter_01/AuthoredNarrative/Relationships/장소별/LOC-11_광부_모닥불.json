@@ -1,0 +1,94 @@
+{
+  "location_id": "LOC-11",
+  "name": "광부 모닥불",
+  "origin": "existing",
+  "fixed_chunk": "CHUNK-01",
+  "place_position_rule": "청크 내부 위치는 랜덤. NPC는 배치된 장소에 고정",
+  "location_description": "광부들이 쉬고 소식을 나누는 장소. 은퇴 광부와 현역 광부의 경험이 모인다.",
+  "fixed_npcs": [
+    {
+      "npc_id": "NPC-02",
+      "name": "브룩",
+      "role": "main",
+      "origin": "existing",
+      "social_class": "최하층 채굴민",
+      "stance": "현실 개혁파",
+      "fixed_chunk": "CHUNK-01",
+      "fixed_location_id": "LOC-11",
+      "fixed_location_name": "광부 모닥불",
+      "movement": "none",
+      "character_traits": [
+        "의리",
+        "고집",
+        "강한 자존심"
+      ],
+      "personality": "고집스럽고 투박하지만 동료에 대한 의리가 깊다. 동정을 받는 것을 싫어한다.",
+      "speech_style": "낮고 거친 반말. 돌려 말하지 않고 자존심이 상하면 말수가 줄어듦.",
+      "conversation_topic": "능력을 잃은 광부의 노동 자격과 자존심",
+      "pet_links": [
+        {
+          "npc_id": "NPC-01",
+          "name": "헤른",
+          "relation_hint": "과거 목숨을 맡기던 동료, 현재 갈등 상대."
+        },
+        {
+          "npc_id": "NPC-03",
+          "name": "도르",
+          "relation_hint": "약해진 몸에 맞는 도구를 만드는 친구."
+        },
+        {
+          "npc_id": "NPC-04",
+          "name": "벨라",
+          "relation_hint": "외상으로 식사를 제공하는 사람."
+        },
+        {
+          "npc_id": "NPC-24",
+          "name": "카본",
+          "relation_hint": "한때 함께 일한 후배, 폭력적 저항에는 반대."
+        }
+      ]
+    },
+    {
+      "npc_id": "NPC-29",
+      "name": "하몬",
+      "role": "supporting",
+      "origin": "new",
+      "social_class": "최하층 채굴민",
+      "stance": "생존 우선·중립",
+      "fixed_chunk": "CHUNK-01",
+      "fixed_location_id": "LOC-11",
+      "fixed_location_name": "광부 모닥불",
+      "movement": "none",
+      "character_traits": [
+        "익살",
+        "향수",
+        "경험"
+      ],
+      "personality": "익살스럽고 이야기하기를 좋아한다.",
+      "speech_style": "정겨운 옛 광부의 반말. 오래된 일화로 이야기를 시작하며 느릿하게 끝맺음.",
+      "conversation_topic": "힘을 모두 잃은 광부의 생계와 과거의 기억",
+      "pet_links": [
+        {
+          "npc_id": "NPC-02",
+          "name": "브룩",
+          "relation_hint": "젊을 때부터 알던 후배."
+        },
+        {
+          "npc_id": "NPC-11",
+          "name": "미라",
+          "relation_hint": "공식 기록 밖의 이야기를 듣는 상대."
+        },
+        {
+          "npc_id": "NPC-24",
+          "name": "카본",
+          "relation_hint": "어린 시절을 알고 있는 인물."
+        }
+      ]
+    }
+  ],
+  "main_npc_ids": [
+    "NPC-02"
+  ],
+  "pet_remote_conversation": true,
+  "notice": "이 장소 JSON에는 방문 NPC를 넣지 않음. 다른 NPC와의 관계는 PET 연결로만 표현"
+}

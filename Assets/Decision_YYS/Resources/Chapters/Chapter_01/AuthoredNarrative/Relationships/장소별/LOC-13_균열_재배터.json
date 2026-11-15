@@ -1,0 +1,131 @@
+{
+  "location_id": "LOC-13",
+  "name": "균열 재배터",
+  "origin": "new",
+  "fixed_chunk": "CHUNK-04",
+  "place_position_rule": "청크 내부 위치는 랜덤. NPC는 배치된 장소에 고정",
+  "location_description": "갱도 벽면의 습기와 희미한 빛으로 식용 버섯과 약초를 재배한다.",
+  "fixed_npcs": [
+    {
+      "npc_id": "NPC-05",
+      "name": "모아",
+      "role": "main",
+      "origin": "existing",
+      "social_class": "채집 생계층",
+      "stance": "현실 개혁파",
+      "fixed_chunk": "CHUNK-04",
+      "fixed_location_id": "LOC-13",
+      "fixed_location_name": "균열 재배터",
+      "movement": "none",
+      "character_traits": [
+        "온화함",
+        "인내심",
+        "보호 본능"
+      ],
+      "personality": "온화하고 인내심이 강하다. 생존 문제에는 단호하지만 남을 쉽게 믿는다.",
+      "speech_style": "부드럽고 느긋한 말투. 남을 안심시키되 중요한 순간에는 단호함.",
+      "conversation_topic": "재배물의 공정한 분배와 피코의 생계",
+      "pet_links": [
+        {
+          "npc_id": "NPC-12",
+          "name": "피코",
+          "relation_hint": "가족처럼 보호하는 아이."
+        },
+        {
+          "npc_id": "NPC-06",
+          "name": "네아",
+          "relation_hint": "약용 식물을 공급하는 협력자."
+        },
+        {
+          "npc_id": "NPC-04",
+          "name": "벨라",
+          "relation_hint": "식재료 거래로 친해진 친구."
+        },
+        {
+          "npc_id": "NPC-07",
+          "name": "틸",
+          "relation_hint": "재배물을 운반하는 동료."
+        }
+      ]
+    },
+    {
+      "npc_id": "NPC-12",
+      "name": "피코",
+      "role": "supporting",
+      "origin": "existing",
+      "social_class": "채집 생계층",
+      "stance": "생존 우선·중립",
+      "fixed_chunk": "CHUNK-04",
+      "fixed_location_id": "LOC-13",
+      "fixed_location_name": "균열 재배터",
+      "movement": "none",
+      "character_traits": [
+        "호기심",
+        "영리함",
+        "독립심"
+      ],
+      "personality": "호기심이 많고 영리하며 고집스럽다.",
+      "speech_style": "솔직하고 호기심 많은 어린아이 말투. 질문이 끊이지 않고 감정을 숨기지 않음.",
+      "conversation_topic": "보호받는 아이도 공동체에 기여할 수 있는가",
+      "pet_links": [
+        {
+          "npc_id": "NPC-05",
+          "name": "모아",
+          "relation_hint": "가족처럼 보호해 주는 사람."
+        },
+        {
+          "npc_id": "NPC-06",
+          "name": "네아",
+          "relation_hint": "자신을 돌보는 치료사."
+        },
+        {
+          "npc_id": "NPC-30",
+          "name": "에린",
+          "relation_hint": "부모 이야기를 들려주는 어른."
+        }
+      ]
+    },
+    {
+      "npc_id": "NPC-31",
+      "name": "소하",
+      "role": "supporting",
+      "origin": "new",
+      "social_class": "채집 생계층",
+      "stance": "기회주의파",
+      "fixed_chunk": "CHUNK-04",
+      "fixed_location_id": "LOC-13",
+      "fixed_location_name": "균열 재배터",
+      "movement": "none",
+      "character_traits": [
+        "활달함",
+        "생활력",
+        "이익 추구"
+      ],
+      "personality": "활달하고 생활력이 강하지만 욕심이 많다.",
+      "speech_style": "활달하고 계산 빠른 말투. 수량과 이익을 자주 언급하며 친근하게 흥정함.",
+      "conversation_topic": "공동 재배물에서 개인 몫을 어디까지 가져갈지",
+      "pet_links": [
+        {
+          "npc_id": "NPC-05",
+          "name": "모아",
+          "relation_hint": "분배 기준을 두고 다투는 동료."
+        },
+        {
+          "npc_id": "NPC-04",
+          "name": "벨라",
+          "relation_hint": "식재료 거래처."
+        },
+        {
+          "npc_id": "NPC-26",
+          "name": "세온",
+          "relation_hint": "비공식 거래 상대."
+        }
+      ]
+    }
+  ],
+  "main_npc_ids": [
+    "NPC-05"
+  ],
+  "pet_remote_conversation": true,
+  "notice": "이 장소 JSON에는 방문 NPC를 넣지 않음. 다른 NPC와의 관계는 PET 연결로만 표현"
+}

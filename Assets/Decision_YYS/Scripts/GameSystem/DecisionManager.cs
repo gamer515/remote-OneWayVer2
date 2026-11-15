@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using JourneyMapKit;
 using static Constants;
@@ -60,6 +62,7 @@ public partial class DecisionManager : MonoBehaviour
     [SerializeField] private CoinDropController coinDropController;
     [Tooltip("코인통 왼쪽부터 Blue, Red, Yellow, Teal 순서의 Journey 코인 프리팹입니다.")]
     [SerializeField] private GameObject[] journeyCoinPrefabs;
+    [SerializeField] private Collider journeyCoinRamp;
     [SerializeField] private BackpackInventoryController backpackInventory;
     [SerializeField] private TutorialMiniGameController tutorialMiniGames;
     [SerializeField] private DuelMiniGameBridge duelMiniGame;
@@ -148,6 +151,7 @@ public partial class DecisionManager : MonoBehaviour
     {
         TickMineChapter();
         TickLearning();
+        if (uiController?.IsReadingOpen == true) return;
         if (journeyCoinSupply?.HasBoardPayment == true)
         {
             journeyCoinSupply.HandleBoardPaymentInput(FinishBoardPayment, CancelBoardPayment);
@@ -205,6 +209,19 @@ public partial class DecisionManager : MonoBehaviour
         var mineProgress = guideProgress.mineChapter ??= new MineChapterProgress();
         if (!mineProgress.initialized) mineProgress.variedRoomLayout = true;
         envController.SetContentRun(session.RunNumber, session.RunSeed, mineProgress.variedRoomLayout);
+        var savedChapter = session.Omnibus.chapters.ElementAtOrDefault(loadedProgress.chapterIndex);
+        bool startAuthoredMine = envController.AuthoredMine != null &&
+            guideProgress.authoredMine?.contentVersion != MineAuthoredStory.PackVersion &&
+            MineAuthoredStory.Episode == savedChapter?.chapterId + "/" +
+            savedChapter?.episodeIds?.ElementAtOrDefault(loadedProgress.episodeIndex);
+        if (startAuthoredMine)
+        {
+            var delivered = guideProgress.authoredMine?.flags?.Where(flag => flag.EndsWith(":delivered", StringComparison.Ordinal)).ToList();
+            guideProgress.authoredMine = new MineAuthoredProgress { contentVersion = MineAuthoredStory.PackVersion,
+                flags = delivered ?? new List<string>() };
+            loadedProgress.resolvedPlaceIds?.RemoveAll(id => !guideProgress.authoredMine.flags.Contains(id + ":delivered"));
+            loadedProgress.activePlaceId = loadedProgress.activeStoryPath = loadedProgress.interactionPhase = null;
+        }
         if (!envController.TryValidateAllContent(session.Omnibus, out string contentError))
         {
             Debug.LogError($"전체 콘텐츠 검증 실패: {contentError}", this);
@@ -239,7 +256,7 @@ public partial class DecisionManager : MonoBehaviour
             if (facility.IsShop && facility.Position.z >= activeSegmentOrigin.z && facility.Position.z < entryPosition.z + encounterStopDistance)
                 entryPosition.z = Mathf.Max(activeSegmentOrigin.z, facility.Position.z - encounterStopDistance);
         Vector3 startPosition = DecisionPlayerController.ResolveStartPosition(
-            startData.SavedPlayerPosition, activeSegmentOrigin,
+            startAuthoredMine ? null : startData.SavedPlayerPosition, activeSegmentOrigin,
             envController.CurrentTerrainEndZ, entryPosition, out bool recoveredPosition,
             envController.NpcPlacement != null ? envController.NpcPlacement.LateralReach(envController.TerrainOrigin) + encounterStopDistance : 0.5f);
         playerController.Initialize(startPosition, startData.SavedPlayerRotation, envController.TerrainOrigin.x);
@@ -259,6 +276,17 @@ public partial class DecisionManager : MonoBehaviour
             startData.Player.transform,
             useInitialCameraPosition);
 
+        if (loadedProgress.interactionPhase == SaveManager.CoastEndingPhase)
+        {
+            currentState = StoryState.Transitioning;
+            SetYellowInputInteractable(false);
+            journeyBoardInput?.SetInputEnabled(false);
+            bettingButtonController?.SetBettingInteractable(false);
+            uiController.ShowWalkingView();
+            StartCoroutine(ShowCoastEnding());
+            return;
+        }
+
         coinDropController.InitializeInventory(startData.RemainingCoins);
         backpackInventory?.Initialize(
             startData.Inventory,
@@ -269,6 +297,7 @@ public partial class DecisionManager : MonoBehaviour
                 journeyBoardInput, journeyCoinPrefabs, coinDropController,
                 saveService.SaveRemainingCoins);
             journeyCoinSupply.SetBoardGrid(backpackInventory?.StudyGrid);
+            journeyCoinSupply.CoinRamp = journeyCoinRamp;
             journeyCoinSupply.DropRunner = this;
             var dispenser = FindFirstObjectByType<LearningDispenserView>();
             if (dispenser != null)
@@ -289,6 +318,12 @@ public partial class DecisionManager : MonoBehaviour
             statContainer.ResetForEpisode();
 
         LoadCurrentEpisode();
+    }
+
+    private IEnumerator ShowCoastEnding()
+    {
+        yield return new WaitForSecondsRealtime(5f);
+        GameManager.Instance.CompleteCoastEnding();
     }
 
     private bool ValidateDependencies()
@@ -567,7 +602,8 @@ private void SetYellowInputInteractable(bool interactable)
         if (history.Count > 0)
         {
             PlayedEncounterCardRecord last = history[history.Count - 1];
-            if (last != null && last.encounterPath == encounterPath && last.cardIndex == cardIndex)
+            if (last != null && last.encounterPath == encounterPath && last.placeId == placeId &&
+                last.cardIndex == cardIndex && last.card?.authoredLinePath == dialogue.authoredLinePath)
                 return;
         }
 
@@ -584,6 +620,7 @@ private void SetYellowInputInteractable(bool interactable)
 
     private void HandleScreenClicked()
     {
+        if (uiController != null && uiController.IsReadingOpen) return;
         HandleEncounterYellowPressed();
     }
 

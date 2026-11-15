@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using static Constants;
 
@@ -34,6 +35,12 @@ public partial class DecisionManager
                 if (!string.IsNullOrWhiteSpace(id)) resolvedPlaceIds.Add(id);
 
         pendingEncounter = null;
+        if (currentScenarioPath == "Chapter_1/Chapter_1_BossPreview" &&
+            Authored?.nodeId?.StartsWith(BossEntry, StringComparison.Ordinal) == true)
+        {
+            PresentAuthoredBoss();
+            return;
+        }
         activePlaceId = loadedProgress?.activePlaceId;
         activeCardIndex = loadedProgress?.activeCardIndex ?? 0;
         string phase = loadedProgress?.interactionPhase;
@@ -91,20 +98,35 @@ public partial class DecisionManager
     {
         mineView?.Hide();
         float startZ = playerController.CurrentPosition.z;
-        if (startZ >= encounterFlow.EpisodeEndZ - 0.01f) { CompleteEncounterEpisode(); return; }
         // 한 번 누르면 다음 이벤트 오브젝트까지 계속 걷습니다. 그 사이 청크는 EnvController가 스트리밍합니다.
         float endZ = encounterFlow.EpisodeEndZ;
+        if (currentScenarioPath == MineAuthoredStory.Episode && Authored != null)
+        {
+            var missing = envController.TerrainData.places.FirstOrDefault(place =>
+                (place.placeId.StartsWith("MAIN_", StringComparison.Ordinal) ||
+                 place.placeId.StartsWith("MAIN-", StringComparison.Ordinal)) && !resolvedPlaceIds.Contains(place.placeId));
+            if (missing != null && encounterFlow.TryGetEncounter(missing.placeId, out var required) &&
+                required.WorldPosition.z < startZ - .01f)
+            {
+                ApproachEncounter(required);
+                return;
+            }
+        }
         pendingEncounter = null;
         if (encounterFlow.TryFindFirst(startZ, endZ, resolvedPlaceIds, out var first))
         {
             ApproachEncounter(first);
             return;
         }
+        if (startZ >= endZ - .01f) { CompleteEncounterEpisode(); return; }
         currentState = StoryState.MovingToEncounter;
         SetYellowInputInteractable(false);
         presentationController.ShowWalkingView();
         var destination = new Vector3(envController.TerrainOrigin.x, playerController.CurrentPosition.y, endZ);
-        playerController.MoveAlongPath(envController.NpcPlacement != null ? envController.NpcPlacement.Path(playerController.CurrentPosition, destination) : new[] { destination });
+        if (currentScenarioPath == MineAuthoredStory.Episode && envController.AuthoredMine != null)
+            playerController.MoveToZ(endZ);
+        else
+            playerController.MoveAlongPath(envController.NpcPlacement != null ? envController.NpcPlacement.Path(playerController.CurrentPosition, destination) : new[] { destination });
         SaveEncounterState("walking");
     }
 
@@ -136,7 +158,15 @@ public partial class DecisionManager
         var target = placement != null ? placement.ApproachPoint(encounter.WorldPosition, envController.TerrainOrigin, encounterStopDistance)
             : encounter.WorldPosition - Vector3.forward * encounterStopDistance;
         currentState = StoryState.MovingToEncounter; SetYellowInputInteractable(false); presentationController.ShowWalkingView();
-        playerController.MoveAlongPath(placement != null ? placement.Path(playerController.CurrentPosition, target) : new[] { target });
+        bool authored = encounter.ContentPath.StartsWith(MineAuthoredStory.Prefix, StringComparison.Ordinal);
+        if (authored)
+        {
+            var place = envController.TerrainData.places.FirstOrDefault(entry => entry.placeId == encounter.PlaceId);
+            float offset = place?.authoredLocationId != null ? place.storyLocationDepth.x - encounterStopDistance : 0f;
+            playerController.MoveToZ(encounter.WorldPosition.z + offset);
+        }
+        else playerController.MoveAlongPath(placement != null
+            ? placement.Path(playerController.CurrentPosition, target) : new[] { target });
         SaveEncounterState("walking");
     }
 
@@ -145,7 +175,7 @@ public partial class DecisionManager
         if (playerController == null || !playerController.IsAvailable || string.IsNullOrWhiteSpace(placeId))
             return;
 
-        string objectName = $"Place_{placeId}";
+        string objectName = $"Place_{StoryVisualId(placeId)}";
         foreach (Transform candidate in FindObjectsByType<Transform>(
                      FindObjectsInactive.Exclude, FindObjectsSortMode.None))
         {
@@ -156,7 +186,12 @@ public partial class DecisionManager
                 if (!actor.name.StartsWith("ActorSocket_", StringComparison.Ordinal)) continue;
                 sockets = true;
                 Vector3 direction = playerController.CurrentPosition - actor.position; direction.y = 0;
-                if (direction.sqrMagnitude > 0.0001f) actor.rotation = Quaternion.LookRotation(direction.normalized, Vector3.up);
+                if (direction.sqrMagnitude > 0.0001f)
+                {
+                    float variation = (float)MineChapterSettings.Roll(session.RunSeed, 0, placeId + ":" + actor.name);
+                    float angle = Mathf.Lerp(-26f, 26f, variation);
+                    actor.rotation = Quaternion.LookRotation(direction.normalized, Vector3.up) * Quaternion.Euler(0, angle, 0);
+                }
             }
             if (!sockets)
             {
@@ -282,6 +317,11 @@ public partial class DecisionManager
 
     private void OpenEncounterCards(EncounterFlowController.Encounter encounter, int index, string storyPath = null)
     {
+        if (encounter.ContentPath.StartsWith(MineAuthoredStory.Prefix, StringComparison.Ordinal))
+        {
+            OpenStoryPack(encounter);
+            return;
+        }
         activePlaceId = encounter.PlaceId;
         activeEncounterPath = string.IsNullOrWhiteSpace(storyPath) ? encounter.ContentPath : storyPath;
         if (string.IsNullOrWhiteSpace(storyPath)) activeEncounterPath = MineOpeningPath(encounter.PlaceId, activeEncounterPath);
@@ -363,6 +403,16 @@ public partial class DecisionManager
 
     private void AdvanceEncounterCard(bool boardPaid = false)
     {
+        if (activeEncounterPath == MineAuthoredStory.Prefix + "Boss")
+        {
+            AdvanceAuthoredBoss();
+            return;
+        }
+        if (activeEncounterPath?.StartsWith(MineAuthoredStory.Prefix, StringComparison.Ordinal) == true)
+        {
+            AdvanceStoryPack();
+            return;
+        }
         if (currentState == StoryState.WaitingForChoice)
         {
             Dialogue card = activeCards.MainStory[activeCardIndex];
@@ -431,6 +481,12 @@ public partial class DecisionManager
                 }
             }
         presentationController.ShowOptions(options, selectedGearIndex);
+        int first = selectedGearIndex >= 0 ? Mathf.Max(0, selectedGearIndex - 3) : 0;
+        bool hasPackHints = envController.AuthoredMine != null && activeEncounterPath != null &&
+            (activeEncounterPath.StartsWith(MineAuthoredStory.Prefix + "MAIN-", StringComparison.Ordinal) ||
+             activeEncounterPath.StartsWith(MineAuthoredStory.Prefix + "SIDE-", StringComparison.Ordinal));
+        uiController.SetChoiceHints(hasPackHints ? new Func<int, string>(PackChoiceHint) : null,
+            first, Mathf.Min(4, options.Length - first));
     }
 
     private void ResolveEncounter()
@@ -459,7 +515,19 @@ public partial class DecisionManager
 
     private void CompleteEncounterEpisode()
     {
+        if (currentScenarioPath == MineAuthoredStory.Episode && envController.AuthoredMine != null &&
+            !AuthoredBossUnlocked())
+        {
+            BeginExploration();
+            presentationController.ShowInteraction("필수 사건과 펫 전언을 모두 마쳐야 합니다.", "안내");
+            return;
+        }
         var chapter = currentOmnibus.chapters[chapterIndex];
+        if (currentScenarioPath == "Chapter_1/Chapter_1_BossPreview" && Authored != null && envController.AuthoredMine != null)
+        {
+            PresentAuthoredBoss();
+            return;
+        }
         if (episodeIndex == chapter.episodeIds.Count - 1 && chapter.bossStage > 0)
         {
             RelayCompletedEpisode();
@@ -506,9 +574,13 @@ public partial class DecisionManager
 
     private Transform FindEncounterActor(string placeId, string speaker)
     {
+        placeId = StoryVisualId(placeId);
         var root = Array.Find(FindObjectsByType<Transform>(FindObjectsInactive.Exclude, FindObjectsSortMode.None),
             transform => transform.name == "Place_" + placeId);
         var actor = string.IsNullOrEmpty(speaker) ? null : root?.Find("ActorSocket_" + speaker);
         return actor != null && actor.GetComponentInChildren<Renderer>() != null ? actor : root;
     }
+
+    private string StoryVisualId(string placeId) => envController?.TerrainData?.places
+        ?.FirstOrDefault(place => place.placeId == placeId)?.sharedStoryVisualId ?? placeId;
 }

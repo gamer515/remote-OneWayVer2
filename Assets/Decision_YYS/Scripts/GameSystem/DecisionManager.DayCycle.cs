@@ -67,7 +67,7 @@ public partial class DecisionManager
             return;
         }
 
-        int day = Mathf.FloorToInt(mine.elapsedSeconds / cycle.DayLength);
+        int day = cycle.DayIndex(mine.elapsedSeconds);
         float position = Mathf.Repeat(mine.elapsedSeconds, cycle.DayLength);
         bool taxCountdown = taxRules != null && mine.nextTaxDay > 0;
         int remaining = taxCountdown

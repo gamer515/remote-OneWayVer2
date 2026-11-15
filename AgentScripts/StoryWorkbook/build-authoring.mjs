@@ -1,12 +1,69 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { Workbook, SpreadsheetFile } from '@oai/artifact-tool';
+import { Workbook, SpreadsheetFile, FileBlob } from '@oai/artifact-tool';
 
 const project = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const source = path.join(project, 'Assets/Decision_YYS/Resources/Chapters');
 const output = path.join(project, 'Assets/StreamingAssets/ContentAuthoring');
 const qa = path.join(project, 'AgentScripts/StoryWorkbook/qa/content-authoring');
+const authored = path.join(source, 'Chapter_01/AuthoredNarrative');
+const authoredSheets = {
+  NPCs: { 'NPC 설정 JSON': 'Relationships' },
+  Places: { '장소·청크 JSON': 'Relationships' },
+  Story: { '이야기 JSON': 'Stories', '지능·매력 JSON': 'AbilityVariants' },
+  Choices: { '이야기 분기 JSON': 'Stories' },
+  Books: { '독서 JSON': 'Reading' },
+  Study: { '독서·콤보 JSON': 'Reading' },
+};
+
+async function writeAuthoredSheets(workbook, name) {
+  for (const [title, folder] of Object.entries(authoredSheets[name] ?? {})) {
+    const sheet = workbook.worksheets.items.find(item => item.name === title) ?? workbook.worksheets.add(title);
+    sheet.getUsedRange()?.clear();
+    const directory = path.join(authored, folder);
+    const files = (await fs.readdir(directory, { recursive: true })).filter(file => file.endsWith('.json')).sort();
+    const values = [['분류', '데이터 ID', '원본 파일', '원본 내 위치', 'JSON']];
+    for (const file of files) {
+      const json = JSON.parse((await fs.readFile(path.join(directory, file), 'utf8')).replace(/^\uFEFF/, ''));
+      const sourceFile = file.replaceAll('\\', '/');
+      const category = [folder, path.posix.dirname(sourceFile)].filter(part => part !== '.').join('/');
+      const add = (entry, pointer) => {
+        const id = entry.story_id ?? entry.npc_id ?? entry.location_id ?? entry.chunk_id ?? entry.bookId ?? entry.id ??
+          path.basename(file, '.json');
+        const content = JSON.stringify(entry);
+        for (let offset = 0; offset < content.length; offset += 24000)
+          values.push([category, id, sourceFile, offset === 0 ? pointer : `${pointer} (이어서)`, content.slice(offset, offset + 24000)]);
+      };
+      if (Array.isArray(json.npcs)) {
+        const { npcs, ...header } = json;
+        add(header, '/');
+        npcs.forEach((entry, index) => add(entry, `/npcs/${index}`));
+      } else if (Array.isArray(json.chunks)) {
+        const { chunks, ...header } = json;
+        add(header, '/');
+        chunks.forEach((entry, index) => add(entry, `/chunks/${index}`));
+      } else add(json, '/');
+    }
+    sheet.getRangeByIndexes(0, 0, values.length, 5).values = values;
+    [34, 24, 56, 12, 110].forEach((width, i) => {
+      sheet.getRangeByIndexes(0, i, 1, 1).format.columnWidth = width;
+    });
+  }
+}
+
+if (process.argv.includes('--authored-json')) {
+  for (const name of Object.keys(authoredSheets)) {
+    const destination = path.join(output, `${name}.xlsx`);
+    const workbook = await SpreadsheetFile.importXlsx(await FileBlob.load(destination));
+    await writeAuthoredSheets(workbook, name);
+    const file = await SpreadsheetFile.exportXlsx(workbook);
+    await file.save(destination);
+    await fs.rm(`${destination}.inspect.ndjson`, { force: true });
+    console.log(`${name}.xlsx: JSON sheets updated`);
+  }
+  process.exit(0);
+}
 const descriptions = {
   Chapters: '챕터 순서, 첫 챕터, 에피소드 및 챕터 설정',
   Maps: '지형 ID, 청크 길이와 개수',
@@ -54,6 +111,7 @@ function flatten(document, value, field = '') {
 
 for (const file of (await fs.readdir(source, { recursive: true })).filter(file => file.endsWith('.json')).sort()) {
   const document = file.replaceAll('\\', '/').slice(0, -5);
+  if (document.startsWith('Chapter_01/AuthoredNarrative/')) continue;
   flatten(document, JSON.parse((await fs.readFile(path.join(source, file), 'utf8')).replace(/^\uFEFF/, '')));
 }
 
@@ -99,6 +157,7 @@ for (const [name, values] of Object.entries(rows)) {
   guide.getRange('A1:B5').format.wrapText = true;
   guide.getRange('A1:B5').format.rowHeight = 32;
   guide.getRange('A1:A5').format.fill = '#E5EEF4';
+  await writeAuthoredSheets(workbook, name);
   workbook.recalculate();
   if (name === 'TaxCatalog') {
     const preview = await workbook.render({ sheetName: '안내', range: 'A1:B5', scale: 0.8, format: 'png' });

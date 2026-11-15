@@ -1,0 +1,131 @@
+{
+  "location_id": "LOC-14",
+  "name": "능력 징수소",
+  "origin": "new",
+  "fixed_chunk": "CHUNK-07",
+  "place_position_rule": "청크 내부 위치는 랜덤. NPC는 배치된 장소에 고정",
+  "location_description": "통행료·영역 사용료·능력 코인 징수와 기록을 관리한다.",
+  "fixed_npcs": [
+    {
+      "npc_id": "NPC-09",
+      "name": "제크",
+      "role": "main",
+      "origin": "existing",
+      "social_class": "징수 집행층",
+      "stance": "기회주의파",
+      "fixed_chunk": "CHUNK-07",
+      "fixed_location_id": "LOC-14",
+      "fixed_location_name": "능력 징수소",
+      "movement": "none",
+      "character_traits": [
+        "능글맞음",
+        "사교성",
+        "편법 선호"
+      ],
+      "personality": "능글맞고 사교적이며 기회주의적이다. 폭력보다 타협과 거래를 선호한다.",
+      "speech_style": "능청스럽고 친근한 말투. 반말과 존댓말을 상황에 맞게 섞으며 은근히 거래를 제안.",
+      "conversation_topic": "징수 유예를 둘러싼 개인적 대가와 규칙의 빈틈",
+      "pet_links": [
+        {
+          "npc_id": "NPC-08",
+          "name": "칼릭",
+          "relation_hint": "불법 거래의 협력자."
+        },
+        {
+          "npc_id": "NPC-14",
+          "name": "가렌",
+          "relation_hint": "정반대의 집행 방식으로 대립."
+        },
+        {
+          "npc_id": "NPC-01",
+          "name": "헤른",
+          "relation_hint": "능력은 인정받지만 완전히 신뢰받지 못한다."
+        },
+        {
+          "npc_id": "NPC-26",
+          "name": "세온",
+          "relation_hint": "서로의 약점을 쥔 중개인."
+        }
+      ]
+    },
+    {
+      "npc_id": "NPC-14",
+      "name": "가렌",
+      "role": "supporting",
+      "origin": "existing",
+      "social_class": "징수 집행층",
+      "stance": "체제 순응파",
+      "fixed_chunk": "CHUNK-07",
+      "fixed_location_id": "LOC-14",
+      "fixed_location_name": "능력 징수소",
+      "movement": "none",
+      "character_traits": [
+        "엄격함",
+        "충성심",
+        "책임감"
+      ],
+      "personality": "무뚝뚝하고 엄격하며 책임감이 강하다.",
+      "speech_style": "엄격한 공식 존댓말. 명령과 규정 중심이고 사적인 농담을 하지 않음.",
+      "conversation_topic": "부패한 징수 집행을 바로잡는 것과 명령의 충돌",
+      "pet_links": [
+        {
+          "npc_id": "NPC-01",
+          "name": "헤른",
+          "relation_hint": "존경하는 상관."
+        },
+        {
+          "npc_id": "NPC-09",
+          "name": "제크",
+          "relation_hint": "부패를 의심하며 감시하는 동료."
+        },
+        {
+          "npc_id": "NPC-24",
+          "name": "카본",
+          "relation_hint": "통행 질서를 방해하는 적대자."
+        }
+      ]
+    },
+    {
+      "npc_id": "NPC-32",
+      "name": "바크",
+      "role": "supporting",
+      "origin": "new",
+      "social_class": "징수 집행층",
+      "stance": "체제 순응파",
+      "fixed_chunk": "CHUNK-07",
+      "fixed_location_id": "LOC-14",
+      "fixed_location_name": "능력 징수소",
+      "movement": "none",
+      "character_traits": [
+        "성실함",
+        "규정 중시",
+        "소심함"
+      ],
+      "personality": "성실하고 소심하며 규칙을 철저히 지킨다.",
+      "speech_style": "딱딱하고 정확한 행정 존댓말. 날짜·금액·규칙을 차례로 확인.",
+      "conversation_topic": "징수 장부의 숫자와 실제 거래의 차이",
+      "pet_links": [
+        {
+          "npc_id": "NPC-01",
+          "name": "헤른",
+          "relation_hint": "존경하는 관리자."
+        },
+        {
+          "npc_id": "NPC-09",
+          "name": "제크",
+          "relation_hint": "수상한 장부 기록이 보이는 선배."
+        },
+        {
+          "npc_id": "NPC-14",
+          "name": "가렌",
+          "relation_hint": "업무 조언을 구하는 동료."
+        }
+      ]
+    }
+  ],
+  "main_npc_ids": [
+    "NPC-09"
+  ],
+  "pet_remote_conversation": true,
+  "notice": "이 장소 JSON에는 방문 NPC를 넣지 않음. 다른 NPC와의 관계는 PET 연결로만 표현"
+}

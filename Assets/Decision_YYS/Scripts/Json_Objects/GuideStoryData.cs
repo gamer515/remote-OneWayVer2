@@ -25,6 +25,7 @@ public sealed class GuideCoinAction
 [Serializable]
 public sealed class GuideProgress
 {
+    public MineAuthoredProgress authoredMine;
     public MineChapterProgress mineChapter;
     public int[] knowledgeBefore;
     public int[] punishmentBefore;
@@ -43,6 +44,21 @@ public sealed class GuideProgress
     public List<PlayedEncounterCardRecord> runHistory = new List<PlayedEncounterCardRecord>();
     // One frozen scene, not the lifetime of generated variants. New encounters take the current ready version.
     public EncounterDialogueSnapshot activeDialogue;
+}
+
+[Serializable]
+public sealed class MineAuthoredProgress
+{
+    public int contentVersion;
+    public string storyPackFrame, storyPackLines, storyPackResolution, storyPackLastMainResolution;
+    public int storyPackLine, storyPackFee;
+    public bool storyPackNegotiated, storyPackTaskWon;
+    public string storyPackRevealedHint;
+    public float storyPackTaskRemaining;
+    public string eventId, nodeId, pendingPet;
+    public List<string> flags = new List<string>();
+    public List<string> choices = new List<string>();
+    public List<string> applied = new List<string>();
 }
 
 [Serializable]

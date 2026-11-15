@@ -1,0 +1,89 @@
+{
+  "location_id": "LOC-12",
+  "name": "갱도의 작은 제단",
+  "origin": "existing",
+  "fixed_chunk": "CHUNK-10",
+  "place_position_rule": "청크 내부 위치는 랜덤. NPC는 배치된 장소에 고정",
+  "location_description": "희생자의 이름을 보존하고 조용히 추모하는 공간.",
+  "fixed_npcs": [
+    {
+      "npc_id": "NPC-11",
+      "name": "미라",
+      "role": "main",
+      "origin": "existing",
+      "social_class": "기록 보존층",
+      "stance": "진실 추구파",
+      "fixed_chunk": "CHUNK-10",
+      "fixed_location_id": "LOC-12",
+      "fixed_location_name": "갱도의 작은 제단",
+      "movement": "none",
+      "character_traits": [
+        "사려 깊음",
+        "집요함",
+        "신중함"
+      ],
+      "personality": "차분하고 사려 깊으며 집요하다. 남의 이야기를 듣지만 속마음은 드러내지 않는다.",
+      "speech_style": "조용하고 사려 깊은 존댓말. 상대의 기억을 확인하는 질문을 자주 함.",
+      "conversation_topic": "공식 장부에서 사라진 사람들의 이름",
+      "pet_links": [
+        {
+          "npc_id": "NPC-16",
+          "name": "라스크",
+          "relation_hint": "기억과 기록을 두고 논쟁하는 친구."
+        },
+        {
+          "npc_id": "NPC-10",
+          "name": "루멘",
+          "relation_hint": "기술 자료를 제공받지만 은폐를 의심한다."
+        },
+        {
+          "npc_id": "NPC-30",
+          "name": "에린",
+          "relation_hint": "희생자의 이름을 보존하는 동료."
+        },
+        {
+          "npc_id": "NPC-12",
+          "name": "피코",
+          "relation_hint": "오래된 표식을 관찰한 아이."
+        }
+      ]
+    },
+    {
+      "npc_id": "NPC-30",
+      "name": "에린",
+      "role": "supporting",
+      "origin": "new",
+      "social_class": "기록 보존층",
+      "stance": "진실 추구파",
+      "fixed_chunk": "CHUNK-10",
+      "fixed_location_id": "LOC-12",
+      "fixed_location_name": "갱도의 작은 제단",
+      "movement": "none",
+      "character_traits": [
+        "온화함",
+        "신중함",
+        "기억 중시"
+      ],
+      "personality": "온화하고 신중하며 미신을 쉽게 부정하지 않는다.",
+      "speech_style": "조용하고 정중한 존댓말. 이름과 기억을 신중하게 다루고 말을 아낌.",
+      "conversation_topic": "죽은 광부의 이름 보존과 사라진 명부",
+      "pet_links": [
+        {
+          "npc_id": "NPC-11",
+          "name": "미라",
+          "relation_hint": "기록을 함께 조사하는 동료."
+        },
+        {
+          "npc_id": "NPC-12",
+          "name": "피코",
+          "relation_hint": "옛이야기를 들려주는 아이."
+        }
+      ]
+    }
+  ],
+  "main_npc_ids": [
+    "NPC-11"
+  ],
+  "pet_remote_conversation": true,
+  "notice": "이 장소 JSON에는 방문 NPC를 넣지 않음. 다른 NPC와의 관계는 PET 연결로만 표현"
+}

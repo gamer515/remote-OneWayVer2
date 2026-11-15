@@ -8,6 +8,16 @@ using UnityEngine;
 
 public static partial class LocalStoryNotebook
 {
+    private const string AuthoredMineChapter = "Chapter_1";
+    private static JObject AuthoredMineRelationships() =>
+        MineLearningStation.ReadContent("Relationships/NPC_전체목록");
+
+    private static string AuthoredMineFacts(JToken npc) => Numbered(new[] {
+        (string)npc["social_class"], (string)npc["stance"], (string)npc["speech_style"],
+        (string)npc["conversation_topic"], (string)npc["fixed_chunk"] + " / " + (string)npc["fixed_location_id"] + " " +
+        (string)npc["fixed_location_name"]
+    }.Concat(Values(npc["character_traits"])).Concat(npc["pet_links"].Select(link =>
+        (string)link["npc_id"] + " " + (string)link["name"] + " / " + (string)link["relation_hint"])));
     private static readonly Dictionary<string,(long stamp,long length,Dictionary<string,List<string[]>> sheets)> sheetCache=new Dictionary<string,(long,long,Dictionary<string,List<string[]>>) >();
     private static readonly Dictionary<string,(long stamp,long length,GameProgress progress)> progressCache=new Dictionary<string,(long,long,GameProgress)>();
     public static string ChapterPath(SaveIOService storage,string chapter)=>Path.Combine(storage.StorageRoot,"Records",ChapterContentCatalog.ChapterFolder(chapter)+".xlsx");
@@ -45,6 +55,7 @@ public static partial class LocalStoryNotebook
     // Templates and runtime additions share this JSON projection; no NPC-specific descriptions.
     public static JObject BookData(string chapter,string[] earned=null)
     {
+        if (chapter == AuthoredMineChapter) return AuthoredMineBookData(earned);
         var people=ChapterContentCatalog.Characters(chapter).ToArray();
         var npc=people.Select(p=>new[]{(string)p["characterId"],(string)p["name"],Numbered(new[]{"@npc:"+p["characterId"]+"/public"}),
             Numbered((p["hidden"] as JObject)?.Properties().Select(h=>"@npc:"+p["characterId"]+"/hidden/"+h.Name)??Array.Empty<string>()),
@@ -83,6 +94,32 @@ public static partial class LocalStoryNotebook
             Sheet("해금규칙",new[]{"해금_ID","NPC_ID","설명","해금상태","설정 참조"},new double[]{43,18,78,12,70},unlocks.Values),
             Sheet("아이템보상",new[]{"NPC_ID","규칙_ID","선택_ID","현재상황 (모두 충족)","지급아이템","회수아이템","획득해금"},new double[]{18,35,43,85,35,35,48},rewards)}};
     }
+
+    private static JObject AuthoredMineBookData(string[] earned)
+    {
+        var people = AuthoredMineRelationships()["npcs"];
+        var npcRows = people.Select(npc => new[] {
+            (string)npc["npc_id"], (string)npc["name"], AuthoredMineFacts(npc), "", "", "0", "Gemma", "", "", "", ""
+        });
+        var mainIds = MineLearningStation.ReadContent("Stories/00_main_flow")["main_story_order"].Values<string>().ToArray();
+        var chunks = MineLearningStation.ReadContent("Relationships/청크_순서")["chunks"];
+        var sideIds = MineLearningStation.ReadContent("Stories/00_side_pool")["eligible_story_ids_by_chunk"]
+            .Children<JProperty>().SelectMany(chunk => chunk.Value.Values<string>()).Distinct().OrderBy(id => id);
+        var unlocked = new HashSet<string>(earned ?? Array.Empty<string>());
+        var rules = mainIds.Select((id, index) => new[] {
+            "event:" + id, (string)chunks[index]["main_npc_id"], (string)chunks[index]["chunk_id"] + " 메인 이야기 완료",
+            unlocked.Contains("event:" + id) ? "1" : "0", id
+        }).Concat(sideIds.Select(id => new[] {
+            "event:" + id, "", "서브 이야기 완료 / NPC는 배치에서 추첨",
+            unlocked.Any(value => value == "event:" + id || value.StartsWith("event:" + id + "@", StringComparison.Ordinal)) ? "1" : "0", id
+        }));
+        return new JObject {["folder"] = ChapterContentCatalog.ChapterFolder(AuthoredMineChapter), ["sheets"] = new JArray {
+            Sheet("NPC설정", new[]{"NPC_ID","이름","공개설정 참조","숨은설정 참조","참조 해금_ID","자동생성","모델","체력","속도","지능","매력"},
+                new double[]{19,19,65,65,50,12,13,10,10,10,10}, npcRows),
+            Sheet("해금규칙", new[]{"해금_ID","NPC_ID","설명","해금상태","설정 참조"}, new double[]{43,18,78,12,70}, rules),
+            Sheet("아이템보상", new[]{"NPC_ID","규칙_ID","선택_ID","현재상황 (모두 충족)","지급아이템","회수아이템","획득해금"},
+                new double[]{18,35,43,85,35,35,48}, Array.Empty<string[]>()) }};
+    }
     private static bool SimpleBook(string file)
     {
         using var stream=File.Open(file,FileMode.Open,FileAccess.Read,FileShare.ReadWrite);using var zip=new ZipArchive(stream,ZipArchiveMode.Read);
@@ -107,7 +144,7 @@ public static partial class LocalStoryNotebook
             {
                 var edit=edits.FirstOrDefault(r=>r[0]==(string)row[0]);if(edit==null)continue;
                 // Only controls are editable. Source references always follow the current JSON.
-                foreach(int i in new[]{1,5,6,7,8,9,10})row[i]=edit[i];
+                foreach(int i in id == AuthoredMineChapter ? new[]{5,6,7,8,9,10} : new[]{1,5,6,7,8,9,10})row[i]=edit[i];
             }
             bool current=simple&&CurrentUnlockSheet(file);
             if(current&&sheets.OfType<JObject>().All(s=>CachedRows(file,(string)s["name"]).Where(r=>!string.IsNullOrWhiteSpace(r[0])).Select(r=>r.Take(((JArray)s["headers"]).Count).ToArray())
@@ -137,7 +174,6 @@ public static partial class LocalStoryNotebook
     {
         if(create)EnsureChapterBooks(storage,earned);
         return ChapterContentCatalog.Chapters.SelectMany(c=>{string chapter=(string)c["id"],file=ChapterPath(storage,chapter);return ReadChapterContexts(File.Exists(file)?file:TemplatePath(chapter),earned);})
-            .Where(c=>ChapterContentCatalog.CharacterData(c.characterId)!=null)
             .GroupBy(c=>c.characterId).Select(g=>g.First()).ToArray();
     }
     private static LocalStoryNpcContext[] ReadChapterContexts(string file,string[] earned)
@@ -146,11 +182,24 @@ public static partial class LocalStoryNotebook
         // Read each workbook once per file timestamp. Requests freeze these IDs; no Excel I/O per section.
         var flags=ReadUnlockStates(file);
         earned=earned.Where(id=>flags.TryGetValue(id,out byte value)&&value==1).ToArray();
+        string workbookName = Path.GetFileNameWithoutExtension(file.EndsWith(".tmp", StringComparison.Ordinal)
+            ? file.Substring(0, file.Length - 4) : file);
+        var authored = workbookName == ChapterContentCatalog.ChapterFolder(AuthoredMineChapter)
+            ? AuthoredMineRelationships()["npcs"].ToDictionary(npc => (string)npc["npc_id"]) : null;
         foreach(var r in EditableRows(file))
         {
-            var source=ChapterContentCatalog.Character(r[0]);if(source==null||result.Any(c=>c.characterId==r[0]))throw new InvalidDataException("알 수 없거나 중복된 NPC: "+r[0]);
+            if (result.Any(c => c.characterId == r[0])) throw new InvalidDataException("중복된 NPC: " + r[0]);
             if(r[5]!="0"&&r[5]!="1")throw new InvalidDataException("자동생성은 0 또는 1: "+r[0]);
             if(r[6]!="Gemma"&&r[6]!="Qwen"&&r[6]!="OmniRoute")throw new InvalidDataException("알 수 없는 모델: "+r[6]);
+            if (authored != null && authored.TryGetValue(r[0], out var npc))
+            {
+                result.Add(new LocalStoryNpcContext { characterId = r[0], name = (string)npc["name"],
+                    role = (string)npc["role"], personality = (string)npc["personality"], publicFacts = AuthoredMineFacts(npc),
+                    revealedPast = "", autoGenerate = r[5] == "1", model = r[6], unlockedIds = earned,
+                    stats = r.Skip(7).Take(4).All(string.IsNullOrWhiteSpace) ? Array.Empty<int>() : r.Skip(7).Take(4).Select(int.Parse).ToArray() });
+                continue;
+            }
+            var source=ChapterContentCatalog.Character(r[0]);if(source==null)throw new InvalidDataException("알 수 없는 NPC: "+r[0]);
             string[] needs=Ids(r[4]);string hidden=r[3].Contains("@npc:")?ChapterContentCatalog.Setting(r[3],earned):needs.Length>0&&needs.All(earned.Contains)?r[3]:"";
             if(!r[3].Contains("@npc:")&&needs.Length>0&&!needs.All(earned.Contains))hidden="";
             result.Add(new LocalStoryNpcContext {characterId=r[0],name=string.IsNullOrEmpty(r[1])?source.name:r[1],role=source.role,personality=source.personality,

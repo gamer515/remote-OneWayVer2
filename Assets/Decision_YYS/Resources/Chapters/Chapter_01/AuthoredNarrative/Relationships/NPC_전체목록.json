@@ -1,0 +1,1250 @@
+{
+  "schema_version": "2.0",
+  "chapter_id": "CHAPTER-01",
+  "rules": {
+    "npc_placement": "각 NPC는 오직 한 청크·한 장소에 고정됨",
+    "location_placement": "장소는 지정 청크에 속하지만 청크 내부 좌표는 런타임에서 무작위 배치 가능",
+    "pet_dialogue": "PET을 통한 대화는 NPC 간 거리와 청크가 달라도 가능하며, NPC 이동·방문을 의미하지 않음",
+    "main_story_order": "CHUNK-01부터 CHUNK-11까지 청크별 메인 NPC 1명씩 순서대로 배치",
+    "boss_chunk": "CHUNK-12는 메인 NPC 청크가 끝난 뒤 등장하는 보스 청크 자리만 예약. 보스와 이야기는 미작성.",
+    "content_limit": "성격·말투·관계 연결·대화 주제만 수록. 실제 대사, 이야기 본문, 선택지, 분기는 미작성"
+  },
+  "npcs": [
+    {
+      "npc_id": "NPC-01",
+      "name": "헤른",
+      "role": "main",
+      "origin": "existing",
+      "social_class": "관리 특권층",
+      "stance": "체제 순응파",
+      "fixed_chunk": "CHUNK-11",
+      "fixed_location_id": "LOC-15",
+      "fixed_location_name": "봉쇄된 경계 표지소",
+      "movement": "none",
+      "character_traits": [
+        "원칙주의",
+        "책임감",
+        "완고함"
+      ],
+      "personality": "냉철하고 책임감이 강하다. 감정보다 규칙을 우선하지만 자신의 판단이 틀렸다는 사실을 인정하기 어렵다.",
+      "speech_style": "짧고 단정적인 공적 어조. 원칙과 책임을 강조하며 감정을 잘 드러내지 않음.",
+      "conversation_topic": "안전을 명분으로 한 통제와 징수의 정당성",
+      "pet_links": [
+        {
+          "npc_id": "NPC-02",
+          "name": "브룩",
+          "relation_hint": "과거 동료이지만 서로 배신감을 느낀다."
+        },
+        {
+          "npc_id": "NPC-08",
+          "name": "칼릭",
+          "relation_hint": "재정을 제공하는 협력자이나 부패를 의심한다."
+        },
+        {
+          "npc_id": "NPC-14",
+          "name": "가렌",
+          "relation_hint": "끝까지 명령을 집행할 신뢰받는 부하."
+        },
+        {
+          "npc_id": "NPC-04",
+          "name": "벨라",
+          "relation_hint": "지나치게 관대하다고 비판하면서도 필요성을 인정한다."
+        }
+      ]
+    },
+    {
+      "npc_id": "NPC-02",
+      "name": "브룩",
+      "role": "main",
+      "origin": "existing",
+      "social_class": "최하층 채굴민",
+      "stance": "현실 개혁파",
+      "fixed_chunk": "CHUNK-01",
+      "fixed_location_id": "LOC-11",
+      "fixed_location_name": "광부 모닥불",
+      "movement": "none",
+      "character_traits": [
+        "의리",
+        "고집",
+        "강한 자존심"
+      ],
+      "personality": "고집스럽고 투박하지만 동료에 대한 의리가 깊다. 동정을 받는 것을 싫어한다.",
+      "speech_style": "낮고 거친 반말. 돌려 말하지 않고 자존심이 상하면 말수가 줄어듦.",
+      "conversation_topic": "능력을 잃은 광부의 노동 자격과 자존심",
+      "pet_links": [
+        {
+          "npc_id": "NPC-01",
+          "name": "헤른",
+          "relation_hint": "과거 목숨을 맡기던 동료, 현재 갈등 상대."
+        },
+        {
+          "npc_id": "NPC-03",
+          "name": "도르",
+          "relation_hint": "약해진 몸에 맞는 도구를 만드는 친구."
+        },
+        {
+          "npc_id": "NPC-04",
+          "name": "벨라",
+          "relation_hint": "외상으로 식사를 제공하는 사람."
+        },
+        {
+          "npc_id": "NPC-24",
+          "name": "카본",
+          "relation_hint": "한때 함께 일한 후배, 폭력적 저항에는 반대."
+        }
+      ]
+    },
+    {
+      "npc_id": "NPC-03",
+      "name": "도르",
+      "role": "main",
+      "origin": "existing",
+      "social_class": "최하층 채굴민",
+      "stance": "현실 개혁파",
+      "fixed_chunk": "CHUNK-02",
+      "fixed_location_id": "LOC-01",
+      "fixed_location_name": "갱목 보수소",
+      "movement": "none",
+      "character_traits": [
+        "신중함",
+        "세심함",
+        "자기과소평가"
+      ],
+      "personality": "세심하고 신중하며 조용하다. 타인을 배려하지만 자신을 과소평가한다.",
+      "speech_style": "신중하고 조심스러운 평서형. 손상과 수리 같은 기술적 표현을 자주 사용.",
+      "conversation_topic": "부실한 갱목·설비를 고칠 책임과 생계의 압박",
+      "pet_links": [
+        {
+          "npc_id": "NPC-02",
+          "name": "브룩",
+          "relation_hint": "오랜 친구, 다시 일할 수 있도록 도구를 개조한다."
+        },
+        {
+          "npc_id": "NPC-01",
+          "name": "헤른",
+          "relation_hint": "보수 예산을 두고 대립한다."
+        },
+        {
+          "npc_id": "NPC-15",
+          "name": "오르벤",
+          "relation_hint": "기술 의견은 나누지만 비용 문제로 충돌한다."
+        },
+        {
+          "npc_id": "NPC-17",
+          "name": "바젠",
+          "relation_hint": "위험한 일을 맡기기 꺼리는 제자."
+        }
+      ]
+    },
+    {
+      "npc_id": "NPC-04",
+      "name": "벨라",
+      "role": "main",
+      "origin": "existing",
+      "social_class": "생활 노동층",
+      "stance": "현실 개혁파",
+      "fixed_chunk": "CHUNK-03",
+      "fixed_location_id": "LOC-06",
+      "fixed_location_name": "광부 공동식당",
+      "movement": "none",
+      "character_traits": [
+        "현실주의",
+        "직설",
+        "책임감"
+      ],
+      "personality": "현실적이고 직설적이며 생활력이 강하다. 지속 가능한 도움을 중시한다.",
+      "speech_style": "빠르고 현실적인 생활 말투. 핀잔이 잦지만 따뜻함이 묻어남.",
+      "conversation_topic": "외상 장부와 부족한 식량을 누구에게 나눌지",
+      "pet_links": [
+        {
+          "npc_id": "NPC-02",
+          "name": "브룩",
+          "relation_hint": "외상이라는 명목으로 식사를 돕는다."
+        },
+        {
+          "npc_id": "NPC-01",
+          "name": "헤른",
+          "relation_hint": "식량 배급과 징수 문제로 대립한다."
+        },
+        {
+          "npc_id": "NPC-05",
+          "name": "모아",
+          "relation_hint": "식재료 거래를 이어 가는 친구."
+        },
+        {
+          "npc_id": "NPC-08",
+          "name": "칼릭",
+          "relation_hint": "식당 자금을 빌려준 채권자."
+        }
+      ]
+    },
+    {
+      "npc_id": "NPC-05",
+      "name": "모아",
+      "role": "main",
+      "origin": "existing",
+      "social_class": "채집 생계층",
+      "stance": "현실 개혁파",
+      "fixed_chunk": "CHUNK-04",
+      "fixed_location_id": "LOC-13",
+      "fixed_location_name": "균열 재배터",
+      "movement": "none",
+      "character_traits": [
+        "온화함",
+        "인내심",
+        "보호 본능"
+      ],
+      "personality": "온화하고 인내심이 강하다. 생존 문제에는 단호하지만 남을 쉽게 믿는다.",
+      "speech_style": "부드럽고 느긋한 말투. 남을 안심시키되 중요한 순간에는 단호함.",
+      "conversation_topic": "재배물의 공정한 분배와 피코의 생계",
+      "pet_links": [
+        {
+          "npc_id": "NPC-12",
+          "name": "피코",
+          "relation_hint": "가족처럼 보호하는 아이."
+        },
+        {
+          "npc_id": "NPC-06",
+          "name": "네아",
+          "relation_hint": "약용 식물을 공급하는 협력자."
+        },
+        {
+          "npc_id": "NPC-04",
+          "name": "벨라",
+          "relation_hint": "식재료 거래로 친해진 친구."
+        },
+        {
+          "npc_id": "NPC-07",
+          "name": "틸",
+          "relation_hint": "재배물을 운반하는 동료."
+        }
+      ]
+    },
+    {
+      "npc_id": "NPC-06",
+      "name": "네아",
+      "role": "main",
+      "origin": "existing",
+      "social_class": "전문 기술층",
+      "stance": "현실 개혁파",
+      "fixed_chunk": "CHUNK-05",
+      "fixed_location_id": "LOC-07",
+      "fixed_location_name": "갱도 진료소",
+      "movement": "none",
+      "character_traits": [
+        "침착함",
+        "공정성",
+        "냉정함"
+      ],
+      "personality": "침착하고 냉정하며 책임감이 강하다. 환자에게 다정하지만 자원 분배에는 엄격하다.",
+      "speech_style": "차분하고 정확한 존댓말. 감정보다는 상태와 우선순위를 분명히 설명.",
+      "conversation_topic": "치료 우선순위와 능력 코인에 따른 의료 접근",
+      "pet_links": [
+        {
+          "npc_id": "NPC-05",
+          "name": "모아",
+          "relation_hint": "약용 식물 공급자이자 친구."
+        },
+        {
+          "npc_id": "NPC-07",
+          "name": "틸",
+          "relation_hint": "부상자 운반을 맡는 구조대원, 치료 우선순위로 갈등."
+        },
+        {
+          "npc_id": "NPC-12",
+          "name": "피코",
+          "relation_hint": "돌보는 어린 환자."
+        },
+        {
+          "npc_id": "NPC-01",
+          "name": "헤른",
+          "relation_hint": "치료 예산 지원을 두고 대립."
+        }
+      ]
+    },
+    {
+      "npc_id": "NPC-07",
+      "name": "틸",
+      "role": "main",
+      "origin": "existing",
+      "social_class": "생활 노동층",
+      "stance": "생존 우선·중립",
+      "fixed_chunk": "CHUNK-06",
+      "fixed_location_id": "LOC-10",
+      "fixed_location_name": "구조대 대기소",
+      "movement": "none",
+      "character_traits": [
+        "낙천성",
+        "경쟁심",
+        "행동력"
+      ],
+      "personality": "낙천적이고 경쟁심이 강하며 행동력이 뛰어나다. 먼저 움직이는 성향이다.",
+      "speech_style": "경쾌하고 빠른 반말. 재촉과 농담이 많고 불안할 때도 밝은 척함.",
+      "conversation_topic": "속도를 잃어 가는 운반꾼의 자부심과 구조 책임",
+      "pet_links": [
+        {
+          "npc_id": "NPC-05",
+          "name": "모아",
+          "relation_hint": "재배물 운반을 돕는 친구."
+        },
+        {
+          "npc_id": "NPC-06",
+          "name": "네아",
+          "relation_hint": "환자를 인계하지만 긴급 상황에서 의견이 갈린다."
+        },
+        {
+          "npc_id": "NPC-13",
+          "name": "시아",
+          "relation_hint": "속도를 잃은 사실을 처음 알아챈 친구."
+        },
+        {
+          "npc_id": "NPC-09",
+          "name": "제크",
+          "relation_hint": "고액 운반 일을 소개했던 징수원."
+        }
+      ]
+    },
+    {
+      "npc_id": "NPC-08",
+      "name": "칼릭",
+      "role": "main",
+      "origin": "existing",
+      "social_class": "관리 특권층",
+      "stance": "기회주의파",
+      "fixed_chunk": "CHUNK-08",
+      "fixed_location_id": "LOC-09",
+      "fixed_location_name": "밀수 장터",
+      "movement": "none",
+      "character_traits": [
+        "계산적",
+        "설득력",
+        "기회주의"
+      ],
+      "personality": "계산적이고 세련되며 설득력이 뛰어나다. 타인의 약점을 잘 이용한다.",
+      "speech_style": "공손하고 여유 있는 존댓말. 모든 상황을 가치·계산·교환의 언어로 설명.",
+      "conversation_topic": "비공식 코인 거래의 이익과 착취",
+      "pet_links": [
+        {
+          "npc_id": "NPC-01",
+          "name": "헤른",
+          "relation_hint": "운영을 위한 공식 협력자."
+        },
+        {
+          "npc_id": "NPC-09",
+          "name": "제크",
+          "relation_hint": "비공식 거래 공범."
+        },
+        {
+          "npc_id": "NPC-14",
+          "name": "가렌",
+          "relation_hint": "거래를 방해하는 징수원."
+        },
+        {
+          "npc_id": "NPC-04",
+          "name": "벨라",
+          "relation_hint": "자금 대출을 받은 채무자."
+        }
+      ]
+    },
+    {
+      "npc_id": "NPC-09",
+      "name": "제크",
+      "role": "main",
+      "origin": "existing",
+      "social_class": "징수 집행층",
+      "stance": "기회주의파",
+      "fixed_chunk": "CHUNK-07",
+      "fixed_location_id": "LOC-14",
+      "fixed_location_name": "능력 징수소",
+      "movement": "none",
+      "character_traits": [
+        "능글맞음",
+        "사교성",
+        "편법 선호"
+      ],
+      "personality": "능글맞고 사교적이며 기회주의적이다. 폭력보다 타협과 거래를 선호한다.",
+      "speech_style": "능청스럽고 친근한 말투. 반말과 존댓말을 상황에 맞게 섞으며 은근히 거래를 제안.",
+      "conversation_topic": "징수 유예를 둘러싼 개인적 대가와 규칙의 빈틈",
+      "pet_links": [
+        {
+          "npc_id": "NPC-08",
+          "name": "칼릭",
+          "relation_hint": "불법 거래의 협력자."
+        },
+        {
+          "npc_id": "NPC-14",
+          "name": "가렌",
+          "relation_hint": "정반대의 집행 방식으로 대립."
+        },
+        {
+          "npc_id": "NPC-01",
+          "name": "헤른",
+          "relation_hint": "능력은 인정받지만 완전히 신뢰받지 못한다."
+        },
+        {
+          "npc_id": "NPC-26",
+          "name": "세온",
+          "relation_hint": "서로의 약점을 쥔 중개인."
+        }
+      ]
+    },
+    {
+      "npc_id": "NPC-10",
+      "name": "루멘",
+      "role": "main",
+      "origin": "existing",
+      "social_class": "기술 관리층",
+      "stance": "진실 추구파",
+      "fixed_chunk": "CHUNK-09",
+      "fixed_location_id": "LOC-04",
+      "fixed_location_name": "광석 감정소",
+      "movement": "none",
+      "character_traits": [
+        "분석적",
+        "과묵함",
+        "완벽주의"
+      ],
+      "personality": "이성적이고 과묵한 완벽주의자. 연구에 집착하지만 감정 표현이 서툴다.",
+      "speech_style": "건조하고 분석적인 존댓말. 수치와 증거를 먼저 들고 감정적 표현을 피함.",
+      "conversation_topic": "광석 감정 기록과 오래된 경계 자료의 모순",
+      "pet_links": [
+        {
+          "npc_id": "NPC-15",
+          "name": "오르벤",
+          "relation_hint": "함께 일한 관리자, 경계 보수 책임으로 대립."
+        },
+        {
+          "npc_id": "NPC-11",
+          "name": "미라",
+          "relation_hint": "기록 조사 협력자이나 일부 사실은 숨긴다."
+        },
+        {
+          "npc_id": "NPC-16",
+          "name": "라스크",
+          "relation_hint": "지형 기억을 기술적으로 검증하려 한다."
+        },
+        {
+          "npc_id": "NPC-08",
+          "name": "칼릭",
+          "relation_hint": "감정 결과 조정 압박을 받는다."
+        }
+      ]
+    },
+    {
+      "npc_id": "NPC-11",
+      "name": "미라",
+      "role": "main",
+      "origin": "existing",
+      "social_class": "기록 보존층",
+      "stance": "진실 추구파",
+      "fixed_chunk": "CHUNK-10",
+      "fixed_location_id": "LOC-12",
+      "fixed_location_name": "갱도의 작은 제단",
+      "movement": "none",
+      "character_traits": [
+        "사려 깊음",
+        "집요함",
+        "신중함"
+      ],
+      "personality": "차분하고 사려 깊으며 집요하다. 남의 이야기를 듣지만 속마음은 드러내지 않는다.",
+      "speech_style": "조용하고 사려 깊은 존댓말. 상대의 기억을 확인하는 질문을 자주 함.",
+      "conversation_topic": "공식 장부에서 사라진 사람들의 이름",
+      "pet_links": [
+        {
+          "npc_id": "NPC-16",
+          "name": "라스크",
+          "relation_hint": "기억과 기록을 두고 논쟁하는 친구."
+        },
+        {
+          "npc_id": "NPC-10",
+          "name": "루멘",
+          "relation_hint": "기술 자료를 제공받지만 은폐를 의심한다."
+        },
+        {
+          "npc_id": "NPC-30",
+          "name": "에린",
+          "relation_hint": "희생자의 이름을 보존하는 동료."
+        },
+        {
+          "npc_id": "NPC-12",
+          "name": "피코",
+          "relation_hint": "오래된 표식을 관찰한 아이."
+        }
+      ]
+    },
+    {
+      "npc_id": "NPC-12",
+      "name": "피코",
+      "role": "supporting",
+      "origin": "existing",
+      "social_class": "채집 생계층",
+      "stance": "생존 우선·중립",
+      "fixed_chunk": "CHUNK-04",
+      "fixed_location_id": "LOC-13",
+      "fixed_location_name": "균열 재배터",
+      "movement": "none",
+      "character_traits": [
+        "호기심",
+        "영리함",
+        "독립심"
+      ],
+      "personality": "호기심이 많고 영리하며 고집스럽다.",
+      "speech_style": "솔직하고 호기심 많은 어린아이 말투. 질문이 끊이지 않고 감정을 숨기지 않음.",
+      "conversation_topic": "보호받는 아이도 공동체에 기여할 수 있는가",
+      "pet_links": [
+        {
+          "npc_id": "NPC-05",
+          "name": "모아",
+          "relation_hint": "가족처럼 보호해 주는 사람."
+        },
+        {
+          "npc_id": "NPC-06",
+          "name": "네아",
+          "relation_hint": "자신을 돌보는 치료사."
+        },
+        {
+          "npc_id": "NPC-30",
+          "name": "에린",
+          "relation_hint": "부모 이야기를 들려주는 어른."
+        }
+      ]
+    },
+    {
+      "npc_id": "NPC-13",
+      "name": "시아",
+      "role": "supporting",
+      "origin": "existing",
+      "social_class": "전문 기술층",
+      "stance": "생존 우선·중립",
+      "fixed_chunk": "CHUNK-06",
+      "fixed_location_id": "LOC-03",
+      "fixed_location_name": "등불지기",
+      "movement": "none",
+      "character_traits": [
+        "관찰력",
+        "침착함",
+        "독립성"
+      ],
+      "personality": "침착하고 관찰력이 좋으며 독립적이다.",
+      "speech_style": "짧고 낮은 말투. 직접 본 것과 미세한 변화를 간결하게 짚음.",
+      "conversation_topic": "등불과 환기 변화를 통해 드러나는 갱도 위험",
+      "pet_links": [
+        {
+          "npc_id": "NPC-07",
+          "name": "틸",
+          "relation_hint": "속도 저하를 눈치챈 가까운 친구."
+        },
+        {
+          "npc_id": "NPC-19",
+          "name": "하울",
+          "relation_hint": "기름 물자 횡령을 의심하는 동료."
+        },
+        {
+          "npc_id": "NPC-16",
+          "name": "라스크",
+          "relation_hint": "오래된 갱도 이야기를 들려주는 사람."
+        }
+      ]
+    },
+    {
+      "npc_id": "NPC-14",
+      "name": "가렌",
+      "role": "supporting",
+      "origin": "existing",
+      "social_class": "징수 집행층",
+      "stance": "체제 순응파",
+      "fixed_chunk": "CHUNK-07",
+      "fixed_location_id": "LOC-14",
+      "fixed_location_name": "능력 징수소",
+      "movement": "none",
+      "character_traits": [
+        "엄격함",
+        "충성심",
+        "책임감"
+      ],
+      "personality": "무뚝뚝하고 엄격하며 책임감이 강하다.",
+      "speech_style": "엄격한 공식 존댓말. 명령과 규정 중심이고 사적인 농담을 하지 않음.",
+      "conversation_topic": "부패한 징수 집행을 바로잡는 것과 명령의 충돌",
+      "pet_links": [
+        {
+          "npc_id": "NPC-01",
+          "name": "헤른",
+          "relation_hint": "존경하는 상관."
+        },
+        {
+          "npc_id": "NPC-09",
+          "name": "제크",
+          "relation_hint": "부패를 의심하며 감시하는 동료."
+        },
+        {
+          "npc_id": "NPC-24",
+          "name": "카본",
+          "relation_hint": "통행 질서를 방해하는 적대자."
+        }
+      ]
+    },
+    {
+      "npc_id": "NPC-15",
+      "name": "오르벤",
+      "role": "supporting",
+      "origin": "existing",
+      "social_class": "기술 관리층",
+      "stance": "체제 순응파",
+      "fixed_chunk": "CHUNK-02",
+      "fixed_location_id": "LOC-02",
+      "fixed_location_name": "환풍기 작업장",
+      "movement": "none",
+      "character_traits": [
+        "보수적",
+        "신중함",
+        "경험 중시"
+      ],
+      "personality": "보수적이고 신중하며 변화를 꺼린다.",
+      "speech_style": "느리고 신중한 말투. 오랜 경험을 근거로 말하며 쉽게 확답하지 않음.",
+      "conversation_topic": "낡은 환풍 시설의 안전 문제와 과거 봉쇄 책임",
+      "pet_links": [
+        {
+          "npc_id": "NPC-10",
+          "name": "루멘",
+          "relation_hint": "기술 동료, 책임을 두고 갈등."
+        },
+        {
+          "npc_id": "NPC-18",
+          "name": "엘로",
+          "relation_hint": "계속 반발하는 후배."
+        },
+        {
+          "npc_id": "NPC-03",
+          "name": "도르",
+          "relation_hint": "낡은 시설을 함께 관리."
+        }
+      ]
+    },
+    {
+      "npc_id": "NPC-16",
+      "name": "라스크",
+      "role": "supporting",
+      "origin": "existing",
+      "social_class": "기록 보존층",
+      "stance": "진실 추구파",
+      "fixed_chunk": "CHUNK-10",
+      "fixed_location_id": "LOC-05",
+      "fixed_location_name": "갱도 길잡이",
+      "movement": "none",
+      "character_traits": [
+        "과묵함",
+        "의심",
+        "약자 보호"
+      ],
+      "personality": "과묵하고 의심이 많지만 약자에게 친절하다.",
+      "speech_style": "과묵하고 느릿한 말투. 오래된 표현과 자신이 본 광경을 근거로 말함.",
+      "conversation_topic": "현행 지도와 기억 속 표지의 불일치",
+      "pet_links": [
+        {
+          "npc_id": "NPC-11",
+          "name": "미라",
+          "relation_hint": "기록과 기억을 두고 다투는 친구."
+        },
+        {
+          "npc_id": "NPC-10",
+          "name": "루멘",
+          "relation_hint": "잘못된 지도 문제로 충돌."
+        },
+        {
+          "npc_id": "NPC-21",
+          "name": "로크",
+          "relation_hint": "자신의 기술을 배우는 젊은 길잡이."
+        }
+      ]
+    },
+    {
+      "npc_id": "NPC-17",
+      "name": "바젠",
+      "role": "supporting",
+      "origin": "new",
+      "social_class": "최하층 채굴민",
+      "stance": "생존 우선·중립",
+      "fixed_chunk": "CHUNK-02",
+      "fixed_location_id": "LOC-01",
+      "fixed_location_name": "갱목 보수소",
+      "movement": "none",
+      "character_traits": [
+        "성실함",
+        "소심함",
+        "불안"
+      ],
+      "personality": "성실하지만 자신감이 부족하다.",
+      "speech_style": "소심하고 머뭇거리는 존댓말. 자주 확인하고 결론을 단정하지 못함.",
+      "conversation_topic": "견습생의 실수에 대한 두려움과 일의 자격",
+      "pet_links": [
+        {
+          "npc_id": "NPC-03",
+          "name": "도르",
+          "relation_hint": "존경하는 스승."
+        },
+        {
+          "npc_id": "NPC-02",
+          "name": "브룩",
+          "relation_hint": "힘을 잃은 광부의 미래를 보여 주는 인물."
+        }
+      ]
+    },
+    {
+      "npc_id": "NPC-18",
+      "name": "엘로",
+      "role": "supporting",
+      "origin": "new",
+      "social_class": "전문 기술층",
+      "stance": "저항·자치파",
+      "fixed_chunk": "CHUNK-02",
+      "fixed_location_id": "LOC-02",
+      "fixed_location_name": "환풍기 작업장",
+      "movement": "none",
+      "character_traits": [
+        "직설",
+        "반항심",
+        "개혁 의지"
+      ],
+      "personality": "직설적이고 반항심이 강하다.",
+      "speech_style": "직설적이고 날 선 말투. 반문이 많고 불합리함을 보면 목소리가 커짐.",
+      "conversation_topic": "위험한 환풍 설비를 방치하는 관리층의 책임",
+      "pet_links": [
+        {
+          "npc_id": "NPC-15",
+          "name": "오르벤",
+          "relation_hint": "스승이지만 보수성을 비판한다."
+        },
+        {
+          "npc_id": "NPC-10",
+          "name": "루멘",
+          "relation_hint": "기술 자료를 요청한다."
+        },
+        {
+          "npc_id": "NPC-24",
+          "name": "카본",
+          "relation_hint": "저항에 공감하나 폭력은 경계한다."
+        }
+      ]
+    },
+    {
+      "npc_id": "NPC-19",
+      "name": "하울",
+      "role": "supporting",
+      "origin": "new",
+      "social_class": "생활 노동층",
+      "stance": "기회주의파",
+      "fixed_chunk": "CHUNK-06",
+      "fixed_location_id": "LOC-03",
+      "fixed_location_name": "등불지기",
+      "movement": "none",
+      "character_traits": [
+        "인색함",
+        "수다스러움",
+        "인정"
+      ],
+      "personality": "인색하고 수다스럽지만 정이 많다.",
+      "speech_style": "투덜거리는 장황한 반말. 사소한 물자 손실도 과장해서 이야기함.",
+      "conversation_topic": "기름 부족과 비공식 거래를 정당화하는 생계 논리",
+      "pet_links": [
+        {
+          "npc_id": "NPC-13",
+          "name": "시아",
+          "relation_hint": "기술을 가르친 후배."
+        },
+        {
+          "npc_id": "NPC-26",
+          "name": "세온",
+          "relation_hint": "기름을 비공식 거래하는 상대."
+        }
+      ]
+    },
+    {
+      "npc_id": "NPC-20",
+      "name": "니엘",
+      "role": "supporting",
+      "origin": "new",
+      "social_class": "전문 기술층",
+      "stance": "생존 우선·중립",
+      "fixed_chunk": "CHUNK-09",
+      "fixed_location_id": "LOC-04",
+      "fixed_location_name": "광석 감정소",
+      "movement": "none",
+      "character_traits": [
+        "꼼꼼함",
+        "순진함",
+        "정직함"
+      ],
+      "personality": "순진하고 꼼꼼하며 사회 경험이 적다.",
+      "speech_style": "단정하고 예의 바른 존댓말. 수치 재확인과 조심스러운 질문이 잦음.",
+      "conversation_topic": "광석 감정의 정직성과 외부 압력",
+      "pet_links": [
+        {
+          "npc_id": "NPC-10",
+          "name": "루멘",
+          "relation_hint": "존경하는 선배."
+        },
+        {
+          "npc_id": "NPC-08",
+          "name": "칼릭",
+          "relation_hint": "감정 결과를 조정하라고 압박하는 인물."
+        }
+      ]
+    },
+    {
+      "npc_id": "NPC-21",
+      "name": "로크",
+      "role": "supporting",
+      "origin": "new",
+      "social_class": "생활 노동층",
+      "stance": "기회주의파",
+      "fixed_chunk": "CHUNK-10",
+      "fixed_location_id": "LOC-05",
+      "fixed_location_name": "갱도 길잡이",
+      "movement": "none",
+      "character_traits": [
+        "야심",
+        "친화력",
+        "허풍"
+      ],
+      "personality": "야심 차고 말재주가 좋다.",
+      "speech_style": "유쾌하고 자신만만한 말투. 친해지려는 농담과 약간의 허풍을 섞음.",
+      "conversation_topic": "안전한 길 안내와 출세 욕망의 충돌",
+      "pet_links": [
+        {
+          "npc_id": "NPC-16",
+          "name": "라스크",
+          "relation_hint": "가르침을 받지만 답답해하는 스승."
+        },
+        {
+          "npc_id": "NPC-09",
+          "name": "제크",
+          "relation_hint": "좋은 일을 얻으려 친해지는 징수원."
+        }
+      ]
+    },
+    {
+      "npc_id": "NPC-22",
+      "name": "다비",
+      "role": "supporting",
+      "origin": "new",
+      "social_class": "생활 노동층",
+      "stance": "현실 개혁파",
+      "fixed_chunk": "CHUNK-03",
+      "fixed_location_id": "LOC-06",
+      "fixed_location_name": "광부 공동식당",
+      "movement": "none",
+      "character_traits": [
+        "다정함",
+        "명랑함",
+        "낙관성"
+      ],
+      "personality": "명랑하고 다정하지만 경제관념이 부족하다.",
+      "speech_style": "밝고 정겨운 존댓말. 감탄과 맞장구가 많고 거절을 어려워함.",
+      "conversation_topic": "배고픈 이에게 음식 주기와 식당 운영의 현실",
+      "pet_links": [
+        {
+          "npc_id": "NPC-04",
+          "name": "벨라",
+          "relation_hint": "자신을 가르치고 꾸중하는 식당 주인."
+        },
+        {
+          "npc_id": "NPC-05",
+          "name": "모아",
+          "relation_hint": "식재료를 공급하는 사람."
+        }
+      ]
+    },
+    {
+      "npc_id": "NPC-23",
+      "name": "레아",
+      "role": "supporting",
+      "origin": "new",
+      "social_class": "전문 기술층",
+      "stance": "현실 개혁파",
+      "fixed_chunk": "CHUNK-05",
+      "fixed_location_id": "LOC-07",
+      "fixed_location_name": "갱도 진료소",
+      "movement": "none",
+      "character_traits": [
+        "조심성",
+        "공감",
+        "실수에 대한 두려움"
+      ],
+      "personality": "조심스럽고 공감 능력이 뛰어나다.",
+      "speech_style": "상냥하고 조심스러운 존댓말. 상대를 배려하다 중요한 말을 늦게 꺼냄.",
+      "conversation_topic": "치료 실수의 두려움과 환자에 대한 책임",
+      "pet_links": [
+        {
+          "npc_id": "NPC-06",
+          "name": "네아",
+          "relation_hint": "존경하지만 냉정함에 갈등하는 스승."
+        },
+        {
+          "npc_id": "NPC-12",
+          "name": "피코",
+          "relation_hint": "친근하게 돌보는 아이."
+        }
+      ]
+    },
+    {
+      "npc_id": "NPC-24",
+      "name": "카본",
+      "role": "supporting",
+      "origin": "new",
+      "social_class": "최하층 채굴민",
+      "stance": "저항·자치파",
+      "fixed_chunk": "CHUNK-08",
+      "fixed_location_id": "LOC-08",
+      "fixed_location_name": "막장 패거리",
+      "movement": "none",
+      "character_traits": [
+        "공격성",
+        "카리스마",
+        "자존심"
+      ],
+      "personality": "카리스마가 강하고 공격적이며 자존심이 높다.",
+      "speech_style": "거칠고 강압적인 반말. 짧은 단언과 명령형 표현을 선호.",
+      "conversation_topic": "약자를 위한 저항과 자신이 징수하는 통행료의 모순",
+      "pet_links": [
+        {
+          "npc_id": "NPC-02",
+          "name": "브룩",
+          "relation_hint": "존경했으나 온건함에 실망한 선배."
+        },
+        {
+          "npc_id": "NPC-14",
+          "name": "가렌",
+          "relation_hint": "지속적으로 충돌하는 징수원."
+        },
+        {
+          "npc_id": "NPC-25",
+          "name": "드빈",
+          "relation_hint": "오른팔처럼 여기는 동료."
+        }
+      ]
+    },
+    {
+      "npc_id": "NPC-25",
+      "name": "드빈",
+      "role": "supporting",
+      "origin": "new",
+      "social_class": "최하층 채굴민",
+      "stance": "저항·자치파",
+      "fixed_chunk": "CHUNK-08",
+      "fixed_location_id": "LOC-08",
+      "fixed_location_name": "막장 패거리",
+      "movement": "none",
+      "character_traits": [
+        "충직함",
+        "과묵함",
+        "온순함"
+      ],
+      "personality": "덩치가 크고 충직하지만 마음이 여리다.",
+      "speech_style": "묵직하고 말수가 적은 반말. 짧게 답하며 충돌 상황에서 더 조용해짐.",
+      "conversation_topic": "은혜에 대한 충성심과 폭력에 대한 거부감",
+      "pet_links": [
+        {
+          "npc_id": "NPC-24",
+          "name": "카본",
+          "relation_hint": "은인인 우두머리."
+        },
+        {
+          "npc_id": "NPC-04",
+          "name": "벨라",
+          "relation_hint": "가족의 외상 빚이 남은 식당 주인."
+        }
+      ]
+    },
+    {
+      "npc_id": "NPC-26",
+      "name": "세온",
+      "role": "supporting",
+      "origin": "new",
+      "social_class": "생활 노동층",
+      "stance": "기회주의파",
+      "fixed_chunk": "CHUNK-08",
+      "fixed_location_id": "LOC-09",
+      "fixed_location_name": "밀수 장터",
+      "movement": "none",
+      "character_traits": [
+        "유쾌함",
+        "계산적",
+        "능청스러움"
+      ],
+      "personality": "유쾌하고 붙임성이 좋지만 계산적이다.",
+      "speech_style": "친근한 상인 말투. 칭찬과 농담으로 경계를 풀고 핵심 가격은 늦게 밝힘.",
+      "conversation_topic": "물자 부족을 이용한 밀수 거래와 의존 관계",
+      "pet_links": [
+        {
+          "npc_id": "NPC-08",
+          "name": "칼릭",
+          "relation_hint": "자금을 대는 배후."
+        },
+        {
+          "npc_id": "NPC-09",
+          "name": "제크",
+          "relation_hint": "보호 대가를 지불하고 약점을 공유하는 상대."
+        },
+        {
+          "npc_id": "NPC-27",
+          "name": "우르",
+          "relation_hint": "위험한 심부름을 시키는 고용인."
+        }
+      ]
+    },
+    {
+      "npc_id": "NPC-27",
+      "name": "우르",
+      "role": "supporting",
+      "origin": "new",
+      "social_class": "채집 생계층",
+      "stance": "생존 우선·중립",
+      "fixed_chunk": "CHUNK-08",
+      "fixed_location_id": "LOC-09",
+      "fixed_location_name": "밀수 장터",
+      "movement": "none",
+      "character_traits": [
+        "재치",
+        "불안",
+        "눈치"
+      ],
+      "personality": "눈치가 빠르고 재치 있지만 쉽게 불안해한다.",
+      "speech_style": "빠르고 눈치 보는 말투. 주변 반응에 따라 말끝을 바꿈.",
+      "conversation_topic": "다음 영역으로 떠나기 위한 코인과 위험한 심부름",
+      "pet_links": [
+        {
+          "npc_id": "NPC-26",
+          "name": "세온",
+          "relation_hint": "위험한 심부름을 시키는 고용주."
+        },
+        {
+          "npc_id": "NPC-07",
+          "name": "틸",
+          "relation_hint": "동경하지만 경쟁심을 느끼는 운반꾼."
+        },
+        {
+          "npc_id": "NPC-09",
+          "name": "제크",
+          "relation_hint": "두려워하는 징수원."
+        }
+      ]
+    },
+    {
+      "npc_id": "NPC-28",
+      "name": "렌토",
+      "role": "supporting",
+      "origin": "new",
+      "social_class": "생활 노동층",
+      "stance": "현실 개혁파",
+      "fixed_chunk": "CHUNK-06",
+      "fixed_location_id": "LOC-10",
+      "fixed_location_name": "구조대 대기소",
+      "movement": "none",
+      "character_traits": [
+        "희생정신",
+        "과묵함",
+        "고집"
+      ],
+      "personality": "과묵하고 희생정신이 강하지만 융통성이 부족하다.",
+      "speech_style": "침착하고 낮은 지시형 말투. 감정 표현은 적지만 상대의 상태를 세심하게 묻음.",
+      "conversation_topic": "구조대의 희생 기준과 장비 부족",
+      "pet_links": [
+        {
+          "npc_id": "NPC-07",
+          "name": "틸",
+          "relation_hint": "구조 기술을 가르친 제자."
+        },
+        {
+          "npc_id": "NPC-14",
+          "name": "가렌",
+          "relation_hint": "과거 동료, 현재 가치관이 다르다."
+        },
+        {
+          "npc_id": "NPC-01",
+          "name": "헤른",
+          "relation_hint": "안전 장비 지원을 요구하는 관리자."
+        }
+      ]
+    },
+    {
+      "npc_id": "NPC-29",
+      "name": "하몬",
+      "role": "supporting",
+      "origin": "new",
+      "social_class": "최하층 채굴민",
+      "stance": "생존 우선·중립",
+      "fixed_chunk": "CHUNK-01",
+      "fixed_location_id": "LOC-11",
+      "fixed_location_name": "광부 모닥불",
+      "movement": "none",
+      "character_traits": [
+        "익살",
+        "향수",
+        "경험"
+      ],
+      "personality": "익살스럽고 이야기하기를 좋아한다.",
+      "speech_style": "정겨운 옛 광부의 반말. 오래된 일화로 이야기를 시작하며 느릿하게 끝맺음.",
+      "conversation_topic": "힘을 모두 잃은 광부의 생계와 과거의 기억",
+      "pet_links": [
+        {
+          "npc_id": "NPC-02",
+          "name": "브룩",
+          "relation_hint": "젊을 때부터 알던 후배."
+        },
+        {
+          "npc_id": "NPC-11",
+          "name": "미라",
+          "relation_hint": "공식 기록 밖의 이야기를 듣는 상대."
+        },
+        {
+          "npc_id": "NPC-24",
+          "name": "카본",
+          "relation_hint": "어린 시절을 알고 있는 인물."
+        }
+      ]
+    },
+    {
+      "npc_id": "NPC-30",
+      "name": "에린",
+      "role": "supporting",
+      "origin": "new",
+      "social_class": "기록 보존층",
+      "stance": "진실 추구파",
+      "fixed_chunk": "CHUNK-10",
+      "fixed_location_id": "LOC-12",
+      "fixed_location_name": "갱도의 작은 제단",
+      "movement": "none",
+      "character_traits": [
+        "온화함",
+        "신중함",
+        "기억 중시"
+      ],
+      "personality": "온화하고 신중하며 미신을 쉽게 부정하지 않는다.",
+      "speech_style": "조용하고 정중한 존댓말. 이름과 기억을 신중하게 다루고 말을 아낌.",
+      "conversation_topic": "죽은 광부의 이름 보존과 사라진 명부",
+      "pet_links": [
+        {
+          "npc_id": "NPC-11",
+          "name": "미라",
+          "relation_hint": "기록을 함께 조사하는 동료."
+        },
+        {
+          "npc_id": "NPC-12",
+          "name": "피코",
+          "relation_hint": "옛이야기를 들려주는 아이."
+        }
+      ]
+    },
+    {
+      "npc_id": "NPC-31",
+      "name": "소하",
+      "role": "supporting",
+      "origin": "new",
+      "social_class": "채집 생계층",
+      "stance": "기회주의파",
+      "fixed_chunk": "CHUNK-04",
+      "fixed_location_id": "LOC-13",
+      "fixed_location_name": "균열 재배터",
+      "movement": "none",
+      "character_traits": [
+        "활달함",
+        "생활력",
+        "이익 추구"
+      ],
+      "personality": "활달하고 생활력이 강하지만 욕심이 많다.",
+      "speech_style": "활달하고 계산 빠른 말투. 수량과 이익을 자주 언급하며 친근하게 흥정함.",
+      "conversation_topic": "공동 재배물에서 개인 몫을 어디까지 가져갈지",
+      "pet_links": [
+        {
+          "npc_id": "NPC-05",
+          "name": "모아",
+          "relation_hint": "분배 기준을 두고 다투는 동료."
+        },
+        {
+          "npc_id": "NPC-04",
+          "name": "벨라",
+          "relation_hint": "식재료 거래처."
+        },
+        {
+          "npc_id": "NPC-26",
+          "name": "세온",
+          "relation_hint": "비공식 거래 상대."
+        }
+      ]
+    },
+    {
+      "npc_id": "NPC-32",
+      "name": "바크",
+      "role": "supporting",
+      "origin": "new",
+      "social_class": "징수 집행층",
+      "stance": "체제 순응파",
+      "fixed_chunk": "CHUNK-07",
+      "fixed_location_id": "LOC-14",
+      "fixed_location_name": "능력 징수소",
+      "movement": "none",
+      "character_traits": [
+        "성실함",
+        "규정 중시",
+        "소심함"
+      ],
+      "personality": "성실하고 소심하며 규칙을 철저히 지킨다.",
+      "speech_style": "딱딱하고 정확한 행정 존댓말. 날짜·금액·규칙을 차례로 확인.",
+      "conversation_topic": "징수 장부의 숫자와 실제 거래의 차이",
+      "pet_links": [
+        {
+          "npc_id": "NPC-01",
+          "name": "헤른",
+          "relation_hint": "존경하는 관리자."
+        },
+        {
+          "npc_id": "NPC-09",
+          "name": "제크",
+          "relation_hint": "수상한 장부 기록이 보이는 선배."
+        },
+        {
+          "npc_id": "NPC-14",
+          "name": "가렌",
+          "relation_hint": "업무 조언을 구하는 동료."
+        }
+      ]
+    },
+    {
+      "npc_id": "NPC-33",
+      "name": "베론",
+      "role": "supporting",
+      "origin": "new",
+      "social_class": "기술 관리층",
+      "stance": "체제 순응파",
+      "fixed_chunk": "CHUNK-11",
+      "fixed_location_id": "LOC-15",
+      "fixed_location_name": "봉쇄된 경계 표지소",
+      "movement": "none",
+      "character_traits": [
+        "경계심",
+        "무뚝뚝함",
+        "비밀주의"
+      ],
+      "personality": "무뚝뚝하고 경계심이 많다.",
+      "speech_style": "짧고 경계하는 말투. 질문에 바로 답하기보다 이유를 되묻는 편.",
+      "conversation_topic": "봉쇄된 경계의 표식과 통행 제한 이유",
+      "pet_links": [
+        {
+          "npc_id": "NPC-15",
+          "name": "오르벤",
+          "relation_hint": "시설 관리 지시를 받는 상관."
+        },
+        {
+          "npc_id": "NPC-16",
+          "name": "라스크",
+          "relation_hint": "과거 표식 위치를 두고 다투는 길잡이."
+        },
+        {
+          "npc_id": "NPC-10",
+          "name": "루멘",
+          "relation_hint": "조사에 비협조적인 상대."
+        }
+      ]
+    }
+  ]
+}

@@ -15,7 +15,9 @@ public sealed class LocalStoryEmotionLine
     public string speakerId, name, role, speechStyle, personality;
     public string[] publicFacts;
     public string generatedText, rejection, meaning, revisionNote;
+    public string authoredLinePath, originalText;
     public bool paraphrased;
+    public bool emotionFallback;
     public bool finished;
 }
 
@@ -39,7 +41,37 @@ internal static class LocalStoryEmotion
         "질문·요구의 강도와 높임말이 같은가? 새 사실이 없고 지정 감정이 자연스럽게 느껴지는가? " +
         "하나라도 어긋나거나 불확실하면 false, 모두 맞으면 true다. " +
         "JSON {\"usable\":true} 또는 {\"usable\":false}만 반환해라.";
-    private static readonly string[] DefaultEmotions = { "화", "겁", "슬픔", "기쁨", "당황", "안도" };
+    private const string AuthoredRewriteInstruction =
+        "장면의 뜻을 살려 원문을 NPC 말투와 감정에 맞게 바꿔라. JSON {\"text\":\"대사\"}만 반환해라.";
+    private const string AuthoredReviewInstruction =
+        "원문과 후보의 장면과 뜻이 비슷한가? 새 사건이나 요구가 생기면 false다. JSON {\"usable\":true} 또는 {\"usable\":false}만 반환해라.";
+    internal static readonly string[] DefaultEmotions = { "분노", "경멸", "두려움", "슬픔", "당황", "기쁨", "안도", "감사", "존중", "희망" };
+
+    internal static string RenderEmotion(string original, string emotion)
+    {
+        string cue = emotion switch
+        {
+            "분노" => "하, 정말.",
+            "경멸" => "쯧.",
+            "두려움" => "으…",
+            "슬픔" => "하아…",
+            "당황" => "어, 잠깐.",
+            "기쁨" => "아!",
+            "안도" => "휴…",
+            "감사" => "참 고맙네.",
+            "존중" => "음, 그래.",
+            "희망" => "그래, 아직은…",
+            _ => "음…"
+        };
+        if (PoliteEnding.IsMatch(original))
+            cue = cue switch
+            {
+                "참 고맙네." => "참 고맙네요.",
+                "음, 그래." => "음, 그렇군요.",
+                _ => cue
+            };
+        return cue + " " + original;
+    }
     private static readonly Regex Facts = new Regex(@"\{[^{}]*\}|[0-9]+(?:[.,][0-9]+)*");
     private const string Interjection = "아|어|음|하|으으|쯧|휴|아휴|어휴|앗|헉|허|어이|저기|어머나|이런|에이";
     private static readonly Regex InterjectionCue = new Regex(@"(?<!\S)(?:" + Interjection + @")[,.!?…~]+\s*");
@@ -85,35 +117,57 @@ internal static class LocalStoryEmotion
     internal static async Task RewriteLine(LocalStoryDialogueJob job, LocalStoryEmotionLine line, EncounterCard card,
         Func<string, string, int, CancellationToken, Task<string>> infer, CancellationToken token)
     {
-        int seed = unchecked(job.sourceRun * 100003 + ChapterContentCatalog.CardId(job.storyPath, line.cardIndex));
+        int id = job.authoredPack ? line.cardIndex : ChapterContentCatalog.CardId(job.storyPath, line.cardIndex);
+        int seed = unchecked(job.sourceRun * 100003 + id);
         line.meaning = card.coreMeaning == card.text ? null : card.coreMeaning;
         for (int attempt = 0; attempt < 2; attempt++)
         {
-            var input = Input(job.emotion, line, card.text);
-            string raw = await infer(Messages(RewriteInstruction, input).ToString(Formatting.None), RewriteGrammar, seed + attempt, token);
+            var input = job.authoredPack ? new JObject
+            {
+                ["original"] = card.text,
+                ["speechStyle"] = string.Join(" ", new[] { line.personality, line.speechStyle }
+                    .Where(value => !string.IsNullOrWhiteSpace(value))),
+                ["emotion"] = job.emotion
+            } : Input(job.emotion, line, card.text);
+            string instruction = job.authoredPack ? AuthoredRewriteInstruction : RewriteInstruction;
+            string raw = await infer(Messages(instruction, input).ToString(Formatting.None), RewriteGrammar, seed + attempt, token);
             token.ThrowIfCancellationRequested();
             string candidate = (string)Parse(raw, "text", JTokenType.String)?.Value;
-            if (!ValidChange(card.text, candidate) || SpokenContent(card.text) == SpokenContent(candidate))
+            if (!ValidChange(card.text, candidate, job.authoredPack) ||
+                (!job.authoredPack && SpokenContent(card.text) == SpokenContent(candidate)))
             {
-                line.revisionNote = "원문의 사실과 요구를 유지하면서 어휘나 어순이 다른 대사를 써라.";
+                line.revisionNote = job.authoredPack ? "장면과 발화 의도는 살리고 지정 감정이 느껴지게 말해라." :
+                    "원문의 사실과 요구를 유지하면서 어휘나 어순이 다른 대사를 써라.";
                 continue;
             }
-            input.Remove("revisionNote");
-            input.Remove("example");
-            input["candidate"] = candidate;
-            raw = await infer(Messages(ReviewInstruction, input).ToString(Formatting.None), ReviewGrammar, seed + attempt, token);
+            if (job.authoredPack)
+                input = new JObject { ["original"] = card.text, ["candidate"] = candidate };
+            else
+            {
+                input.Remove("revisionNote");
+                input.Remove("example");
+                input["candidate"] = candidate;
+            }
+            string review = job.authoredPack ? AuthoredReviewInstruction : ReviewInstruction;
+            raw = await infer(Messages(review, input).ToString(Formatting.None), ReviewGrammar, seed + attempt, token);
             token.ThrowIfCancellationRequested();
             if ((bool?)Parse(raw, "usable", JTokenType.Boolean)?.Value == true)
             {
                 line.generatedText = candidate;
-                line.paraphrased = true;
+                line.paraphrased = SpokenContent(card.text) != SpokenContent(candidate);
                 line.finished = true;
                 return;
             }
             line.revisionNote = "원문과 대조해 사실과 발화 의도를 보존하고, 감정이 드러나는 새 문장을 써라.";
         }
 
-        line.rejection = "뜻을 유지하며 어휘나 어순이 바뀐 문장을 확인하지 못했습니다.";
+        if (job.authoredPack)
+        {
+            line.generatedText = RenderEmotion(card.text, job.emotion);
+            line.emotionFallback = true;
+        }
+        else
+            line.rejection = "뜻을 유지하며 어휘나 어순이 바뀐 문장을 확인하지 못했습니다.";
         line.finished = true;
     }
 
@@ -146,7 +200,7 @@ internal static class LocalStoryEmotion
         return new JObject { ["messages"] = messages }.ToString(Formatting.None);
     }
 
-    internal static bool ValidChange(string original, string candidate)
+    internal static bool ValidChange(string original, string candidate, bool flexible = false)
     {
         if (string.IsNullOrWhiteSpace(candidate) || candidate.Trim() == original?.Trim() ||
             candidate != candidate.Trim() || candidate.Length > 160 || candidate.Any(char.IsControl) ||
@@ -156,7 +210,7 @@ internal static class LocalStoryEmotion
             !Facts.Matches(original).Cast<Match>().Select(match => match.Value)
                 .SequenceEqual(Facts.Matches(candidate).Cast<Match>().Select(match => match.Value)) ||
             PoliteEnding.IsMatch(original) != PoliteEnding.IsMatch(candidate) ||
-            (Negation.IsMatch(original) && !Negation.IsMatch(candidate) &&
+            (!flexible && Negation.IsMatch(original) && !Negation.IsMatch(candidate) &&
                 !(EarlierWeight.IsMatch(original) && LighterEarlier.IsMatch(candidate)))) return false;
         var payment = PaymentTerm.Match(original);
         return !payment.Success || !PaymentDemand.IsMatch(original) ||
@@ -196,8 +250,12 @@ internal static class LocalStoryEmotion
         {
             input["register"] = PoliteEnding.IsMatch(original) ? "원문의 높임말을 유지해라." :
                 "원문처럼 반말로 써라. 문장을 ~요, ~습니다로 끝내지 마라.";
-            if (emotion == "겁")
+            if (emotion == "겁" || emotion == "두려움")
                 input["emotionHint"] = "어이없거나 화난 반응 대신 겁먹거나 불안한 목소리로 말해라.";
+            if (emotion == "경멸")
+                input["emotionHint"] = "기존 상대를 낮춰 보는 뉘앙스를 어휘에 담되, 새 모욕이나 평가를 덧붙이지 마라.";
+            if (emotion == "감사" || emotion == "존중")
+                input["emotionHint"] = "고마움이나 상대를 인정하는 태도를 말투에 담되, 원문에 없는 행동이나 공로를 덧붙이지 마라.";
             var payment = PaymentTerm.Match(original);
             if (payment.Success && PaymentDemand.IsMatch(original))
             {

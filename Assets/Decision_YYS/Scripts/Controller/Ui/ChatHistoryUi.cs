@@ -39,6 +39,11 @@ public sealed class ChatHistoryUi : MonoBehaviour
     public string DraftText => composerActive && choiceDraft ? draftText : string.Empty;
     public bool IsTyping => composerActive && choiceDraft;
     public void SetDialogueVisible(bool visible) => floatingView?.SetVisible(visible);
+    public void SetStoryHeading(string text) => floatingView?.SetStoryHeading(text);
+    public void SetStoryNotice(string text) => floatingView?.SetStoryNotice(text);
+    internal void SetChoiceHints(System.Func<int, string> hint, int first, int count) =>
+        floatingView?.SetChoiceHints(hint, first, count);
+    internal void SetDialogueClue(string target, System.Func<string> reveal) => floatingView?.SetDialogueClue(target, reveal);
 
     private void Awake()
     {

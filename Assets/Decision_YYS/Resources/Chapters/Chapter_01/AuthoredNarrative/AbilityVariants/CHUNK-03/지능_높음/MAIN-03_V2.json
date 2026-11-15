@@ -1,0 +1,562 @@
+{
+  "story_id": "MAIN-03",
+  "title": "빈 솥의 순서",
+  "opening": [
+    {
+      "speaker_id": "NPC-04",
+      "text": "먼저 온 순서만 따르면 밤새 일한 사람은 빈 솥을 보겠군.",
+      "hover_hint": {
+        "id": "HINT_MAIN-03_V2",
+        "trigger": "mouse_hover",
+        "target_text": "먼저",
+        "reveal": "배식 순번표에 아직 돌아오지 않은 야간 근무자들의 몫이 빠져 있다",
+        "unlock_route_id": "N_INT_CLUE"
+      }
+    },
+    {
+      "speaker_id": "NPC-22",
+      "text": "남겨 둔 그릇은 어떻게 할까요?"
+    },
+    {
+      "speaker_id": "NPC-04",
+      "text": "잠깐, 그냥 넘어갈 수 없는 흔적이 있어. 직접 살펴보고 결정하자."
+    },
+    {
+      "speaker_id": "NPC-04",
+      "text": "먼저 온 사람부터 줄지, 더 지친 사람부터 줄지 골라야겠네."
+    },
+    {
+      "speaker_id": "NPC-04",
+      "text": "대가를 고르기 전에 빈 솥과 야간 교대에 얽힌 판단부터 바로잡고 싶어."
+    }
+  ],
+  "choices": [
+    {
+      "id": "C1",
+      "text": "통행세 내기",
+      "coin_options": [
+        {
+          "id": "strength",
+          "text": "힘 지불",
+          "dialogue": [
+            {
+              "speaker_id": "NPC-04",
+              "text": "힘을 받기 전에 빈 솥과 야간 교대에 필요한 대가를 다시 따져 보겠어. 근거가 틀리면 말해 줘."
+            }
+          ],
+          "result": {
+            "stats": {
+              "strength": -2
+            },
+            "main_progress": true,
+            "access": true,
+            "resolution": "paid"
+          },
+          "condition": {
+            "coin_at_least": {
+              "strength": 2
+            }
+          },
+          "on_insufficient_coins": "COIN_SHORTAGE",
+          "hover": {
+            "trigger": "mouse_hover",
+            "hide_on": "mouse_exit",
+            "calculate_from_current_stats": true,
+            "source": "payment_affordability_for_strength",
+            "display": "{calculated_probability_percent}%"
+          }
+        },
+        {
+          "id": "speed",
+          "text": "속도 지불",
+          "dialogue": [
+            {
+              "speaker_id": "NPC-04",
+              "text": "속도을 받기 전에 빈 솥과 야간 교대에 필요한 대가를 다시 따져 보겠어. 근거가 틀리면 말해 줘."
+            }
+          ],
+          "result": {
+            "stats": {
+              "speed": -2
+            },
+            "main_progress": true,
+            "access": true,
+            "resolution": "paid"
+          },
+          "condition": {
+            "coin_at_least": {
+              "speed": 2
+            }
+          },
+          "on_insufficient_coins": "COIN_SHORTAGE",
+          "hover": {
+            "trigger": "mouse_hover",
+            "hide_on": "mouse_exit",
+            "calculate_from_current_stats": true,
+            "source": "payment_affordability_for_speed",
+            "display": "{calculated_probability_percent}%"
+          }
+        },
+        {
+          "id": "intelligence",
+          "text": "지능 지불",
+          "dialogue": [
+            {
+              "speaker_id": "NPC-04",
+              "text": "지능을 받기 전에 빈 솥과 야간 교대에 필요한 대가를 다시 따져 보겠어. 근거가 틀리면 말해 줘."
+            }
+          ],
+          "result": {
+            "stats": {
+              "intelligence": -2
+            },
+            "main_progress": true,
+            "access": true,
+            "resolution": "paid"
+          },
+          "condition": {
+            "coin_at_least": {
+              "intelligence": 2
+            }
+          },
+          "on_insufficient_coins": "COIN_SHORTAGE",
+          "hover": {
+            "trigger": "mouse_hover",
+            "hide_on": "mouse_exit",
+            "calculate_from_current_stats": true,
+            "source": "payment_affordability_for_intelligence",
+            "display": "{calculated_probability_percent}%"
+          }
+        },
+        {
+          "id": "charm",
+          "text": "매력 지불",
+          "dialogue": [
+            {
+              "speaker_id": "NPC-04",
+              "text": "매력을 받기 전에 빈 솥과 야간 교대에 필요한 대가를 다시 따져 보겠어. 근거가 틀리면 말해 줘."
+            }
+          ],
+          "result": {
+            "stats": {
+              "charm": -2
+            },
+            "main_progress": true,
+            "access": true,
+            "resolution": "paid"
+          },
+          "condition": {
+            "coin_at_least": {
+              "charm": 2
+            }
+          },
+          "on_insufficient_coins": "COIN_SHORTAGE",
+          "hover": {
+            "trigger": "mouse_hover",
+            "hide_on": "mouse_exit",
+            "calculate_from_current_stats": true,
+            "source": "payment_affordability_for_charm",
+            "display": "{calculated_probability_percent}%"
+          }
+        }
+      ],
+      "insufficient_coins_branch_id": "COIN_SHORTAGE",
+      "coin_shortage_trigger": "balance_of_selected_coin_below_required",
+      "price": {
+        "base_fee": 2,
+        "negotiated_fee": 1,
+        "accepted_coin_ids": [
+          "strength",
+          "speed",
+          "intelligence",
+          "charm"
+        ]
+      },
+      "negotiation": {
+        "id": "NEGOTIATE",
+        "text": "가격 협상",
+        "available_before_coin_selection": true,
+        "once_per_encounter": true,
+        "discounted_fee": 1,
+        "routes": [
+          {
+            "id": "N_INT",
+            "text": "근거 제시",
+            "condition": {
+              "intelligence_at_least": 3
+            },
+            "player_dialogue": "근거 제시",
+            "success": {
+              "dialogue": [
+                {
+                  "speaker_id": "NPC-04",
+                  "text": "그 자료를 비교해 보니 네 말에도 근거가 있어. 정한 범위 안에서 낮춰 주지."
+                }
+              ],
+              "payment_override": {
+                "amount": 1,
+                "apply_to": [
+                  "coin_at_least",
+                  "negative_stat_delta"
+                ],
+                "scope": "selected_coin_only"
+              },
+              "goto_coin_choice_id": "C1",
+              "set_flag": "NEGOTIATED_FEE"
+            },
+            "failure": {
+              "dialogue": [
+                {
+                  "speaker_id": "NPC-04",
+                  "text": "빈 솥과 야간 교대에 대한 주장만으로는 부족해. 직접 확인할 기록이 더 필요해."
+                }
+              ],
+              "goto_coin_choice_id": "C1",
+              "payment_fee": 2
+            },
+            "hover": {
+              "trigger": "mouse_hover",
+              "hide_on": "mouse_exit",
+              "calculate_from_current_stats": true,
+              "source": "original_negotiation_condition_or_rule",
+              "display": "{calculated_probability_percent}%",
+              "when_unavailable": "산출 불가 (확률 규칙 미정)"
+            }
+          },
+          {
+            "id": "N_CHARM",
+            "text": "사정 호소",
+            "condition": {
+              "charm_at_least": 3
+            },
+            "player_dialogue": "사정 호소",
+            "success": {
+              "dialogue": [
+                {
+                  "speaker_id": "NPC-04",
+                  "text": "사정은 들었어. 일을 계속할 수 있도록 약속한 만큼만 받겠어."
+                }
+              ],
+              "payment_override": {
+                "amount": 1,
+                "apply_to": [
+                  "coin_at_least",
+                  "negative_stat_delta"
+                ],
+                "scope": "selected_coin_only"
+              },
+              "goto_coin_choice_id": "C1",
+              "set_flag": "NEGOTIATED_FEE"
+            },
+            "failure": {
+              "dialogue": [
+                {
+                  "speaker_id": "NPC-04",
+                  "text": "네 처지는 알겠어. 그래도 그 말만으로 규칙을 바꿀 수는 없어."
+                }
+              ],
+              "goto_coin_choice_id": "C1",
+              "payment_fee": 2
+            },
+            "hover": {
+              "trigger": "mouse_hover",
+              "hide_on": "mouse_exit",
+              "calculate_from_current_stats": true,
+              "source": "original_negotiation_condition_or_rule",
+              "display": "{calculated_probability_percent}%",
+              "when_unavailable": "산출 불가 (확률 규칙 미정)"
+            }
+          },
+          {
+            "id": "N_CANCEL",
+            "text": "원래대로 지불",
+            "goto_coin_choice_id": "C1",
+            "hover": {
+              "trigger": "mouse_hover",
+              "hide_on": "mouse_exit",
+              "calculate_from_current_stats": true,
+              "source": "original_negotiation_condition_or_rule",
+              "display": "{calculated_probability_percent}%",
+              "when_unavailable": "산출 불가 (확률 규칙 미정)"
+            }
+          },
+          {
+            "id": "N_INT_CLUE",
+            "text": "단서 제시",
+            "condition": {
+              "intelligence_at_least": 3
+            },
+            "player_dialogue": "단서 제시",
+            "success": {
+              "dialogue": [
+                {
+                  "speaker_id": "NPC-04",
+                  "text": "배식 순번표에 아직 돌아오지 않은 야간 근무자들의 몫이 빠져 있다. 이런 흔적이 있었다니. 근거를 인정하고 정한 금액만 받겠어."
+                }
+              ],
+              "payment_override": {
+                "amount": 1,
+                "apply_to": [
+                  "coin_at_least",
+                  "negative_stat_delta"
+                ],
+                "scope": "selected_coin_only"
+              },
+              "goto_coin_choice_id": "C1",
+              "set_flag": "NEGOTIATED_FEE"
+            },
+            "failure": {
+              "dialogue": [
+                {
+                  "speaker_id": "NPC-04",
+                  "text": "단서는 알겠어. 하지만 빈 솥과 야간 교대에 그게 어떻게 연결되는지 아직 확실하지 않아."
+                }
+              ],
+              "goto_coin_choice_id": "C1",
+              "payment_fee": 2
+            },
+            "unlock_hint_id": "HINT_MAIN-03_V2",
+            "hover": {
+              "trigger": "mouse_hover",
+              "hide_on": "mouse_exit",
+              "calculate_from_current_stats": true,
+              "source": "original_negotiation_condition_or_rule",
+              "display": "{calculated_probability_percent}%",
+              "when_unavailable": "산출 불가 (확률 규칙 미정)"
+            }
+          }
+        ],
+        "on_no_affordable_coin": "COIN_SHORTAGE"
+      },
+      "dialogue": [],
+      "hover": {
+        "trigger": "mouse_hover",
+        "hide_on": "mouse_exit",
+        "calculate_from_current_stats": true,
+        "source": "selected_coin_balance_and_actual_fee",
+        "display": "{calculated_probability_percent}%"
+      }
+    },
+    {
+      "id": "C2",
+      "text": "미니게임",
+      "dialogue": [
+        {
+          "speaker_id": "NPC-04",
+          "text": "규칙은 간단해. 동전 앞뒤가 맞으면 면제지만, 이 장부의 진실은 승부로 정해지지 않아."
+        }
+      ],
+      "mini_game": {
+        "id": "MAIN-03_COIN_TOSS",
+        "type": "gambling",
+        "implementation": "coin_toss",
+        "rules_ref": "00_implementation_rules.json#minigames.gambling",
+        "bet_options": [
+          {
+            "id": "HEADS",
+            "text": "앞면"
+          },
+          {
+            "id": "TAILS",
+            "text": "뒷면"
+          }
+        ],
+        "win_probability": 0.5,
+        "no_additional_coin_cost": true,
+        "on_failure": "return_to_four_choices",
+        "success": {
+          "dialogue": [
+            {
+              "speaker_id": "NPC-04",
+              "text": "승부는 네가 이겼어. 하지만 빈 솥과 야간 교대는 아직 기록으로 남겨 둬야겠군."
+            }
+          ],
+          "result": {
+            "stats": {},
+            "resolution": "won_minigame",
+            "retry": false,
+            "main_progress": true,
+            "access": true
+          }
+        },
+        "failure": {
+          "dialogue": [
+            {
+              "speaker_id": "NPC-04",
+              "text": "이번엔 네가 졌어. 빈 솥과 야간 교대에 관한 단서는 사라지지 않으니 다른 길을 생각해 봐."
+            }
+          ],
+          "result": {
+            "stats": {},
+            "retry": true,
+            "main_progress": false,
+            "access": false
+          }
+        }
+      },
+      "hover": {
+        "trigger": "mouse_hover",
+        "hide_on": "mouse_exit",
+        "calculate_from_current_stats": true,
+        "source": "00_implementation_rules.json#minigames.gambling.probability_each",
+        "display": "{calculated_probability_percent}%"
+      }
+    },
+    {
+      "id": "C3",
+      "text": "요구사항 들어주기",
+      "dialogue": [
+        {
+          "speaker_id": "NPC-04",
+          "text": "빵을 크기별로 나누고 교대 명부와 맞춰 줘. 작업 순서를 정하고 시작해야 해. 무작정 서두르면 도움이 되지 않아."
+        }
+      ],
+      "requirement": {
+        "type": "stat_probability",
+        "task": "빵을 크기별로 나누고 교대 명부와 맞춰 줘.",
+        "required_stats": {
+          "primary": "intelligence",
+          "secondary": "speed"
+        },
+        "check": {
+          "rules_ref": "00_implementation_rules.json#requirement_probability",
+          "difficulty": 3,
+          "read_current_stats_at_attempt": true,
+          "roll_once_per_attempt": true
+        },
+        "duration_seconds": 51,
+        "collector_continues": true,
+        "stat_growth_paused": true,
+        "success": {
+          "dialogue": [
+            {
+              "speaker_id": "NPC-04",
+              "text": "작업은 마쳤어. 빈 솥과 야간 교대에 관한 새 기록은 남겨 두는 게 좋겠군."
+            }
+          ],
+          "result": {
+            "stats": {
+              "strength": -2,
+              "speed": -1,
+              "intelligence": 2,
+              "charm": 1
+            },
+            "main_progress": true,
+            "access": true,
+            "resolution": "worked"
+          }
+        },
+        "failure": {
+          "dialogue": [
+            {
+              "speaker_id": "NPC-04",
+              "text": "아직 실패야. 빈 솥과 야간 교대에 필요한 순서부터 다시 확인해야겠어."
+            }
+          ],
+          "result": {
+            "stats": {
+              "strength": -3,
+              "speed": -1,
+              "charm": -1
+            },
+            "main_progress": false,
+            "access": false,
+            "retry": true
+          }
+        },
+        "story_prompt": "누가 먼저 먹는 게 가장 합리적이지?",
+        "npc_advice_on_success": [
+          {
+            "speaker_id": "NPC-04",
+            "text": "나도 그렇게 생각했어. 우선순위와 배제는 다른 말이지."
+          }
+        ],
+        "npc_advice_on_failure": [
+          {
+            "speaker_id": "NPC-04",
+            "text": "누군가를 완전히 굶기는 답은 못 받아."
+          }
+        ]
+      },
+      "hover": {
+        "trigger": "mouse_hover",
+        "hide_on": "mouse_exit",
+        "calculate_from_current_stats": true,
+        "source": "00_implementation_rules.json#requirement_probability.probability_formula",
+        "calculate": "clamp(0.50 + 0.10 * (0.75 * current_primary + 0.25 * current_secondary - difficulty), 0.10, 0.90)",
+        "recalculate_on_attempt": true,
+        "display": "{calculated_probability_percent}%"
+      }
+    },
+    {
+      "id": "C4",
+      "text": "샛길로 가기",
+      "shortcut": {
+        "type": "log_only",
+        "enabled": false,
+        "log_level": "info",
+        "log_event": "SIDE_PATH_SELECTED_NOT_IMPLEMENTED",
+        "log_message": "MAIN-03: 샛길 선택됨. 아직 이동 구현 없음. 원래 선택지로 복귀.",
+        "movement": false,
+        "scene_transition": false,
+        "unlock": false,
+        "emit_npc_dialogue": false,
+        "return_to_choice_id": "ROOT_CHOICES"
+      },
+      "result": {
+        "stats": {},
+        "access": false,
+        "retry": true,
+        "main_progress": false
+      },
+      "hover": {
+        "trigger": "mouse_hover",
+        "hide_on": "mouse_exit",
+        "calculate_from_current_stats": true,
+        "source": "00_implementation_rules.json#shortcut",
+        "when_unavailable": "미구현 — 실제 샛길 이동 없음",
+        "display": "미구현"
+      }
+    }
+  ],
+  "pet_on_complete": {
+    "paid": "MAIN-03: 낯선 이가 코인으로 약속을 이행했다. 빈 솥의 순서에 관한 판단이 남아 있다.",
+    "worked": "MAIN-03: 요구사항을 능력치 판정으로 완료했다는 소식을 펫이 전했다.",
+    "reasoned": "MAIN-03: 낯선 이가 위험과 책임의 기준을 따져 답했다. 빈 솥의 순서의 기록을 검토해 달라.",
+    "won_minigame": "MAIN-03: 코인 대신 미니게임에서 이겨 통행 대가를 면제받았다는 소식을 펫이 전했다.",
+    "persuaded": "MAIN-03: 낯선 사람이 판단을 제시했고, 현장 담당자가 이를 받아들였다."
+  },
+  "stat_change_policy": "clamp_at_zero",
+  "branches": {
+    "COIN_SHORTAGE": {
+      "trigger": {
+        "selected_coin_below_payment_amount": true
+      },
+      "dialogue": [
+        {
+          "speaker_id": "NPC-04",
+          "text": "코인이 부족한 건 계산해 보니 분명해. 빈 솥과 야간 교대를 다른 방법으로 풀어 보자."
+        },
+        {
+          "speaker_id": "NPC-04",
+          "text": "사람들에게 피해를 남기지만 않으면 됩니다."
+        }
+      ],
+      "goto_choice_id": "ROOT_CHOICES",
+      "available_choices": [
+        "C1",
+        "C2",
+        "C3",
+        "C4"
+      ],
+      "note": "현재 통행세를 낼 수 없으면 미니게임, 요구사항, 샛길 로그를 선택할 수 있음"
+    }
+  },
+  "choice_order": [
+    "C1",
+    "C2",
+    "C3",
+    "C4"
+  ],
+  "choice_policy_ref": "00_implementation_rules.json#choice_policy"
+}

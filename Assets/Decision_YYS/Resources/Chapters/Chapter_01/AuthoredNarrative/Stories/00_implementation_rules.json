@@ -1,0 +1,116 @@
+{
+  "version": "2.0",
+  "initial_stats": {
+    "strength": 5,
+    "speed": 5,
+    "intelligence": 5,
+    "charm": 5
+  },
+  "choice_policy": {
+    "top_level_choice_count": 4,
+    "order": [
+      {
+        "id": "C1",
+        "text": "통행세 내기"
+      },
+      {
+        "id": "C2",
+        "text": "미니게임"
+      },
+      {
+        "id": "C3",
+        "text": "요구사항 들어주기"
+      },
+      {
+        "id": "C4",
+        "text": "샛길로 가기"
+      }
+    ],
+    "coin_payment": "Use selected stat coin balance. The negotiation discount remains nested within C1 and must change both required balance and actual deduction.",
+    "insufficient_coins": "If selected coin balance is below fee, show COIN_SHORTAGE message and return to the same four choices. Never apply a negative balance or block other choices.",
+    "minigame": "Only duel and gambling. No reaction, memory, puzzle, race or other minigame types.",
+    "requirement": "Use a probability roll computed from the CURRENT player stats when the option is attempted. No guaranteed success from simply waiting.",
+    "shortcut": "Log mention only. Do not move player, create path, unlock next story, grant entry, or change stats. Return to choice menu."
+  },
+  "requirement_probability": {
+    "implementation": "codex_required",
+    "current_stats_source": "runtime_player_current_stats",
+    "read_at": "every_attempt_before_rng",
+    "primary_stat_source": "choice.requirement.required_stats.primary",
+    "secondary_stat_source": "choice.requirement.required_stats.secondary",
+    "difficulty_source": "choice.requirement.check.difficulty",
+    "effective_stat_formula": "0.75 * current_primary + 0.25 * current_secondary",
+    "probability_formula": "clamp(0.50 + 0.10 * (effective_stat - difficulty), 0.10, 0.90)",
+    "random_roll": "UnityEngine.Random.value in [0, 1)",
+    "success_when": "random_roll < probability",
+    "stat_values_from_initial_only_for_example": true,
+    "initial_stat_example": {
+      "strength": 5,
+      "speed": 5,
+      "intelligence": 5,
+      "charm": 5,
+      "difficulty": 3,
+      "success_probability": 0.7
+    },
+    "difficulty_by_chunk": {
+      "CHUNK-01~CHUNK-03": 3,
+      "CHUNK-04~CHUNK-07": 4,
+      "CHUNK-08~CHUNK-11": 5
+    },
+    "success_apply": "choice.requirement.success.dialogue + result",
+    "failure_apply": "choice.requirement.failure.dialogue + result",
+    "retry": "Check CURRENT stats and roll again on each retry; collector time keeps moving and growth stays paused for the duration of the task.",
+    "no_upfront_coin_cost": true,
+    "collector_continues": true,
+    "stat_growth_paused_during_task": true,
+    "stats_floor_zero": true,
+    "notes_ko": "요구사항은 플레이어가 보유한 현재 스탯으로 성공 확률을 매번 계산한다. 초기 5/5/5/5는 설명용이며 도중에 능력치가 바뀌면 확률도 즉시 바뀐다. 시도 시간 동안 징수원은 접근하고 능력치 성장은 멈춘다."
+  },
+  "minigames": {
+    "duel": {
+      "type": "duel",
+      "implement_with": "existing_combat_module",
+      "win_when": "existing combat reports player victory",
+      "loss_when": "existing combat reports player defeat",
+      "coin_cost": 0,
+      "win_result": "apply mini_game.success",
+      "lose_result": "apply mini_game.failure then allow other options/retry",
+      "notes_ko": "결투만 허용. 별도 퍼즐·반응형 게임 구현 금지."
+    },
+    "gambling": {
+      "type": "gambling",
+      "implementation": "coin_toss",
+      "player_picks": [
+        "HEADS",
+        "TAILS"
+      ],
+      "random_outcome": [
+        "HEADS",
+        "TAILS"
+      ],
+      "probability_each": 0.5,
+      "coin_cost": 0,
+      "win_when": "player_pick == random_outcome",
+      "win_result": "apply mini_game.success",
+      "lose_result": "apply mini_game.failure then allow other options/retry",
+      "notes_ko": "지금은 앞면/뒷면 동전 내기만 구현. 능력 코인과는 별개인 확률 게임."
+    }
+  },
+  "shortcut": {
+    "type": "log_only",
+    "log_event": "SIDE_PATH_SELECTED_NOT_IMPLEMENTED",
+    "move_player": false,
+    "create_path": false,
+    "set_progress": false,
+    "change_stats": false,
+    "return_to_four_choices": true,
+    "notes_ko": "현재 샛길은 로그에만 언급. 실제 이동, 씬 전환, 해금, 통행 대체 처리하지 말 것."
+  },
+  "structure": {
+    "main_story_location": "CHUNK-XX/MAIN-XX_VN.json",
+    "side_story_location": "SIDE_STORIES/SIDE-XX_VN.json",
+    "npc_ids_only": true,
+    "npc_and_location_definitions": "Provided NPC관계.zip is authoritative; not duplicated in story data.",
+    "boss_unlock": "Keep existing 00_main_flow.json rules."
+  }
+}

@@ -1,0 +1,89 @@
+{
+  "location_id": "LOC-01",
+  "name": "갱목 보수소",
+  "origin": "existing",
+  "fixed_chunk": "CHUNK-02",
+  "place_position_rule": "청크 내부 위치는 랜덤. NPC는 배치된 장소에 고정",
+  "location_description": "갱도 지지대와 목재 보강 작업을 맡는다. 자재 부족으로 위험한 구역의 수리가 늦어진다.",
+  "fixed_npcs": [
+    {
+      "npc_id": "NPC-03",
+      "name": "도르",
+      "role": "main",
+      "origin": "existing",
+      "social_class": "최하층 채굴민",
+      "stance": "현실 개혁파",
+      "fixed_chunk": "CHUNK-02",
+      "fixed_location_id": "LOC-01",
+      "fixed_location_name": "갱목 보수소",
+      "movement": "none",
+      "character_traits": [
+        "신중함",
+        "세심함",
+        "자기과소평가"
+      ],
+      "personality": "세심하고 신중하며 조용하다. 타인을 배려하지만 자신을 과소평가한다.",
+      "speech_style": "신중하고 조심스러운 평서형. 손상과 수리 같은 기술적 표현을 자주 사용.",
+      "conversation_topic": "부실한 갱목·설비를 고칠 책임과 생계의 압박",
+      "pet_links": [
+        {
+          "npc_id": "NPC-02",
+          "name": "브룩",
+          "relation_hint": "오랜 친구, 다시 일할 수 있도록 도구를 개조한다."
+        },
+        {
+          "npc_id": "NPC-01",
+          "name": "헤른",
+          "relation_hint": "보수 예산을 두고 대립한다."
+        },
+        {
+          "npc_id": "NPC-15",
+          "name": "오르벤",
+          "relation_hint": "기술 의견은 나누지만 비용 문제로 충돌한다."
+        },
+        {
+          "npc_id": "NPC-17",
+          "name": "바젠",
+          "relation_hint": "위험한 일을 맡기기 꺼리는 제자."
+        }
+      ]
+    },
+    {
+      "npc_id": "NPC-17",
+      "name": "바젠",
+      "role": "supporting",
+      "origin": "new",
+      "social_class": "최하층 채굴민",
+      "stance": "생존 우선·중립",
+      "fixed_chunk": "CHUNK-02",
+      "fixed_location_id": "LOC-01",
+      "fixed_location_name": "갱목 보수소",
+      "movement": "none",
+      "character_traits": [
+        "성실함",
+        "소심함",
+        "불안"
+      ],
+      "personality": "성실하지만 자신감이 부족하다.",
+      "speech_style": "소심하고 머뭇거리는 존댓말. 자주 확인하고 결론을 단정하지 못함.",
+      "conversation_topic": "견습생의 실수에 대한 두려움과 일의 자격",
+      "pet_links": [
+        {
+          "npc_id": "NPC-03",
+          "name": "도르",
+          "relation_hint": "존경하는 스승."
+        },
+        {
+          "npc_id": "NPC-02",
+          "name": "브룩",
+          "relation_hint": "힘을 잃은 광부의 미래를 보여 주는 인물."
+        }
+      ]
+    }
+  ],
+  "main_npc_ids": [
+    "NPC-03"
+  ],
+  "pet_remote_conversation": true,
+  "notice": "이 장소 JSON에는 방문 NPC를 넣지 않음. 다른 NPC와의 관계는 PET 연결로만 표현"
+}

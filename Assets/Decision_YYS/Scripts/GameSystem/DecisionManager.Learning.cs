@@ -43,8 +43,14 @@ public partial class DecisionManager
     }
     private void TickLearning()
     {
-        bool busy=collectingTax || mine?.activityRemaining>0 || currentState==Constants.StoryState.Duel || currentState==Constants.StoryState.Transitioning ||
+        bool task = mineLaborInProgress;
+        bool busy=collectingTax || journeyCoinSupply?.HasBoardPayment == true || (!task && mine?.activityRemaining>0) || currentState==Constants.StoryState.Duel ||
+            (currentState==Constants.StoryState.Transitioning && !task) ||
             (duelMiniGame!=null && duelMiniGame.IsRunning) || (tutorialMiniGames!=null && tutorialMiniGames.CurrentKnightTarget!=null);
-        learningStation?.Tick(Time.deltaTime,busy);
+        float? calendarDays = mine != null && mineRules?.dayCycle is ChapterDayCycle cycle
+            ? cycle.ElapsedDays(mine.elapsedSeconds) : null;
+        learningStation?.Tick(Time.deltaTime, busy, stopStudying: task || mine?.resting == true, calendarDays: calendarDays);
+        if (learningStation != null)
+            uiController?.ShowReading(learningStation, !busy && !task && guideProgress?.allocating != true);
     }
 }

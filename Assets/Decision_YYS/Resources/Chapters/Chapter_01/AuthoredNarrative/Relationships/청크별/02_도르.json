@@ -1,0 +1,195 @@
+{
+  "chunk_id": "CHUNK-02",
+  "order": 2,
+  "chunk_type": "main",
+  "main_npc_id": "NPC-03",
+  "main_npc_name": "도르",
+  "main_npc_fixed_location_id": "LOC-01",
+  "main_npc_fixed_location_name": "갱목 보수소",
+  "story_topic_only": "붕괴 위험을 알면서도 생계를 위해 작업을 계속해야 하는가?",
+  "location_ids": [
+    "LOC-01",
+    "LOC-02"
+  ],
+  "locations": [
+    {
+      "location_id": "LOC-01",
+      "name": "갱목 보수소",
+      "fixed_npc_ids": [
+        "NPC-03",
+        "NPC-17"
+      ],
+      "fixed_npc_names": [
+        "도르",
+        "바젠"
+      ]
+    },
+    {
+      "location_id": "LOC-02",
+      "name": "환풍기 작업장",
+      "fixed_npc_ids": [
+        "NPC-15",
+        "NPC-18"
+      ],
+      "fixed_npc_names": [
+        "오르벤",
+        "엘로"
+      ]
+    }
+  ],
+  "fixed_npcs": [
+    {
+      "npc_id": "NPC-03",
+      "name": "도르",
+      "role": "main",
+      "origin": "existing",
+      "social_class": "최하층 채굴민",
+      "stance": "현실 개혁파",
+      "fixed_chunk": "CHUNK-02",
+      "fixed_location_id": "LOC-01",
+      "fixed_location_name": "갱목 보수소",
+      "movement": "none",
+      "character_traits": [
+        "신중함",
+        "세심함",
+        "자기과소평가"
+      ],
+      "personality": "세심하고 신중하며 조용하다. 타인을 배려하지만 자신을 과소평가한다.",
+      "speech_style": "신중하고 조심스러운 평서형. 손상과 수리 같은 기술적 표현을 자주 사용.",
+      "conversation_topic": "부실한 갱목·설비를 고칠 책임과 생계의 압박",
+      "pet_links": [
+        {
+          "npc_id": "NPC-02",
+          "name": "브룩",
+          "relation_hint": "오랜 친구, 다시 일할 수 있도록 도구를 개조한다."
+        },
+        {
+          "npc_id": "NPC-01",
+          "name": "헤른",
+          "relation_hint": "보수 예산을 두고 대립한다."
+        },
+        {
+          "npc_id": "NPC-15",
+          "name": "오르벤",
+          "relation_hint": "기술 의견은 나누지만 비용 문제로 충돌한다."
+        },
+        {
+          "npc_id": "NPC-17",
+          "name": "바젠",
+          "relation_hint": "위험한 일을 맡기기 꺼리는 제자."
+        }
+      ]
+    },
+    {
+      "npc_id": "NPC-17",
+      "name": "바젠",
+      "role": "supporting",
+      "origin": "new",
+      "social_class": "최하층 채굴민",
+      "stance": "생존 우선·중립",
+      "fixed_chunk": "CHUNK-02",
+      "fixed_location_id": "LOC-01",
+      "fixed_location_name": "갱목 보수소",
+      "movement": "none",
+      "character_traits": [
+        "성실함",
+        "소심함",
+        "불안"
+      ],
+      "personality": "성실하지만 자신감이 부족하다.",
+      "speech_style": "소심하고 머뭇거리는 존댓말. 자주 확인하고 결론을 단정하지 못함.",
+      "conversation_topic": "견습생의 실수에 대한 두려움과 일의 자격",
+      "pet_links": [
+        {
+          "npc_id": "NPC-03",
+          "name": "도르",
+          "relation_hint": "존경하는 스승."
+        },
+        {
+          "npc_id": "NPC-02",
+          "name": "브룩",
+          "relation_hint": "힘을 잃은 광부의 미래를 보여 주는 인물."
+        }
+      ]
+    },
+    {
+      "npc_id": "NPC-15",
+      "name": "오르벤",
+      "role": "supporting",
+      "origin": "existing",
+      "social_class": "기술 관리층",
+      "stance": "체제 순응파",
+      "fixed_chunk": "CHUNK-02",
+      "fixed_location_id": "LOC-02",
+      "fixed_location_name": "환풍기 작업장",
+      "movement": "none",
+      "character_traits": [
+        "보수적",
+        "신중함",
+        "경험 중시"
+      ],
+      "personality": "보수적이고 신중하며 변화를 꺼린다.",
+      "speech_style": "느리고 신중한 말투. 오랜 경험을 근거로 말하며 쉽게 확답하지 않음.",
+      "conversation_topic": "낡은 환풍 시설의 안전 문제와 과거 봉쇄 책임",
+      "pet_links": [
+        {
+          "npc_id": "NPC-10",
+          "name": "루멘",
+          "relation_hint": "기술 동료, 책임을 두고 갈등."
+        },
+        {
+          "npc_id": "NPC-18",
+          "name": "엘로",
+          "relation_hint": "계속 반발하는 후배."
+        },
+        {
+          "npc_id": "NPC-03",
+          "name": "도르",
+          "relation_hint": "낡은 시설을 함께 관리."
+        }
+      ]
+    },
+    {
+      "npc_id": "NPC-18",
+      "name": "엘로",
+      "role": "supporting",
+      "origin": "new",
+      "social_class": "전문 기술층",
+      "stance": "저항·자치파",
+      "fixed_chunk": "CHUNK-02",
+      "fixed_location_id": "LOC-02",
+      "fixed_location_name": "환풍기 작업장",
+      "movement": "none",
+      "character_traits": [
+        "직설",
+        "반항심",
+        "개혁 의지"
+      ],
+      "personality": "직설적이고 반항심이 강하다.",
+      "speech_style": "직설적이고 날 선 말투. 반문이 많고 불합리함을 보면 목소리가 커짐.",
+      "conversation_topic": "위험한 환풍 설비를 방치하는 관리층의 책임",
+      "pet_links": [
+        {
+          "npc_id": "NPC-15",
+          "name": "오르벤",
+          "relation_hint": "스승이지만 보수성을 비판한다."
+        },
+        {
+          "npc_id": "NPC-10",
+          "name": "루멘",
+          "relation_hint": "기술 자료를 요청한다."
+        },
+        {
+          "npc_id": "NPC-24",
+          "name": "카본",
+          "relation_hint": "저항에 공감하나 폭력은 경계한다."
+        }
+      ]
+    }
+  ],
+  "rules": {
+    "npc_movement": "none",
+    "within_chunk_coordinates": "runtime_random",
+    "pet_remote_dialogue": true
+  }
+}

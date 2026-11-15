@@ -20,6 +20,13 @@ public sealed class MineNpcPlacement : MonoBehaviour
     private readonly Dictionary<string, float> roomOffsets = new Dictionary<string, float>();
     public Place[] Places => places;
     internal bool HasPlace(string id) => places.Any(place => place.placeId == id);
+    internal Vector3[] LocalStorySpawnPoints()
+    {
+        var room = places?.FirstOrDefault(place => place.placeId == "brook");
+        if (room?.spawnPoints == null || room.spawnPoints.Length == 0) return null;
+        Vector3 center = (room.entrance + room.exit) * .5f;
+        return room.spawnPoints.Select(point => point - center).ToArray();
+    }
     public float LateralReach(Vector3 origin) => places.SelectMany(p => p.spawnPoints)
         .Select(p => Mathf.Abs(transform.TransformPoint(p).x - origin.x)).DefaultIfEmpty(0.5f).Max();
     public void Apply(TerrainData terrain, int seed, Vector3 origin) => Apply(terrain, seed, origin, null);

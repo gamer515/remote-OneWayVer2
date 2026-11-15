@@ -5,6 +5,7 @@
 /// </summary>
 public sealed class TerrainStreamingController
 {
+    internal const int MaximumLoadRadius = 2;
     private readonly TerrainBuilder terrainBuilder;
     private readonly float chunkSize;
     private readonly float terrainOriginZ;
@@ -23,7 +24,7 @@ public sealed class TerrainStreamingController
         this.terrainBuilder = terrainBuilder;
         this.chunkSize = Mathf.Max(0.01f, chunkSize);
         this.terrainOriginZ = terrainOriginZ;
-        this.loadRadius = Mathf.Max(0, loadRadius);
+        this.loadRadius = Mathf.Clamp(loadRadius, 0, MaximumLoadRadius);
     }
 
     public void UpdatePlayerPosition(float playerWorldZ)
@@ -54,10 +55,9 @@ public sealed class TerrainStreamingController
         int minimumChunkIndex = Mathf.Max(0, currentChunkIndex - loadRadius);
         int maximumChunkIndex = currentChunkIndex + loadRadius;
 
-        for (int chunkIndex = minimumChunkIndex; chunkIndex <= maximumChunkIndex; chunkIndex++)
-            terrainBuilder.CreateOrLoadChunk(chunkIndex);
-
         // 범위 기준 회수라서 플레이어가 앞이나 뒤로 이동해도 같은 방식으로 동작합니다.
         terrainBuilder.UnloadOutsideRange(minimumChunkIndex, maximumChunkIndex);
+        for (int chunkIndex = minimumChunkIndex; chunkIndex <= maximumChunkIndex; chunkIndex++)
+            terrainBuilder.CreateOrLoadChunk(chunkIndex);
     }
 }

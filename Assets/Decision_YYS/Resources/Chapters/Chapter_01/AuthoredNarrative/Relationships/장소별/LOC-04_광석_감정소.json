@@ -1,0 +1,89 @@
+{
+  "location_id": "LOC-04",
+  "name": "광석 감정소",
+  "origin": "existing",
+  "fixed_chunk": "CHUNK-09",
+  "place_position_rule": "청크 내부 위치는 랜덤. NPC는 배치된 장소에 고정",
+  "location_description": "채굴한 광석의 순도와 가치를 평가하며 코인 거래와 밀접하게 연결된다.",
+  "fixed_npcs": [
+    {
+      "npc_id": "NPC-10",
+      "name": "루멘",
+      "role": "main",
+      "origin": "existing",
+      "social_class": "기술 관리층",
+      "stance": "진실 추구파",
+      "fixed_chunk": "CHUNK-09",
+      "fixed_location_id": "LOC-04",
+      "fixed_location_name": "광석 감정소",
+      "movement": "none",
+      "character_traits": [
+        "분석적",
+        "과묵함",
+        "완벽주의"
+      ],
+      "personality": "이성적이고 과묵한 완벽주의자. 연구에 집착하지만 감정 표현이 서툴다.",
+      "speech_style": "건조하고 분석적인 존댓말. 수치와 증거를 먼저 들고 감정적 표현을 피함.",
+      "conversation_topic": "광석 감정 기록과 오래된 경계 자료의 모순",
+      "pet_links": [
+        {
+          "npc_id": "NPC-15",
+          "name": "오르벤",
+          "relation_hint": "함께 일한 관리자, 경계 보수 책임으로 대립."
+        },
+        {
+          "npc_id": "NPC-11",
+          "name": "미라",
+          "relation_hint": "기록 조사 협력자이나 일부 사실은 숨긴다."
+        },
+        {
+          "npc_id": "NPC-16",
+          "name": "라스크",
+          "relation_hint": "지형 기억을 기술적으로 검증하려 한다."
+        },
+        {
+          "npc_id": "NPC-08",
+          "name": "칼릭",
+          "relation_hint": "감정 결과 조정 압박을 받는다."
+        }
+      ]
+    },
+    {
+      "npc_id": "NPC-20",
+      "name": "니엘",
+      "role": "supporting",
+      "origin": "new",
+      "social_class": "전문 기술층",
+      "stance": "생존 우선·중립",
+      "fixed_chunk": "CHUNK-09",
+      "fixed_location_id": "LOC-04",
+      "fixed_location_name": "광석 감정소",
+      "movement": "none",
+      "character_traits": [
+        "꼼꼼함",
+        "순진함",
+        "정직함"
+      ],
+      "personality": "순진하고 꼼꼼하며 사회 경험이 적다.",
+      "speech_style": "단정하고 예의 바른 존댓말. 수치 재확인과 조심스러운 질문이 잦음.",
+      "conversation_topic": "광석 감정의 정직성과 외부 압력",
+      "pet_links": [
+        {
+          "npc_id": "NPC-10",
+          "name": "루멘",
+          "relation_hint": "존경하는 선배."
+        },
+        {
+          "npc_id": "NPC-08",
+          "name": "칼릭",
+          "relation_hint": "감정 결과를 조정하라고 압박하는 인물."
+        }
+      ]
+    }
+  ],
+  "main_npc_ids": [
+    "NPC-10"
+  ],
+  "pet_remote_conversation": true,
+  "notice": "이 장소 JSON에는 방문 NPC를 넣지 않음. 다른 NPC와의 관계는 PET 연결로만 표현"
+}

@@ -1,0 +1,87 @@
+{
+  "location_id": "LOC-02",
+  "name": "환풍기 작업장",
+  "origin": "existing",
+  "fixed_chunk": "CHUNK-02",
+  "place_position_rule": "청크 내부 위치는 랜덤. NPC는 배치된 장소에 고정",
+  "location_description": "갱도 전체의 공기 흐름을 유지하는 핵심 설비. 낡은 기계의 보수 방식으로 의견이 갈린다.",
+  "fixed_npcs": [
+    {
+      "npc_id": "NPC-15",
+      "name": "오르벤",
+      "role": "supporting",
+      "origin": "existing",
+      "social_class": "기술 관리층",
+      "stance": "체제 순응파",
+      "fixed_chunk": "CHUNK-02",
+      "fixed_location_id": "LOC-02",
+      "fixed_location_name": "환풍기 작업장",
+      "movement": "none",
+      "character_traits": [
+        "보수적",
+        "신중함",
+        "경험 중시"
+      ],
+      "personality": "보수적이고 신중하며 변화를 꺼린다.",
+      "speech_style": "느리고 신중한 말투. 오랜 경험을 근거로 말하며 쉽게 확답하지 않음.",
+      "conversation_topic": "낡은 환풍 시설의 안전 문제와 과거 봉쇄 책임",
+      "pet_links": [
+        {
+          "npc_id": "NPC-10",
+          "name": "루멘",
+          "relation_hint": "기술 동료, 책임을 두고 갈등."
+        },
+        {
+          "npc_id": "NPC-18",
+          "name": "엘로",
+          "relation_hint": "계속 반발하는 후배."
+        },
+        {
+          "npc_id": "NPC-03",
+          "name": "도르",
+          "relation_hint": "낡은 시설을 함께 관리."
+        }
+      ]
+    },
+    {
+      "npc_id": "NPC-18",
+      "name": "엘로",
+      "role": "supporting",
+      "origin": "new",
+      "social_class": "전문 기술층",
+      "stance": "저항·자치파",
+      "fixed_chunk": "CHUNK-02",
+      "fixed_location_id": "LOC-02",
+      "fixed_location_name": "환풍기 작업장",
+      "movement": "none",
+      "character_traits": [
+        "직설",
+        "반항심",
+        "개혁 의지"
+      ],
+      "personality": "직설적이고 반항심이 강하다.",
+      "speech_style": "직설적이고 날 선 말투. 반문이 많고 불합리함을 보면 목소리가 커짐.",
+      "conversation_topic": "위험한 환풍 설비를 방치하는 관리층의 책임",
+      "pet_links": [
+        {
+          "npc_id": "NPC-15",
+          "name": "오르벤",
+          "relation_hint": "스승이지만 보수성을 비판한다."
+        },
+        {
+          "npc_id": "NPC-10",
+          "name": "루멘",
+          "relation_hint": "기술 자료를 요청한다."
+        },
+        {
+          "npc_id": "NPC-24",
+          "name": "카본",
+          "relation_hint": "저항에 공감하나 폭력은 경계한다."
+        }
+      ]
+    }
+  ],
+  "main_npc_ids": [],
+  "pet_remote_conversation": true,
+  "notice": "이 장소 JSON에는 방문 NPC를 넣지 않음. 다른 NPC와의 관계는 PET 연결로만 표현"
+}

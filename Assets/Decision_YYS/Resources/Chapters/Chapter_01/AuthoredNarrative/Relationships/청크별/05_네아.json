@@ -1,0 +1,108 @@
+{
+  "chunk_id": "CHUNK-05",
+  "order": 5,
+  "chunk_type": "main",
+  "main_npc_id": "NPC-06",
+  "main_npc_name": "네아",
+  "main_npc_fixed_location_id": "LOC-07",
+  "main_npc_fixed_location_name": "갱도 진료소",
+  "story_topic_only": "한정된 약과 치료 기회를 누구에게 먼저 써야 하는가?",
+  "location_ids": [
+    "LOC-07"
+  ],
+  "locations": [
+    {
+      "location_id": "LOC-07",
+      "name": "갱도 진료소",
+      "fixed_npc_ids": [
+        "NPC-06",
+        "NPC-23"
+      ],
+      "fixed_npc_names": [
+        "네아",
+        "레아"
+      ]
+    }
+  ],
+  "fixed_npcs": [
+    {
+      "npc_id": "NPC-06",
+      "name": "네아",
+      "role": "main",
+      "origin": "existing",
+      "social_class": "전문 기술층",
+      "stance": "현실 개혁파",
+      "fixed_chunk": "CHUNK-05",
+      "fixed_location_id": "LOC-07",
+      "fixed_location_name": "갱도 진료소",
+      "movement": "none",
+      "character_traits": [
+        "침착함",
+        "공정성",
+        "냉정함"
+      ],
+      "personality": "침착하고 냉정하며 책임감이 강하다. 환자에게 다정하지만 자원 분배에는 엄격하다.",
+      "speech_style": "차분하고 정확한 존댓말. 감정보다는 상태와 우선순위를 분명히 설명.",
+      "conversation_topic": "치료 우선순위와 능력 코인에 따른 의료 접근",
+      "pet_links": [
+        {
+          "npc_id": "NPC-05",
+          "name": "모아",
+          "relation_hint": "약용 식물 공급자이자 친구."
+        },
+        {
+          "npc_id": "NPC-07",
+          "name": "틸",
+          "relation_hint": "부상자 운반을 맡는 구조대원, 치료 우선순위로 갈등."
+        },
+        {
+          "npc_id": "NPC-12",
+          "name": "피코",
+          "relation_hint": "돌보는 어린 환자."
+        },
+        {
+          "npc_id": "NPC-01",
+          "name": "헤른",
+          "relation_hint": "치료 예산 지원을 두고 대립."
+        }
+      ]
+    },
+    {
+      "npc_id": "NPC-23",
+      "name": "레아",
+      "role": "supporting",
+      "origin": "new",
+      "social_class": "전문 기술층",
+      "stance": "현실 개혁파",
+      "fixed_chunk": "CHUNK-05",
+      "fixed_location_id": "LOC-07",
+      "fixed_location_name": "갱도 진료소",
+      "movement": "none",
+      "character_traits": [
+        "조심성",
+        "공감",
+        "실수에 대한 두려움"
+      ],
+      "personality": "조심스럽고 공감 능력이 뛰어나다.",
+      "speech_style": "상냥하고 조심스러운 존댓말. 상대를 배려하다 중요한 말을 늦게 꺼냄.",
+      "conversation_topic": "치료 실수의 두려움과 환자에 대한 책임",
+      "pet_links": [
+        {
+          "npc_id": "NPC-06",
+          "name": "네아",
+          "relation_hint": "존경하지만 냉정함에 갈등하는 스승."
+        },
+        {
+          "npc_id": "NPC-12",
+          "name": "피코",
+          "relation_hint": "친근하게 돌보는 아이."
+        }
+      ]
+    }
+  ],
+  "rules": {
+    "npc_movement": "none",
+    "within_chunk_coordinates": "runtime_random",
+    "pet_remote_dialogue": true
+  }
+}

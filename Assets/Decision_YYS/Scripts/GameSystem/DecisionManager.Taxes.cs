@@ -42,7 +42,7 @@ public partial class DecisionManager
         cancel?.Invoke();
     }
     private int TaxDay => mineRules?.dayCycle is ChapterDayCycle cycle
-        ? Mathf.FloorToInt(mine.elapsedSeconds / cycle.DayLength) : 0;
+        ? cycle.DayIndex(mine.elapsedSeconds) : 0;
 
     private void UpdateTaxSchedule()
     {
@@ -66,18 +66,23 @@ public partial class DecisionManager
         {
             mine.taxPatrolActive = false;
             mine.collectorOpeningCompleted = true;
+            mine.taxInvoice = null;
+            mineCollectors.SetVisible(false);
             SaveGuideCheckpoint();
         }
         bool due = TaxDay >= mine.nextTaxDay;
-        if (mineCollectors.CanMeet && !mine.HasTaxInvoice)
-            mine.taxInvoice = taxRules.Announce(session.RunSeed, TaxDay, mine.taxScheduleTier, statContainer.stats);
         if (daylight < 1f || mine.taxPatrolActive || (!due && mine.collectorOpeningCompleted)) return;
-        if (envController.LoadedChunkEndZ is not float departureZ) return;
+        if (envController.LoadedChunkEndZ == null) return;
+        var registry = envController.PlaceRegistry;
+        float firstChunkZ = registry.GetChunkWorldPosition(0).z;
+        float length = registry.GetChunkWorldPosition(1).z - firstChunkZ;
+        int lastChunk = Mathf.Max(0, Mathf.RoundToInt((envController.CurrentTerrainEndZ - firstChunkZ) / length) - 1);
+        int chunk = Mathf.Clamp(Mathf.FloorToInt((playerController.CurrentPosition.z - firstChunkZ) / length), 0, lastChunk);
         if (!mine.HasTaxInvoice)
             mine.taxInvoice = taxRules.Announce(session.RunSeed, TaxDay, mine.taxScheduleTier, statContainer.stats);
         mine.nextTaxDay = TaxDay + mine.taxScheduleInterval;
         mine.taxPatrolActive = true;
-        mineCollectors.BeginRoute(departureZ);
+        mineCollectors.BeginRoute(registry.GetChunkWorldPosition(chunk).z, registry.GetChunkWorldPosition(chunk + 1).z);
         SaveGuideCheckpoint();
     }
 

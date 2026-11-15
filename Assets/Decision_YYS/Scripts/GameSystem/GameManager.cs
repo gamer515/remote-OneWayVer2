@@ -160,17 +160,29 @@ public class GameManager : MonoBehaviour
 
     private void FinishFinalBattle(bool won)
     {
-        if (won && saveManager.TryContinueAfterChapterBoss(SaveIOService.Instance.LoadResourceData<OmnibusData>("Omnibus_01")))
+        bool mineBoss = saveManager.LoadProgress().chapterBossId == "Chapter_1";
+        if (won && saveManager.TryContinueAfterChapterBoss(SaveIOService.Instance.LoadResourceData<OmnibusData>("Omnibus_01"), mineBoss))
         {
             new SceneTransitionService().LoadDecisionScene();
             return;
         }
+        CompleteBattleRun(won, true);
+    }
+
+    internal void CompleteCoastEnding()
+    {
+        if (saveManager.LoadProgress().interactionPhase == SaveManager.CoastEndingPhase)
+            CompleteBattleRun(true, false);
+    }
+
+    private void CompleteBattleRun(bool won, bool recordBattleOutcome)
+    {
         if (finalBattleCompletion == null)
         {
             int sourceRun = saveManager.CurrentRun;
             finalBattleCompletion = new DecisionRunCompletionService(
                 () => {
-                    saveManager.RecordFinalBattleOutcome(won);
+                    if (recordBattleOutcome) saveManager.RecordFinalBattleOutcome(won);
                     saveManager.CompleteCurrentRun();
                     try { LocalStoryDialogueQueue.FinalizeRun(SaveIOService.Instance, sourceRun); }
                     catch (System.Exception e) { LocalStoryLog.Write(LocalStoryLogStage.Failed, "전투 종료 감정 저장: " + e.Message); }

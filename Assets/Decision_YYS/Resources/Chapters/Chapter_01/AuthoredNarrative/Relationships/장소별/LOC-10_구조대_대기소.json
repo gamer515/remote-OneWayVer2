@@ -1,0 +1,94 @@
+{
+  "location_id": "LOC-10",
+  "name": "구조대 대기소",
+  "origin": "existing",
+  "fixed_chunk": "CHUNK-06",
+  "place_position_rule": "청크 내부 위치는 랜덤. NPC는 배치된 장소에 고정",
+  "location_description": "갱도 사고 발생 시 긴급 구조와 부상자 운반을 준비한다.",
+  "fixed_npcs": [
+    {
+      "npc_id": "NPC-07",
+      "name": "틸",
+      "role": "main",
+      "origin": "existing",
+      "social_class": "생활 노동층",
+      "stance": "생존 우선·중립",
+      "fixed_chunk": "CHUNK-06",
+      "fixed_location_id": "LOC-10",
+      "fixed_location_name": "구조대 대기소",
+      "movement": "none",
+      "character_traits": [
+        "낙천성",
+        "경쟁심",
+        "행동력"
+      ],
+      "personality": "낙천적이고 경쟁심이 강하며 행동력이 뛰어나다. 먼저 움직이는 성향이다.",
+      "speech_style": "경쾌하고 빠른 반말. 재촉과 농담이 많고 불안할 때도 밝은 척함.",
+      "conversation_topic": "속도를 잃어 가는 운반꾼의 자부심과 구조 책임",
+      "pet_links": [
+        {
+          "npc_id": "NPC-05",
+          "name": "모아",
+          "relation_hint": "재배물 운반을 돕는 친구."
+        },
+        {
+          "npc_id": "NPC-06",
+          "name": "네아",
+          "relation_hint": "환자를 인계하지만 긴급 상황에서 의견이 갈린다."
+        },
+        {
+          "npc_id": "NPC-13",
+          "name": "시아",
+          "relation_hint": "속도를 잃은 사실을 처음 알아챈 친구."
+        },
+        {
+          "npc_id": "NPC-09",
+          "name": "제크",
+          "relation_hint": "고액 운반 일을 소개했던 징수원."
+        }
+      ]
+    },
+    {
+      "npc_id": "NPC-28",
+      "name": "렌토",
+      "role": "supporting",
+      "origin": "new",
+      "social_class": "생활 노동층",
+      "stance": "현실 개혁파",
+      "fixed_chunk": "CHUNK-06",
+      "fixed_location_id": "LOC-10",
+      "fixed_location_name": "구조대 대기소",
+      "movement": "none",
+      "character_traits": [
+        "희생정신",
+        "과묵함",
+        "고집"
+      ],
+      "personality": "과묵하고 희생정신이 강하지만 융통성이 부족하다.",
+      "speech_style": "침착하고 낮은 지시형 말투. 감정 표현은 적지만 상대의 상태를 세심하게 묻음.",
+      "conversation_topic": "구조대의 희생 기준과 장비 부족",
+      "pet_links": [
+        {
+          "npc_id": "NPC-07",
+          "name": "틸",
+          "relation_hint": "구조 기술을 가르친 제자."
+        },
+        {
+          "npc_id": "NPC-14",
+          "name": "가렌",
+          "relation_hint": "과거 동료, 현재 가치관이 다르다."
+        },
+        {
+          "npc_id": "NPC-01",
+          "name": "헤른",
+          "relation_hint": "안전 장비 지원을 요구하는 관리자."
+        }
+      ]
+    }
+  ],
+  "main_npc_ids": [
+    "NPC-07"
+  ],
+  "pet_remote_conversation": true,
+  "notice": "이 장소 JSON에는 방문 NPC를 넣지 않음. 다른 NPC와의 관계는 PET 연결로만 표현"
+}

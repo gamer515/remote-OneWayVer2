@@ -1,0 +1,190 @@
+{
+  "chunk_id": "CHUNK-10",
+  "order": 10,
+  "chunk_type": "main",
+  "main_npc_id": "NPC-11",
+  "main_npc_name": "미라",
+  "main_npc_fixed_location_id": "LOC-12",
+  "main_npc_fixed_location_name": "갱도의 작은 제단",
+  "story_topic_only": "사라진 이름과 오래된 경계 기록 중 무엇을 믿을 것인가?",
+  "location_ids": [
+    "LOC-12",
+    "LOC-05"
+  ],
+  "locations": [
+    {
+      "location_id": "LOC-12",
+      "name": "갱도의 작은 제단",
+      "fixed_npc_ids": [
+        "NPC-11",
+        "NPC-30"
+      ],
+      "fixed_npc_names": [
+        "미라",
+        "에린"
+      ]
+    },
+    {
+      "location_id": "LOC-05",
+      "name": "갱도 길잡이",
+      "fixed_npc_ids": [
+        "NPC-16",
+        "NPC-21"
+      ],
+      "fixed_npc_names": [
+        "라스크",
+        "로크"
+      ]
+    }
+  ],
+  "fixed_npcs": [
+    {
+      "npc_id": "NPC-11",
+      "name": "미라",
+      "role": "main",
+      "origin": "existing",
+      "social_class": "기록 보존층",
+      "stance": "진실 추구파",
+      "fixed_chunk": "CHUNK-10",
+      "fixed_location_id": "LOC-12",
+      "fixed_location_name": "갱도의 작은 제단",
+      "movement": "none",
+      "character_traits": [
+        "사려 깊음",
+        "집요함",
+        "신중함"
+      ],
+      "personality": "차분하고 사려 깊으며 집요하다. 남의 이야기를 듣지만 속마음은 드러내지 않는다.",
+      "speech_style": "조용하고 사려 깊은 존댓말. 상대의 기억을 확인하는 질문을 자주 함.",
+      "conversation_topic": "공식 장부에서 사라진 사람들의 이름",
+      "pet_links": [
+        {
+          "npc_id": "NPC-16",
+          "name": "라스크",
+          "relation_hint": "기억과 기록을 두고 논쟁하는 친구."
+        },
+        {
+          "npc_id": "NPC-10",
+          "name": "루멘",
+          "relation_hint": "기술 자료를 제공받지만 은폐를 의심한다."
+        },
+        {
+          "npc_id": "NPC-30",
+          "name": "에린",
+          "relation_hint": "희생자의 이름을 보존하는 동료."
+        },
+        {
+          "npc_id": "NPC-12",
+          "name": "피코",
+          "relation_hint": "오래된 표식을 관찰한 아이."
+        }
+      ]
+    },
+    {
+      "npc_id": "NPC-30",
+      "name": "에린",
+      "role": "supporting",
+      "origin": "new",
+      "social_class": "기록 보존층",
+      "stance": "진실 추구파",
+      "fixed_chunk": "CHUNK-10",
+      "fixed_location_id": "LOC-12",
+      "fixed_location_name": "갱도의 작은 제단",
+      "movement": "none",
+      "character_traits": [
+        "온화함",
+        "신중함",
+        "기억 중시"
+      ],
+      "personality": "온화하고 신중하며 미신을 쉽게 부정하지 않는다.",
+      "speech_style": "조용하고 정중한 존댓말. 이름과 기억을 신중하게 다루고 말을 아낌.",
+      "conversation_topic": "죽은 광부의 이름 보존과 사라진 명부",
+      "pet_links": [
+        {
+          "npc_id": "NPC-11",
+          "name": "미라",
+          "relation_hint": "기록을 함께 조사하는 동료."
+        },
+        {
+          "npc_id": "NPC-12",
+          "name": "피코",
+          "relation_hint": "옛이야기를 들려주는 아이."
+        }
+      ]
+    },
+    {
+      "npc_id": "NPC-16",
+      "name": "라스크",
+      "role": "supporting",
+      "origin": "existing",
+      "social_class": "기록 보존층",
+      "stance": "진실 추구파",
+      "fixed_chunk": "CHUNK-10",
+      "fixed_location_id": "LOC-05",
+      "fixed_location_name": "갱도 길잡이",
+      "movement": "none",
+      "character_traits": [
+        "과묵함",
+        "의심",
+        "약자 보호"
+      ],
+      "personality": "과묵하고 의심이 많지만 약자에게 친절하다.",
+      "speech_style": "과묵하고 느릿한 말투. 오래된 표현과 자신이 본 광경을 근거로 말함.",
+      "conversation_topic": "현행 지도와 기억 속 표지의 불일치",
+      "pet_links": [
+        {
+          "npc_id": "NPC-11",
+          "name": "미라",
+          "relation_hint": "기록과 기억을 두고 다투는 친구."
+        },
+        {
+          "npc_id": "NPC-10",
+          "name": "루멘",
+          "relation_hint": "잘못된 지도 문제로 충돌."
+        },
+        {
+          "npc_id": "NPC-21",
+          "name": "로크",
+          "relation_hint": "자신의 기술을 배우는 젊은 길잡이."
+        }
+      ]
+    },
+    {
+      "npc_id": "NPC-21",
+      "name": "로크",
+      "role": "supporting",
+      "origin": "new",
+      "social_class": "생활 노동층",
+      "stance": "기회주의파",
+      "fixed_chunk": "CHUNK-10",
+      "fixed_location_id": "LOC-05",
+      "fixed_location_name": "갱도 길잡이",
+      "movement": "none",
+      "character_traits": [
+        "야심",
+        "친화력",
+        "허풍"
+      ],
+      "personality": "야심 차고 말재주가 좋다.",
+      "speech_style": "유쾌하고 자신만만한 말투. 친해지려는 농담과 약간의 허풍을 섞음.",
+      "conversation_topic": "안전한 길 안내와 출세 욕망의 충돌",
+      "pet_links": [
+        {
+          "npc_id": "NPC-16",
+          "name": "라스크",
+          "relation_hint": "가르침을 받지만 답답해하는 스승."
+        },
+        {
+          "npc_id": "NPC-09",
+          "name": "제크",
+          "relation_hint": "좋은 일을 얻으려 친해지는 징수원."
+        }
+      ]
+    }
+  ],
+  "rules": {
+    "npc_movement": "none",
+    "within_chunk_coordinates": "runtime_random",
+    "pet_remote_dialogue": true
+  }
+}

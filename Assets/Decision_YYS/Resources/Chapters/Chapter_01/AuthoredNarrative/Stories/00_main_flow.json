@@ -1,0 +1,146 @@
+{
+  "main_story_order": [
+    "MAIN-01",
+    "MAIN-02",
+    "MAIN-03",
+    "MAIN-04",
+    "MAIN-05",
+    "MAIN-06",
+    "MAIN-07",
+    "MAIN-08",
+    "MAIN-09",
+    "MAIN-10",
+    "MAIN-11"
+  ],
+  "pet_routes": {
+    "MAIN-01": {
+      "to_story_id": "MAIN-02",
+      "npc_ids": [
+        "NPC-02",
+        "NPC-03"
+      ]
+    },
+    "MAIN-02": {
+      "to_story_id": "MAIN-03",
+      "npc_ids": [
+        "NPC-03",
+        "NPC-01",
+        "NPC-04"
+      ]
+    },
+    "MAIN-03": {
+      "to_story_id": "MAIN-04",
+      "npc_ids": [
+        "NPC-04",
+        "NPC-05"
+      ]
+    },
+    "MAIN-04": {
+      "to_story_id": "MAIN-05",
+      "npc_ids": [
+        "NPC-05",
+        "NPC-06"
+      ]
+    },
+    "MAIN-05": {
+      "to_story_id": "MAIN-06",
+      "npc_ids": [
+        "NPC-06",
+        "NPC-07"
+      ]
+    },
+    "MAIN-06": {
+      "to_story_id": "MAIN-07",
+      "npc_ids": [
+        "NPC-07",
+        "NPC-09"
+      ]
+    },
+    "MAIN-07": {
+      "to_story_id": "MAIN-08",
+      "npc_ids": [
+        "NPC-09",
+        "NPC-08"
+      ]
+    },
+    "MAIN-08": {
+      "to_story_id": "MAIN-09",
+      "npc_ids": [
+        "NPC-08",
+        "NPC-10"
+      ]
+    },
+    "MAIN-09": {
+      "to_story_id": "MAIN-10",
+      "npc_ids": [
+        "NPC-10",
+        "NPC-11"
+      ]
+    },
+    "MAIN-10": {
+      "to_story_id": "MAIN-11",
+      "npc_ids": [
+        "NPC-11",
+        "NPC-10",
+        "NPC-08",
+        "NPC-01"
+      ]
+    }
+  },
+  "boss_unlock": {
+    "after_story_id": "MAIN-11",
+    "chunk_id": "CHUNK-12",
+    "boss_story_defined": false
+  },
+  "version_selection": "select_one_version_per_story_at_new_run",
+  "side_story_rule": {
+    "selection": "random",
+    "scope": "current_chunk_only",
+    "pool_file": "00_side_pool.json",
+    "version_policy": "pick_one_version_per_story_per_run",
+    "encounter": "optional_when_matching_npc_is_interacted_with",
+    "main_sequence_unchanged": true,
+    "side_completion_required_for_boss": false
+  },
+  "fallback_route": "coin_option.on_insufficient_coins -> story.branches.COIN_SHORTAGE -> ROOT_CHOICES",
+  "initial_stats": {
+    "strength": 5,
+    "speed": 5,
+    "intelligence": 5,
+    "charm": 5
+  },
+  "coin_balance_rule": {
+    "main_fee_by_chunk": {
+      "CHUNK-01": 2,
+      "CHUNK-02": 2,
+      "CHUNK-03": 2,
+      "CHUNK-04": 2,
+      "CHUNK-05": 3,
+      "CHUNK-06": 3,
+      "CHUNK-07": 3,
+      "CHUNK-08": 3,
+      "CHUNK-09": 4,
+      "CHUNK-10": 4,
+      "CHUNK-11": 4
+    },
+    "side_fee": {
+      "CHUNK-01_to_CHUNK-08": 2,
+      "CHUNK-09_to_CHUNK-11": 3
+    },
+    "payment_menu": "coins_or_NEGOTIATE",
+    "negotiated_fee": "read coin_payment_choice.negotiation success.payment_override.amount",
+    "payment_override_behavior": "replaces both selected coin_at_least condition and negative stat cost of selected coin payment; retains its NPC response and other rewards",
+    "negotiation_attempts_per_encounter": 1,
+    "on_negotiation_failure": "regular coin price remains available; mini-game, persuasive waiver, alternative task and leave also stay available",
+    "insufficient_coins": "COIN_SHORTAGE branch F1/F2/F3/F4; F2 includes optional discount request",
+    "base_fee_zero_allowed": false,
+    "stats_never_negative": true
+  },
+  "choice_policy_ref": "00_implementation_rules.json#choice_policy",
+  "requirement_probability_ref": "00_implementation_rules.json#requirement_probability",
+  "minigame_types": [
+    "duel",
+    "gambling"
+  ],
+  "shortcut_mode": "log_only"
+}

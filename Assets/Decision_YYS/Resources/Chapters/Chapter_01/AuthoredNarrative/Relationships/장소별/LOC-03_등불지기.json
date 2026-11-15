@@ -1,0 +1,82 @@
+{
+  "location_id": "LOC-03",
+  "name": "등불지기",
+  "origin": "existing",
+  "fixed_chunk": "CHUNK-06",
+  "place_position_rule": "청크 내부 위치는 랜덤. NPC는 배치된 장소에 고정",
+  "location_description": "광부들의 등불과 기름을 관리한다. 불꽃의 상태가 갱도의 안전을 알린다.",
+  "fixed_npcs": [
+    {
+      "npc_id": "NPC-13",
+      "name": "시아",
+      "role": "supporting",
+      "origin": "existing",
+      "social_class": "전문 기술층",
+      "stance": "생존 우선·중립",
+      "fixed_chunk": "CHUNK-06",
+      "fixed_location_id": "LOC-03",
+      "fixed_location_name": "등불지기",
+      "movement": "none",
+      "character_traits": [
+        "관찰력",
+        "침착함",
+        "독립성"
+      ],
+      "personality": "침착하고 관찰력이 좋으며 독립적이다.",
+      "speech_style": "짧고 낮은 말투. 직접 본 것과 미세한 변화를 간결하게 짚음.",
+      "conversation_topic": "등불과 환기 변화를 통해 드러나는 갱도 위험",
+      "pet_links": [
+        {
+          "npc_id": "NPC-07",
+          "name": "틸",
+          "relation_hint": "속도 저하를 눈치챈 가까운 친구."
+        },
+        {
+          "npc_id": "NPC-19",
+          "name": "하울",
+          "relation_hint": "기름 물자 횡령을 의심하는 동료."
+        },
+        {
+          "npc_id": "NPC-16",
+          "name": "라스크",
+          "relation_hint": "오래된 갱도 이야기를 들려주는 사람."
+        }
+      ]
+    },
+    {
+      "npc_id": "NPC-19",
+      "name": "하울",
+      "role": "supporting",
+      "origin": "new",
+      "social_class": "생활 노동층",
+      "stance": "기회주의파",
+      "fixed_chunk": "CHUNK-06",
+      "fixed_location_id": "LOC-03",
+      "fixed_location_name": "등불지기",
+      "movement": "none",
+      "character_traits": [
+        "인색함",
+        "수다스러움",
+        "인정"
+      ],
+      "personality": "인색하고 수다스럽지만 정이 많다.",
+      "speech_style": "투덜거리는 장황한 반말. 사소한 물자 손실도 과장해서 이야기함.",
+      "conversation_topic": "기름 부족과 비공식 거래를 정당화하는 생계 논리",
+      "pet_links": [
+        {
+          "npc_id": "NPC-13",
+          "name": "시아",
+          "relation_hint": "기술을 가르친 후배."
+        },
+        {
+          "npc_id": "NPC-26",
+          "name": "세온",
+          "relation_hint": "기름을 비공식 거래하는 상대."
+        }
+      ]
+    }
+  ],
+  "main_npc_ids": [],
+  "pet_remote_conversation": true,
+  "notice": "이 장소 JSON에는 방문 NPC를 넣지 않음. 다른 NPC와의 관계는 PET 연결로만 표현"
+}

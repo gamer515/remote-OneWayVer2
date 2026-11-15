@@ -1,0 +1,195 @@
+{
+  "chunk_id": "CHUNK-06",
+  "order": 6,
+  "chunk_type": "main",
+  "main_npc_id": "NPC-07",
+  "main_npc_name": "틸",
+  "main_npc_fixed_location_id": "LOC-10",
+  "main_npc_fixed_location_name": "구조대 대기소",
+  "story_topic_only": "빠른 구조와 구조원의 안전 중 무엇을 우선할까?",
+  "location_ids": [
+    "LOC-10",
+    "LOC-03"
+  ],
+  "locations": [
+    {
+      "location_id": "LOC-10",
+      "name": "구조대 대기소",
+      "fixed_npc_ids": [
+        "NPC-07",
+        "NPC-28"
+      ],
+      "fixed_npc_names": [
+        "틸",
+        "렌토"
+      ]
+    },
+    {
+      "location_id": "LOC-03",
+      "name": "등불지기",
+      "fixed_npc_ids": [
+        "NPC-13",
+        "NPC-19"
+      ],
+      "fixed_npc_names": [
+        "시아",
+        "하울"
+      ]
+    }
+  ],
+  "fixed_npcs": [
+    {
+      "npc_id": "NPC-07",
+      "name": "틸",
+      "role": "main",
+      "origin": "existing",
+      "social_class": "생활 노동층",
+      "stance": "생존 우선·중립",
+      "fixed_chunk": "CHUNK-06",
+      "fixed_location_id": "LOC-10",
+      "fixed_location_name": "구조대 대기소",
+      "movement": "none",
+      "character_traits": [
+        "낙천성",
+        "경쟁심",
+        "행동력"
+      ],
+      "personality": "낙천적이고 경쟁심이 강하며 행동력이 뛰어나다. 먼저 움직이는 성향이다.",
+      "speech_style": "경쾌하고 빠른 반말. 재촉과 농담이 많고 불안할 때도 밝은 척함.",
+      "conversation_topic": "속도를 잃어 가는 운반꾼의 자부심과 구조 책임",
+      "pet_links": [
+        {
+          "npc_id": "NPC-05",
+          "name": "모아",
+          "relation_hint": "재배물 운반을 돕는 친구."
+        },
+        {
+          "npc_id": "NPC-06",
+          "name": "네아",
+          "relation_hint": "환자를 인계하지만 긴급 상황에서 의견이 갈린다."
+        },
+        {
+          "npc_id": "NPC-13",
+          "name": "시아",
+          "relation_hint": "속도를 잃은 사실을 처음 알아챈 친구."
+        },
+        {
+          "npc_id": "NPC-09",
+          "name": "제크",
+          "relation_hint": "고액 운반 일을 소개했던 징수원."
+        }
+      ]
+    },
+    {
+      "npc_id": "NPC-28",
+      "name": "렌토",
+      "role": "supporting",
+      "origin": "new",
+      "social_class": "생활 노동층",
+      "stance": "현실 개혁파",
+      "fixed_chunk": "CHUNK-06",
+      "fixed_location_id": "LOC-10",
+      "fixed_location_name": "구조대 대기소",
+      "movement": "none",
+      "character_traits": [
+        "희생정신",
+        "과묵함",
+        "고집"
+      ],
+      "personality": "과묵하고 희생정신이 강하지만 융통성이 부족하다.",
+      "speech_style": "침착하고 낮은 지시형 말투. 감정 표현은 적지만 상대의 상태를 세심하게 묻음.",
+      "conversation_topic": "구조대의 희생 기준과 장비 부족",
+      "pet_links": [
+        {
+          "npc_id": "NPC-07",
+          "name": "틸",
+          "relation_hint": "구조 기술을 가르친 제자."
+        },
+        {
+          "npc_id": "NPC-14",
+          "name": "가렌",
+          "relation_hint": "과거 동료, 현재 가치관이 다르다."
+        },
+        {
+          "npc_id": "NPC-01",
+          "name": "헤른",
+          "relation_hint": "안전 장비 지원을 요구하는 관리자."
+        }
+      ]
+    },
+    {
+      "npc_id": "NPC-13",
+      "name": "시아",
+      "role": "supporting",
+      "origin": "existing",
+      "social_class": "전문 기술층",
+      "stance": "생존 우선·중립",
+      "fixed_chunk": "CHUNK-06",
+      "fixed_location_id": "LOC-03",
+      "fixed_location_name": "등불지기",
+      "movement": "none",
+      "character_traits": [
+        "관찰력",
+        "침착함",
+        "독립성"
+      ],
+      "personality": "침착하고 관찰력이 좋으며 독립적이다.",
+      "speech_style": "짧고 낮은 말투. 직접 본 것과 미세한 변화를 간결하게 짚음.",
+      "conversation_topic": "등불과 환기 변화를 통해 드러나는 갱도 위험",
+      "pet_links": [
+        {
+          "npc_id": "NPC-07",
+          "name": "틸",
+          "relation_hint": "속도 저하를 눈치챈 가까운 친구."
+        },
+        {
+          "npc_id": "NPC-19",
+          "name": "하울",
+          "relation_hint": "기름 물자 횡령을 의심하는 동료."
+        },
+        {
+          "npc_id": "NPC-16",
+          "name": "라스크",
+          "relation_hint": "오래된 갱도 이야기를 들려주는 사람."
+        }
+      ]
+    },
+    {
+      "npc_id": "NPC-19",
+      "name": "하울",
+      "role": "supporting",
+      "origin": "new",
+      "social_class": "생활 노동층",
+      "stance": "기회주의파",
+      "fixed_chunk": "CHUNK-06",
+      "fixed_location_id": "LOC-03",
+      "fixed_location_name": "등불지기",
+      "movement": "none",
+      "character_traits": [
+        "인색함",
+        "수다스러움",
+        "인정"
+      ],
+      "personality": "인색하고 수다스럽지만 정이 많다.",
+      "speech_style": "투덜거리는 장황한 반말. 사소한 물자 손실도 과장해서 이야기함.",
+      "conversation_topic": "기름 부족과 비공식 거래를 정당화하는 생계 논리",
+      "pet_links": [
+        {
+          "npc_id": "NPC-13",
+          "name": "시아",
+          "relation_hint": "기술을 가르친 후배."
+        },
+        {
+          "npc_id": "NPC-26",
+          "name": "세온",
+          "relation_hint": "기름을 비공식 거래하는 상대."
+        }
+      ]
+    }
+  ],
+  "rules": {
+    "npc_movement": "none",
+    "within_chunk_coordinates": "runtime_random",
+    "pet_remote_dialogue": true
+  }
+}

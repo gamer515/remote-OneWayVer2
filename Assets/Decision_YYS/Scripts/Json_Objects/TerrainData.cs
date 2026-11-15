@@ -18,6 +18,11 @@ public class TerrainData
 [System.Serializable]
 public class PlaceData
 {
+    [System.NonSerialized] internal PlaceStoryActor[] storyActors;
+    [System.NonSerialized] internal string sharedStoryVisualId, authoredLocationId;
+    [System.NonSerialized] internal string storyLocationId, storyNpcId;
+    [System.NonSerialized] internal Vector2 storyLocationDepth;
+    [System.NonSerialized] internal bool storyLocationShop;
     [System.NonSerialized] public int originalChunkIndex = -1;
     public Vector3[] spawnPoints;
     public Vector3[] actorPositions;
@@ -29,6 +34,13 @@ public class PlaceData
     public string connectStoryCards;
     public Vector3 position;
     public Vector3 rotation;
+}
+
+internal sealed class PlaceStoryActor
+{
+    internal string name;
+    internal GameObject prefab;
+    internal Vector3 position;
 }
 
 [System.Serializable]

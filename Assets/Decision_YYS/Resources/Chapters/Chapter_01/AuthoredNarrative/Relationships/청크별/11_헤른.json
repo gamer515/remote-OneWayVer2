@@ -1,0 +1,113 @@
+{
+  "chunk_id": "CHUNK-11",
+  "order": 11,
+  "chunk_type": "main",
+  "main_npc_id": "NPC-01",
+  "main_npc_name": "헤른",
+  "main_npc_fixed_location_id": "LOC-15",
+  "main_npc_fixed_location_name": "봉쇄된 경계 표지소",
+  "story_topic_only": "통행의 자유를 제한하는 질서는 정당한가?",
+  "location_ids": [
+    "LOC-15"
+  ],
+  "locations": [
+    {
+      "location_id": "LOC-15",
+      "name": "봉쇄된 경계 표지소",
+      "fixed_npc_ids": [
+        "NPC-01",
+        "NPC-33"
+      ],
+      "fixed_npc_names": [
+        "헤른",
+        "베론"
+      ]
+    }
+  ],
+  "fixed_npcs": [
+    {
+      "npc_id": "NPC-01",
+      "name": "헤른",
+      "role": "main",
+      "origin": "existing",
+      "social_class": "관리 특권층",
+      "stance": "체제 순응파",
+      "fixed_chunk": "CHUNK-11",
+      "fixed_location_id": "LOC-15",
+      "fixed_location_name": "봉쇄된 경계 표지소",
+      "movement": "none",
+      "character_traits": [
+        "원칙주의",
+        "책임감",
+        "완고함"
+      ],
+      "personality": "냉철하고 책임감이 강하다. 감정보다 규칙을 우선하지만 자신의 판단이 틀렸다는 사실을 인정하기 어렵다.",
+      "speech_style": "짧고 단정적인 공적 어조. 원칙과 책임을 강조하며 감정을 잘 드러내지 않음.",
+      "conversation_topic": "안전을 명분으로 한 통제와 징수의 정당성",
+      "pet_links": [
+        {
+          "npc_id": "NPC-02",
+          "name": "브룩",
+          "relation_hint": "과거 동료이지만 서로 배신감을 느낀다."
+        },
+        {
+          "npc_id": "NPC-08",
+          "name": "칼릭",
+          "relation_hint": "재정을 제공하는 협력자이나 부패를 의심한다."
+        },
+        {
+          "npc_id": "NPC-14",
+          "name": "가렌",
+          "relation_hint": "끝까지 명령을 집행할 신뢰받는 부하."
+        },
+        {
+          "npc_id": "NPC-04",
+          "name": "벨라",
+          "relation_hint": "지나치게 관대하다고 비판하면서도 필요성을 인정한다."
+        }
+      ]
+    },
+    {
+      "npc_id": "NPC-33",
+      "name": "베론",
+      "role": "supporting",
+      "origin": "new",
+      "social_class": "기술 관리층",
+      "stance": "체제 순응파",
+      "fixed_chunk": "CHUNK-11",
+      "fixed_location_id": "LOC-15",
+      "fixed_location_name": "봉쇄된 경계 표지소",
+      "movement": "none",
+      "character_traits": [
+        "경계심",
+        "무뚝뚝함",
+        "비밀주의"
+      ],
+      "personality": "무뚝뚝하고 경계심이 많다.",
+      "speech_style": "짧고 경계하는 말투. 질문에 바로 답하기보다 이유를 되묻는 편.",
+      "conversation_topic": "봉쇄된 경계의 표식과 통행 제한 이유",
+      "pet_links": [
+        {
+          "npc_id": "NPC-15",
+          "name": "오르벤",
+          "relation_hint": "시설 관리 지시를 받는 상관."
+        },
+        {
+          "npc_id": "NPC-16",
+          "name": "라스크",
+          "relation_hint": "과거 표식 위치를 두고 다투는 길잡이."
+        },
+        {
+          "npc_id": "NPC-10",
+          "name": "루멘",
+          "relation_hint": "조사에 비협조적인 상대."
+        }
+      ]
+    }
+  ],
+  "rules": {
+    "npc_movement": "none",
+    "within_chunk_coordinates": "runtime_random",
+    "pet_remote_dialogue": true
+  }
+}

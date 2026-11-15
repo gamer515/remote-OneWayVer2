@@ -13,6 +13,9 @@ public sealed class TerrainRepository
     private const int FirstSlotZ = 5;
     private const int SlotSpacingZ = 10;
     private const int SlotCountPerSide = 10;
+    private const string CoastTerrainPath = "Chapter_Coast/Chapter_Coast_01/Terrain";
+    private const string LegacyCoastGround = "coastal_roofed";
+    private const string CoastAssemblyGround = "coastal_assembly_180";
     private readonly int runNumber;
     private readonly int runSeed;
 
@@ -75,6 +78,15 @@ public sealed class TerrainRepository
         if (terrain == null) return;
         if (terrain.groundIds == null || terrain.groundIds.Length == 0)
             terrain.groundIds = new[] { terrain.groundId };
+
+        // Saved generated terrain can still contain the original 120-unit coastal ground.
+        if (terrainFilePath == CoastTerrainPath && Array.IndexOf(terrain.groundIds, LegacyCoastGround) >= 0)
+        {
+            for (int index = 0; index < terrain.groundIds.Length; index++)
+                if (terrain.groundIds[index] == LegacyCoastGround)
+                    terrain.groundIds[index] = CoastAssemblyGround;
+            terrain.chunkLength = 180f;
+        }
 
         terrain.chunkCount = terrain.groundIds.Length;
         terrain.groundId = terrain.groundIds[0];

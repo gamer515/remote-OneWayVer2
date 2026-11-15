@@ -1,0 +1,422 @@
+{
+  "story_id": "SIDE-23",
+  "title": "울지 않는 아이",
+  "opening": [
+    {
+      "speaker_id": "NPC-23",
+      "text": "피코가 치료를 받으면서 한 번도 안 울었어요."
+    },
+    {
+      "speaker_id": "NPC-23",
+      "text": "아픈데도 아프다고 말하지 않아서 걱정이에요."
+    }
+  ],
+  "choices": [
+    {
+      "id": "C1",
+      "text": "통행세 내기",
+      "dialogue": [
+        {
+          "speaker_id": "NPC-23",
+          "text": "붕대 보충에 코인 2개가 부족합니다. 무리해서 내시진 마세요."
+        }
+      ],
+      "coin_options": [
+        {
+          "id": "strength",
+          "text": "힘 지불",
+          "dialogue": [
+            {
+              "speaker_id": "NPC-23",
+              "text": "힘 코인으로 환자 이동을 돕겠습니다."
+            }
+          ],
+          "condition": {
+            "coin_at_least": {
+              "strength": 2
+            }
+          },
+          "result": {
+            "stats": {
+              "strength": -2
+            },
+            "reward_flags": [
+              "SIDE-23_TRADE_V2"
+            ],
+            "side_completed": true
+          },
+          "on_insufficient_coins": "COIN_SHORTAGE"
+        },
+        {
+          "id": "speed",
+          "text": "속도 지불",
+          "dialogue": [
+            {
+              "speaker_id": "NPC-23",
+              "text": "속도 코인이면 소독을 더 빠르게 끝내겠어요."
+            }
+          ],
+          "condition": {
+            "coin_at_least": {
+              "speed": 2
+            }
+          },
+          "result": {
+            "stats": {
+              "speed": -2
+            },
+            "reward_flags": [
+              "SIDE-23_TRADE_V2"
+            ],
+            "side_completed": true
+          },
+          "on_insufficient_coins": "COIN_SHORTAGE"
+        },
+        {
+          "id": "intelligence",
+          "text": "지능 지불",
+          "dialogue": [
+            {
+              "speaker_id": "NPC-23",
+              "text": "지능 코인으로 진단서를 확인하겠습니다."
+            }
+          ],
+          "condition": {
+            "coin_at_least": {
+              "intelligence": 2
+            }
+          },
+          "result": {
+            "stats": {
+              "intelligence": -2
+            },
+            "reward_flags": [
+              "SIDE-23_TRADE_V2"
+            ],
+            "side_completed": true
+          },
+          "on_insufficient_coins": "COIN_SHORTAGE"
+        },
+        {
+          "id": "charm",
+          "text": "매력 지불",
+          "dialogue": [
+            {
+              "speaker_id": "NPC-23",
+              "text": "매력 코인으로 아픈 분을 안심시키겠어요."
+            }
+          ],
+          "condition": {
+            "coin_at_least": {
+              "charm": 2
+            }
+          },
+          "result": {
+            "stats": {
+              "charm": -2
+            },
+            "reward_flags": [
+              "SIDE-23_TRADE_V2"
+            ],
+            "side_completed": true
+          },
+          "on_insufficient_coins": "COIN_SHORTAGE"
+        }
+      ],
+      "insufficient_coins_branch_id": "COIN_SHORTAGE",
+      "coin_shortage_trigger": "balance_of_selected_coin_below_required",
+      "price": {
+        "base_fee": 2,
+        "negotiated_fee": 1,
+        "accepted_coin_ids": [
+          "strength",
+          "speed",
+          "intelligence",
+          "charm"
+        ]
+      },
+      "negotiation": {
+        "id": "NEGOTIATE",
+        "text": "가격 협상",
+        "available_before_coin_selection": true,
+        "once_per_encounter": true,
+        "discounted_fee": 1,
+        "routes": [
+          {
+            "id": "N_INT",
+            "text": "근거 제시",
+            "condition": {
+              "intelligence_at_least": 3
+            },
+            "player_dialogue": "응급 물품을 필요한 순서대로 정리하면 더 적게 사도 될 거예요.",
+            "success": {
+              "dialogue": [
+                {
+                  "speaker_id": "NPC-23",
+                  "text": "맞습니다. 우선순위를 정하면 부담이 줄겠죠."
+                }
+              ],
+              "payment_override": {
+                "amount": 1,
+                "apply_to": [
+                  "coin_at_least",
+                  "negative_stat_delta"
+                ],
+                "scope": "selected_coin_only"
+              },
+              "goto_coin_choice_id": "C2",
+              "set_flag": "NEGOTIATED_FEE"
+            },
+            "failure": {
+              "dialogue": [
+                {
+                  "speaker_id": "NPC-23",
+                  "text": "그런 말은 아이에게 상처가 될 수 있어요."
+                }
+              ],
+              "goto_coin_choice_id": "C2",
+              "payment_fee": 2
+            }
+          },
+          {
+            "id": "N_CHARM",
+            "text": "사정 호소",
+            "condition": {
+              "charm_at_least": 3
+            },
+            "player_dialogue": "도울 수는 있지만 전부 지불하면 저도 움직이기 어려워요.",
+            "success": {
+              "dialogue": [
+                {
+                  "speaker_id": "NPC-23",
+                  "text": "무리하실 필요 없습니다. 가능한 만큼만 받겠습니다."
+                }
+              ],
+              "payment_override": {
+                "amount": 1,
+                "apply_to": [
+                  "coin_at_least",
+                  "negative_stat_delta"
+                ],
+                "scope": "selected_coin_only"
+              },
+              "goto_coin_choice_id": "C2",
+              "set_flag": "NEGOTIATED_FEE"
+            },
+            "failure": {
+              "dialogue": [
+                {
+                  "speaker_id": "NPC-23",
+                  "text": "그런 말은 아이에게 상처가 될 수 있어요."
+                }
+              ],
+              "goto_coin_choice_id": "C2",
+              "payment_fee": 2
+            }
+          },
+          {
+            "id": "N_CANCEL",
+            "text": "원래대로 지불",
+            "goto_coin_choice_id": "C2"
+          }
+        ],
+        "on_no_affordable_coin": "COIN_SHORTAGE"
+      }
+    },
+    {
+      "id": "C2",
+      "text": "미니게임",
+      "dialogue": [
+        {
+          "speaker_id": "NPC-23",
+          "text": "그럼 동전으로 승부를 보죠. 앞면인지 뒷면인지 맞히면 통행 대가는 없어요."
+        }
+      ],
+      "mini_game": {
+        "id": "SIDE-23_COIN_TOSS",
+        "type": "gambling",
+        "implementation": "coin_toss",
+        "rules_ref": "00_implementation_rules.json#minigames.gambling",
+        "bet_options": [
+          {
+            "id": "HEADS",
+            "text": "앞면"
+          },
+          {
+            "id": "TAILS",
+            "text": "뒷면"
+          }
+        ],
+        "win_probability": 0.5,
+        "no_additional_coin_cost": true,
+        "on_failure": "return_to_four_choices",
+        "success": {
+          "dialogue": [
+            {
+              "speaker_id": "NPC-23",
+              "text": "맞혔네요. 제가 졌어요. 약속한 대로 이번 대가는 받지 않겠어요."
+            }
+          ],
+          "result": {
+            "stats": {},
+            "resolution": "won_minigame",
+            "retry": false,
+            "side_completed": true,
+            "reward_flags": [
+              "SIDE-23_MINIGAME_WON"
+            ]
+          }
+        },
+        "failure": {
+          "dialogue": [
+            {
+              "speaker_id": "NPC-23",
+              "text": "이번엔 틀렸네요. 다시 내기하거나 다른 방법을 선택하세요."
+            }
+          ],
+          "result": {
+            "stats": {},
+            "retry": true,
+            "side_completed": false
+          }
+        }
+      }
+    },
+    {
+      "id": "C3",
+      "text": "요구사항 들어주기",
+      "dialogue": [],
+      "requirement": {
+        "type": "stat_probability",
+        "task": "아이 눈높이의 설명 그림 만들기",
+        "required_stats": {
+          "primary": "intelligence",
+          "secondary": "speed"
+        },
+        "check": {
+          "rules_ref": "00_implementation_rules.json#requirement_probability",
+          "difficulty": 4,
+          "read_current_stats_at_attempt": true,
+          "roll_once_per_attempt": true
+        },
+        "duration_seconds": 35,
+        "collector_continues": true,
+        "stat_growth_paused": true,
+        "success": {
+          "dialogue": [
+            {
+              "speaker_id": "NPC-23",
+              "text": "이제 피코도 무섭다고 말하네요."
+            }
+          ],
+          "result": {
+            "stats": {
+              "strength": -2,
+              "speed": -1,
+              "intelligence": 1,
+              "charm": 1
+            },
+            "side_completed": true,
+            "reward_flags": [
+              "SIDE-23_AID_V2"
+            ]
+          }
+        },
+        "failure": {
+          "dialogue": [
+            {
+              "speaker_id": "NPC-23",
+              "text": "그림이 너무 어려워요."
+            }
+          ],
+          "result": {
+            "stats": {
+              "strength": -2,
+              "speed": -1,
+              "charm": -1
+            },
+            "side_completed": false,
+            "retry": true
+          }
+        },
+        "story_prompt_dialogue": [
+          {
+            "speaker_id": "NPC-23",
+            "text": "겁을 주지 않고 설명하는 법은?"
+          }
+        ],
+        "npc_advice_on_success": [
+          {
+            "speaker_id": "NPC-23",
+            "text": "모르는 걸 물을 시간을 주는 거군요."
+          }
+        ],
+        "npc_advice_on_failure": [
+          {
+            "speaker_id": "NPC-23",
+            "text": "그런 말은 아이에게 상처가 될 수 있어요."
+          }
+        ]
+      }
+    },
+    {
+      "id": "C4",
+      "text": "샛길로 가기",
+      "shortcut": {
+        "type": "log_only",
+        "enabled": false,
+        "log_level": "info",
+        "log_event": "SIDE_PATH_SELECTED_NOT_IMPLEMENTED",
+        "log_message": "SIDE-23: 샛길 선택됨. 아직 이동 구현 없음. 원래 선택지로 복귀.",
+        "movement": false,
+        "scene_transition": false,
+        "unlock": false,
+        "emit_npc_dialogue": false,
+        "return_to_choice_id": "ROOT_CHOICES"
+      },
+      "result": {
+        "stats": {},
+        "access": false,
+        "retry": true,
+        "side_completed": false
+      }
+    }
+  ],
+  "pet_on_help": {
+    "receiver_id": "NPC-06",
+    "text": "울지 않는 아이: 낯선 이가 아이 눈높이의 설명 그림 만들기를 도와줬다."
+  },
+  "stat_change_policy": "clamp_at_zero",
+  "branches": {
+    "COIN_SHORTAGE": {
+      "trigger": {
+        "selected_coin_below_payment_amount": true
+      },
+      "dialogue": [
+        {
+          "speaker_id": "NPC-23",
+          "text": "코인이 없으시군요. 그럼 같이 해 볼 수 있을까요?"
+        },
+        {
+          "speaker_id": "NPC-23",
+          "text": "어려우면 말씀해 주세요. 다시 방법을 찾아볼게요."
+        }
+      ],
+      "goto_choice_id": "ROOT_CHOICES",
+      "available_choices": [
+        "C1",
+        "C2",
+        "C3",
+        "C4"
+      ],
+      "note": "현재 통행세를 낼 수 없으면 미니게임, 요구사항, 샛길 로그를 선택할 수 있음"
+    }
+  },
+  "choice_order": [
+    "C1",
+    "C2",
+    "C3",
+    "C4"
+  ],
+  "choice_policy_ref": "00_implementation_rules.json#choice_policy"
+}

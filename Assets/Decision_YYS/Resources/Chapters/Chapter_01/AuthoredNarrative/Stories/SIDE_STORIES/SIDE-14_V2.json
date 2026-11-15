@@ -1,0 +1,413 @@
+{
+  "story_id": "SIDE-14",
+  "title": "닫힌 검문 창",
+  "opening": [
+    {
+      "speaker_id": "NPC-14",
+      "text": "응급환자가 통행 허가를 기다리고 있습니다."
+    },
+    {
+      "speaker_id": "NPC-14",
+      "text": "저도 규정은 압니다. 하지만 시간은 기다리지 않지요."
+    }
+  ],
+  "choices": [
+    {
+      "id": "C1",
+      "text": "통행세 내기",
+      "dialogue": [
+        {
+          "speaker_id": "NPC-14",
+          "text": "정식 확인서 발급 수수료는 코인 2개입니다. 영수증을 발행하겠습니다."
+        }
+      ],
+      "coin_options": [
+        {
+          "id": "strength",
+          "text": "힘 지불",
+          "dialogue": [
+            {
+              "speaker_id": "NPC-14",
+              "text": "힘 코인 접수했습니다. 봉인 보조 업무에 사용합니다."
+            }
+          ],
+          "condition": {
+            "coin_at_least": {
+              "strength": 2
+            }
+          },
+          "result": {
+            "stats": {
+              "strength": -2
+            },
+            "reward_flags": [
+              "SIDE-14_TRADE_V2"
+            ],
+            "side_completed": true
+          },
+          "on_insufficient_coins": "COIN_SHORTAGE"
+        },
+        {
+          "id": "speed",
+          "text": "속도 지불",
+          "dialogue": [
+            {
+              "speaker_id": "NPC-14",
+              "text": "속도 코인 접수했습니다. 긴급 대응에 배정합니다."
+            }
+          ],
+          "condition": {
+            "coin_at_least": {
+              "speed": 2
+            }
+          },
+          "result": {
+            "stats": {
+              "speed": -2
+            },
+            "reward_flags": [
+              "SIDE-14_TRADE_V2"
+            ],
+            "side_completed": true
+          },
+          "on_insufficient_coins": "COIN_SHORTAGE"
+        },
+        {
+          "id": "intelligence",
+          "text": "지능 지불",
+          "dialogue": [
+            {
+              "speaker_id": "NPC-14",
+              "text": "지능 코인 접수했습니다. 기록 대조에 사용합니다."
+            }
+          ],
+          "condition": {
+            "coin_at_least": {
+              "intelligence": 2
+            }
+          },
+          "result": {
+            "stats": {
+              "intelligence": -2
+            },
+            "reward_flags": [
+              "SIDE-14_TRADE_V2"
+            ],
+            "side_completed": true
+          },
+          "on_insufficient_coins": "COIN_SHORTAGE"
+        },
+        {
+          "id": "charm",
+          "text": "매력 지불",
+          "dialogue": [
+            {
+              "speaker_id": "NPC-14",
+              "text": "매력 코인 접수했습니다. 민원 응대에 배정합니다."
+            }
+          ],
+          "condition": {
+            "coin_at_least": {
+              "charm": 2
+            }
+          },
+          "result": {
+            "stats": {
+              "charm": -2
+            },
+            "reward_flags": [
+              "SIDE-14_TRADE_V2"
+            ],
+            "side_completed": true
+          },
+          "on_insufficient_coins": "COIN_SHORTAGE"
+        }
+      ],
+      "insufficient_coins_branch_id": "COIN_SHORTAGE",
+      "coin_shortage_trigger": "balance_of_selected_coin_below_required",
+      "price": {
+        "base_fee": 2,
+        "negotiated_fee": 1,
+        "accepted_coin_ids": [
+          "strength",
+          "speed",
+          "intelligence",
+          "charm"
+        ]
+      },
+      "negotiation": {
+        "id": "NEGOTIATE",
+        "text": "가격 협상",
+        "available_before_coin_selection": true,
+        "once_per_encounter": true,
+        "discounted_fee": 1,
+        "routes": [
+          {
+            "id": "N_INT",
+            "text": "근거 제시",
+            "condition": {
+              "intelligence_at_least": 3
+            },
+            "player_dialogue": "봉인 번호부터 확인하면 서류를 다시 만들 필요가 없어요. 수수료를 조정해 주세요.",
+            "success": {
+              "dialogue": [
+                {
+                  "speaker_id": "NPC-14",
+                  "text": "중복 발급이 없다는 조건이라면 감액할 수 있습니다."
+                }
+              ],
+              "payment_override": {
+                "amount": 1,
+                "apply_to": [
+                  "coin_at_least",
+                  "negative_stat_delta"
+                ],
+                "scope": "selected_coin_only"
+              },
+              "goto_coin_choice_id": "C2",
+              "set_flag": "NEGOTIATED_FEE"
+            },
+            "failure": {
+              "dialogue": [
+                {
+                  "speaker_id": "NPC-14",
+                  "text": "명령을 거래하지는 않겠습니다."
+                }
+              ],
+              "goto_coin_choice_id": "C2",
+              "payment_fee": 2
+            }
+          },
+          {
+            "id": "N_CHARM",
+            "text": "사정 호소",
+            "condition": {
+              "charm_at_least": 3
+            },
+            "player_dialogue": "기록을 남기는 데 협조하겠습니다. 부담만 조금 줄여 주세요.",
+            "success": {
+              "dialogue": [
+                {
+                  "speaker_id": "NPC-14",
+                  "text": "협조 의사를 확인했습니다. 이번에는 감액 처리하겠습니다."
+                }
+              ],
+              "payment_override": {
+                "amount": 1,
+                "apply_to": [
+                  "coin_at_least",
+                  "negative_stat_delta"
+                ],
+                "scope": "selected_coin_only"
+              },
+              "goto_coin_choice_id": "C2",
+              "set_flag": "NEGOTIATED_FEE"
+            },
+            "failure": {
+              "dialogue": [
+                {
+                  "speaker_id": "NPC-14",
+                  "text": "명령을 거래하지는 않겠습니다."
+                }
+              ],
+              "goto_coin_choice_id": "C2",
+              "payment_fee": 2
+            }
+          },
+          {
+            "id": "N_CANCEL",
+            "text": "원래대로 지불",
+            "goto_coin_choice_id": "C2"
+          }
+        ],
+        "on_no_affordable_coin": "COIN_SHORTAGE"
+      }
+    },
+    {
+      "id": "C2",
+      "text": "미니게임",
+      "dialogue": [
+        {
+          "speaker_id": "NPC-14",
+          "text": "코인 대신 결투라? 좋아. 네가 이기면 이번 대가는 받지 않겠어."
+        }
+      ],
+      "mini_game": {
+        "id": "SIDE-14_DUEL",
+        "type": "duel",
+        "implementation": "existing_duel_system",
+        "rules_ref": "00_implementation_rules.json#minigames.duel",
+        "winner_condition": "player_wins_existing_duel",
+        "loser_condition": "player_loses_existing_duel",
+        "no_additional_coin_cost": true,
+        "on_failure": "return_to_four_choices",
+        "success": {
+          "dialogue": [
+            {
+              "speaker_id": "NPC-14",
+              "text": "내가 졌군. 약속은 약속이지. 이번 건은 네 승리로 인정하겠어."
+            }
+          ],
+          "result": {
+            "stats": {},
+            "resolution": "won_minigame",
+            "retry": false,
+            "side_completed": true,
+            "reward_flags": [
+              "SIDE-14_MINIGAME_WON"
+            ]
+          }
+        },
+        "failure": {
+          "dialogue": [
+            {
+              "speaker_id": "NPC-14",
+              "text": "아직 실력이 부족하군. 다른 방법을 고르거나 다시 도전해."
+            }
+          ],
+          "result": {
+            "stats": {},
+            "retry": true,
+            "side_completed": false
+          }
+        }
+      }
+    },
+    {
+      "id": "C3",
+      "text": "요구사항 들어주기",
+      "dialogue": [],
+      "requirement": {
+        "type": "stat_probability",
+        "task": "긴급 통과 신청서를 작성하기",
+        "required_stats": {
+          "primary": "intelligence",
+          "secondary": "speed"
+        },
+        "check": {
+          "rules_ref": "00_implementation_rules.json#requirement_probability",
+          "difficulty": 4,
+          "read_current_stats_at_attempt": true,
+          "roll_once_per_attempt": true
+        },
+        "duration_seconds": 35,
+        "collector_continues": true,
+        "stat_growth_paused": true,
+        "success": {
+          "dialogue": [
+            {
+              "speaker_id": "NPC-14",
+              "text": "서류가 완성됐습니다. 예외 심사를 올리겠습니다."
+            }
+          ],
+          "result": {
+            "stats": {
+              "strength": -2,
+              "speed": -1,
+              "intelligence": 1,
+              "charm": 1
+            },
+            "side_completed": true,
+            "reward_flags": [
+              "SIDE-14_AID_V2"
+            ]
+          }
+        },
+        "failure": {
+          "dialogue": [
+            {
+              "speaker_id": "NPC-14",
+              "text": "구비 항목이 누락됐습니다."
+            }
+          ],
+          "result": {
+            "stats": {
+              "strength": -2,
+              "speed": -1,
+              "charm": -1
+            },
+            "side_completed": false,
+            "retry": true
+          }
+        },
+        "story_prompt_dialogue": [
+          {
+            "speaker_id": "NPC-14",
+            "text": "명령을 어기더라도 문을 열어야 합니까?"
+          }
+        ],
+        "npc_advice_on_success": [
+          {
+            "speaker_id": "NPC-14",
+            "text": "결정의 책임은 제가 지겠습니다."
+          }
+        ],
+        "npc_advice_on_failure": [
+          {
+            "speaker_id": "NPC-14",
+            "text": "명령을 거래하지는 않겠습니다."
+          }
+        ]
+      }
+    },
+    {
+      "id": "C4",
+      "text": "샛길로 가기",
+      "shortcut": {
+        "type": "log_only",
+        "enabled": false,
+        "log_level": "info",
+        "log_event": "SIDE_PATH_SELECTED_NOT_IMPLEMENTED",
+        "log_message": "SIDE-14: 샛길 선택됨. 아직 이동 구현 없음. 원래 선택지로 복귀.",
+        "movement": false,
+        "scene_transition": false,
+        "unlock": false,
+        "emit_npc_dialogue": false,
+        "return_to_choice_id": "ROOT_CHOICES"
+      },
+      "result": {
+        "stats": {},
+        "access": false,
+        "retry": true,
+        "side_completed": false
+      }
+    }
+  ],
+  "pet_on_help": {
+    "receiver_id": "NPC-01",
+    "text": "닫힌 검문 창: 낯선 이가 긴급 통과 신청서를 작성하기를 도와줬다."
+  },
+  "stat_change_policy": "clamp_at_zero",
+  "branches": {
+    "COIN_SHORTAGE": {
+      "trigger": {
+        "selected_coin_below_payment_amount": true
+      },
+      "dialogue": [
+        {
+          "speaker_id": "NPC-14",
+          "text": "납부가 불가능하면 대체 심사 절차를 적용하겠습니다."
+        },
+        {
+          "speaker_id": "NPC-14",
+          "text": "기록에 남을 결과가 필요합니다."
+        }
+      ],
+      "goto_choice_id": "ROOT_CHOICES",
+      "available_choices": [
+        "C1",
+        "C2",
+        "C3",
+        "C4"
+      ],
+      "note": "현재 통행세를 낼 수 없으면 미니게임, 요구사항, 샛길 로그를 선택할 수 있음"
+    }
+  },
+  "choice_order": [
+    "C1",
+    "C2",
+    "C3",
+    "C4"
+  ],
+  "choice_policy_ref": "00_implementation_rules.json#choice_policy"
+}

@@ -1,0 +1,438 @@
+{
+  "story_id": "MAIN-04",
+  "title": "검게 변한 균사",
+  "opening": [
+    {
+      "speaker_id": "NPC-05",
+      "text": "상한 버섯을 남에게 팔자는 소리라면 듣지 않겠어요."
+    },
+    {
+      "speaker_id": "NPC-12",
+      "text": "이 검은 건 먹어도 돼요?"
+    },
+    {
+      "speaker_id": "NPC-05",
+      "text": "검게 변한 균사 때문에 신경이 곤두서 있어. 함부로 끼어들지는 마."
+    },
+    {
+      "speaker_id": "NPC-05",
+      "text": "아픈 사람이 나오면 코인을 더 벌어도 소용없어요."
+    },
+    {
+      "speaker_id": "NPC-05",
+      "text": "말로만 도울 생각이면 그만둬. 대신 무엇을 내놓을 건지 선택해."
+    }
+  ],
+  "choices": [
+    {
+      "id": "C1",
+      "text": "통행세 내기",
+      "coin_options": [
+        {
+          "id": "strength",
+          "text": "힘 지불",
+          "dialogue": [
+            {
+              "speaker_id": "NPC-05",
+              "text": "힘을 내는 건 자네 선택이지. 그렇다고 검게 변한 균사를 함부로 평가할 자격이 생기는 건 아니야."
+            }
+          ],
+          "result": {
+            "stats": {
+              "strength": -2
+            },
+            "main_progress": true,
+            "access": true,
+            "resolution": "paid"
+          },
+          "condition": {
+            "coin_at_least": {
+              "strength": 2
+            }
+          },
+          "on_insufficient_coins": "COIN_SHORTAGE"
+        },
+        {
+          "id": "speed",
+          "text": "속도 지불",
+          "dialogue": [
+            {
+              "speaker_id": "NPC-05",
+              "text": "속도을 내는 건 자네 선택이지. 그렇다고 검게 변한 균사를 함부로 평가할 자격이 생기는 건 아니야."
+            }
+          ],
+          "result": {
+            "stats": {
+              "speed": -2
+            },
+            "main_progress": true,
+            "access": true,
+            "resolution": "paid"
+          },
+          "condition": {
+            "coin_at_least": {
+              "speed": 2
+            }
+          },
+          "on_insufficient_coins": "COIN_SHORTAGE"
+        },
+        {
+          "id": "intelligence",
+          "text": "지능 지불",
+          "dialogue": [
+            {
+              "speaker_id": "NPC-05",
+              "text": "지능을 내는 건 자네 선택이지. 그렇다고 검게 변한 균사를 함부로 평가할 자격이 생기는 건 아니야."
+            }
+          ],
+          "result": {
+            "stats": {
+              "intelligence": -2
+            },
+            "main_progress": true,
+            "access": true,
+            "resolution": "paid"
+          },
+          "condition": {
+            "coin_at_least": {
+              "intelligence": 2
+            }
+          },
+          "on_insufficient_coins": "COIN_SHORTAGE"
+        },
+        {
+          "id": "charm",
+          "text": "매력 지불",
+          "dialogue": [
+            {
+              "speaker_id": "NPC-05",
+              "text": "매력을 내는 건 자네 선택이지. 그렇다고 검게 변한 균사를 함부로 평가할 자격이 생기는 건 아니야."
+            }
+          ],
+          "result": {
+            "stats": {
+              "charm": -2
+            },
+            "main_progress": true,
+            "access": true,
+            "resolution": "paid"
+          },
+          "condition": {
+            "coin_at_least": {
+              "charm": 2
+            }
+          },
+          "on_insufficient_coins": "COIN_SHORTAGE"
+        }
+      ],
+      "insufficient_coins_branch_id": "COIN_SHORTAGE",
+      "coin_shortage_trigger": "balance_of_selected_coin_below_required",
+      "price": {
+        "base_fee": 2,
+        "negotiated_fee": 1,
+        "accepted_coin_ids": [
+          "strength",
+          "speed",
+          "intelligence",
+          "charm"
+        ]
+      },
+      "negotiation": {
+        "id": "NEGOTIATE",
+        "text": "가격 협상",
+        "available_before_coin_selection": true,
+        "once_per_encounter": true,
+        "discounted_fee": 1,
+        "routes": [
+          {
+            "id": "N_INT",
+            "text": "근거 제시",
+            "condition": {
+              "intelligence_at_least": 3
+            },
+            "player_dialogue": "근거 제시",
+            "success": {
+              "dialogue": [
+                {
+                  "speaker_id": "NPC-05",
+                  "text": "마음에 드는 태도는 아니지만 검게 변한 균사의 사정은 인정하지. 조건대로 깎아 주겠어."
+                }
+              ],
+              "payment_override": {
+                "amount": 1,
+                "apply_to": [
+                  "coin_at_least",
+                  "negative_stat_delta"
+                ],
+                "scope": "selected_coin_only"
+              },
+              "goto_coin_choice_id": "C1",
+              "set_flag": "NEGOTIATED_FEE"
+            },
+            "failure": {
+              "dialogue": [
+                {
+                  "speaker_id": "NPC-05",
+                  "text": "상한 버섯을 남에게 팔자는 소리라면 듣지 않겠어요. 통행 대가까지 없애 줄 순 없어."
+                }
+              ],
+              "goto_coin_choice_id": "C1",
+              "payment_fee": 2
+            }
+          },
+          {
+            "id": "N_CHARM",
+            "text": "사정 호소",
+            "condition": {
+              "charm_at_least": 3
+            },
+            "player_dialogue": "사정 호소",
+            "success": {
+              "dialogue": [
+                {
+                  "speaker_id": "NPC-05",
+                  "text": "마음에 드는 태도는 아니지만 검게 변한 균사의 사정은 인정하지. 조건대로 깎아 주겠어."
+                }
+              ],
+              "payment_override": {
+                "amount": 1,
+                "apply_to": [
+                  "coin_at_least",
+                  "negative_stat_delta"
+                ],
+                "scope": "selected_coin_only"
+              },
+              "goto_coin_choice_id": "C1",
+              "set_flag": "NEGOTIATED_FEE"
+            },
+            "failure": {
+              "dialogue": [
+                {
+                  "speaker_id": "NPC-05",
+                  "text": "상한 버섯을 남에게 팔자는 소리라면 듣지 않겠어요. 통행 대가까지 없애 줄 순 없어."
+                }
+              ],
+              "goto_coin_choice_id": "C1",
+              "payment_fee": 2
+            }
+          },
+          {
+            "id": "N_CANCEL",
+            "text": "원래대로 지불",
+            "goto_coin_choice_id": "C1"
+          },
+          {
+            "id": "N_CHARM_APOLOGY",
+            "text": "사과",
+            "dialogue": [
+              {
+                "speaker_id": "NPC-05",
+                "text": "상한 버섯을 남에게 팔자는 소리라면 듣지 않겠어요. 그래도 사과했으니 다시 고를 기회는 주지."
+              }
+            ],
+            "goto_coin_choice_id": "C1"
+          }
+        ],
+        "on_no_affordable_coin": "COIN_SHORTAGE"
+      },
+      "dialogue": []
+    },
+    {
+      "id": "C2",
+      "text": "미니게임",
+      "dialogue": [
+        {
+          "speaker_id": "NPC-05",
+          "text": "말이 통하지 않으면 승부로 끝내자고? 좋아. 검게 변한 균사는 별개야."
+        }
+      ],
+      "mini_game": {
+        "id": "MAIN-04_COIN_TOSS",
+        "type": "gambling",
+        "implementation": "coin_toss",
+        "rules_ref": "00_implementation_rules.json#minigames.gambling",
+        "bet_options": [
+          {
+            "id": "HEADS",
+            "text": "앞면"
+          },
+          {
+            "id": "TAILS",
+            "text": "뒷면"
+          }
+        ],
+        "win_probability": 0.5,
+        "no_additional_coin_cost": true,
+        "on_failure": "return_to_four_choices",
+        "success": {
+          "dialogue": [
+            {
+              "speaker_id": "NPC-05",
+              "text": "졌다. 약속은 지키지. 그렇다고 서로 가까워진 건 아니야."
+            }
+          ],
+          "result": {
+            "stats": {},
+            "resolution": "won_minigame",
+            "retry": false,
+            "main_progress": true,
+            "access": true
+          }
+        },
+        "failure": {
+          "dialogue": [
+            {
+              "speaker_id": "NPC-05",
+              "text": "졌으면 물러서. 나를 설득하려면 다른 방법을 찾아."
+            }
+          ],
+          "result": {
+            "stats": {},
+            "retry": true,
+            "main_progress": false,
+            "access": false
+          }
+        }
+      }
+    },
+    {
+      "id": "C3",
+      "text": "요구사항 들어주기",
+      "dialogue": [
+        {
+          "speaker_id": "NPC-05",
+          "text": "오염된 상자를 격리하고 깨끗한 물로 도구를 닦아 주세요. 말만 앞서면 맡기지 않겠어. 제대로 끝내야 해."
+        }
+      ],
+      "requirement": {
+        "type": "stat_probability",
+        "task": "오염된 상자를 격리하고 깨끗한 물로 도구를 닦아 주세요.",
+        "required_stats": {
+          "primary": "intelligence",
+          "secondary": "speed"
+        },
+        "check": {
+          "rules_ref": "00_implementation_rules.json#requirement_probability",
+          "difficulty": 4,
+          "read_current_stats_at_attempt": true,
+          "roll_once_per_attempt": true
+        },
+        "duration_seconds": 63,
+        "collector_continues": true,
+        "stat_growth_paused": true,
+        "success": {
+          "dialogue": [
+            {
+              "speaker_id": "NPC-05",
+              "text": "맡은 일은 끝냈군. 그렇다고 검게 변한 균사에 대해 함부로 말하지는 마."
+            }
+          ],
+          "result": {
+            "stats": {
+              "strength": -3,
+              "speed": -1,
+              "intelligence": 1,
+              "charm": 1
+            },
+            "main_progress": true,
+            "access": true,
+            "resolution": "worked"
+          }
+        },
+        "failure": {
+          "dialogue": [
+            {
+              "speaker_id": "NPC-05",
+              "text": "검게 변한 균사 일을 맡겼더니 끝내지 못했군. 그동안 큰소리친 건 뭐였지?"
+            }
+          ],
+          "result": {
+            "stats": {
+              "strength": -3,
+              "speed": -1,
+              "charm": -1
+            },
+            "main_progress": false,
+            "access": false,
+            "retry": true
+          }
+        },
+        "story_prompt": "오염된 수확물을 어떻게 처리할까요?",
+        "npc_advice_on_success": [
+          {
+            "speaker_id": "NPC-05",
+            "text": "그렇게 하죠. 손실은 다시 메워도 신뢰는 그러기 어렵죠."
+          }
+        ],
+        "npc_advice_on_failure": [
+          {
+            "speaker_id": "NPC-05",
+            "text": "잘못 팔면 우리 모두의 잘못이 돼요."
+          }
+        ]
+      }
+    },
+    {
+      "id": "C4",
+      "text": "샛길로 가기",
+      "shortcut": {
+        "type": "log_only",
+        "enabled": false,
+        "log_level": "info",
+        "log_event": "SIDE_PATH_SELECTED_NOT_IMPLEMENTED",
+        "log_message": "MAIN-04: 샛길 선택됨. 아직 이동 구현 없음. 원래 선택지로 복귀.",
+        "movement": false,
+        "scene_transition": false,
+        "unlock": false,
+        "emit_npc_dialogue": false,
+        "return_to_choice_id": "ROOT_CHOICES"
+      },
+      "result": {
+        "stats": {},
+        "access": false,
+        "retry": true,
+        "main_progress": false
+      }
+    }
+  ],
+  "pet_on_complete": {
+    "paid": "MAIN-04: 낯선 이가 코인으로 약속을 이행했다. 검게 변한 균사에 관한 판단이 남아 있다.",
+    "worked": "MAIN-04: 요구사항을 능력치 판정으로 완료했다는 소식을 펫이 전했다.",
+    "reasoned": "MAIN-04: 낯선 이가 위험과 책임의 기준을 따져 답했다. 검게 변한 균사의 기록을 검토해 달라.",
+    "won_minigame": "MAIN-04: 코인 대신 미니게임에서 이겨 통행 대가를 면제받았다는 소식을 펫이 전했다.",
+    "persuaded": "MAIN-04: 낯선 사람이 판단을 제시했고, 현장 담당자가 이를 받아들였다."
+  },
+  "stat_change_policy": "clamp_at_zero",
+  "branches": {
+    "COIN_SHORTAGE": {
+      "trigger": {
+        "selected_coin_below_payment_amount": true
+      },
+      "dialogue": [
+        {
+          "speaker_id": "NPC-05",
+          "text": "코인도 부족하면서 무조건 봐 달라고? 다른 대가를 내놓게."
+        },
+        {
+          "speaker_id": "NPC-05",
+          "text": "직접 확인하시면 제 말을 이해하실 거예요."
+        }
+      ],
+      "goto_choice_id": "ROOT_CHOICES",
+      "available_choices": [
+        "C1",
+        "C2",
+        "C3",
+        "C4"
+      ],
+      "note": "현재 통행세를 낼 수 없으면 미니게임, 요구사항, 샛길 로그를 선택할 수 있음"
+    }
+  },
+  "choice_order": [
+    "C1",
+    "C2",
+    "C3",
+    "C4"
+  ],
+  "choice_policy_ref": "00_implementation_rules.json#choice_policy"
+}

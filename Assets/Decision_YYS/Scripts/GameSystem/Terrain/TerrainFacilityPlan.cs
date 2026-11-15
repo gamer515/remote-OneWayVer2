@@ -43,7 +43,9 @@ internal static class TerrainFacilityPlan
         var pending = new Queue<PlaceData>();
         for (int chunk = 0; chunk < data.chunkCount; chunk++)
         {
-            var authored = data.places.Where(place => place.chunkIndex == chunk).OrderBy(place => place.position.z).ToArray();
+            var authored = data.places.Where(place => place.chunkIndex == chunk)
+                .GroupBy(place => place.sharedStoryVisualId ?? place.placeId).Select(group => group.First())
+                .OrderBy(place => place.position.z).ToArray();
             int capacity = limit - (chunk == 0 ? firstReserved : 0);
             // Authored places already in the receiving chunk keep their order and authored visuals.
             foreach (var overflow in authored.Skip(Mathf.Max(0, capacity)))
@@ -66,11 +68,13 @@ internal static class TerrainFacilityPlan
         var slots = new List<Slot>();
         var chunks = Enumerable.Range(0, data.chunkCount).ToArray();
         var authored = chunks.Select(chunk => data.places.Where(place => place.chunkIndex == chunk).ToArray()).ToArray();
+        bool storyLayout = data.places.Any(place => place.authoredLocationId != null);
         var occupied = authored.Select(places => places.SelectMany(place =>
                 new[] { place.position }.Concat(place.actorPositions ?? Array.Empty<Vector3>()))
             .Select(point => new Vector2(point.x, point.z)).ToList()).ToArray();
         var optionalCounts = new int[data.chunkCount];
-        var locationCounts = authored.Select(places => places.Length).ToArray();
+        var locationCounts = authored.Select(places => places.Select(place => place.sharedStoryVisualId ?? place.placeId)
+            .Distinct().Count()).ToArray();
         float spacing = Mathf.Max(1, data.facilitySpacing);
         float edge = Mathf.Max(3, spacing * .5f);
 
@@ -79,7 +83,7 @@ internal static class TerrainFacilityPlan
         {
             bool TryReserve(int chunk, bool atFront, bool atEnd)
             {
-                if (capLocations && locationCounts[chunk] >= LocationLimit(data)) return false;
+                if ((capLocations || storyLayout) && locationCounts[chunk] >= LocationLimit(data)) return false;
                 float firstPlace = authored[chunk].Select(place => place.position.z).DefaultIfEmpty(data.chunkLength).Min();
                 float low = atEnd && !atFront ? Mathf.Max(edge, data.chunkLength - edge - spacing) : edge;
                 if (!atFront && firstChunk + chunk == history.FirstChunk)
@@ -98,9 +102,14 @@ internal static class TerrainFacilityPlan
 
                 bool TryPosition(int index)
                 {
-                    var point = new Vector2(left ? -lane : lane, low + index);
+                    var point = new Vector2(storyLayout ? 0f : left ? -lane : lane, low + index);
+                    if (authored[chunk].Any(place => place.authoredLocationId != null &&
+                        point.y > place.position.z + place.storyLocationDepth.x - spacing &&
+                        point.y < place.position.z + place.storyLocationDepth.y + spacing))
+                        return false;
                     if (occupied[chunk].Any(other => (other - point).sqrMagnitude < spacing * spacing))
                     {
+                        if (storyLayout) return false;
                         point.x = -point.x;
                         if (occupied[chunk].Any(other => (other - point).sqrMagnitude < spacing * spacing)) return false;
                     }

@@ -1,0 +1,89 @@
+{
+  "location_id": "LOC-06",
+  "name": "광부 공동식당",
+  "origin": "existing",
+  "fixed_chunk": "CHUNK-03",
+  "place_position_rule": "청크 내부 위치는 랜덤. NPC는 배치된 장소에 고정",
+  "location_description": "광부들의 식사와 외상 장부를 관리하는 생활 거점.",
+  "fixed_npcs": [
+    {
+      "npc_id": "NPC-04",
+      "name": "벨라",
+      "role": "main",
+      "origin": "existing",
+      "social_class": "생활 노동층",
+      "stance": "현실 개혁파",
+      "fixed_chunk": "CHUNK-03",
+      "fixed_location_id": "LOC-06",
+      "fixed_location_name": "광부 공동식당",
+      "movement": "none",
+      "character_traits": [
+        "현실주의",
+        "직설",
+        "책임감"
+      ],
+      "personality": "현실적이고 직설적이며 생활력이 강하다. 지속 가능한 도움을 중시한다.",
+      "speech_style": "빠르고 현실적인 생활 말투. 핀잔이 잦지만 따뜻함이 묻어남.",
+      "conversation_topic": "외상 장부와 부족한 식량을 누구에게 나눌지",
+      "pet_links": [
+        {
+          "npc_id": "NPC-02",
+          "name": "브룩",
+          "relation_hint": "외상이라는 명목으로 식사를 돕는다."
+        },
+        {
+          "npc_id": "NPC-01",
+          "name": "헤른",
+          "relation_hint": "식량 배급과 징수 문제로 대립한다."
+        },
+        {
+          "npc_id": "NPC-05",
+          "name": "모아",
+          "relation_hint": "식재료 거래를 이어 가는 친구."
+        },
+        {
+          "npc_id": "NPC-08",
+          "name": "칼릭",
+          "relation_hint": "식당 자금을 빌려준 채권자."
+        }
+      ]
+    },
+    {
+      "npc_id": "NPC-22",
+      "name": "다비",
+      "role": "supporting",
+      "origin": "new",
+      "social_class": "생활 노동층",
+      "stance": "현실 개혁파",
+      "fixed_chunk": "CHUNK-03",
+      "fixed_location_id": "LOC-06",
+      "fixed_location_name": "광부 공동식당",
+      "movement": "none",
+      "character_traits": [
+        "다정함",
+        "명랑함",
+        "낙관성"
+      ],
+      "personality": "명랑하고 다정하지만 경제관념이 부족하다.",
+      "speech_style": "밝고 정겨운 존댓말. 감탄과 맞장구가 많고 거절을 어려워함.",
+      "conversation_topic": "배고픈 이에게 음식 주기와 식당 운영의 현실",
+      "pet_links": [
+        {
+          "npc_id": "NPC-04",
+          "name": "벨라",
+          "relation_hint": "자신을 가르치고 꾸중하는 식당 주인."
+        },
+        {
+          "npc_id": "NPC-05",
+          "name": "모아",
+          "relation_hint": "식재료를 공급하는 사람."
+        }
+      ]
+    }
+  ],
+  "main_npc_ids": [
+    "NPC-04"
+  ],
+  "pet_remote_conversation": true,
+  "notice": "이 장소 JSON에는 방문 NPC를 넣지 않음. 다른 NPC와의 관계는 PET 연결로만 표현"
+}

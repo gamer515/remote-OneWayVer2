@@ -31,6 +31,7 @@ public sealed class JourneyCoinSupplyController
     private float coinGrabY;
     private bool absorbingPayment;
     public Collider WhiteBoard { get; set; }
+    public Collider CoinRamp { get; set; }
     public Func<Vector2, int, Transform> RefillSlot { get; set; }
     public Func<int, int, bool> RefillBooks { get; set; }
     public MonoBehaviour DropRunner { get; set; }
@@ -44,7 +45,6 @@ public sealed class JourneyCoinSupplyController
         public GameObject model;
         public Rigidbody body;
         public int type;
-        public bool onGrid;
         public bool landing;
         public int refillSlot = -1;
     }
@@ -200,7 +200,6 @@ public sealed class JourneyCoinSupplyController
         paymentGrid = grid;
         if (draggedPaymentCoin != null)
         {
-            draggedPaymentCoin.onGrid = false;
             draggedPaymentCoin.refillSlot = -1;
             DropOnBoard(draggedPaymentCoin, WhiteBoard ?? board.trayFloor,
                 TrayPosition(draggedPaymentCoin.type, paymentCoins.IndexOf(draggedPaymentCoin)), .20f);
@@ -265,7 +264,6 @@ public sealed class JourneyCoinSupplyController
         {
             if (up && draggedPaymentCoin != null)
             {
-                draggedPaymentCoin.onGrid = false;
                 draggedPaymentCoin.refillSlot = -1;
                 DropOnBoard(draggedPaymentCoin, WhiteBoard ?? board.trayFloor,
                     TrayPosition(draggedPaymentCoin.type, paymentCoins.IndexOf(draggedPaymentCoin)), .20f);
@@ -313,17 +311,23 @@ public sealed class JourneyCoinSupplyController
             }
             return;
         }
-        var surface = BoardItemDrop.FindSurface(ray, inputCamera, point, draggedPaymentCoin.model.transform,
-            WhiteBoard ?? board.trayFloor, paymentGrid, out var hit);
+        Collider surface;
+        Vector3 hit;
+        if (CoinRamp != null && CoinRamp.Raycast(ray, out var rampHit, 1000f) && rampHit.normal.y > .5f)
+        {
+            surface = CoinRamp;
+            hit = rampHit.point;
+        }
+        else
+            surface = BoardItemDrop.FindSurface(ray, inputCamera, point, draggedPaymentCoin.model.transform,
+                WhiteBoard ?? board.trayFloor, paymentGrid, out hit);
         float lift = BoardItemDrop.PointerLift(inputCamera, point, coinGrabY);
         if (held && surface != null)
-            draggedPaymentCoin.model.transform.position =
-                BoardItemDrop.PositionAbove(surface, draggedPaymentCoin.model.transform, hit, lift);
+            draggedPaymentCoin.model.transform.position = CoinPositionAbove(surface, draggedPaymentCoin.model.transform, hit, lift);
         if (!up) return;
         var item = draggedPaymentCoin;
         draggedPaymentCoin = null;
         item.refillSlot = -1;
-        item.onGrid = surface == paymentGrid;
         DropOnBoard(item, surface, hit, lift);
     }
 
@@ -339,7 +343,6 @@ public sealed class JourneyCoinSupplyController
         coin.model.transform.position = slot.position + towardCamera * (front + clearance + .06f);
         if (!released) return;
         draggedPaymentCoin = null;
-        coin.onGrid = false;
         coin.refillSlot = coin.type;
         var inserted = paymentCoins.FindAll(item => item.refillSlot == coin.type);
         coin.model.transform.position += towardCamera * (.07f * (inserted.Count - 1));
@@ -355,16 +358,24 @@ public sealed class JourneyCoinSupplyController
     private void DropOnBoard(PaymentCoin item, Collider surface, Vector3 point, float lift)
     {
         var model = item.model.transform;
-        model.position = BoardItemDrop.PositionAbove(surface, model, point, lift);
-        if (DropRunner != null) DropRunner.StartCoroutine(DropCoin(item, paymentGrid));
+        model.position = CoinPositionAbove(surface, model, point, lift);
+        if (DropRunner != null) DropRunner.StartCoroutine(DropCoin(item));
         else BoardItemDrop.Release(item.body);
+    }
+
+    private Vector3 CoinPositionAbove(Collider surface, Transform model, Vector3 point, float lift)
+    {
+        if (surface != CoinRamp) return BoardItemDrop.PositionAbove(surface, model, point, lift);
+        float bottomOffset = model.position.y - BoardItemDrop.ItemBounds(model).min.y;
+        return point + Vector3.up * (bottomOffset + lift);
     }
 
     private bool PaymentCoinCountMatches()
     {
         var placed = new int[4];
-        if (paymentCoins.Exists(coin => coin.onGrid && coin.landing)) return false;
-        foreach (var coin in paymentCoins) if (coin.onGrid) placed[coin.type]++;
+        foreach (var coin in paymentCoins)
+            if (!coin.landing && coin.refillSlot < 0 && BoardItemDrop.IsOnSurface(paymentGrid, coin.model.transform))
+                placed[coin.type]++;
         for (int i = 0; i < placed.Length; i++) if (placed[i] != paymentCost[i]) return false;
         return true;
     }
@@ -400,12 +411,10 @@ public sealed class JourneyCoinSupplyController
         return true;
     }
 
-    private static System.Collections.IEnumerator DropCoin(PaymentCoin item, Collider grid)
+    private static System.Collections.IEnumerator DropCoin(PaymentCoin item)
     {
         item.landing = true;
         yield return BoardItemDrop.Play(item.body);
-        if (item.model != null && item.onGrid)
-            item.onGrid = BoardItemDrop.IsOnSurface(grid, item.model.transform);
         item.landing = false;
     }
 

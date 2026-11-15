@@ -306,6 +306,7 @@ public partial class SaveIOService
             var saved=JsonUtility.FromJson<LocalStoryDialogueQueueData>(JsonUtility.ToJson(queue));
             foreach(var job in saved.jobs)
             {
+                if (job.authoredPack) continue;
                 if(job.snapshot?.generationTrigger=="DialogueEnded")
                 {job.snapshot.playEvents=null;job.snapshot.playedCards=null;}
                 var info=ChapterContentCatalog.Info(job.storyPath);

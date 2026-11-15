@@ -33,6 +33,10 @@ using UnityEngine;
     public bool studySuccessCountInitialized;
     public float clockDays;
     public List<string> comboSuccesses = new List<string>();
+    public List<string> pendingReading = new List<string>();
+    public List<string> completedReading = new List<string>();
+    public List<string> claimedReadingCombos = new List<string>();
+    public string readingResult;
     public Vector3 comboBoardPoint;
 }
 
@@ -87,6 +91,7 @@ public sealed partial class MineLearningStation : MonoBehaviour
     private Action save;
     private int seed;
     private bool paused;
+    private bool studyPaused;
     private string noticeText;
     private string notice
     {
@@ -103,11 +108,23 @@ public sealed partial class MineLearningStation : MonoBehaviour
     public MineLearningProgress Progress => progress;
     public float DeliverySeconds => study?.deliverySeconds ?? authoredLearning?.deliverySeconds ?? deliverySeconds;
     public bool CanMoveBooks => progress != null && wallet != null && !paused;
+    public bool CanStudyBooks => CanMoveBooks && !studyPaused;
     public Func<int[]> DisplayCoinCounts { private get; set; }
     public int[] CurrentCoins => DisplayCoinCounts?.Invoke() ?? wallet?.Invoke();
+    public string GetBookDisplayName(MineLearningJob job)
+    {
+        string id = CurrentReadingBookId(job);
+        if (!string.IsNullOrWhiteSpace(id))
+        {
+            var definition = authoredBooks?.FirstOrDefault(book => book.id == id);
+            if (!string.IsNullOrWhiteSpace(definition?.name)) return definition.name;
+        }
+        if (!string.IsNullOrWhiteSpace(job.bookName)) return job.bookName;
+        return $"{AbilityName(job.ability)} 책";
+    }
     public int TodayLimit => UsesStudyRules && wallet != null ? DailyLimit(wallet()) : 0;
     private static bool IsReadingPlacement(MineLearningJob job) => job.onBoard && job.boardIndex == 2;
-    public bool IsStudying(MineLearningJob job) => !paused && job != null && job.onBoard && !job.held &&
+    public bool IsStudying(MineLearningJob job) => CanStudyBooks && job != null && job.onBoard && !job.held &&
         job.transit <= 0 && (study == null ? !job.requiresBoard || job.boardIndex == 1 :
             IsReadingPlacement(job) && job.started && CanRead(job));
     public void RememberPlacement(MineLearningJob job, float u, float v, int boardIndex = 0)
@@ -115,8 +132,19 @@ public sealed partial class MineLearningStation : MonoBehaviour
         if(progress == null || !progress.active.Contains(job)) return;
         job.onBoard=true; job.boardU=Mathf.Clamp01(u); job.boardV=Mathf.Clamp01(v); job.boardIndex=boardIndex; save?.Invoke();
     }
-    public CapacityStep Capacity => (study?.capacities ?? authoredLearning?.capacities ?? capacities)
-        .Where(c => c.knowledgeCoins <= wallet()[2]).OrderBy(c => c.knowledgeCoins).LastOrDefault() ?? new CapacityStep();
+    public CapacityStep Capacity
+    {
+        get
+        {
+            var steps = study?.capacities ?? authoredLearning?.capacities ?? capacities;
+            int knowledge = wallet()[2];
+            var step = steps.Where(c => c.knowledgeCoins <= knowledge)
+                .OrderBy(c => c.knowledgeCoins).LastOrDefault() ?? new CapacityStep();
+            if (FirstStudyDay && step.simultaneous < 2)
+                return new CapacityStep { knowledgeCoins = step.knowledgeCoins, simultaneous = 2, waiting = step.waiting };
+            return step;
+        }
+    }
 
     public void ConfigureContent(BookCatalog books, LearningSettings settings)
     {
@@ -126,7 +154,7 @@ public sealed partial class MineLearningStation : MonoBehaviour
     }
     public void Initialize(MineLearningProgress state, int runSeed, Func<int[]> getWallet, Func<int,int,bool> spend, Action<int,int> reward, Action persist)
     {
-        progress=state; seed=runSeed; wallet=getWallet; charge=spend; grant=reward; save=persist;paused=false;notice=null;
+        progress=state; seed=runSeed; wallet=getWallet; charge=spend; grant=reward; save=persist;paused=studyPaused=false;notice=null;
         progress.active ??= new List<MineLearningJob>();
         progress.queued ??= new List<MineLearningJob>();
         InitializeStudyState();
@@ -180,12 +208,12 @@ public sealed partial class MineLearningStation : MonoBehaviour
         }
         return changed;
     }
-    public void Tick(float seconds, bool stop)
+    public void Tick(float seconds, bool stop, bool stopStudying = false, float? calendarDays = null)
     {
         if(progress==null || wallet==null) return;
-        paused=stop; bool changed=false;
+        paused=stop; studyPaused=stopStudying; bool changed=false;
         if(study != null)
-            changed = TickStudy(seconds, stop);
+            changed = TickStudy(seconds, stop, calendarDays);
         else if(!stop)
         {
             for(int i=progress.active.Count-1;i>=0;i--)

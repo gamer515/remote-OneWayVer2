@@ -1,0 +1,418 @@
+{
+  "story_id": "MAIN-02",
+  "title": "금 간 갱목",
+  "opening": [
+    {
+      "speaker_id": "NPC-03",
+      "text": "갱목 아래쪽에 흰 가루가 쌓여 있네."
+    },
+    {
+      "speaker_id": "NPC-17",
+      "text": "저, 이쪽 갱목도 소리가 이상합니다."
+    },
+    {
+      "speaker_id": "NPC-03",
+      "text": "나무가 안에서부터 갈라진 증거야."
+    },
+    {
+      "speaker_id": "NPC-03",
+      "text": "지금 교체하면 채굴이 멈추고, 그대로 두면 사람이 다치겠지."
+    },
+    {
+      "speaker_id": "NPC-03",
+      "text": "교체 자재를 살 코인이 부족하네."
+    }
+  ],
+  "choices": [
+    {
+      "id": "C1",
+      "text": "통행세 내기",
+      "coin_options": [
+        {
+          "id": "strength",
+          "text": "힘 지불",
+          "dialogue": [
+            {
+              "speaker_id": "NPC-03",
+              "text": "무거운 갱목을 받칠 때 유용하겠네."
+            }
+          ],
+          "result": {
+            "stats": {
+              "strength": -2
+            },
+            "main_progress": true,
+            "access": true,
+            "resolution": "paid"
+          },
+          "condition": {
+            "coin_at_least": {
+              "strength": 2
+            }
+          },
+          "on_insufficient_coins": "COIN_SHORTAGE"
+        },
+        {
+          "id": "speed",
+          "text": "속도 지불",
+          "dialogue": [
+            {
+              "speaker_id": "NPC-03",
+              "text": "작업 시간은 줄겠지만 확인 절차는 건너뛰지 않겠어."
+            }
+          ],
+          "result": {
+            "stats": {
+              "speed": -2
+            },
+            "main_progress": true,
+            "access": true,
+            "resolution": "paid"
+          },
+          "condition": {
+            "coin_at_least": {
+              "speed": 2
+            }
+          },
+          "on_insufficient_coins": "COIN_SHORTAGE"
+        },
+        {
+          "id": "intelligence",
+          "text": "지능 지불",
+          "dialogue": [
+            {
+              "speaker_id": "NPC-03",
+              "text": "균열의 방향을 다시 계산할 수 있겠군."
+            }
+          ],
+          "result": {
+            "stats": {
+              "intelligence": -2
+            },
+            "main_progress": true,
+            "access": true,
+            "resolution": "paid"
+          },
+          "condition": {
+            "coin_at_least": {
+              "intelligence": 2
+            }
+          },
+          "on_insufficient_coins": "COIN_SHORTAGE"
+        },
+        {
+          "id": "charm",
+          "text": "매력 지불",
+          "dialogue": [
+            {
+              "speaker_id": "NPC-03",
+              "text": "예산을 설득할 때 도움이 되겠어."
+            }
+          ],
+          "result": {
+            "stats": {
+              "charm": -2
+            },
+            "main_progress": true,
+            "access": true,
+            "resolution": "paid"
+          },
+          "condition": {
+            "coin_at_least": {
+              "charm": 2
+            }
+          },
+          "on_insufficient_coins": "COIN_SHORTAGE"
+        }
+      ],
+      "insufficient_coins_branch_id": "COIN_SHORTAGE",
+      "coin_shortage_trigger": "balance_of_selected_coin_below_required",
+      "price": {
+        "base_fee": 2,
+        "negotiated_fee": 1,
+        "accepted_coin_ids": [
+          "strength",
+          "speed",
+          "intelligence",
+          "charm"
+        ]
+      },
+      "negotiation": {
+        "id": "NEGOTIATE",
+        "text": "가격 협상",
+        "available_before_coin_selection": true,
+        "once_per_encounter": true,
+        "discounted_fee": 1,
+        "routes": [
+          {
+            "id": "N_INT",
+            "text": "근거 제시",
+            "condition": {
+              "intelligence_at_least": 3
+            },
+            "player_dialogue": "갱목을 고치려면 계산할 머리도, 움직일 힘도 필요하죠. 비용을 줄일 방법이 없을까요?",
+            "success": {
+              "dialogue": [
+                {
+                  "speaker_id": "NPC-03",
+                  "text": "수리할 사람까지 못 움직이면 소용없지. 적게 받겠네."
+                }
+              ],
+              "payment_override": {
+                "amount": 1,
+                "apply_to": [
+                  "coin_at_least",
+                  "negative_stat_delta"
+                ],
+                "scope": "selected_coin_only"
+              },
+              "goto_coin_choice_id": "C1",
+              "set_flag": "NEGOTIATED_FEE"
+            },
+            "failure": {
+              "dialogue": [
+                {
+                  "speaker_id": "NPC-03",
+                  "text": "그 설명으로는 관리 장부를 설득하기 어렵겠군."
+                }
+              ],
+              "goto_coin_choice_id": "C1",
+              "payment_fee": 2
+            }
+          },
+          {
+            "id": "N_CHARM",
+            "text": "사정 호소",
+            "condition": {
+              "charm_at_least": 3
+            },
+            "player_dialogue": "제가 무너지지 않아야 이 갱목도 살필 수 있어요. 한 번만 봐주세요.",
+            "success": {
+              "dialogue": [
+                {
+                  "speaker_id": "NPC-03",
+                  "text": "음, 작업을 생각하는 태도는 괜찮군. 이번만 깎아 주지."
+                }
+              ],
+              "payment_override": {
+                "amount": 1,
+                "apply_to": [
+                  "coin_at_least",
+                  "negative_stat_delta"
+                ],
+                "scope": "selected_coin_only"
+              },
+              "goto_coin_choice_id": "C1",
+              "set_flag": "NEGOTIATED_FEE"
+            },
+            "failure": {
+              "dialogue": [
+                {
+                  "speaker_id": "NPC-03",
+                  "text": "그 설명으로는 관리 장부를 설득하기 어렵겠군."
+                }
+              ],
+              "goto_coin_choice_id": "C1",
+              "payment_fee": 2
+            }
+          },
+          {
+            "id": "N_CANCEL",
+            "text": "원래대로 지불",
+            "goto_coin_choice_id": "C1"
+          }
+        ],
+        "on_no_affordable_coin": "COIN_SHORTAGE"
+      },
+      "dialogue": []
+    },
+    {
+      "id": "C2",
+      "text": "미니게임",
+      "dialogue": [
+        {
+          "speaker_id": "NPC-03",
+          "text": "코인 대신 결투라? 좋아. 네가 이기면 이번 대가는 받지 않겠어."
+        }
+      ],
+      "mini_game": {
+        "id": "MAIN-02_DUEL",
+        "type": "duel",
+        "implementation": "existing_duel_system",
+        "rules_ref": "00_implementation_rules.json#minigames.duel",
+        "winner_condition": "player_wins_existing_duel",
+        "loser_condition": "player_loses_existing_duel",
+        "no_additional_coin_cost": true,
+        "on_failure": "return_to_four_choices",
+        "success": {
+          "dialogue": [
+            {
+              "speaker_id": "NPC-03",
+              "text": "내가 졌군. 약속은 약속이지. 이번 건은 네 승리로 인정하겠어."
+            }
+          ],
+          "result": {
+            "stats": {},
+            "resolution": "won_minigame",
+            "retry": false,
+            "main_progress": true,
+            "access": true
+          }
+        },
+        "failure": {
+          "dialogue": [
+            {
+              "speaker_id": "NPC-03",
+              "text": "아직 실력이 부족하군. 다른 방법을 고르거나 다시 도전해."
+            }
+          ],
+          "result": {
+            "stats": {},
+            "retry": true,
+            "main_progress": false,
+            "access": false
+          }
+        }
+      }
+    },
+    {
+      "id": "C3",
+      "text": "요구사항 들어주기",
+      "dialogue": [
+        {
+          "speaker_id": "NPC-03",
+          "text": "조심하게. 부러지는 소리는 대개 마지막에야 들리니까."
+        }
+      ],
+      "requirement": {
+        "type": "stat_probability",
+        "task": "위험한 갱목에 붉은 표식을 달아 주게.",
+        "required_stats": {
+          "primary": "intelligence",
+          "secondary": "strength"
+        },
+        "check": {
+          "rules_ref": "00_implementation_rules.json#requirement_probability",
+          "difficulty": 3,
+          "read_current_stats_at_attempt": true,
+          "roll_once_per_attempt": true
+        },
+        "duration_seconds": 39,
+        "collector_continues": true,
+        "stat_growth_paused": true,
+        "success": {
+          "dialogue": [
+            {
+              "speaker_id": "NPC-03",
+              "text": "표시가 끝났군. 사람부터 빼면 보수할 시간을 벌 수 있겠어."
+            }
+          ],
+          "result": {
+            "stats": {
+              "strength": -2,
+              "speed": -1,
+              "intelligence": 1,
+              "charm": 1
+            },
+            "main_progress": true,
+            "access": true,
+            "resolution": "worked"
+          }
+        },
+        "failure": {
+          "dialogue": [
+            {
+              "speaker_id": "NPC-03",
+              "text": "한 곳을 놓쳤네. 다시 살펴보지 않으면 위험하겠어."
+            }
+          ],
+          "result": {
+            "stats": {
+              "strength": -3,
+              "speed": -1,
+              "charm": -1
+            },
+            "main_progress": false,
+            "access": false,
+            "retry": true
+          }
+        },
+        "story_prompt": "안전한 갱목이 왜 더 많은 힘보다 중요한지 설명해 보게.",
+        "npc_advice_on_success": [
+          {
+            "speaker_id": "NPC-03",
+            "text": "그래, 무너진 뒤엔 어떤 코인도 목숨을 돌려놓지 못하지."
+          }
+        ],
+        "npc_advice_on_failure": [
+          {
+            "speaker_id": "NPC-03",
+            "text": "그 설명으로는 관리 장부를 설득하기 어렵겠군."
+          }
+        ]
+      }
+    },
+    {
+      "id": "C4",
+      "text": "샛길로 가기",
+      "shortcut": {
+        "type": "log_only",
+        "enabled": false,
+        "log_level": "info",
+        "log_event": "SIDE_PATH_SELECTED_NOT_IMPLEMENTED",
+        "log_message": "MAIN-02: 샛길 선택됨. 아직 이동 구현 없음. 원래 선택지로 복귀.",
+        "movement": false,
+        "scene_transition": false,
+        "unlock": false,
+        "emit_npc_dialogue": false,
+        "return_to_choice_id": "ROOT_CHOICES"
+      },
+      "result": {
+        "stats": {},
+        "access": false,
+        "retry": true,
+        "main_progress": false
+      }
+    }
+  ],
+  "pet_on_complete": {
+    "paid": "MAIN-02: 낯선 이가 코인으로 약속을 이행했다. 금 간 갱목에 관한 판단이 남아 있다.",
+    "worked": "MAIN-02: 요구사항을 능력치 판정으로 완료했다는 소식을 펫이 전했다.",
+    "reasoned": "MAIN-02: 낯선 이가 위험과 책임의 기준을 따져 답했다. 금 간 갱목의 기록을 검토해 달라.",
+    "won_minigame": "MAIN-02: 코인 대신 미니게임에서 이겨 통행 대가를 면제받았다는 소식을 펫이 전했다.",
+    "persuaded": "MAIN-02: 낯선 사람이 판단을 제시했고, 현장 담당자가 이를 받아들였다."
+  },
+  "stat_change_policy": "clamp_at_zero",
+  "branches": {
+    "COIN_SHORTAGE": {
+      "trigger": {
+        "selected_coin_below_payment_amount": true
+      },
+      "dialogue": [
+        {
+          "speaker_id": "NPC-03",
+          "text": "지불이 어렵다면 검증부터 해 보겠나? 내 눈으로 확인하겠네."
+        },
+        {
+          "speaker_id": "NPC-03",
+          "text": "작업이 끝나면 판단을 다시 하겠어."
+        }
+      ],
+      "goto_choice_id": "ROOT_CHOICES",
+      "available_choices": [
+        "C1",
+        "C2",
+        "C3",
+        "C4"
+      ],
+      "note": "현재 통행세를 낼 수 없으면 미니게임, 요구사항, 샛길 로그를 선택할 수 있음"
+    }
+  },
+  "choice_order": [
+    "C1",
+    "C2",
+    "C3",
+    "C4"
+  ],
+  "choice_policy_ref": "00_implementation_rules.json#choice_policy"
+}
