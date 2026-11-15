@@ -6,15 +6,17 @@ using UnityEngine;
 
 internal sealed partial class MineAuthoredStory
 {
-    internal const int PackVersion = 3;
-    private const int CaptureChunkCount = 2;
+    internal const int PackVersion = 4;
     internal const float MinimumLocationGap = 12;
     private JObject packFlow, packPool, packIncoming;
     private JArray packChunks;
     private Dictionary<string, JObject> packNpcs;
     private Dictionary<string, JObject[]> packStories;
     private Dictionary<string, JObject> packVariants = new Dictionary<string, JObject>();
-    internal IEnumerable<string> PackMainOrder => packFlow["main_story_order"].Values<string>().Take(CaptureChunkCount);
+    internal bool IsShort { get; }
+    internal int? ShortLayoutSeed { get; set; }
+    internal static string ModeId(bool isShort) => isShort ? "Short" : "Full";
+    internal IEnumerable<string> PackMainOrder => packFlow["main_story_order"].Values<string>();
     internal string PackName(string id) => (string)packNpcs.GetValueOrDefault(id ?? "")?["name"] ?? id;
     internal bool IsPackNpc(string id) => id != null && packNpcs.ContainsKey(id);
     internal JObject PackIncoming(string id) => (JObject)packIncoming[id];
@@ -22,9 +24,10 @@ internal sealed partial class MineAuthoredStory
 
     private void LoadPack()
     {
-        packFlow = MineLearningStation.ReadContent("Stories/00_main_flow");
-        packPool = MineLearningStation.ReadContent("Stories/00_side_pool");
-        packIncoming = MineLearningStation.ReadContent("Stories/00_pet_incoming_dialogues");
+        string configuration = IsShort ? "ShortStories/" : "Stories/";
+        packFlow = MineLearningStation.ReadContent(configuration + "00_main_flow");
+        packPool = MineLearningStation.ReadContent(configuration + "00_side_pool");
+        packIncoming = MineLearningStation.ReadContent(configuration + "00_pet_incoming_dialogues");
         packChunks = (JArray)MineLearningStation.ReadContent("Relationships/청크_순서")["chunks"];
         packNpcs = MineLearningStation.ReadContent("Relationships/NPC_전체목록")["npcs"]
             .Cast<JObject>().ToDictionary(npc => (string)npc["npc_id"]);
@@ -40,7 +43,7 @@ internal sealed partial class MineAuthoredStory
     internal JObject PackStory(string id, int seed, string variant = null)
     {
         var candidates = packStories[id];
-        int picked = Pick(seed, 0, id, candidates.Length);
+        int picked = IsShort ? 0 : Pick(seed, 0, id, candidates.Length);
         if (variant == null) return candidates[picked];
         string folder = id.StartsWith("MAIN-", StringComparison.Ordinal) ? "CHUNK-" + id.Substring(5) : "SIDE_STORIES";
         string path = "AbilityVariants/" + folder + "/" + variant + "/" + id + "_V" + (picked + 1);
@@ -51,6 +54,7 @@ internal sealed partial class MineAuthoredStory
 
     private void ApplyPackLayout(TerrainData terrain, int seed, TerrainPrefabCatalog prefabs, MineNpcPlacement npcPlacement)
     {
+        seed = ShortLayoutSeed ?? seed;
         var places = new List<PlaceData>();
         int chunkCount = PackMainOrder.Count();
         Vector3[] spawnPoints = npcPlacement?.LocalStorySpawnPoints() ?? new[]
@@ -78,21 +82,24 @@ internal sealed partial class MineAuthoredStory
             var mainCast = packNpcs.Values.Where(npc => (string)npc["fixed_chunk"] == chunkId &&
                     (string)npc["fixed_location_id"] == mainLocation)
                 .Select(npc => (string)npc["npc_id"]).Prepend(mainNpc).Distinct().ToArray();
-            var pickedStories = sideStories.OrderBy(id => MineChapterSettings.Roll(seed, index, "story:" + id)).Take(3).ToArray();
+            var eligible = IsShort ? packPool["eligible_story_ids_by_chunk"][chunkId].Values<string>() : sideStories;
+            var pickedStories = eligible.OrderBy(id => MineChapterSettings.Roll(seed, index, "story:" + id)).Take(3).ToArray();
             var pickedNpcs = sideNpcs.Except(mainCast)
                 .OrderBy(id => MineChapterSettings.Roll(seed, index, "npc:" + id)).Take(3).ToArray();
             int sideCount = 1 + Pick(seed, index, "side-count", 2);
-            var occupiedSideSlots = Enumerable.Range(0, 3)
+            var occupiedSideSlots = Enumerable.Range(0, pickedStories.Length)
                 .OrderBy(slot => MineChapterSettings.Roll(seed, index, "side-slot:" + slot))
                 .Take(sideCount).ToHashSet();
-            for (int side = 0; side < pickedStories.Length; side++)
+            for (int side = 0; side < pickedNpcs.Length; side++)
             {
                 string npc = pickedNpcs[side];
-                string storyId = pickedStories[side];
                 string locationId = (string)packNpcs[npc]["fixed_location_id"];
-                stories.Add(occupiedSideSlots.Contains(side)
-                    ? (storyId, storyId + "@" + chunkId, npc, locationId)
-                    : (null, $"{chunkId}-place-{side + 1}", null, locationId));
+                if (occupiedSideSlots.Contains(side))
+                {
+                    string storyId = pickedStories[side];
+                    stories.Add((storyId, storyId + "@" + chunkId, npc, locationId));
+                }
+                else stories.Add((null, $"{chunkId}-place-{side + 1}", null, locationId));
             }
             var locations = stories.Select(story =>
             {
@@ -125,6 +132,17 @@ internal sealed partial class MineAuthoredStory
                         point.z + bounds.center.z);
                     depth.x = Mathf.Min(depth.x, point.z - radius);
                     depth.y = Mathf.Max(depth.y, point.z + radius);
+                }
+                for (int actor = 0; actor < actorList.Length; actor++)
+                {
+                    int partner = actor ^ 1;
+                    Vector3 target = partner < actorList.Length ? actorList[partner].position : roomBounds.center;
+                    Vector3 direction = target - actorList[actor].position;
+                    direction.y = 0;
+                    if (direction.sqrMagnitude < .001f) direction = Vector3.back;
+                    float turn = (float)MineChapterSettings.Roll(seed, index, story.Id + ":idle:" + actor);
+                    actorList[actor].idleRotation = Quaternion.LookRotation(direction) *
+                        Quaternion.Euler(0f, Mathf.Lerp(-12f, 12f, turn), 0f);
                 }
                 return (Story: story, Actors: actorList, Depth: depth, Visual: visual);
             }).ToList();

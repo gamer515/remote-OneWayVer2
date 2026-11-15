@@ -12,6 +12,7 @@ public sealed partial class MineLearningStation
     private readonly Dictionary<string, string> previousBookIds = new Dictionary<string, string>(StringComparer.Ordinal);
     private const string FirstComboBook = "BK001", SecondComboBook = "BK002";
     private JObject[] readingCombos = Array.Empty<JObject>();
+    private bool readingDeferred;
 
     internal static JObject ReadContent(string path) =>
         JObject.Parse(Resources.Load<TextAsset>(AuthoredContent + path).text);
@@ -63,9 +64,16 @@ public sealed partial class MineLearningStation
         return job.bookId;
     }
 
-    internal JObject PendingReading => progress?.pendingReading?.Count > 0 &&
+    internal JObject PendingReading => !readingDeferred && progress?.pendingReading?.Count > 0 &&
         readingBooks.TryGetValue(progress.pendingReading[0], out var book) ? book : null;
-    internal string ReadingResult => progress?.readingResult;
+    internal string ReadingResult => string.IsNullOrWhiteSpace(progress?.readingResult) ? null : progress.readingResult;
+
+    internal bool ResumeDeferredReading()
+    {
+        if (!readingDeferred) return false;
+        readingDeferred = false;
+        return PendingReading != null;
+    }
 
     internal void SelectReadingChoice(int index)
     {

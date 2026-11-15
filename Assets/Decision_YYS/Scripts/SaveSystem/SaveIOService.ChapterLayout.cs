@@ -259,6 +259,7 @@ public partial class SaveIOService
         if(existing!=null)
         {
             combined.finalized=queue.finalized;
+            combined.authoredStoryPackMode=queue.authoredStoryPackMode??combined.authoredStoryPackMode;
             foreach(var job in queue.jobs) {combined.jobs.RemoveAll(j=>j.jobId==job.jobId);combined.jobs.Add(job);}
         }
         WriteJsonAtomically(QueuePath(queue.sourceRun),combined);

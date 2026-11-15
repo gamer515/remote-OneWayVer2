@@ -6,6 +6,7 @@ using UnityEngine;
 public sealed class TutorialMiniGameController : MonoBehaviour
 {
     [SerializeField] private Transform miniGameBoard;
+    [SerializeField] private Collider duelBoardFloor;
     [SerializeField] private GameObject knightTargetPrefab;
     [SerializeField] private GameObject goldCoinPrefab;
     [SerializeField, Min(0.01f)]
@@ -40,7 +41,7 @@ public sealed class TutorialMiniGameController : MonoBehaviour
     /// <summary>복제 기사가 없어도 제작용 기즈모가 참조할 고정 생성 배치입니다.</summary>
     public Transform KnightSpawnPose => knightSpawnPose;
     /// <summary>손 생성 전 측정한 보드 윗면 높이. 대련 중 손/기사 Renderer 때문에 높이가 바뀌지 않습니다.</summary>
-    public float BoardSurfaceY => miniGameBoard == null ? float.NegativeInfinity : CurrentKnightTarget != null ? duelBoardSurfaceY : GetBoardCenter().y;
+    public float BoardSurfaceY => CurrentKnightTarget != null ? duelBoardSurfaceY : GetDuelFloorHeight();
     // 복제본의 생성과 초기 설정이 완료되었을 때 전달합니다.
     public event Action<GameObject> KnightSpawned;
     public bool IsReady => miniGameBoard != null && knightTargetPrefab != null &&
@@ -57,6 +58,7 @@ public sealed class TutorialMiniGameController : MonoBehaviour
 
         EnsureRoot();
         Vector3 center = GetBoardCenter();
+        center.y = GetDuelFloorHeight();
         duelBoardSurfaceY = center.y;
         CurrentKnightTarget = SpawnKnight(center);
         KnightSpawned?.Invoke(CurrentKnightTarget);
@@ -222,6 +224,10 @@ public sealed class TutorialMiniGameController : MonoBehaviour
         return center;
     }
 
+    private float GetDuelFloorHeight() => duelBoardFloor != null && duelBoardFloor.enabled &&
+        duelBoardFloor.gameObject.activeInHierarchy ? duelBoardFloor.bounds.max.y :
+        miniGameBoard != null ? GetBoardCenter().y : float.NegativeInfinity;
+
     private Bounds GetBoardBounds()
     {
         Renderer[] renderers = miniGameBoard.GetComponentsInChildren<Renderer>(true);
@@ -258,8 +264,7 @@ public sealed class TutorialMiniGameController : MonoBehaviour
         {
             Bounds bounds = renderers[0].bounds;
             for (int i = 1; i < renderers.Length; i++) bounds.Encapsulate(renderers[i].bounds);
-            float boardSurfaceY = GetBoardCenter().y;
-            piece.transform.position += Vector3.up * (boardSurfaceY + 0.04f - bounds.min.y);
+            piece.transform.position += Vector3.up * (boardCenter.y + 0.04f - bounds.min.y);
         }
 
         return piece;

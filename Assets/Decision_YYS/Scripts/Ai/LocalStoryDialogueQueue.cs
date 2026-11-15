@@ -35,6 +35,7 @@ using UnityEngine;
 {
     public int sourceRun, targetRun;
     public bool finalized;
+    public string authoredStoryPackMode;
     public List<LocalStoryDialogueJob> jobs=new List<LocalStoryDialogueJob>();
 }
 
@@ -43,17 +44,21 @@ public static class LocalStoryDialogueQueue
 {
     internal static string AuthoredJobId(string storyPath, string npcId) => storyPath + "|" + npcId;
 
-    private static void RecordAuthoredStories(LocalStoryDialogueQueueData queue, IEnumerable<PlayedEncounterCardRecord> played)
+    private static void RecordAuthoredStories(LocalStoryDialogueQueueData queue, GuideProgress progress)
     {
+        var played = progress?.runHistory;
         if (played == null) return;
+        string mode = MineAuthoredStory.ModeId(progress.authoredMine?.shortStoryPack == true);
         var people = MineLearningStation.ReadContent("Relationships/NPC_전체목록")["npcs"]
             .ToDictionary(npc => (string)npc["npc_id"]);
         foreach (var record in played)
         {
             var card = record?.card;
             if (string.IsNullOrEmpty(card?.authoredLinePath) || string.IsNullOrEmpty(card.authoredOriginalText) ||
+                (!string.IsNullOrEmpty(card.authoredStoryPackMode) && card.authoredStoryPackMode != mode) ||
                 string.IsNullOrEmpty(card.authoredNpcId) || !people.TryGetValue(card.authoredNpcId, out var npc) ||
                 record.encounterPath?.StartsWith(MineAuthoredStory.Prefix, StringComparison.Ordinal) != true) continue;
+            queue.authoredStoryPackMode = mode;
             string key = AuthoredJobId(record.encounterPath, card.authoredNpcId);
             var job = queue.jobs.FirstOrDefault(candidate => candidate.jobId == key);
             if (job == null)
@@ -112,7 +117,7 @@ public static class LocalStoryDialogueQueue
 
         var queue = Load(store, run);
         queue ??= new LocalStoryDialogueQueueData { sourceRun = run, targetRun = run + 1 };
-        RecordAuthoredStories(queue, progress.guideProgress?.runHistory);
+        RecordAuthoredStories(queue, progress.guideProgress);
         if (queue.jobs.Count == 0) return;
         foreach (var job in queue.jobs.Where(job => !job.authoredPack && string.IsNullOrEmpty(job.sourceHash) &&
             (job.status == "Pending" || job.status == "Generating")))

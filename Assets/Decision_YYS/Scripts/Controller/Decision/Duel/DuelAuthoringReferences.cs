@@ -26,6 +26,8 @@ public sealed class DuelAuthoringReferences : MonoBehaviour
     [Header("Scene Start Poses (optional)")]
     [Tooltip("씬에 직접 배치한 플레이어 HandRoot입니다. 연결하면 생성 손의 시작 위치/회전/월드 크기를 이 배치에서 가져옵니다. Play에서는 원본을 숨겨 중복을 막습니다.")]
     [SerializeField] private Transform playerHandStartPose;
+    [Tooltip("결투 시작 후 잡기 전까지 표시하는 플레이어 검의 월드 위치와 회전입니다.")]
+    [SerializeField] private Transform playerSwordRestPose;
     [Tooltip("씬에 직접 배치한 NPC NpcHandRoot입니다. 연결하면 시작 자세를 그대로 복사합니다. 손을 잡기 전에는 기존 NPC Z 보정/궤적 이동보다 이 자세를 우선합니다.")]
     [SerializeField] private Transform npcHandStartPose;
 
@@ -46,6 +48,11 @@ public sealed class DuelAuthoringReferences : MonoBehaviour
 
     private GameObject spawnedPlayerHand;
     private GameObject spawnedNpcHand;
+    private Transform restingSword;
+    private Transform swordGrip;
+    private Vector3 swordGripPosition;
+    private Quaternion swordGripRotation;
+    private Vector3 swordGripScale;
     private Renderer[] hiddenHandRenderers = System.Array.Empty<Renderer>();
 
     public GameObject KnightTarget { get; private set; }
@@ -86,6 +93,7 @@ public sealed class DuelAuthoringReferences : MonoBehaviour
             spawnedNpcHand.transform.localRotation = Quaternion.Euler(npcHandBaseRotation);
 
         ApplyStartPose(spawnedPlayerHand, playerHandStartPose);
+        PlaceRestingSword();
         ApplyStartPose(spawnedNpcHand, npcHandStartPose);
         var hidden = new System.Collections.Generic.List<Renderer>();
         foreach (var hand in new[] { spawnedPlayerHand, spawnedNpcHand })
@@ -112,9 +120,30 @@ public sealed class DuelAuthoringReferences : MonoBehaviour
     public void ApplyPlayerReadyPose()
     {
         if (spawnedPlayerHand == null) return;
+        if (restingSword != null && swordGrip != null)
+        {
+            restingSword.SetParent(swordGrip, false);
+            restingSword.SetLocalPositionAndRotation(swordGripPosition, swordGripRotation);
+            restingSword.localScale = swordGripScale;
+        }
+        restingSword = swordGrip = null;
         ApplyStartPose(spawnedPlayerHand, playerHandReadyPose);
         // 초기 생성은 눕힌 자세를 유지합니다. 잡기 회전은 선택 참조/자식 클립에 의존하지 않습니다.
         spawnedPlayerHand.transform.rotation = Quaternion.Euler(0f, -74f, -90f);
+    }
+
+    private void PlaceRestingSword()
+    {
+        if (spawnedPlayerHand == null || playerSwordRestPose == null) return;
+        var blade = spawnedPlayerHand.GetComponentInChildren<DuelBladeHitbox>(true);
+        if (blade == null) return;
+        restingSword = blade.transform;
+        swordGrip = restingSword.parent;
+        swordGripPosition = restingSword.localPosition;
+        swordGripRotation = restingSword.localRotation;
+        swordGripScale = restingSword.localScale;
+        restingSword.SetParent(spawnedPlayerHand.transform, true);
+        restingSword.SetPositionAndRotation(playerSwordRestPose.position, playerSwordRestPose.rotation);
     }
 
     private void ApplyStartPose(GameObject instance, Transform pose)
@@ -159,6 +188,7 @@ public sealed class DuelAuthoringReferences : MonoBehaviour
     private void CleanupSpawnedHands(bool detachFromParent = true)
     {
         hiddenHandRenderers = System.Array.Empty<Renderer>();
+        restingSword = swordGrip = null;
         // Destroy는 프레임 끝에 실행되므로, 재시작 직후 보드 Bounds에 이전 손
         // Renderer가 포함되지 않도록 앵커에서 먼저 분리합니다.
         if (spawnedPlayerHand != null)

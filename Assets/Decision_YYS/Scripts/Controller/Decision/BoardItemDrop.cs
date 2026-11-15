@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>Projects pointer movement onto the boards and releases items into board physics.</summary>
@@ -23,8 +24,11 @@ public static class BoardItemDrop
 
     public static Vector3 PositionAbove(Collider surface, Transform item, Vector3 point, float lift)
     {
-        Bounds floor = surface.bounds;
-        Bounds shape = ItemBounds(item);
+        return PositionAbove(surface.bounds, item, ItemBounds(item), point, lift);
+    }
+
+    private static Vector3 PositionAbove(Bounds floor, Transform item, Bounds shape, Vector3 point, float lift)
+    {
         Vector3 centerOffset = shape.center - item.position;
         float insetX = Mathf.Min(shape.extents.x + .025f, floor.extents.x);
         float insetZ = Mathf.Min(shape.extents.z + .025f, floor.extents.z);
@@ -32,6 +36,40 @@ public static class BoardItemDrop
             Mathf.Clamp(point.x + centerOffset.x, floor.min.x + insetX, floor.max.x - insetX) - centerOffset.x,
             floor.max.y + item.position.y - shape.min.y + lift,
             Mathf.Clamp(point.z + centerOffset.z, floor.min.z + insetZ, floor.max.z - insetZ) - centerOffset.z);
+    }
+
+    public static bool TryFindClearPosition(Collider surface, Transform item, Vector3 point, float lift,
+        IEnumerable<Bounds> obstacles, out Vector3 position)
+    {
+        Bounds floor = surface.bounds;
+        Bounds shape = ItemBounds(item);
+        Vector3 origin = PositionAbove(floor, item, shape, point, lift);
+        var blocked = new List<Bounds>(obstacles);
+        bool Clear(Vector3 candidate)
+        {
+            Vector3 center = shape.center + candidate - item.position;
+            foreach (var other in blocked)
+                if (Mathf.Abs(center.x - other.center.x) < shape.extents.x + other.extents.x + .04f &&
+                    Mathf.Abs(center.z - other.center.z) < shape.extents.z + other.extents.z + .04f)
+                    return false;
+            return true;
+        }
+
+        position = origin;
+        if (Clear(origin)) return true;
+        float step = Mathf.Max(.12f, Mathf.Min(shape.size.x, shape.size.z) * .5f);
+        int rings = Mathf.Min(24, Mathf.CeilToInt(Mathf.Max(floor.size.x, floor.size.z) / step));
+        for (int ring = 1; ring <= rings; ring++)
+            for (int sample = 0; sample < 12; sample++)
+            {
+                float angle = sample * Mathf.PI / 6f;
+                Vector3 offset = new Vector3(Mathf.Cos(angle), 0, Mathf.Sin(angle)) * (step * ring);
+                Vector3 candidate = PositionAbove(floor, item, shape, origin + offset, lift);
+                if (!Clear(candidate)) continue;
+                position = candidate;
+                return true;
+            }
+        return false;
     }
 
     public static bool IsOnSurface(Collider surface, Transform item)

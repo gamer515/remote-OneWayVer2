@@ -20,6 +20,7 @@ public sealed class FloatingDialogueView : MonoBehaviour
     private bool showingChoices;
     private TextMeshProUGUI overflowText;
     private TextMeshProUGUI storyHeading, storyNotice;
+    private TextMeshProUGUI taxCriteria;
     private TextMeshProUGUI choiceHint;
     private System.Func<int, string> getChoiceHint;
     private string clueTarget;
@@ -101,6 +102,23 @@ public sealed class FloatingDialogueView : MonoBehaviour
     public void SetStoryHeading(string text) => SetStoryLabel(ref storyHeading, "StoryHeading", text, .95f, 19f);
     public void SetStoryNotice(string text) => SetStoryLabel(ref storyNotice, "StoryNotice", text, .045f, 15f);
 
+    internal void SetTaxCriteria(string text)
+    {
+        if (taxCriteria == null && string.IsNullOrEmpty(text)) return;
+        if (taxCriteria == null)
+        {
+            taxCriteria = Instantiate(playerText, playerArea);
+            taxCriteria.name = "TaxPassCriteria";
+            taxCriteria.alignment = TextAlignmentOptions.Center;
+            taxCriteria.color = new Color(1f, .85f, .57f);
+            taxCriteria.fontSize = Mathf.Max(12f, fontSize - 1f);
+            taxCriteria.raycastTarget = false;
+        }
+        taxCriteria.text = text;
+        taxCriteria.gameObject.SetActive(!string.IsNullOrEmpty(text));
+        if (playerArea.gameObject.activeSelf) FitPanel();
+    }
+
     private void SetStoryLabel(ref TextMeshProUGUI label, string objectName, string text, float height, float size)
     {
         if (label == null && string.IsNullOrEmpty(text)) return;
@@ -148,6 +166,7 @@ public sealed class FloatingDialogueView : MonoBehaviour
         if (visible) return;
         SetStoryHeading(null);
         SetStoryNotice(null);
+        SetTaxCriteria(null);
         speech = draft = null;
         showingChoices = false;
         if (overflowText != null) overflowText.gameObject.SetActive(false);
@@ -212,14 +231,28 @@ public sealed class FloatingDialogueView : MonoBehaviour
         float rightPadding = overflowText != null && overflowText.gameObject.activeSelf ? 46 : 12;
         float horizontalPadding = 12 + rightPadding;
         float naturalWidth = playerText.GetPreferredValues(playerText.text, Mathf.Infinity, Mathf.Infinity).x;
+        bool hasCriteria = taxCriteria != null && taxCriteria.gameObject.activeSelf;
+        if (hasCriteria) naturalWidth = Mathf.Max(naturalWidth, taxCriteria.GetPreferredValues().x);
         float minimumWidth = showingChoices ? viewportWidth * choiceMinimumWidthFraction : 120;
         float width = Mathf.Min(maximumWidth, Mathf.Max(minimumWidth, naturalWidth + horizontalPadding));
-        float height = Mathf.Max(44, playerText.GetPreferredValues(playerText.text, Mathf.Max(1, width - horizontalPadding), Mathf.Infinity).y + 20);
+        float textWidth = Mathf.Max(1, width - horizontalPadding);
+        float criteriaHeight = hasCriteria ? taxCriteria.GetPreferredValues(taxCriteria.text, textWidth, Mathf.Infinity).y : 0f;
+        float criteriaOffset = hasCriteria ? criteriaHeight + 9f : 0f;
+        float height = Mathf.Max(44, playerText.GetPreferredValues(playerText.text, textWidth, Mathf.Infinity).y + 20) +
+            criteriaOffset;
         playerArea.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, width);
         playerArea.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, height);
         playerText.rectTransform.anchorMin = Vector2.zero;
         playerText.rectTransform.anchorMax = Vector2.one;
-        playerText.rectTransform.offsetMin = new Vector2(12, 10);
+        playerText.rectTransform.offsetMin = new Vector2(12, 10 + criteriaOffset);
         playerText.rectTransform.offsetMax = new Vector2(-rightPadding, -10);
+        if (hasCriteria)
+        {
+            var rect = taxCriteria.rectTransform;
+            rect.anchorMin = Vector2.zero;
+            rect.anchorMax = Vector2.right;
+            rect.offsetMin = new Vector2(12, 10);
+            rect.offsetMax = new Vector2(-rightPadding, 10 + criteriaHeight);
+        }
     }
 }

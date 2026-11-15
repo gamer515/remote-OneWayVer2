@@ -143,6 +143,10 @@ public class NpcDuelStateMachine : MonoBehaviour
     private bool knightIdleAvailable;
     private KnightPose knightRootPose;
     private Collider knightHitBody;
+    private SkinnedMeshRenderer[] knightSkins;
+    private Mesh knightGroundMesh;
+    private readonly System.Collections.Generic.List<Vector3> knightGroundVertices = new();
+    private float knightFloorY;
     private readonly System.Collections.Generic.List<GameObject> bloodEffects = new System.Collections.Generic.List<GameObject>();
     public bool HasPendingHitEffects => bloodEffects.Exists(effect => effect != null && HasLivingParticles(effect));
     private struct KnightPose
@@ -150,6 +154,7 @@ public class NpcDuelStateMachine : MonoBehaviour
         public Transform target;
         public Vector3 position, scale;
         public Quaternion rotation;
+        public bool plantedLeg;
     }
 
     public void Begin(DuelAuthoringReferences references)
@@ -230,6 +235,9 @@ public class NpcDuelStateMachine : MonoBehaviour
         knightIdleAvailable = false;
         knightHitBody = null;
         knightRootPose = default;
+        knightSkins = null;
+        if (knightGroundMesh != null) Destroy(knightGroundMesh);
+        knightGroundMesh = null;
         if (handAnimator != null) handAnimator.speed = animatorPlaybackSpeed;
         npcBlade?.SetLiveTrail(false); playerBlade?.SetLiveTrail(false);
         npcBlade?.SetMotionActive(false); playerBlade?.SetMotionActive(false);
@@ -525,17 +533,24 @@ public class NpcDuelStateMachine : MonoBehaviour
         var root = knight.transform;
         knightRootPose = new KnightPose { target = root, position = root.localPosition, rotation = root.localRotation, scale = root.localScale };
         knightHitBody = knight.GetComponent<Collider>();
+        knightFloorY = roundBridge != null ? roundBridge.BoardSurfaceY : float.NegativeInfinity;
+        if (float.IsFinite(knightFloorY))
+        {
+            knightSkins = System.Array.FindAll(knight.GetComponentsInChildren<SkinnedMeshRenderer>(),
+                skin => skin.enabled && !skin.forceRenderingOff && skin.sharedMesh != null);
+            if (knightSkins.Length > 0) knightGroundMesh = new Mesh { name = "Duel knight ground sample" };
+        }
         knightIdleAvailable = knightAnimator.HasState(0, Animator.StringToHash(KnightIdleState));
         if (!knightIdleAvailable) Debug.LogWarning($"기사 Idle State '{KnightIdleState}'를 Animator에서 확인하세요.", this);
         StartKnightIdle();
     }
-    private void StartKnightIdle()
+    private void StartKnightIdle(bool recoveringFromHit = false)
     {
         if (!knightIdleAvailable || knightAnimator == null) return;
         knightAnimator.enabled = true;
         knightAnimator.applyRootMotion = false;
         knightAnimator.speed = knightAnimatorSpeed > 0f ? knightAnimatorSpeed : 1f;
-        if (knightAnimator.GetComponent<KnightPresentation>() == null)
+        if (recoveringFromHit || knightAnimator.GetComponent<KnightPresentation>() == null)
             knightAnimator.Play(KnightIdleState, 0, 0f);
         else if (!knightAnimator.GetCurrentAnimatorStateInfo(0).IsName(KnightIdleState) &&
                  !(knightAnimator.IsInTransition(0) && knightAnimator.GetNextAnimatorStateInfo(0).IsName(KnightIdleState)))
@@ -548,6 +563,35 @@ public class NpcDuelStateMachine : MonoBehaviour
         if (knightRootPose.target == null) return;
         knightRootPose.target.SetLocalPositionAndRotation(knightRootPose.position, knightRootPose.rotation);
         knightRootPose.target.localScale = knightRootPose.scale;
+        if (!knightHitPlaying || knightRestPose == null) return;
+        // 기존 피격 클립의 절대 관절 위치는 결투용 Humanoid 리그의 위치와 다릅니다.
+        // 상체 회전으로 피격을 표현하고, 다리와 발은 피격 직전의 접지 자세를 유지합니다.
+        foreach (var pose in knightRestPose)
+        {
+            if (pose.target == null || pose.target == knightRootPose.target) continue;
+            pose.target.localPosition = pose.position;
+            pose.target.localScale = pose.scale;
+            if (pose.plantedLeg) pose.target.localRotation = pose.rotation;
+        }
+        knightRootPose.target.position += Vector3.up * KnightGroundLift();
+    }
+
+    private float KnightGroundLift()
+    {
+        if (knightGroundMesh == null) return 0f;
+        float bottom = float.PositiveInfinity;
+        // 발 본은 부츠 끝보다 높습니다. 보드와 접하는 실제 스키닝 정점을 월드 높이로 비교합니다.
+        foreach (var skin in knightSkins)
+        {
+            if (skin == null || !skin.enabled || !skin.gameObject.activeInHierarchy || skin.forceRenderingOff) continue;
+            skin.BakeMesh(knightGroundMesh);
+            knightGroundMesh.GetVertices(knightGroundVertices);
+            Matrix4x4 localToWorld = skin.localToWorldMatrix;
+            foreach (Vector3 vertex in knightGroundVertices)
+                bottom = Mathf.Min(bottom, localToWorld.MultiplyPoint3x4(vertex).y);
+        }
+        const float clearance = 0.01f;
+        return Mathf.Max(0f, knightFloorY + clearance - bottom);
     }
     /// <summary>복제 기사 피격 모션만 재생합니다. 공격당 한 번이며, 원본 미리보기에는 반응하지 않습니다. 추후 실제 피격 판정에서도 호출할 수 있습니다.</summary>
     public void ReceiveNpcHit()
@@ -564,10 +608,19 @@ public class NpcDuelStateMachine : MonoBehaviour
             return;
         }
         var targets = knightAnimator.GetComponentsInChildren<Transform>(true);
+        var plantedLegs = new System.Collections.Generic.HashSet<Transform>();
+        if (knightAnimator.isHuman)
+            foreach (var bone in new[] { HumanBodyBones.LeftUpperLeg, HumanBodyBones.RightUpperLeg,
+                HumanBodyBones.LeftLowerLeg, HumanBodyBones.RightLowerLeg, HumanBodyBones.LeftFoot,
+                HumanBodyBones.RightFoot, HumanBodyBones.LeftToes, HumanBodyBones.RightToes })
+            {
+                var joint = knightAnimator.GetBoneTransform(bone);
+                if (joint != null) plantedLegs.Add(joint);
+            }
         knightRestPose = new KnightPose[targets.Length];
         for (int i = 0; i < targets.Length; i++)
             knightRestPose[i] = new KnightPose { target = targets[i], position = targets[i].localPosition,
-                rotation = targets[i].localRotation, scale = targets[i].localScale };
+                rotation = targets[i].localRotation, scale = targets[i].localScale, plantedLeg = plantedLegs.Contains(targets[i]) };
         knightHitPlayed = knightHitPlaying = true; knightHitElapsed = 0f;
         knightAnimator.applyRootMotion = false;
         knightAnimator.speed = knightAnimatorSpeed > 0f ? knightAnimatorSpeed : 1f;
@@ -615,7 +668,7 @@ public class NpcDuelStateMachine : MonoBehaviour
                     pose.target.localScale = pose.scale;
                 }
         knightRestPose = null;
-        StartKnightIdle();
+        StartKnightIdle(recoveringFromHit: true);
     }
     private void PlayState(string name)
     {

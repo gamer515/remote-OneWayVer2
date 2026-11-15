@@ -317,11 +317,11 @@ internal static class ChapterWorkbookContent
         }
         if (rules == null || books == null || rules.skills == null || rules.combos == null ||
             rules.intelligence == null || rules.capacities == null ||
-            rules.enduranceThresholds == null || rules.dailyLimits == null ||
+            rules.dailyIntelligenceThresholds == null || rules.dailyLimits == null ||
             rules.startingStock < 0 || rules.refillStock <= 0 || rules.refillBase <= 0 || rules.refillIncrease < 0 ||
-            rules.decayCoins < 0 || rules.healthPerEndurance <= 0 || !Positive(rules.daySeconds) ||
-            !Positive(rules.deliverySeconds) || !Ordered(rules.enduranceThresholds) ||
-            rules.dailyLimits.Length != rules.enduranceThresholds.Length || rules.dailyLimits.Any(value => value <= 0) ||
+            rules.decayCoins < 0 || !Positive(rules.daySeconds) ||
+            !Positive(rules.deliverySeconds) || !Ordered(rules.dailyIntelligenceThresholds) ||
+            rules.dailyLimits.Length != rules.dailyIntelligenceThresholds.Length || rules.dailyLimits.Any(value => value <= 0) ||
             !Ordered(rules.capacities.Select(step => step.knowledgeCoins)) ||
             rules.capacities.Any(step => step.simultaneous < 1 || step.waiting < 0) ||
             !Ordered(rules.intelligence.Select(tier => tier.threshold)) ||

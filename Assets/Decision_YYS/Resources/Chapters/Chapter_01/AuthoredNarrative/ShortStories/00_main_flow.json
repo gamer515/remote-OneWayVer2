@@ -1,0 +1,74 @@
+{
+  "main_story_order": [
+    "MAIN-01",
+    "MAIN-02"
+  ],
+  "pet_routes": {
+    "MAIN-01": {
+      "to_story_id": "MAIN-02",
+      "npc_ids": [
+        "NPC-02",
+        "NPC-03"
+      ]
+    }
+  },
+  "boss_unlock": {
+    "enabled": false,
+    "after_story_id": null,
+    "chunk_id": null,
+    "boss_story_defined": false
+  },
+  "version_selection": "fixed_V1_only",
+  "side_story_rule": {
+    "selection": "random",
+    "scope": "current_chunk_only",
+    "pool_file": "00_side_pool.json",
+    "version_policy": "fixed_V1_only",
+    "encounter": "optional_when_matching_npc_is_interacted_with",
+    "main_sequence_unchanged": true,
+    "side_completion_required_for_boss": false
+  },
+  "fallback_route": "coin_option.on_insufficient_coins -> story.branches.COIN_SHORTAGE -> ROOT_CHOICES",
+  "initial_stats": {
+    "strength": 5,
+    "speed": 5,
+    "intelligence": 5,
+    "charm": 5
+  },
+  "coin_balance_rule": {
+    "main_fee_by_chunk": {
+      "CHUNK-01": 2,
+      "CHUNK-02": 2
+    },
+    "side_fee": {
+      "CHUNK-01_to_CHUNK-02": 2
+    },
+    "payment_menu": "coins_or_NEGOTIATE",
+    "negotiated_fee": "read coin_payment_choice.negotiation success.payment_override.amount",
+    "payment_override_behavior": "replaces both selected coin_at_least condition and negative stat cost of selected coin payment; retains its NPC response and other rewards",
+    "negotiation_attempts_per_encounter": 1,
+    "on_negotiation_failure": "regular coin price remains available; mini-game, persuasive waiver, alternative task and leave also stay available",
+    "insufficient_coins": "COIN_SHORTAGE branch F1/F2/F3/F4; F2 includes optional discount request",
+    "base_fee_zero_allowed": false,
+    "stats_never_negative": true
+  },
+  "choice_policy_ref": "00_implementation_rules.json#choice_policy",
+  "requirement_probability_ref": "00_implementation_rules.json#requirement_probability",
+  "minigame_types": [
+    "duel",
+    "gambling"
+  ],
+  "shortcut_mode": "log_only",
+  "test_mode": {
+    "enabled": true,
+    "active_chunks": [
+      "CHUNK-01",
+      "CHUNK-02"
+    ],
+    "complete_after_story_id": "MAIN-02",
+    "on_complete": "END_TEST_NO_NEXT_CHUNK",
+    "boss_disabled": true,
+    "do_not_generate_or_unlock_other_chunks": true,
+    "story_version": "V1"
+  }
+}

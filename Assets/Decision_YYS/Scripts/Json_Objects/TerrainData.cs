@@ -41,6 +41,7 @@ internal sealed class PlaceStoryActor
     internal string name;
     internal GameObject prefab;
     internal Vector3 position;
+    internal Quaternion idleRotation = Quaternion.identity;
 }
 
 [System.Serializable]

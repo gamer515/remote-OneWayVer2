@@ -64,6 +64,12 @@ public partial class DecisionManager
         if (mine?.resting == true) return;
         if (guideProgress?.allocating == true) { ConfirmGuideAllocation(); return; }
         if (lastMinePlace != null) { ConfirmMineRevisit(); return; }
+        if ((currentState == StoryState.Exploring || currentState == StoryState.ShowingStory ||
+             currentState == StoryState.WaitingForChoice) && learningStation?.ResumeDeferredReading() == true)
+        {
+            uiController?.ShowReading(learningStation, true);
+            return;
+        }
         switch (currentState)
         {
             case StoryState.Exploring: BeginWalkStep(); break;
@@ -77,6 +83,7 @@ public partial class DecisionManager
     private void BeginExploration()
     {
         lastMinePlace = null;
+        RestoreStoryNpcFacing(activePlaceId);
         playerController?.ResetNpcFraming();
         if (guideProgress != null) guideProgress.activeDialogue = null;
         pendingEncounter = null;
@@ -170,9 +177,33 @@ public partial class DecisionManager
         SaveEncounterState("walking");
     }
 
+    private void RestoreStoryNpcFacing(string placeId) => SetStoryNpcFacing(placeId, null);
+
+    private bool SetStoryNpcFacing(string placeId, string speaker)
+    {
+        if (string.IsNullOrEmpty(placeId)) return false;
+        var place = envController?.TerrainData?.places?.FirstOrDefault(item => item.placeId == placeId);
+        if (place?.storyActors == null) return false;
+        var root = envController.FindStoryPlace(place);
+        if (root == null) return true;
+        foreach (var actor in place.storyActors)
+        {
+            var socket = root.Find("ActorSocket_" + actor.name);
+            if (socket == null) continue;
+            socket.localRotation = actor.idleRotation;
+            if (speaker != actor.name) continue;
+            Vector3 direction = playerController.CurrentPosition - socket.position;
+            direction.y = 0;
+            if (direction.sqrMagnitude > .0001f) socket.rotation = Quaternion.LookRotation(direction);
+        }
+        return true;
+    }
+
     private void FaceNpcTowardPlayer(string placeId)
     {
         if (playerController == null || !playerController.IsAvailable || string.IsNullOrWhiteSpace(placeId))
+            return;
+        if (SetStoryNpcFacing(placeId, activeCards?.MainStory?.ElementAtOrDefault(activeCardIndex)?.speakerId))
             return;
 
         string objectName = $"Place_{StoryVisualId(placeId)}";

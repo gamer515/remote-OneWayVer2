@@ -17,8 +17,9 @@ public sealed partial class MineLearningStation
         public float daySeconds, deliverySeconds;
         public CapacityStep[] capacities;
         public StudyTier[] intelligence;
-        public int[] enduranceThresholds, dailyLimits;
-        public int healthPerEndurance;
+        [Newtonsoft.Json.JsonProperty("enduranceThresholds")]
+        public int[] dailyIntelligenceThresholds;
+        public int[] dailyLimits;
         public StudySkill[] skills;
         public StudyCombo[] combos;
     }
@@ -58,6 +59,14 @@ public sealed partial class MineLearningStation
     public int RefillCost(int ability) => study == null ? 0 :
         study.refillBase + (progress?.refills?[ability] ?? 0) * study.refillIncrease;
     public bool HasComboStudy => progress.active.Any(job => job.comboStudy);
+    public bool CanBeginStudySession => CanStudyBooks && CurrentStudy == null &&
+        progress.pendingReading.Count == 0;
+
+    private MineLearningJob CurrentStudy => progress.active.Find(job => job.started && IsReadingPlacement(job)) ??
+        progress.active.Find(IsReadingPlacement);
+
+    private static bool SharesStudySession(MineLearningJob job, MineLearningJob current) =>
+        current != null && (job == current || current.comboStudy && job.comboStudy);
 
     public void ConfigureStudy(BookCatalog catalog, StudyRules rules, float calendarDaySeconds, float calendarDays)
     {
@@ -78,6 +87,13 @@ public sealed partial class MineLearningStation
         nextStudySave = 0;
         StudyResult = null;
         progress.stored ??= new List<MineLearningJob>();
+        var excessOutletBooks = progress.active.Where(job => !job.onBoard).Skip(1).ToArray();
+        foreach (var job in excessOutletBooks)
+        {
+            job.transit = 0;
+            progress.active.Remove(job);
+        }
+        progress.queued.InsertRange(0, excessOutletBooks);
         foreach (var job in progress.active.Concat(progress.queued).Concat(progress.stored).Append(progress.producing))
         {
             if (job == null) continue;
@@ -85,6 +101,9 @@ public sealed partial class MineLearningStation
             job.bookName = GetBookDisplayName(job);
         }
         progress.pendingReading ??= new List<string>();
+        progress.pendingReading.RemoveAll(id => string.IsNullOrEmpty(id) || !readingBooks.ContainsKey(id));
+        readingDeferred = progress.pendingReading.Count > 0;
+        progress.readingResult = null;
         progress.completedReading ??= new List<string>();
         progress.claimedReadingCombos ??= new List<string>();
         progress.mastered ??= new List<string>();
@@ -122,13 +141,11 @@ public sealed partial class MineLearningStation
         notice = null;
     }
 
-    private int Skill(string id) => progress.skills.Find(value => value.id == id)?.value ?? 0;
     private bool FirstStudyDay => study != null && progress?.day == 0 && readingBooks.Count > 0;
 
-    private int DailyLimit(int[] amounts)
+    private int DailyLimit(int intelligence)
     {
-        int endurance = Skill("endurance") + amounts[0] / study.healthPerEndurance;
-        int index = Array.FindLastIndex(study.enduranceThresholds, threshold => endurance >= threshold);
+        int index = Array.FindLastIndex(study.dailyIntelligenceThresholds, threshold => intelligence >= threshold);
         int limit = study.dailyLimits[Mathf.Max(0, index)];
         return FirstStudyDay ? Mathf.Max(2, limit) : limit;
     }
@@ -156,7 +173,9 @@ public sealed partial class MineLearningStation
     {
         if (progress.producing != null) return Explain("다른 책을 만들고 있습니다.");
         if (Stock(ability) <= 0) return Explain("책이 없습니다. 해당 능력 코인을 투입구에 넣으세요.");
-        if (progress.active.Count + progress.queued.Count >= Capacity.simultaneous + Capacity.waiting)
+        var capacity = Capacity;
+        bool outletAvailable = progress.active.Count < capacity.simultaneous && progress.active.All(job => job.onBoard);
+        if (progress.queued.Count >= capacity.waiting && !(capacity.waiting == 0 && outletAvailable))
             return Explain("학습 대기열이 가득 찼습니다.");
 
         var amounts = wallet();
@@ -194,7 +213,7 @@ public sealed partial class MineLearningStation
 
     public bool SubmitShelf(Vector3 pickupPoint)
     {
-        if (!UsesStudyRules || !CanStudyBooks || HasComboStudy) return false;
+        if (!UsesStudyRules || !CanBeginStudySession || HasComboStudy) return false;
         var batch = progress.active.Where(job => job.boardIndex == 3 && !job.started).ToArray();
         if (batch.Length < 2)
             return Explain("책장에 책을 두 권 이상 올려 주세요.");
@@ -277,14 +296,17 @@ public sealed partial class MineLearningStation
                 }
             }
 
+            var currentStudy = CurrentStudy;
             for (int i = 0; i < progress.active.Count;)
             {
                 var job = progress.active[i];
                 if (job.transit > 0) job.transit = Mathf.Max(0, job.transit - seconds);
-                else if (!studyPaused && !job.held && IsReadingPlacement(job))
+                else if (!studyPaused && !job.held && IsReadingPlacement(job) &&
+                    SharesStudySession(job, currentStudy) &&
+                    (job.comboStudy || job.started || progress.pendingReading.Count == 0))
                 {
                     if (!CanRead(job)) notice = $"{GetBookDisplayName(job)} / 읽기 능력치 부족";
-                    else if (job.started || progress.attemptsToday < DailyLimit(wallet()))
+                    else if (job.started || progress.attemptsToday < TodayLimit)
                     {
                         if (!job.started)
                         {
@@ -322,7 +344,10 @@ public sealed partial class MineLearningStation
         if (readingBooks.ContainsKey(job.bookId ?? ""))
         {
             if (!progress.completedReading.Contains(job.bookId) && !progress.pendingReading.Contains(job.bookId))
+            {
                 progress.pendingReading.Add(job.bookId);
+                readingDeferred = false;
+            }
             else ShowStudyResult(true, "이미 보상을 받은 책이거나 선택을 기다리고 있습니다.");
             return;
         }

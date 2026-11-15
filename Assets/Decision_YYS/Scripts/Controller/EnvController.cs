@@ -8,6 +8,13 @@ using UnityEngine.Serialization;
 /// </summary>
 public class EnvController : MonoBehaviour
 {
+    public enum MineStoryLength
+    {
+        [InspectorName("긴 버전")] Full,
+        [InspectorName("축약 버전 (V1)")] Short
+    }
+
+    [SerializeField, InspectorName("갱도 이야기 버전")] private MineStoryLength mineStoryLength;
     [SerializeField] private MineNpcPlacement npcPlacement;
     [SerializeField] private GameObject[] authoredMineActors;
     internal MineAuthoredStory AuthoredMine { get; private set; }
@@ -47,6 +54,7 @@ public class EnvController : MonoBehaviour
     public float ChunkSize => chunkSize;
     public float CurrentTerrainEndZ { get; private set; }
     internal float? LoadedChunkEndZ => terrainBuilder.LoadedChunkEndZ(PlaceRegistry);
+    internal Transform FindStoryPlace(PlaceData place) => terrainBuilder.FindStoryPlace(PlaceRegistry, place);
     public Vector3 TerrainOrigin => environment != null ? environment.transform.position : Vector3.zero;
 
     private TerrainRepository terrainRepository = new TerrainRepository();
@@ -190,7 +198,7 @@ public class EnvController : MonoBehaviour
         contentSeed = runSeed;
         this.varyRooms = varyRooms;
         terrainRepository = new TerrainRepository(contentRun, contentSeed);
-        AuthoredMine = authoredMineActors?.Length > 0 ? new MineAuthoredStory(authoredMineActors) : null;
+        AuthoredMine = authoredMineActors?.Length > 0 ? new MineAuthoredStory(authoredMineActors, mineStoryLength) : null;
     }
 
     public bool TryValidateAllContent(OmnibusData omnibus, out string errorMessage)

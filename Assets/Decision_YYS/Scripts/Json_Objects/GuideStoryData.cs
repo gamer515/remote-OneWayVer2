@@ -50,8 +50,12 @@ public sealed class GuideProgress
 public sealed class MineAuthoredProgress
 {
     public int contentVersion;
+    public bool shortStoryPack;
+    public int shortLayoutSeed;
     public string storyPackFrame, storyPackLines, storyPackResolution, storyPackLastMainResolution;
     public int storyPackLine, storyPackFee;
+    public int storyPackIntelligenceAtEntry;
+    public bool hasStoryPackIntelligenceAtEntry;
     public bool storyPackNegotiated, storyPackTaskWon;
     public string storyPackRevealedHint;
     public float storyPackTaskRemaining;

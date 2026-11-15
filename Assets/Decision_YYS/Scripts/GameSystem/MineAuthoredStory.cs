@@ -9,8 +9,9 @@ internal sealed partial class MineAuthoredStory
     internal const string Prefix = "AuthoredMine/";
     private readonly Dictionary<string, GameObject> actors;
 
-    internal MineAuthoredStory(GameObject[] prefabs)
+    internal MineAuthoredStory(GameObject[] prefabs, EnvController.MineStoryLength length)
     {
+        IsShort = length == EnvController.MineStoryLength.Short;
         actors = prefabs.Where(prefab => prefab != null)
             .ToDictionary(prefab => prefab.name.Split('_')[2], StringComparer.Ordinal);
         LoadPack();

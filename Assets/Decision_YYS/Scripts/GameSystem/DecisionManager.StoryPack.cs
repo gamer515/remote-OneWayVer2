@@ -10,6 +10,7 @@ public partial class DecisionManager
 {
     private const int HighStoryAbility = 7;
     private const int LowStoryAbility = 3;
+    private const string LowIntelligenceVariant = "지능_낮음";
     private const float PackRequirementSeconds = 3f;
     private const string PackRoot = "root", PackCoins = "coins", PackNegotiate = "negotiate",
         PackToss = "toss", PackTask = "task", PackDuel = "duel", PackLeave = "leave";
@@ -17,7 +18,13 @@ public partial class DecisionManager
     private bool IsPackMain => Authored.eventId.StartsWith("MAIN-", StringComparison.Ordinal);
     private Dictionary<string, LocalStoryDialogueJob> previousPackDialogue;
     private string PackSpeaker(string id) => IsPackMain ? StoryPack.PackName(id) : pendingEncounter?.DisplayName;
-    private bool HasHighStoryAbility(int ability) => statContainer.stats[ability] >= HighStoryAbility;
+    private int StoredStoryIntelligence() => journeyCoinSupply?.IsReady == true
+        ? journeyCoinSupply.AvailableCoins(2) : statContainer.stats[2];
+
+    private int StoryAbility(int ability) => ability != 2 ? statContainer.stats[ability] :
+        Authored.hasStoryPackIntelligenceAtEntry ? Authored.storyPackIntelligenceAtEntry : StoredStoryIntelligence();
+
+    private bool HasHighStoryAbility(int ability) => StoryAbility(ability) >= HighStoryAbility;
     private JObject PackStory(string variant = null)
     {
         string storyId = activeEncounterPath.Substring(MineAuthoredStory.Prefix.Length);
@@ -25,33 +32,39 @@ public partial class DecisionManager
     }
 
     private string PackAbilityVariant(int ability, string label) => HasHighStoryAbility(ability) ? label + "_높음" :
-        statContainer.stats[ability] <= LowStoryAbility ? label + "_낮음" : null;
+        StoryAbility(ability) <= LowStoryAbility ? label + "_낮음" : null;
 
     private JObject PackDialogueStory()
     {
         string intelligence = PackAbilityVariant(2, "지능");
+        if (StoryPack.IsShort)
+            return intelligence == LowIntelligenceVariant ? PackStory(intelligence) : ApplyPackEmotion(PackStory());
         string charm = PackAbilityVariant(3, "매력");
         if (intelligence == null && charm == null) return ApplyPackEmotion(PackStory());
         if (intelligence == null || charm == null) return PackStory(charm ?? intelligence);
-        var clever = PackStory(intelligence);
-        var social = (JObject)PackStory(charm).DeepClone();
+        bool lowIntelligence = intelligence == LowIntelligenceVariant;
+        var primary = (JObject)PackStory(lowIntelligence ? intelligence : charm).DeepClone();
+        var secondary = PackStory(lowIntelligence ? charm : intelligence);
         var original = PackStory();
         var baseOpening = (JArray)original["opening"];
-        var socialOpening = (JArray)social["opening"];
-        var cleverOpening = (JArray)clever["opening"];
-        for (int i = 0; i < Math.Min(baseOpening.Count, Math.Min(socialOpening.Count, cleverOpening.Count)); i++)
-            if (JToken.DeepEquals(socialOpening[i], baseOpening[i])) socialOpening[i] = cleverOpening[i].DeepClone();
-        foreach (var line in clever.SelectTokens("$..hover_hint").ToArray())
-            if (social.SelectToken(line.Parent.Parent.Path) is JObject socialLine)
+        var primaryOpening = (JArray)primary["opening"];
+        var secondaryOpening = (JArray)secondary["opening"];
+        for (int i = 0; i < Math.Min(baseOpening.Count, Math.Min(primaryOpening.Count, secondaryOpening.Count)); i++)
+            if (JToken.DeepEquals(primaryOpening[i], baseOpening[i])) primaryOpening[i] = secondaryOpening[i].DeepClone();
+        if (!lowIntelligence)
+            foreach (var line in secondary.SelectTokens("$..hover_hint").ToArray())
+                if (primary.SelectToken(line.Parent.Parent.Path) is JObject primaryLine)
+                {
+                    primaryLine["text"] = line.Parent.Parent["text"].DeepClone();
+                    primaryLine["hover_hint"] = line.DeepClone();
+                }
+        foreach (var voice in secondary.SelectTokens("$..dialogue").OfType<JArray>())
+            if (JToken.DeepEquals(primary.SelectToken(voice.Path), original.SelectToken(voice.Path)) &&
+                primary.SelectToken(voice.Path) is JArray unchanged)
             {
-                socialLine["text"] = line.Parent.Parent["text"].DeepClone();
-                socialLine["hover_hint"] = line.DeepClone();
-            }
-        foreach (var voice in clever.SelectTokens("$..dialogue").OfType<JArray>())
-            if (JToken.DeepEquals(social.SelectToken(voice.Path), original.SelectToken(voice.Path)) &&
-                social.SelectToken(voice.Path) is JArray unchanged)
                 unchanged.Replace(voice.DeepClone());
-        return social;
+            }
+        return primary;
     }
 
     private JObject ApplyPackEmotion(JObject source)
@@ -87,12 +100,14 @@ public partial class DecisionManager
         restoringStoryCard = false;
         activePlaceId = encounter.PlaceId;
         activeEncounterPath = encounter.ContentPath;
-        previousPackDialogue = session.RunNumber <= 1 ? null :
-            LocalStoryDialogueQueue.Load(SaveIOService.Instance, session.RunNumber - 1)?.jobs
-                .Where(job => job.authoredPack && job.targetRun == session.RunNumber &&
-                    job.emotionLines != null && !string.IsNullOrEmpty(job.emotion))
-                .ToDictionary(job => job.jobId);
-        if (Authored.eventId != activePlaceId || string.IsNullOrEmpty(Authored.storyPackFrame))
+        previousPackDialogue = LoadPreviousPackDialogue();
+        bool newEncounter = Authored.eventId != activePlaceId || string.IsNullOrEmpty(Authored.storyPackFrame);
+        if (newEncounter || !Authored.hasStoryPackIntelligenceAtEntry)
+        {
+            Authored.storyPackIntelligenceAtEntry = StoredStoryIntelligence();
+            Authored.hasStoryPackIntelligenceAtEntry = true;
+        }
+        if (newEncounter)
         {
             Authored.eventId = activePlaceId;
             Authored.nodeId = null;
@@ -113,6 +128,24 @@ public partial class DecisionManager
         if (Authored.storyPackFrame == "side-entry")
             ShowPackLines(PackDialogueStory()["opening"], PackRoot);
         else PresentStoryPack();
+    }
+
+    private Dictionary<string, LocalStoryDialogueJob> LoadPreviousPackDialogue()
+    {
+        if (session.RunNumber <= 1) return null;
+        var store = SaveIOService.Instance;
+        int sourceRun = session.RunNumber - 1;
+        var queue = LocalStoryDialogueQueue.Load(store, sourceRun);
+        if (queue?.finalized != true) return null;
+        string mode = queue.authoredStoryPackMode;
+        if (string.IsNullOrEmpty(mode))
+        {
+            var previous = store.LoadRunData<GameProgress>(sourceRun, "Progress");
+            mode = MineAuthoredStory.ModeId(previous?.guideProgress?.authoredMine?.shortStoryPack == true);
+        }
+        if (mode != MineAuthoredStory.ModeId(StoryPack.IsShort)) return null;
+        return queue.jobs.Where(job => job.authoredPack && job.targetRun == session.RunNumber &&
+            job.emotionLines != null && !string.IsNullOrEmpty(job.emotion)).ToDictionary(job => job.jobId);
     }
 
     private static void AppendPackLines(JArray destination, JToken source)
@@ -146,10 +179,10 @@ public partial class DecisionManager
                 if (hint == null || hint == Authored.storyPackRevealedHint) options[id] = route;
             }
         }
-        Add(PackAbilityVariant(2, "지능") == null && PackAbilityVariant(3, "매력") == null
+        Add(StoryPack.IsShort || (PackAbilityVariant(2, "지능") == null && PackAbilityVariant(3, "매력") == null)
             ? PackDialogueStory() : PackStory());
-        if (HasHighStoryAbility(2)) Add(PackStory("지능_높음"));
-        if (HasHighStoryAbility(3)) Add(PackStory("매력_높음"));
+        if (!StoryPack.IsShort && HasHighStoryAbility(2)) Add(PackStory("지능_높음"));
+        if (!StoryPack.IsShort && HasHighStoryAbility(3)) Add(PackStory("매력_높음"));
         return options.Values.ToArray();
     }
 

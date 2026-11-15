@@ -90,14 +90,20 @@ public partial class DecisionManager
         string.Join(" + ", cost.Select((amount, index) => (amount, index))
             .Where(item => item.amount > 0).Select(item => $"{TaxAbilities[item.index]} {item.amount}"));
 
-    private static string DescribeCollectorPass(MineTaxInvoice invoice, int available, int largest)
+    private static string AnnounceCollectorTaxes(MineTaxInvoice invoice)
     {
-        string message = "기준을 넘겼군. 통과해라.\n종류마다 1개를 남기는 기준";
+        string names = string.Join(", ", invoice.lines.Select(line => line.label.Replace('·', '/')));
+        return $"오늘 걷는 세금은 {names}다.";
+    }
+
+    private static string DescribeCollectorPassCriteria(MineTaxInvoice invoice, int available, int largest)
+    {
+        string message = "통과 기준 / 코인 종류마다 1개 남김";
         string fixedCost = DescribeTaxCost(invoice.FixedCost());
-        if (fixedCost.Length > 0) message += $"\n지정 세금: {fixedCost}";
+        if (fixedCost.Length > 0) message += $"\n지정 세금 / {fixedCost}";
         int single = invoice.Single, mixed = invoice.Mixed;
-        if (single > 0) message += $"\n한 종류: 필요 {single}개 / 최대 여유 {largest}개";
-        if (single + mixed > 0) message += $"\n추가 세금: 필요 {single + mixed}개 / 전체 여유 {available}개";
+        if (single > 0) message += $"\n한 종류 / 필요 {single}개, 최대 여유 {largest}개";
+        if (single + mixed > 0) message += $"\n추가 세금 / 필요 {single + mixed}개, 전체 여유 {available}개";
         return message;
     }
 
@@ -107,7 +113,7 @@ public partial class DecisionManager
         var lines = invoice.lines.Select(line => line.label.Replace('·', '/') + " / " +
             (!line.IsFlexible ? DescribeTaxCost(line.cost) :
                 line.kind == "single" ? $"한 종류 {line.coins}" : $"혼합 가능 {line.coins}"));
-        string bill = $"세금 걷을 시간이다.\n고지 / {invoice.authority}\n{string.Join("\n", lines)}\n합계 {invoice.Total}개";
+        string bill = $"{AnnounceCollectorTaxes(invoice)} 준비해라.\n고지 / {invoice.authority}\n{string.Join("\n", lines)}\n합계 {invoice.Total}개";
         if (!string.IsNullOrEmpty(feedback)) bill += "\n" + feedback;
         ShowTaxChoices(bill, new[] { "납부하기", "매력으로 설득", "결투" }, slot =>
         {

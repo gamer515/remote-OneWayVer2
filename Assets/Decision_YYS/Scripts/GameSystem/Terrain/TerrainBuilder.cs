@@ -37,6 +37,15 @@ public sealed class TerrainBuilder
     internal IReadOnlyList<FacilityMarker> FacilityMarkers => facilityMarkers;
     internal bool HasChapter(string chapterId) => facilityHistory.ContainsKey(chapterId);
 
+    internal Transform FindStoryPlace(TerrainPlaceRegistry registry, PlaceData place)
+    {
+        var segment = segments.Find(candidate => candidate.Registry == registry);
+        if (segment == null ||
+            !chunkInstances.TryGetValue(segment.FirstGlobalChunkIndex + place.chunkIndex, out var chunk) ||
+            chunk == null || !chunk.activeInHierarchy) return null;
+        return chunk.transform.Find("Place_" + (place.sharedStoryVisualId ?? place.placeId));
+    }
+
     internal float? LoadedChunkEndZ(TerrainPlaceRegistry registry)
     {
         var segment = segments.Find(candidate => candidate.Registry == registry);
@@ -260,6 +269,7 @@ public sealed class TerrainBuilder
                     var socket = new GameObject("ActorSocket_" + actor.name).transform;
                     socket.SetParent(group, false);
                     socket.localPosition = place.authoredLocationId != null ? actor.position : new Vector3(0, 0, index * 1.5f);
+                    socket.localRotation = actor.idleRotation;
                     // These appearance prefabs face local -Z. The dialogue socket faces +Z toward the player.
                     var model = Object.Instantiate(actor.prefab, socket);
                     model.transform.localRotation = Quaternion.Euler(0f, 180f, 0f) * model.transform.localRotation;

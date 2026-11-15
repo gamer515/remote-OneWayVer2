@@ -209,19 +209,7 @@ public partial class DecisionManager : MonoBehaviour
         var mineProgress = guideProgress.mineChapter ??= new MineChapterProgress();
         if (!mineProgress.initialized) mineProgress.variedRoomLayout = true;
         envController.SetContentRun(session.RunNumber, session.RunSeed, mineProgress.variedRoomLayout);
-        var savedChapter = session.Omnibus.chapters.ElementAtOrDefault(loadedProgress.chapterIndex);
-        bool startAuthoredMine = envController.AuthoredMine != null &&
-            guideProgress.authoredMine?.contentVersion != MineAuthoredStory.PackVersion &&
-            MineAuthoredStory.Episode == savedChapter?.chapterId + "/" +
-            savedChapter?.episodeIds?.ElementAtOrDefault(loadedProgress.episodeIndex);
-        if (startAuthoredMine)
-        {
-            var delivered = guideProgress.authoredMine?.flags?.Where(flag => flag.EndsWith(":delivered", StringComparison.Ordinal)).ToList();
-            guideProgress.authoredMine = new MineAuthoredProgress { contentVersion = MineAuthoredStory.PackVersion,
-                flags = delivered ?? new List<string>() };
-            loadedProgress.resolvedPlaceIds?.RemoveAll(id => !guideProgress.authoredMine.flags.Contains(id + ":delivered"));
-            loadedProgress.activePlaceId = loadedProgress.activeStoryPath = loadedProgress.interactionPhase = null;
-        }
+        bool startAuthoredMine = PrepareAuthoredMineProgress();
         if (!envController.TryValidateAllContent(session.Omnibus, out string contentError))
         {
             Debug.LogError($"전체 콘텐츠 검증 실패: {contentError}", this);

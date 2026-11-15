@@ -34,7 +34,7 @@ public class Dialogue
     public string speakerId;
     public string semanticText;
     public string coreMeaning;
-    public string authoredLinePath, authoredNpcId, authoredOriginalText;
+    public string authoredLinePath, authoredNpcId, authoredOriginalText, authoredStoryPackMode;
     public string nextStoryPath;
     public GuideCoinAction guideAction;
     public MineChapterAction chapterAction;

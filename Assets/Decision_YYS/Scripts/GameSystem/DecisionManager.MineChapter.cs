@@ -351,7 +351,8 @@ public partial class DecisionManager
         if (invoice.CanPass(statContainer.stats, out int available, out int largest))
         {
             BeginCollectorDialogue(collector);
-            presentationController.ShowInteraction(DescribeCollectorPass(invoice, available, largest), "징수원");
+            presentationController.ShowInteraction($"{AnnounceCollectorTaxes(invoice)} 코인에 여유가 있군. 지나가라.", "징수원");
+            uiController.SetTaxCriteria(DescribeCollectorPassCriteria(invoice, available, largest));
             collectorPass = StartCoroutine(FinishCollectorPass());
             SetYellowInputInteractable(true);
             return;
@@ -432,6 +433,7 @@ public partial class DecisionManager
 
     private void FinishCollectorDialogue(bool playerTaxSettled)
     {
+        uiController.SetTaxCriteria(null);
         taxWitnessStep = 0; taxWitness = null;
         taxOptions = null; taxSelected = null; taxSelection = -1;
         journeyBoardInput?.SetChoiceCount(0);

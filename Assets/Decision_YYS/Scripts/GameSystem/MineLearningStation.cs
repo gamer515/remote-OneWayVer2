@@ -122,11 +122,11 @@ public sealed partial class MineLearningStation : MonoBehaviour
         if (!string.IsNullOrWhiteSpace(job.bookName)) return job.bookName;
         return $"{AbilityName(job.ability)} 책";
     }
-    public int TodayLimit => UsesStudyRules && wallet != null ? DailyLimit(wallet()) : 0;
+    public int TodayLimit => UsesStudyRules && wallet != null ? DailyLimit(CurrentCoins[2]) : 0;
     private static bool IsReadingPlacement(MineLearningJob job) => job.onBoard && job.boardIndex == 2;
     public bool IsStudying(MineLearningJob job) => CanStudyBooks && job != null && job.onBoard && !job.held &&
         job.transit <= 0 && (study == null ? !job.requiresBoard || job.boardIndex == 1 :
-            IsReadingPlacement(job) && job.started && CanRead(job));
+            IsReadingPlacement(job) && job.started && SharesStudySession(job, CurrentStudy) && CanRead(job));
     public void RememberPlacement(MineLearningJob job, float u, float v, int boardIndex = 0)
     {
         if(progress == null || !progress.active.Contains(job)) return;
@@ -137,7 +137,7 @@ public sealed partial class MineLearningStation : MonoBehaviour
         get
         {
             var steps = study?.capacities ?? authoredLearning?.capacities ?? capacities;
-            int knowledge = wallet()[2];
+            int knowledge = CurrentCoins?[2] ?? 0;
             var step = steps.Where(c => c.knowledgeCoins <= knowledge)
                 .OrderBy(c => c.knowledgeCoins).LastOrDefault() ?? new CapacityStep();
             if (FirstStudyDay && step.simultaneous < 2)
@@ -204,6 +204,8 @@ public sealed partial class MineLearningStation : MonoBehaviour
         bool changed=false;
         while(progress.active.Count<Capacity.simultaneous && progress.queued.Count>0)
         {
+            // An uncollected book owns the physical outlet, including while it is travelling or held.
+            if (study != null && progress.active.Any(book => !book.onBoard)) break;
             var job=progress.queued[0]; progress.queued.RemoveAt(0); job.transit=DeliverySeconds; progress.active.Add(job); changed=true;
         }
         return changed;

@@ -34,6 +34,10 @@ public sealed class JourneyCoinSupplyController
     public Collider CoinRamp { get; set; }
     public Func<Vector2, int, Transform> RefillSlot { get; set; }
     public Func<int, int, bool> RefillBooks { get; set; }
+    internal Transform BoardShelf { get; set; }
+    internal IEnumerable<Transform> BoardCoins => paymentCoins
+        .Where(coin => coin != draggedPaymentCoin && coin.refillSlot < 0 && coin.model != null)
+        .Select(coin => coin.model.transform);
     public MonoBehaviour DropRunner { get; set; }
     public bool HasBoardPayment => paymentCost != null;
     public bool CanStageCoins => IsReady && board.trayFloor != null && paymentGrid != null &&
@@ -355,12 +359,25 @@ public sealed class JourneyCoinSupplyController
         RefreshDisplay();
     }
 
-    private void DropOnBoard(PaymentCoin item, Collider surface, Vector3 point, float lift)
+    private bool DropOnBoard(PaymentCoin item, Collider surface, Vector3 point, float lift)
     {
         var model = item.model.transform;
-        model.position = CoinPositionAbove(surface, model, point, lift);
+        var obstacles = BoardShelf != null && BoardShelf.gameObject.activeInHierarchy
+            ? new[] { BoardItemDrop.ItemBounds(BoardShelf) } : Array.Empty<Bounds>();
+        if (surface != null && surface == CoinRamp)
+            model.position = CoinPositionAbove(surface, model, point, lift);
+        else if (surface != null && BoardItemDrop.TryFindClearPosition(surface, model, point, lift, obstacles, out var position))
+            model.position = position;
+        else
+        {
+            RemovePaymentCoin(item);
+            paymentCoins.Remove(item);
+            RefreshDisplay();
+            return false;
+        }
         if (DropRunner != null) DropRunner.StartCoroutine(DropCoin(item));
         else BoardItemDrop.Release(item.body);
+        return true;
     }
 
     private Vector3 CoinPositionAbove(Collider surface, Transform model, Vector3 point, float lift)
@@ -407,8 +424,7 @@ public sealed class JourneyCoinSupplyController
         var item = new PaymentCoin { model = coin, body = body, type = index };
         paymentCoins.Add(item);
         RefreshDisplay();
-        DropOnBoard(item, WhiteBoard ?? board.trayFloor, trayPosition, Mathf.Max(.18f, outlet.y - trayPosition.y));
-        return true;
+        return DropOnBoard(item, WhiteBoard ?? board.trayFloor, trayPosition, Mathf.Max(.18f, outlet.y - trayPosition.y));
     }
 
     private static System.Collections.IEnumerator DropCoin(PaymentCoin item)

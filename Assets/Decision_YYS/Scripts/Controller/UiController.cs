@@ -40,6 +40,7 @@ public class UiController : MonoBehaviour
     public void AppendInteraction(string text, string speakerId) => mainStoryUi?.AppendInteraction(SanitizeText(text), speakerId);
     public void SetStoryHeading(string text) => mainStoryUi?.SetStoryHeading(SanitizeText(text));
     public void SetStoryNotice(string text) => mainStoryUi?.SetStoryNotice(SanitizeText(text));
+    internal void SetTaxCriteria(string text) => mainStoryUi?.SetTaxCriteria(SanitizeText(text));
     internal bool IsReadingOpen => mainStoryUi != null && mainStoryUi.IsReadingOpen;
     internal void ShowReading(MineLearningStation station, bool available) => mainStoryUi?.ShowReading(station, available);
     internal void SetChoiceHints(Func<int, string> hint, int first, int count) => mainStoryUi?.SetChoiceHints(hint, first, count);

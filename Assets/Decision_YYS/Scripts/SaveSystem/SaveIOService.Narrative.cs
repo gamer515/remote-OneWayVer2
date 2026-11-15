@@ -294,6 +294,7 @@ public partial class SaveIOService
             if (queues.Count == 0) return null;
             // A partial multi-chapter write must not hide the yet-unmigrated portion of an old queue.
             var combined = new LocalStoryDialogueQueueData { sourceRun = run, targetRun = run + 1, finalized = queues.All(q => q.finalized),
+                authoredStoryPackMode = queues.Select(q => q.authoredStoryPackMode).FirstOrDefault(mode => !string.IsNullOrEmpty(mode)),
                 jobs = queues.SelectMany(q => q.jobs).GroupBy(j => j.jobId).Select(g => g.OrderByDescending(j => j.revision).First())
                     .OrderBy(j => j.storyPath, StringComparer.Ordinal).ToList() };
             return JsonUtility.FromJson<LocalStoryDialogueQueueData>(JsonUtility.ToJson(combined));
