@@ -5,12 +5,12 @@ public sealed class DecisionSaveService
 {
     private readonly SaveManager saveManager;
     public int DefeatedTaxBosses => saveManager.LoadProgress().defeatedTaxBossIds?.Count ?? 0;
-    private readonly int inventoryRun;
+    private readonly int runNumber;
 
     public DecisionSaveService(SaveManager saveManager)
     {
         this.saveManager = saveManager;
-        inventoryRun = saveManager.CurrentRun;
+        runNumber = saveManager.CurrentRun;
     }
 
     public void SaveProgress(DecisionSession session)
@@ -87,12 +87,17 @@ public sealed class DecisionSaveService
 
     public void SaveRemainingCoins(int[] remainingCoins)
     {
-        saveManager.SaveRemainingCoins(remainingCoins);
+        if (saveManager.CurrentRun == runNumber) saveManager.SaveRemainingCoins(remainingCoins);
     }
 
     public void SaveStoryCheckpoint(GuideProgress guide, System.Collections.Generic.List<StoryEventRecord> events,
         System.Collections.Generic.List<PlayedEncounterCardRecord> history, int[] coins, int visit,
-        string endReason = null) => saveManager.SaveStoryCheckpoint(guide, events, history, coins, visit, endReason);
+        string endReason = null)
+    {
+        // The outgoing scene can still tick after the next run has been activated.
+        if (saveManager.CurrentRun == runNumber)
+            saveManager.SaveStoryCheckpoint(guide, events, history, coins, visit, endReason);
+    }
 
     public bool HasAllUnlocks(System.Collections.Generic.IEnumerable<string> unlockIds)
     {
@@ -120,7 +125,7 @@ public sealed class DecisionSaveService
     public void SaveInventoryState(InventoryState state)
     {
         // An old scene's shutdown must not carry its board into the newly started run.
-        if (saveManager.CurrentRun == inventoryRun) saveManager.SaveInventoryState(state);
+        if (saveManager.CurrentRun == runNumber) saveManager.SaveInventoryState(state);
     }
     public bool HasAllItems(string[] required)
     {

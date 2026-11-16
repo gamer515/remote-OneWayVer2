@@ -1,8 +1,11 @@
 ﻿using UnityEngine;
 
+using System.Linq;
+
 public class SaveManager
 {
     internal const string CoastEndingPhase = "coast-ending";
+    private const int StartingAbilityCoinsPerType = 5;
     private readonly ProfileData profile;
     private GameProgress cachedProgress;
 
@@ -366,6 +369,7 @@ public class SaveManager
     public void EnsureJourneyEntry(OmnibusData omnibus)
     {
         int first = omnibus.FirstPlayableChapterIndex;
+        RepairUnstartedRunBalances(first, omnibus.chapters[first].chapterId);
         string id = cachedProgress.chapterId;
         if (string.IsNullOrWhiteSpace(id) && omnibus.legacyChapterIds != null &&
             cachedProgress.chapterIndex >= 0 && cachedProgress.chapterIndex < omnibus.legacyChapterIds.Length)
@@ -406,6 +410,45 @@ public class SaveManager
             cachedProgress.guideProgress.effectStage = 0;
         }
         SaveIOService.Instance.SaveRunCheckpoint(CurrentRun, "Progress", cachedProgress);
+    }
+
+    private void RepairUnstartedRunBalances(int firstChapterIndex, string firstChapterId)
+    {
+        // The old StartNextRun wrote empty Stats and left the original coin reserve untouched.
+        // Once a playable checkpoint exists, even zero balances are authoritative.
+        var progress = cachedProgress;
+        var guide = progress.guideProgress;
+        bool atEntry = string.IsNullOrEmpty(progress.chapterId) ? progress.chapterIndex == 0 :
+            progress.chapterIndex == firstChapterIndex && progress.chapterId == firstChapterId;
+        if (CurrentRun <= 1 || !atEntry || progress.isCompleted || progress.finalBattlePending ||
+            progress.episodeIndex != 0 || progress.storyIndex != 0 || progress.storyVisit != 0 ||
+            progress.activeCardIndex != 0 || !string.IsNullOrEmpty(progress.interactionPhase) ||
+            !string.IsNullOrEmpty(progress.activePlaceId) || !string.IsNullOrEmpty(progress.activeStoryPath) ||
+            !string.IsNullOrEmpty(progress.runEndReason) || progress.currentPosition is { Length: > 0 } ||
+            progress.currentRotation is { Length: > 0 } || progress.storyEvents?.Count > 0 ||
+            progress.resolvedPlaceIds?.Count > 0 || progress.appliedEffectIds?.Count > 0 ||
+            progress.currentEncounterHistory?.Count > 0 || progress.pendingEpisodes?.Count > 0 ||
+            guide?.committedStats is { Length: > 0 } || guide?.runHistory?.Count > 0 ||
+            guide?.mineChapter?.initialized == true || guide?.authoredMine?.contentVersion > 0 || guide?.allocating == true ||
+            progress.remainingCoins?.Length != 4 || !progress.remainingCoins.All(value => value == Constants.StartingCoinsPerType) ||
+            !SaveIOService.Instance.RunDataExists(CurrentRun, "Stats"))
+            return;
+
+        var stats = SaveIOService.Instance.LoadRunData<PlayerStats>(CurrentRun, "Stats");
+        if (stats == null || stats.stats is { Length: > 0 }) return;
+
+        var startingStats = SetStartingBalances(progress);
+        SaveIOService.Instance.SaveRunCheckpoint(CurrentRun, "Progress", progress);
+        SaveIOService.Instance.SaveRunData(CurrentRun, "Stats", startingStats);
+    }
+
+    private static PlayerStats SetStartingBalances(GameProgress progress)
+    {
+        int[] balances = Enumerable.Repeat(StartingAbilityCoinsPerType, 4).ToArray();
+        progress.remainingCoins = (int[])balances.Clone();
+        progress.guideProgress ??= new GuideProgress();
+        progress.guideProgress.committedStats = (int[])balances.Clone();
+        return new PlayerStats { stats = balances };
     }
 
     public PlayerStats LoadStats()
@@ -547,8 +590,9 @@ public class SaveManager
         };
 
         // 다음 회차 파일을 먼저 만든 뒤 Profile을 갱신하여 불완전한 회차를 가리키지 않게 합니다.
+        var startingStats = SetStartingBalances(nextProgress);
         SaveIOService.Instance.SaveRunData(nextRun, "Progress", nextProgress);
-        SaveIOService.Instance.SaveRunData(nextRun, "Stats", new PlayerStats());
+        SaveIOService.Instance.SaveRunData(nextRun, "Stats", startingStats);
         profile.currentRun = nextRun;
         SaveIOService.Instance.SaveProfile(profile);
         cachedProgress = nextProgress;
