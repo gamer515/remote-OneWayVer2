@@ -2,15 +2,42 @@ using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace OneWay.Decision.DirectLlm
 {
-    /// <summary>Explicit adapter for LocalStoryDialogueQueue.Process's generate delegate. Never auto-registers.</summary>
+    /// <summary>Adapts the direct HTTP client to the dialogue queue and the full-story comparison tool.</summary>
     public sealed class DirectStoryGenerator
     {
+        public const string ModelName = "Direct HTTP";
+        internal const string DialogueOrigin = "DirectEmotion";
         private readonly DirectLlmClient client;
         private int busy;
         public DirectStoryGenerator(DirectLlmClient client) => this.client = client ?? throw new ArgumentNullException(nameof(client));
+
+        public Task<DirectLlmResult> RewriteDialogueAsync(LocalStoryEmotionLine line, string emotion, string original,
+            CancellationToken token) => client.GenerateDialogueAsync(DialogueMessages(line, emotion, original), token);
+
+        internal static string DialogueMessages(LocalStoryEmotionLine line, string emotion, string original)
+        {
+            var input = new JObject
+            {
+                ["npc"] = new JObject
+                {
+                    ["name"] = line.name, ["role"] = line.role, ["personality"] = line.personality,
+                    ["speechStyle"] = line.speechStyle, ["publicFacts"] = new JArray(line.publicFacts ?? Array.Empty<string>())
+                },
+                ["emotion"] = emotion,
+                ["original"] = original
+            };
+            return new JArray(new JObject
+            {
+                ["role"] = "user",
+                ["content"] = "NPC의 특징과 감정을 반영해 원문 대사를 바꿔 줘. 응답 형식은 JSON {\"text\":\"변경된 대사\"}로 해 줘.\n\n" +
+                    input.ToString(Formatting.None)
+            }).ToString(Formatting.None);
+        }
 
         public async Task GenerateRuntimeAsync(LocalStoryTestReport report, CancellationToken token)
         {
@@ -21,9 +48,7 @@ namespace OneWay.Decision.DirectLlm
             LocalStoryLifetime.Register(lifetime);
             try
             {
-                // The current ModelFor fallback uses the pass-through Qwen *message formatter* for this label.
-                // This adapter never calls LocalStoryRuntimePipeline.Infer or loads a local model.
-                report.model = "Direct HTTP";
+                report.model = ModelName;
                 report.generationIdentity = client.Identity;
                 report.runtimePath = "HTTPS / provider APIs";
                 await LocalStorySections.Generate(report, lifetime.Token, async (input, correction, ct, progress) =>
@@ -35,7 +60,7 @@ namespace OneWay.Decision.DirectLlm
                     // The section pipeline still performs paragraph/situation/example-copy validation.
                     return ToModelOutput(result);
                 });
-                report.generationWinner = "Direct HTTP";
+                report.generationWinner = ModelName;
             }
             finally
             {

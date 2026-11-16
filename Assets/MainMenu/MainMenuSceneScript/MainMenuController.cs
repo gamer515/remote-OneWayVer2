@@ -1,5 +1,5 @@
 using UnityEngine;
-using UnityEngine.SceneManagement;
+using OneWay.Loading;
 using UnityEngine.UI;
 using System.Collections;
 using TMPro;
@@ -32,7 +32,8 @@ public class MainMenuController : MonoBehaviour
         yield return StartCoroutine(PlayBurstEffect());
 
         // ¾À ÀüÈ¯
-        SceneManager.LoadScene("DecisionScene");
+        if (!LoadingScreenController.Open(LoadingDestination.Decision))
+            isAnimating = false;
     }
 
     private IEnumerator PlayBurstEffect()

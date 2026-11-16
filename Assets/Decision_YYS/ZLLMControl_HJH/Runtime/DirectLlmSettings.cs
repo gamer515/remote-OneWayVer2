@@ -26,7 +26,7 @@ namespace OneWay.Decision.DirectLlm
         {
             new DirectLlmEndpoint(DirectLlmProvider.Gemini, "gemini-2.5-flash"),
             new DirectLlmEndpoint(DirectLlmProvider.Groq, "openai/gpt-oss-20b"),
-            new DirectLlmEndpoint(DirectLlmProvider.Cloudflare, "@cf/meta/llama-3.1-8b-instruct")
+            new DirectLlmEndpoint(DirectLlmProvider.Cloudflare, "@cf/meta/llama-3.1-8b-instruct-fast")
         };
     }
 
@@ -36,6 +36,12 @@ namespace OneWay.Decision.DirectLlm
     {
         public DirectLlmOptions options = new DirectLlmOptions();
         public DirectLlmClient CreateClient() => new DirectLlmClient(options);
+
+        public static DirectLlmClient CreateProjectClient()
+        {
+            var settings = Resources.Load<DirectLlmSettings>(nameof(DirectLlmSettings));
+            return settings == null ? new DirectLlmClient(new DirectLlmOptions()) : settings.CreateClient();
+        }
     }
 
     public sealed class DirectLlmCredentials
@@ -54,11 +60,27 @@ namespace OneWay.Decision.DirectLlm
 
         private static string Read(string name)
         {
+#if UNITY_EDITOR
+            string inspectorValue = ReadInspectorValue(name);
+            if (!string.IsNullOrWhiteSpace(inspectorValue)) return inspectorValue;
+#endif
             string value = Environment.GetEnvironmentVariable(name);
 #if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN
             if (string.IsNullOrWhiteSpace(value)) value = Environment.GetEnvironmentVariable(name, EnvironmentVariableTarget.User);
 #endif
             return value;
         }
+
+#if UNITY_EDITOR
+        private static string InspectorKey(string name) => "OneWay.DirectLlm." + Application.dataPath + "." + name;
+
+        public static string ReadInspectorValue(string name) => UnityEditor.EditorPrefs.GetString(InspectorKey(name), "");
+
+        public static void SaveInspectorValue(string name, string value)
+        {
+            if (string.IsNullOrWhiteSpace(value)) UnityEditor.EditorPrefs.DeleteKey(InspectorKey(name));
+            else UnityEditor.EditorPrefs.SetString(InspectorKey(name), value.Trim());
+        }
+#endif
     }
 }

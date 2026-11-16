@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
+using OneWay.Decision.DirectLlm;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 
@@ -23,7 +24,8 @@ public static class LocalStoryLog
     {
         string model=report?.model;
         if(string.IsNullOrWhiteSpace(model)) return "[생성 방식 미확인]";
-        return (model.StartsWith("OmniRoute",StringComparison.OrdinalIgnoreCase)?"[외부 통신] ":"[내장형] ")+model;
+        bool external = model == DirectStoryGenerator.ModelName || model.StartsWith("OmniRoute", StringComparison.OrdinalIgnoreCase);
+        return (external ? "[외부 통신] " : "[내장형] ") + model;
     }
     public static void Generation(LocalStoryLogStage stage,LocalStoryTestReport report,string message)
     {
@@ -133,6 +135,7 @@ public sealed class LocalStoryRuntimeService : MonoBehaviour
         {
             var storage = SaveIOService.Instance;
             LocalStoryDialogueQueue.RecoverFinishedRuns(storage);
+            LocalStoryDialogueQueue.RequeueLegacyDialogue(storage);
             if(LocalStoryDialogueQueue.Next(storage)==null) return;
             EnsureInstance();
             instance.Pump(storage);
@@ -152,11 +155,12 @@ public sealed class LocalStoryRuntimeService : MonoBehaviour
         var token=cancellation.Token;
         try
         {
+            var generator = new DirectStoryGenerator(DirectLlmSettings.CreateProjectClient());
             LocalStoryDialogueJob job;
             while(!token.IsCancellationRequested && (job=LocalStoryDialogueQueue.Next(storage))!=null)
             {
                 Status=job.sourceRun+"회차 "+job.characterId+" → "+job.targetRun+"회차용";
-                await LocalStoryDialogueQueue.Process(storage, job, LocalStoryEmotion.Infer, token);
+                await LocalStoryDialogueQueue.Process(storage, job, generator, token);
             }
         }
         catch(OperationCanceledException) { LocalStoryLog.Write(LocalStoryLogStage.Deferred,"작업 중단. 저장된 요청은 다음 실행에서 재개합니다.",activity:"대사 생성"); }
@@ -179,25 +183,21 @@ public static class LocalStoryRuntimePipeline
     {
         string root=Path.Combine(Application.streamingAssetsPath,"LocalStory");
         var model=LocalStoryTestModels.ModelFor(report);
-        var omni=model==LocalStoryTestModel.OmniRoute?StoryGenerationSettings.Read():null;
+        bool gemmaDialogue = model == LocalStoryTestModel.Gemma && report.generationMode == LocalStoryGemmaDialogue.Mode;
+        if (model == LocalStoryTestModel.OmniRoute || gemmaDialogue)
+        {
+            await GenerateDialoguePreviewAsync(report, gemmaDialogue, token);
+            return;
+        }
         string modelPath=null;
-        report.runtimePath=omni!=null?omni.apiUrl:Path.GetFullPath(Path.Combine(root,"runtimes","win-x64","native"));
-        report.generationIdentity=omni!=null?omni.apiUrl+"|"+omni.combo:"Embedded|"+model;
+        report.runtimePath=Path.GetFullPath(Path.Combine(root,"runtimes","win-x64","native"));
+        report.generationIdentity="Embedded|"+model;
         report.samplingProfile="짧은 구간 작성 / 필요한 구간만 교정";
-        LocalStoryLog.Generation(LocalStoryLogStage.Working,report,omni!=null?"이야기 생성 시작 / HTTP 요청":"이야기 생성 시작 / 로컬 모델 추론");
+        LocalStoryLog.Generation(LocalStoryLogStage.Working,report,"이야기 생성 시작 / 로컬 모델 추론");
         try
         {
             await LocalStorySections.Generate(report,token,(input,correction,ct,progress) =>
             {
-                if(omni!=null)
-                {
-                    string messages=correction?input.correctionPrompt:input.prompt;
-                    var parameters=OmniRouteFreeStackConverter.RequestBody(messages,input.maxTokens,input.seed,omni.combo);
-                    parameters.Remove("messages");
-                    if(correction) input.correctionParameters=report.correctionParameters=parameters.ToString(Newtonsoft.Json.Formatting.None);
-                    else input.draftParameters=report.draftParameters=parameters.ToString(Newtonsoft.Json.Formatting.None);
-                    return OmniRouteFreeStackConverter.Generate(messages,input.maxTokens,input.seed,ct,omni);
-                }
                 if(modelPath==null) {modelPath=LocalStoryTestModels.PathFor(root,model);report.modelPath=Path.GetFullPath(modelPath);}
                 return LocalStoryInference.Generate(root,correction?input.correctionPrompt:input.prompt,input.grammar,input.seed,ct,progress,
                     (correction?LocalStorySampling.Proofreading():LocalStorySampling.Comparison()).WithTokenLimit(input.maxTokens),modelPath);
@@ -212,5 +212,51 @@ public static class LocalStoryRuntimePipeline
             LocalStoryLog.Generation(LocalStoryLogStage.Deferred,report,"생성 취소");
             throw;
         }
+    }
+
+    private static async Task GenerateDialoguePreviewAsync(LocalStoryTestReport report, bool gemma, CancellationToken token)
+    {
+        var client = gemma ? null : DirectLlmSettings.CreateProjectClient();
+        var source = report.original.MainStory;
+        string chapter = report.storyPath.Split('/')[0];
+        var emotions = LocalStoryEmotion.EmotionsFor(report.storyPath);
+        string emotion = emotions[new System.Random().Next(emotions.Length)];
+        if (!gemma) report.model = DirectStoryGenerator.ModelName;
+        report.generationIdentity = gemma ? LocalStoryGemmaDialogue.Mode : client.Identity;
+        report.runtimePath = gemma ? "Embedded / Gemma" : "HTTPS / provider APIs";
+        report.generationMode = gemma ? LocalStoryGemmaDialogue.Mode : "DirectDialogue";
+        report.generated = JsonUtility.FromJson<EncounterCardRoot>(JsonUtility.ToJson(report.original));
+        for (int index = 0; index < source.Count; index++)
+        {
+            var line = LocalStoryEmotion.CreateLine(chapter, source[index], index);
+            if (line == null) continue;
+            string text;
+            if (gemma)
+            {
+                string messages = LocalStoryGemmaDialogue.Messages(line, emotion, source[index].text);
+                var result = await LocalStoryGemmaDialogue.Generate(messages, unchecked(report.seed + index), token);
+                text = result.Text;
+                report.backend = result.Backend;
+            }
+            else
+            {
+                string messages = DirectStoryGenerator.DialogueMessages(line, emotion, source[index].text);
+                var result = await client.GenerateDialogueAsync(messages, token);
+                text = result.Text;
+                report.backend = "Direct / " + result.Provider + " / " + result.Model;
+            }
+            report.generated.MainStory[index].text = text;
+            report.sectionsGenerated++;
+            if (text != source[index].text) report.changedCards++;
+            report.rawOutput = JsonUtility.ToJson(new LocalStoryPatch
+            {
+                cards = report.generated.MainStory.Select((card, i) => new LocalStoryPatchCard
+                    { index = i, text = card.text, options = card.options ?? Array.Empty<string>() }).ToArray()
+            });
+        }
+        report.unchangedCards = source.Count - report.changedCards;
+        report.valid = report.sectionsGenerated > 0;
+        if (report.valid) report.generationWinner = report.model;
+        else report.error = "선택한 이야기에서 생성할 NPC 대사를 찾지 못했습니다.";
     }
 }

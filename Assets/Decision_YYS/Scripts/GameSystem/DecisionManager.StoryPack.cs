@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json.Linq;
+using OneWay.Decision.DirectLlm;
 using UnityEngine;
 using static Constants;
 
@@ -86,10 +87,8 @@ public partial class DecisionManager
             {
                 var previous = job.emotionLines.FirstOrDefault(value => value.authoredLinePath == path &&
                     value.originalText == original);
-                if (previous != null)
-                    line["text"] = string.IsNullOrEmpty(previous.generatedText)
-                        ? LocalStoryEmotion.RenderEmotion(original, job.emotion)
-                        : previous.generatedText;
+                if (!string.IsNullOrEmpty(previous?.generatedText))
+                    line["text"] = previous.generatedText;
             }
         }
         return dialogue;
@@ -144,7 +143,8 @@ public partial class DecisionManager
             mode = MineAuthoredStory.ModeId(previous?.guideProgress?.authoredMine?.shortStoryPack == true);
         }
         if (mode != MineAuthoredStory.ModeId(StoryPack.IsShort)) return null;
-        return queue.jobs.Where(job => job.authoredPack && job.targetRun == session.RunNumber &&
+        return queue.jobs.Where(job => job.authoredPack && job.model == DirectStoryGenerator.ModelName &&
+            job.status == "Ready" && job.targetRun == session.RunNumber &&
             job.emotionLines != null && !string.IsNullOrEmpty(job.emotion)).ToDictionary(job => job.jobId);
     }
 

@@ -70,7 +70,7 @@ public sealed partial class MineLearningStation : MonoBehaviour
     [Header("Knowledge thresholds: only the initial row is defined until balance is approved")]
     [SerializeField] private CapacityStep[] capacities = { new CapacityStep() };
     [Header("Trial cost / reward per ability")]
-    [SerializeField] private int[] costs = {1,1,1,1}, rewards = {2,2,2,2};
+    [SerializeField] private int[] costs = {1,1,1,1}, rewards = {1,1,1,1};
     [Header("Duration in seconds")]
     [SerializeField, Min(.1f)] private float minimumSeconds = 5, maximumSeconds = 5;
     [SerializeField] private bool randomDuration;
@@ -226,7 +226,9 @@ public sealed partial class MineLearningStation : MonoBehaviour
                 if (job.requiresBoard && (!job.onBoard || job.boardIndex != 1)) continue;
                 job.remaining=Mathf.Max(0,job.remaining-seconds);
                 if(job.remaining>0) continue;
-                progress.active.RemoveAt(i); grant(job.ability,job.reward); changed=true;
+                var book = authoredBooks?.FirstOrDefault(item => item.id == job.bookId);
+                int reward = book?.reward ?? (string.IsNullOrEmpty(job.bookId) ? Mathf.Max(0, rewards[job.ability]) : job.reward);
+                progress.active.RemoveAt(i); grant(job.ability,reward); changed=true;
             }
             changed |= FillSlots();
         }

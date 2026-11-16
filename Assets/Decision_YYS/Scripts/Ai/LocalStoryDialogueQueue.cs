@@ -6,6 +6,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using OneWay.Decision.DirectLlm;
 using UnityEngine;
 
 [Serializable] public sealed class LocalStoryDreamMemory
@@ -26,7 +27,7 @@ using UnityEngine;
     public bool auditArchived;
     public LocalStorySectionCheckpoint sectionCheckpoint;
     public LocalStoryRevisionRequest snapshot;
-    public string sourceHash, emotion;
+    public string sourceHash, emotion, legacyEmotionContentHash;
     public int sequence;
     public List<LocalStoryEmotionLine> emotionLines;
     public bool authoredPack;
@@ -65,7 +66,7 @@ public static class LocalStoryDialogueQueue
             {
                 job = new LocalStoryDialogueJob { authoredPack = true, jobId = key, storyPath = record.encounterPath,
                     chapterId = "Chapter_1", episodeId = "Chapter_1_01", characterId = card.authoredNpcId,
-                    sourceRun = queue.sourceRun, targetRun = queue.targetRun, revision = 1, model = "Gemma",
+                    sourceRun = queue.sourceRun, targetRun = queue.targetRun, revision = 1, model = DirectStoryGenerator.ModelName,
                     status = "WaitingForRunEnd", emotionLines = new List<LocalStoryEmotionLine>() };
                 queue.jobs.Add(job);
             }
@@ -193,7 +194,7 @@ public static class LocalStoryDialogueQueue
                 {
                     jobId = path, storyPath = path, characterId = (string)ChapterContentCatalog.Info(path)["characterId"],
                     sourceRun = run, targetRun = run + 1, revision = 1, sequence = ++sequence, sourceHash = sourceHash,
-                    inputHash = Hash(sourceHash + "|" + run + "|" + path), model = "Gemma", status = "WaitingForRunEnd",
+                    inputHash = Hash(sourceHash + "|" + run + "|" + path), model = DirectStoryGenerator.ModelName, status = "WaitingForRunEnd",
                     emotionLines = lines
                 };
                 queue.jobs.Add(job);
@@ -221,8 +222,60 @@ public static class LocalStoryDialogueQueue
 
     public static LocalStoryDialogueJob Next(SaveIOService store) => store.NextNarrativeJob();
 
+    internal static void RequeueLegacyDialogue(SaveIOService store)
+    {
+        int current = CurrentRun(store);
+        foreach (int run in new[] { current - 1, current })
+        {
+            var queue = Load(store, run);
+            if (queue?.finalized != true) continue;
+            var legacy = queue.jobs.Where(job => job.model != DirectStoryGenerator.ModelName &&
+                (job.status == "Ready" || job.status == "Rejected" || job.status == "Generating" || job.status == "Pending") &&
+                CanProcess(store, job)).ToArray();
+            if (legacy.Length == 0) continue;
+            foreach (var job in legacy)
+            {
+                job.legacyEmotionContentHash = job.contentHash;
+                job.contentHash = null;
+                job.model = DirectStoryGenerator.ModelName;
+                job.status = "Pending";
+                job.generationWinner = null;
+                foreach (var line in job.emotionLines)
+                {
+                    line.generatedText = null;
+                    line.rejection = null;
+                    line.emotionFallback = false;
+                    line.finished = false;
+                }
+            }
+            Save(store, queue);
+        }
+    }
+
+    private static async Task<(string Text, string Provider, string Model)> GenerateLine(
+        DirectStoryGenerator generator, LocalStoryDialogueJob job, LocalStoryEmotionLine line,
+        string original, CancellationToken token)
+    {
+        try
+        {
+            var result = await generator.RewriteDialogueAsync(line, job.emotion, original, token);
+            return (result.Text, result.Provider.ToString(), result.Model);
+        }
+        catch (DirectLlmGenerationException error)
+        {
+            token.ThrowIfCancellationRequested();
+            LocalStoryLog.Write(LocalStoryLogStage.Working,
+                $"{job.storyPath} / 대사 {line.cardIndex + 1} / API {error.Attempts.Count}곳 실패 / 내장 Gemma 사용",
+                activity: "대사 생성");
+            string messages = LocalStoryGemmaDialogue.Messages(line, job.emotion, original);
+            int seed = unchecked(job.sourceRun * 1000003 + line.cardIndex);
+            var result = await LocalStoryGemmaDialogue.Generate(messages, seed, token);
+            return (result.Text, LocalStoryGemmaDialogue.ProviderName, LocalStoryTestModels.Name(LocalStoryTestModel.Gemma));
+        }
+    }
+
     public static async Task Process(SaveIOService store, LocalStoryDialogueJob job,
-        Func<string, string, int, CancellationToken, Task<string>> infer, CancellationToken token)
+        DirectStoryGenerator generator, CancellationToken token)
     {
         if (!CanProcess(store, job)) return;
         var queue = Load(store, job.sourceRun);
@@ -232,7 +285,7 @@ public static class LocalStoryDialogueQueue
         string source = job.authoredPack ? null : ChapterContentCatalog.Story(job.storyPath);
         if (!job.authoredPack && (Hash(source) != job.sourceHash || !ChapterContentCatalog.CanRewrite(job.storyPath) ||
             ChapterContentCatalog.ResolveStoryPath(job.storyPath, job.targetRun) != job.storyPath ||
-            !store.CanReplaceNarrativeContent(job.targetRun, job.storyPath, job.contentHash)))
+            !store.CanReplaceEmotionDialogue(job)))
         {
             job.status = "Preserved";
             job.error = "원문이 바뀌었거나 기존 적용본이 있습니다.";
@@ -242,6 +295,7 @@ public static class LocalStoryDialogueQueue
 
         job.status = "Generating";
         job.error = null;
+        job.model = DirectStoryGenerator.ModelName;
         Save(store, queue);
         int remaining = job.emotionLines.Count(line => !line.finished);
         LocalStoryLog.Write(LocalStoryLogStage.Working,
@@ -253,14 +307,20 @@ public static class LocalStoryDialogueQueue
             {
                 token.ThrowIfCancellationRequested();
                 var card = job.authoredPack ? new EncounterCard { text = line.originalText } : cards.MainStory[line.cardIndex];
-                await LocalStoryEmotion.RewriteLine(job, line, card, infer, token);
+                var result = await GenerateLine(generator, job, line, card.text, token);
+                token.ThrowIfCancellationRequested();
+                line.generatedText = result.Text;
+                line.apiProvider = result.Provider;
+                line.apiModel = result.Model;
+                line.originalText = card.text;
+                line.finished = true;
                 Save(store, queue);
             }
 
             token.ThrowIfCancellationRequested();
             if (!CanProcess(store, job) || (!job.authoredPack &&
                 (Hash(ChapterContentCatalog.Story(job.storyPath)) != job.sourceHash ||
-                 !store.CanReplaceNarrativeContent(job.targetRun, job.storyPath, job.contentHash))))
+                 !store.CanReplaceEmotionDialogue(job))))
             {
                 job.status = "Preserved";
                 job.error = "생성 도중 적용 조건이 바뀌었습니다.";
@@ -271,8 +331,7 @@ public static class LocalStoryDialogueQueue
             if (accepted.Length == 0)
             {
                 job.status = "Rejected";
-                job.error = "검사를 통과한 NPC 대사가 없습니다.";
-                LocalStoryLog.Write(LocalStoryLogStage.Review, job.storyPath + " / 검사 탈락 · 원문 사용", activity: "대사 생성");
+                job.error = "저장할 NPC 응답이 없습니다.";
                 return;
             }
 
@@ -284,10 +343,10 @@ public static class LocalStoryDialogueQueue
                 store.SaveEmotionDialogue(job, cards, accepted);
             }
             job.status = "Ready";
-            int fallbackCount = accepted.Count(line => line.emotionFallback);
-            job.generationWinner = fallbackCount == accepted.Length ? "EmotionFallback" : "Gemma";
+            int gemmaLines = accepted.Count(line => line.apiProvider == LocalStoryGemmaDialogue.ProviderName);
+            job.generationWinner = gemmaLines == 0 ? job.model :
+                gemmaLines == accepted.Length ? LocalStoryGemmaDialogue.ProviderName : "Direct HTTP + Gemma";
             job.generationPart = job.emotion + " · " + accepted.Length + "/" + job.emotionLines.Count + "줄";
-            if (fallbackCount > 0) job.generationPart += $" (감정 표현 보완 {fallbackCount}줄)";
             LocalStoryLog.Write(LocalStoryLogStage.Complete,
                 $"{job.storyPath} / {job.generationPart} / {job.targetRun}회차용 / {store.DialogueReportPath}", activity: "대사 생성");
         }
@@ -312,6 +371,7 @@ public static class LocalStoryDialogueQueue
         finally
         {
             Save(store, queue);
+            if (job.status == "Ready") store.RefreshDialogueReport();
         }
     }
 }

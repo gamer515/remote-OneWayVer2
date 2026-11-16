@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using OneWay.Decision.DirectLlm;
 
 public enum LocalStoryTestModel { Qwen, Gemma, OmniRoute }
 
@@ -20,14 +21,14 @@ public static class LocalStoryTestModels
     private static readonly object VerificationSync = new object();
     public static string Name(LocalStoryTestModel model) => model == LocalStoryTestModel.Qwen ?
         "Qwen3-4B-Instruct-2507 Q4_K_M" : model == LocalStoryTestModel.Gemma ? "Gemma 3 4B IT QAT Q4_0" :
-        model == LocalStoryTestModel.OmniRoute ? "OmniRoute / " + StoryGenerationSettings.Read().combo :
+        model == LocalStoryTestModel.OmniRoute ? DirectStoryGenerator.ModelName :
         throw new ArgumentOutOfRangeException(nameof(model));
     // Keep historical Qwen reports readable, but never interpret an unknown name as Qwen.
     public static LocalStoryTestModel ModelFor(LocalStoryTestReport report)
     {
         string name=report?.model;
         if(string.IsNullOrWhiteSpace(name)) throw new ArgumentException("생성 모델을 명시하세요.",nameof(report));
-        if(name.StartsWith("OmniRoute",StringComparison.OrdinalIgnoreCase)) return LocalStoryTestModel.OmniRoute;
+        if(name == DirectStoryGenerator.ModelName || name.StartsWith("OmniRoute",StringComparison.OrdinalIgnoreCase)) return LocalStoryTestModel.OmniRoute;
         if(name.IndexOf("Gemma",StringComparison.OrdinalIgnoreCase)>=0) return LocalStoryTestModel.Gemma;
         if(name.StartsWith("Qwen",StringComparison.OrdinalIgnoreCase)) return LocalStoryTestModel.Qwen;
         throw new ArgumentException("알 수 없는 생성 모델: "+name,nameof(report));
@@ -93,6 +94,7 @@ public sealed class LocalStorySampling
     private LocalStorySampling(string name, string values, int maxTokens = 1800) { Name=name; this.values=values; this.maxTokens=maxTokens; }
     public LocalStorySampling WithTokenLimit(int limit) => new LocalStorySampling(Name, values, Math.Max(128, Math.Min(1800, limit)));
     public static LocalStorySampling Legacy() => new LocalStorySampling("기존", "\"temperature\":0.65,\"top_p\":0.9");
+    public static LocalStorySampling Dialogue() => new LocalStorySampling("NPC 대사", Legacy().values, -1);
     public static LocalStorySampling Recommended() => new LocalStorySampling("Qwen 권장", "\"temperature\":0.7,\"top_p\":0.8,\"top_k\":20,\"min_p\":0");
     public static LocalStorySampling Comparison() => new LocalStorySampling("공통 비교 (Qwen 권장 값)", Recommended().values);
     public static LocalStorySampling Proofreading() => new LocalStorySampling("교정 시험", "\"temperature\":0.25,\"top_p\":0.8,\"top_k\":20,\"min_p\":0");

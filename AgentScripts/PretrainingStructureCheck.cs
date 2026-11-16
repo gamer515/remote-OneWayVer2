@@ -4,16 +4,21 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
+using OneWay.Decision.DirectLlm;
 using UnityEngine;
 
 // Returns evidence to the caller only. No reports or player save writes.
 public static class PretrainingStructureCheck
 {
-    public static async Task<object> PlaybackWithoutReports()
+    public static Task<object> PlaybackWithoutReports() => RunDialoguePlayback(false);
+
+    public static Task<object> PlaybackWithGemmaFallback() => RunDialoguePlayback(true);
+
+    private static async Task<object> RunDialoguePlayback(bool failAllApisForChoice)
     {
         if (Application.isPlaying || LocalStoryRuntimeService.IsBusy) throw new InvalidOperationException("Stop gameplay first.");
         const string path = "Chapter_1/Chapter_1_01/Encounters/brook";
-        string root = Path.GetFullPath("tmp/GemmaEmotionChecks/" + Guid.NewGuid().ToString("N"));
+        string root = Path.GetFullPath("tmp/DirectDialogueChecks/" + Guid.NewGuid().ToString("N"));
         int checks = 0;
         void Check(bool condition, string label)
         {
@@ -22,20 +27,10 @@ public static class PretrainingStructureCheck
         }
 
         var source = JsonUtility.FromJson<EncounterCardRoot>(ChapterContentCatalog.Story(path));
-        var validChange = (Func<string, string, bool>)typeof(LocalStoryDialogueQueue).Assembly.GetType("LocalStoryEmotion")
-            .GetMethod("ValidChange", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic)
-            .CreateDelegate(typeof(Func<string, string, bool>));
-        Check(!validChange(source.MainStory[0].text,
-            "어휴, 웬일이신지? 어제까지만 해도 이 곡괭이가 이렇게 묵직했어야 하는데. 으으, 뭔가 이상한데요?"),
-            "A real Gemma output that reversed the weight fact passed.");
-        Check(!validChange(source.MainStory[7].text, "들어갈 땐 통행세 낼 거구먼. 쯧, 챙겨야지."),
-            "A real Gemma output that weakened the demand passed.");
-        Check(!validChange(source.MainStory[7].text, "들어가려면 통행세부터 지불해야 합니다."),
-            "A real Gemma output that changed the NPC register passed.");
-        const string weightParaphrase = "이상해. 어제까지만 해도 이 곡괭이가 이 정도로 무겁진 않았는데.";
-        const string taxParaphrase = "안으로 가고 싶으면 먼저 통행세를 내라고!";
-        Check(validChange(source.MainStory[0].text, weightParaphrase) && validChange(source.MainStory[7].text, taxParaphrase),
-            "A paraphrase that preserved the fact or demand was blocked.");
+        string longReply = "처음 겪는 일입니다." + Environment.NewLine + new string('가', 190);
+        const string taxParaphrase = "안을 살펴보고 싶다면 나한테 먼저 건네.";
+        const string numericReply = "거기엔 99명이 숨어 있어.";
+
         var store = (SaveIOService)Activator.CreateInstance(typeof(SaveIOService),
             System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic, null, new object[] { root }, null);
         var instance = typeof(SaveIOService).GetFields(System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)
@@ -75,66 +70,110 @@ public static class PretrainingStructureCheck
             LocalStoryDialogueQueue.FinalizeRun(store, 1);
             var pending = LocalStoryDialogueQueue.Next(store);
             string emotion = pending.emotion;
-            Check(new[] { "화", "겁", "슬픔", "기쁨", "당황", "안도" }.Contains(emotion), "Emotion outside the pool.");
+            Check(!string.IsNullOrWhiteSpace(emotion), "No saved emotion was selected.");
             LocalStoryDialogueQueue.FinalizeRun(store, 1);
             Check(LocalStoryDialogueQueue.Next(store).emotion == emotion, "Finalization rerolled emotion.");
 
             int calls = 0;
-            Task<string> Interrupt(string messages, string grammar, int seed, CancellationToken token)
+            var failedProviders = new System.Collections.Generic.List<DirectLlmProvider>();
+            Task<DirectLlmHttpResponse> Reply(DirectLlmHttpRequest request, CancellationToken token)
             {
-                if (++calls == 3) stop.Cancel();
+                if (++calls == 2) stop.Cancel();
                 token.ThrowIfCancellationRequested();
-                return Reply(messages, grammar, seed, token);
-            }
-            Task<string> Reply(string messages, string grammar, int seed, CancellationToken token)
-            {
-                string input = (string)JArray.Parse(messages)[0]["content"];
+                var body = JObject.Parse(request.Body);
+                string input = request.Provider == DirectLlmProvider.Gemini
+                    ? (string)body["contents"][0]["parts"][0]["text"]
+                    : (string)body["messages"][0]["content"];
                 var data = JObject.Parse(input.Substring(input.IndexOf("\n\n", StringComparison.Ordinal) + 2));
-                Check(data["options"] == null && data["candidate"]?.Type != JTokenType.Array &&
-                    (string)data["emotion"] == emotion, "Prompt exposed choices or lost its saved emotion.");
-                if (data["candidate"] != null) return Task.FromResult("{\"usable\":true}");
+                Check(data.Count == 3 && data["npc"] != null &&
+                    (string)data["emotion"] == emotion && body["max_tokens"] == null,
+                    "Prompt added a restriction or lost the saved emotion.");
                 string original = (string)data["original"];
-                string text = original == source.MainStory[0].text ? weightParaphrase :
-                    original == source.MainStory[choice].text ? taxParaphrase : "거기엔 99명이 숨어 있어.";
-                return Task.FromResult(new JObject { ["text"] = text }.ToString());
+                if (failAllApisForChoice && original == source.MainStory[choice].text)
+                {
+                    failedProviders.Add(request.Provider);
+                    return Task.FromResult(new DirectLlmHttpResponse { StatusCode = 503 });
+                }
+                if (failAllApisForChoice && original == source.MainStory[1].text && request.Provider == DirectLlmProvider.Gemini)
+                    return Task.FromResult(new DirectLlmHttpResponse { StatusCode = 503 });
+                string output = original == source.MainStory[0].text ? longReply :
+                    original == source.MainStory[choice].text ? taxParaphrase : numericReply;
+                string dialogueJson = new JObject { ["text"] = output }.ToString();
+                var response = request.Provider == DirectLlmProvider.Gemini
+                    ? new JObject
+                    {
+                        ["candidates"] = new JArray(new JObject
+                        {
+                            ["finishReason"] = "STOP",
+                            ["content"] = new JObject { ["parts"] = new JArray(new JObject { ["text"] = dialogueJson }) }
+                        })
+                    }
+                    : new JObject
+                    {
+                        ["choices"] = new JArray(new JObject
+                        {
+                            ["finish_reason"] = "stop",
+                            ["message"] = new JObject { ["content"] = dialogueJson }
+                        })
+                    };
+                return Task.FromResult(new DirectLlmHttpResponse
+                {
+                    StatusCode = 200,
+                    TransportSucceeded = true,
+                    Body = response.ToString()
+                });
             }
-            try { await LocalStoryDialogueQueue.Process(store, pending, Interrupt, stop.Token); }
+            var options = new DirectLlmOptions { roundRobin = false };
+            if (!failAllApisForChoice)
+                foreach (var endpoint in options.endpoints) endpoint.enabled = endpoint.provider == DirectLlmProvider.Cloudflare;
+            var generator = new DirectStoryGenerator(new DirectLlmClient(options, new DialogueTransport(Reply),
+                _ => new DirectLlmCredentials("test-key", new string('a', 32))));
+            try { await LocalStoryDialogueQueue.Process(store, pending, generator, stop.Token); }
             catch (OperationCanceledException) { }
             var stopped = LocalStoryDialogueQueue.Next(store);
             Check(stopped.emotion == emotion && stopped.emotionLines.Count(line => line.finished) == 1, "Checkpoint lost the finished line.");
             Check(!store.HasNarrativeContent(2, path), "Interrupted job published partial output.");
 
             store.SaveProfile(new ProfileData { currentRun = 2 });
-            await LocalStoryDialogueQueue.Process(store, LocalStoryDialogueQueue.Next(store), Reply, CancellationToken.None);
+            await LocalStoryDialogueQueue.Process(store, LocalStoryDialogueQueue.Next(store), generator, CancellationToken.None);
+
             var completed = LocalStoryDialogueQueue.Load(store, 1).jobs.Single();
-            Check(completed.status == "Ready" && completed.emotionLines.Count(line => !string.IsNullOrEmpty(line.generatedText)) == 2,
-                completed.error ?? "Expected only valid NPC lines to be accepted.");
-            Check(string.IsNullOrEmpty(completed.emotionLines[1].generatedText) &&
-                !string.IsNullOrEmpty(completed.emotionLines[1].rejection), "Numeric change passed validation.");
+            Check(completed.status == "Ready" && completed.emotionLines.Count(line => !string.IsNullOrEmpty(line.generatedText)) == 3,
+                completed.error ?? "The API replies were not saved.");
+            var choiceReply = completed.emotionLines.Single(line => line.cardIndex == choice);
+            if (failAllApisForChoice)
+            {
+                Check(failedProviders.SequenceEqual(options.endpoints.Select(endpoint => endpoint.provider)),
+                    "Gemma must run after every enabled API fails.");
+                Check(choiceReply.apiProvider == "Gemma" && completed.generationWinner == "Direct HTTP + Gemma" &&
+                    completed.emotionLines.Single(line => line.cardIndex == 0).apiProvider == "Gemini" &&
+                    completed.emotionLines.Single(line => line.cardIndex == 1).apiProvider == "Groq",
+                    "Successful API results or the fallback source were replaced.");
+            }
             Check(new EncounterContentRepository(1).TryLoadCards(path, out var current, out string currentError), currentError);
             Check(new EncounterContentRepository(2).TryLoadCards(path, out var replay, out string replayError), replayError);
-            Check(replay.MainStory[0].text != current.MainStory[0].text && replay.MainStory[1].text == current.MainStory[1].text &&
-                replay.MainStory[2].text == current.MainStory[2].text, "Run scope, rejected or unplayed text changed.");
+            Check(replay.MainStory[0].text == longReply && replay.MainStory[1].text == numericReply &&
+                replay.MainStory[choice].text == (failAllApisForChoice ? choiceReply.generatedText : taxParaphrase) &&
+                replay.MainStory[2].text == current.MainStory[2].text,
+                "An API reply changed or an unplayed line was replaced.");
+
             Check(replay.MainStory[choice].options.SequenceEqual(current.MainStory[choice].options), "Player choices changed.");
             Check(JsonUtility.ToJson(replay.MainStory[choice].choiceActions[0]) ==
                 JsonUtility.ToJson(current.MainStory[choice].choiceActions[0]), "Choice action changed.");
 
-            string training = Directory.GetFiles(Path.Combine(root, "LocalStoryTraining"), "*.jsonl", SearchOption.AllDirectories).Single();
-            var examples = File.ReadAllLines(training).Select(JObject.Parse).ToArray();
-            Check(examples.Length == 2 && examples.All(example => (string)example["messages"][1]["role"] == "assistant"),
-                "Training candidates were missing or included rejected output.");
             string dialogueReport = Path.Combine(root, "LocalStoryTraining", "DialogueChanges.html");
             string html = System.Net.WebUtility.HtmlDecode(File.ReadAllText(dialogueReport));
             Check(html.Contains("<strong>원문</strong>" + current.MainStory[0].text) &&
                 html.Contains("<strong>변경 대사</strong>" + replay.MainStory[0].text), "The saved dialogue pair was not shown.");
-            Check(html.Split(new[] { "<article>" }, StringSplitOptions.None).Length == 3 &&
-                !html.Contains("거기엔 99명이 숨어 있어."), "The report included a rejected line or missed an accepted line.");
+            Check(html.Split(new[] { "<article>" }, StringSplitOptions.None).Length == 4 &&
+                html.Contains(numericReply), "The report did not include every API reply.");
+            if (failAllApisForChoice) Check(html.Contains("Gemma / Gemma"), "The report did not label the Gemma result.");
             typeof(LocalStoryRuntimeService).GetMethod("LogDialogueStatus",
                 System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic).Invoke(null, new object[] { store, 2 });
             Check(dialogueLogs.Any(log => log.Contains("[대사 생성 요청]")) && dialogueLogs.Any(log => log.Contains("[대사 생성 중]")) &&
                 dialogueLogs.Any(log => log.Contains("[대사 생성 완료]")) && dialogueLogs.Any(log => log.Contains("[대사 적용]")),
                 "Dialogue lifecycle logs were missing.");
-            Check(dialogueLogs.Any(log => log.Contains("[대사 생성 상태]") && log.Contains("1개 이야기 / 2줄")) &&
+            Check(dialogueLogs.Any(log => log.Contains("[대사 생성 상태]") && log.Contains("1개 이야기 / 3줄")) &&
                 dialogueLogs.Any(log => log.Contains("[대사 비교 HTML]") && log.Contains(dialogueReport)), "Startup status or report path was missing.");
             Check(LocalStoryDialogueQueue.Next(store) == null, "Completed work requeued.");
 
@@ -153,7 +192,8 @@ public static class PretrainingStructureCheck
             Check(recovered?.targetRun == 3 && recovered.storyPath == path, "A terminal partial encounter was lost.");
             Check(recovered.emotionLines.Count == 1 && recovered.emotionLines[0].cardIndex == 0,
                 "An unfinished encounter queued unseen cards.");
-            return new { passed = true, checks, emotion, isolatedSave = root, trainingExamples = examples.Length };
+            return new { passed = true, checks, emotion, isolatedSave = root, apiReplies = failAllApisForChoice ? 2 : 3,
+                gemmaReply = failAllApisForChoice ? choiceReply.generatedText : null };
         }
         finally
         {
@@ -162,84 +202,13 @@ public static class PretrainingStructureCheck
         }
     }
 
-    public static async Task<object> CheckParaphrasePrompt()
+    private sealed class DialogueTransport : IDirectLlmTransport
     {
-        const string path = "Chapter_1/Chapter_1_01/Encounters/brook";
-        var card = JsonUtility.FromJson<EncounterCardRoot>(ChapterContentCatalog.Story(path)).MainStory[7];
-        var line = new LocalStoryEmotionLine { cardIndex = 7, speakerId = "Brook", name = "브룩" };
-        var job = new LocalStoryDialogueJob { storyPath = path, emotion = "화", sourceRun = 1 };
-        const string paraphrase = "안으로 가고 싶으면 먼저 통행세를 내라고!";
-        int drafts = 0, reviews = 0;
-        Task<string> Reply(string messages, string grammar, int seed, CancellationToken token)
-        {
-            string content = (string)JArray.Parse(messages)[0]["content"];
-            var input = JObject.Parse(content.Substring(content.IndexOf("\n\n", StringComparison.Ordinal) + 2));
-            if (input["candidate"] != null)
-            {
-                reviews++;
-                if ((string)input["candidate"] != paraphrase) throw new InvalidOperationException("A surface-only change reached review.");
-                return Task.FromResult("{\"usable\":true}");
-            }
-            if (input["options"] != null || !content.Contains("어휘나 어순"))
-                throw new InvalidOperationException("Wrong dialogue prompt.");
-            return Task.FromResult(new JObject { ["text"] = ++drafts == 1 ? "쯧, " + card.text : paraphrase }.ToString());
-        }
-        Func<string, string, int, CancellationToken, Task<string>> infer = Reply;
-        var engine = typeof(LocalStoryDialogueQueue).Assembly.GetType("LocalStoryEmotion");
-        await (Task)engine.GetMethod("RewriteLine", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic)
-            .Invoke(null, new object[] { job, line, card, infer, CancellationToken.None });
-        if (drafts != 2 || reviews != 1 || line.generatedText != paraphrase || !line.paraphrased)
-            throw new InvalidOperationException("The rewrite did not retry and accept the paraphrase.");
-        return new { passed = true, drafts, reviews };
-    }
+        private readonly Func<DirectLlmHttpRequest, CancellationToken, Task<DirectLlmHttpResponse>> send;
 
-    public static string StartEmotionGemmaSample()
-    {
-        string directory = Path.GetFullPath("tmp/GemmaEmotionChecks");
-        Directory.CreateDirectory(directory);
-        string file = Path.Combine(directory, "Gemma-" + Guid.NewGuid().ToString("N") + ".json");
-        _ = WriteEmotionGemmaSample(file);
-        return file;
-    }
+        public DialogueTransport(Func<DirectLlmHttpRequest, CancellationToken, Task<DirectLlmHttpResponse>> send) => this.send = send;
 
-    private static async Task WriteEmotionGemmaSample(string file)
-    {
-        object result;
-        try { result = await EmotionGemmaSample(); }
-        catch (Exception error) { result = new { error = error.ToString() }; }
-        File.WriteAllText(file, JObject.FromObject(result).ToString());
-    }
-
-    private static async Task<object> EmotionGemmaSample()
-    {
-        if (LocalStoryRuntimeService.IsBusy || LocalStoryRuntimeService.IsPreparing)
-            throw new InvalidOperationException("Wait for the current Gemma work to finish.");
-        const string path = "Chapter_1/Chapter_1_01/Encounters/brook";
-        var emotion = typeof(LocalStoryDialogueQueue).Assembly.GetType("LocalStoryEmotion");
-        const System.Reflection.BindingFlags flags = System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic;
-        var infer = (Func<string, string, int, CancellationToken, Task<string>>)emotion.GetMethod("Infer", flags)
-            .CreateDelegate(typeof(Func<string, string, int, CancellationToken, Task<string>>));
-        var cards = JsonUtility.FromJson<EncounterCardRoot>(ChapterContentCatalog.Story(path)).MainStory;
-        var results = new JArray();
-        foreach (var sample in new[] { (index: 0, keyword: "겁"), (index: 7, keyword: "화"), (index: 4, keyword: "당황") })
-        {
-            var card = cards[sample.index];
-            var line = (LocalStoryEmotionLine)emotion.GetMethod("CreateLine", flags)
-                .Invoke(null, new object[] { "Chapter_1", card, sample.index });
-            var job = new LocalStoryDialogueJob { storyPath = path, emotion = sample.keyword, sourceRun = 1 };
-            var replies = new JArray();
-            async Task<string> Observe(string messages, string grammar, int seed, CancellationToken token)
-            {
-                string output = await infer(messages, grammar, seed, token);
-                replies.Add(output);
-                return output;
-            }
-            Func<string, string, int, CancellationToken, Task<string>> observe = Observe;
-            await (Task)emotion.GetMethod("RewriteLine", flags).Invoke(null, new object[] { job, line, card, observe, CancellationToken.None });
-            results.Add(new JObject { ["original"] = card.text, ["emotion"] = job.emotion,
-                ["generated"] = line.generatedText, ["rejection"] = line.rejection, ["replies"] = replies });
-        }
-        return new { samples = results };
+        public Task<DirectLlmHttpResponse> SendAsync(DirectLlmHttpRequest request, CancellationToken token) => send(request, token);
     }
 
     public static async Task<object> ProbeRuntime(string profile="baseFlash")

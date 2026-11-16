@@ -32,7 +32,7 @@ namespace OneWay.Decision.DirectLlm
         }
 
         internal static DirectLlmHttpRequest Request(DirectLlmEndpoint endpoint, DirectLlmCredentials credentials,
-            JArray messages, int maxTokens, int seed, int timeoutSeconds)
+            JArray messages, int? maxTokens, int seed, int timeoutSeconds)
         {
             if (credentials == null || string.IsNullOrWhiteSpace(credentials.ApiKey) ||
                 credentials.ApiKey.Any(c => c <= 32 || c >= 127)) throw new DirectLlmFailure("MissingOrInvalidKey");
@@ -51,8 +51,13 @@ namespace OneWay.Decision.DirectLlm
                     ["role"] = (string)m["role"] == "assistant" ? "model" : "user",
                     ["parts"] = new JArray(new JObject { ["text"] = (string)m["content"] })
                 }));
-                body = new JObject { ["contents"] = contents, ["generationConfig"] = new JObject
-                { ["maxOutputTokens"] = maxTokens, ["responseMimeType"] = "application/json", ["seed"] = seed } };
+                var generation = new JObject { ["responseMimeType"] = "application/json" };
+                if (maxTokens.HasValue)
+                {
+                    generation["maxOutputTokens"] = maxTokens.Value;
+                    generation["seed"] = seed;
+                }
+                body = new JObject { ["contents"] = contents, ["generationConfig"] = generation };
                 var systems = messages.Where(m => (string)m["role"] == "system").ToArray();
                 if (systems.Length > 0) body["systemInstruction"] = new JObject
                 { ["parts"] = new JArray(systems.Select(m => new JObject { ["text"] = (string)m["content"] })) };
@@ -64,24 +69,28 @@ namespace OneWay.Decision.DirectLlm
                 if (endpoint.provider == DirectLlmProvider.Groq)
                 {
                     url = "https://api.groq.com/openai/v1/chat/completions";
-                    body["max_completion_tokens"] = maxTokens;
-                    body["seed"] = seed;
                     body["response_format"] = new JObject { ["type"] = "json_object" };
-                    if (model.StartsWith("openai/gpt-oss-", StringComparison.Ordinal))
+                    if (maxTokens.HasValue)
+                    {
+                        body["max_completion_tokens"] = maxTokens.Value;
+                        body["seed"] = seed;
+                    }
+                    if (maxTokens.HasValue && model.StartsWith("openai/gpt-oss-", StringComparison.Ordinal))
                     { body["include_reasoning"] = false; body["reasoning_effort"] = "low"; }
                 }
                 else if (endpoint.provider == DirectLlmProvider.Cloudflare)
                 {
                     if (!Regex.IsMatch(credentials.AccountId ?? "", @"^[A-Fa-f0-9]{32}$")) throw new DirectLlmFailure("InvalidCloudflareAccount");
                     url = "https://api.cloudflare.com/client/v4/accounts/" + credentials.AccountId + "/ai/v1/chat/completions";
-                    body["max_tokens"] = maxTokens;
+                    if (maxTokens.HasValue) body["max_tokens"] = maxTokens.Value;
+                    else body["response_format"] = new JObject { ["type"] = "json_object" };
                 }
                 else throw new DirectLlmFailure("UnknownProvider");
             }
             return new DirectLlmHttpRequest(endpoint.provider, url, header, value, body.ToString(Formatting.None), timeoutSeconds);
         }
 
-        internal static DirectLlmResult Response(DirectLlmProvider provider, string raw)
+        internal static DirectLlmResult Response(DirectLlmProvider provider, string raw, bool expectCards)
         {
             try
             {
@@ -92,7 +101,9 @@ namespace OneWay.Decision.DirectLlm
                 if (provider == DirectLlmProvider.Gemini)
                 {
                     var candidate = root["candidates"]?.First;
-                    if ((string)candidate?["finishReason"] != "STOP") throw new DirectLlmFailure("IncompleteOrBlocked");
+                    string finish = (string)candidate?["finishReason"];
+                    if (finish != "STOP" && (expectCards || finish != "MAX_TOKENS"))
+                        throw new DirectLlmFailure("IncompleteOrBlocked");
                     var parts = candidate["content"]?["parts"] as JArray;
                     if (parts == null) throw new DirectLlmFailure("EmptyResponse");
                     content = string.Concat(parts.Where(p => (bool?)p["thought"] != true && p["text"]?.Type == JTokenType.String).Select(p => (string)p["text"]));
@@ -103,7 +114,9 @@ namespace OneWay.Decision.DirectLlm
                 else
                 {
                     var choice = root["choices"]?.First;
-                    if ((string)choice?["finish_reason"] != "stop") throw new DirectLlmFailure("IncompleteOrBlocked");
+                    string finish = (string)choice?["finish_reason"];
+                    if (finish != "stop" && (expectCards || finish != "length"))
+                        throw new DirectLlmFailure("IncompleteOrBlocked");
                     var message = choice["message"];
                     if (!string.IsNullOrWhiteSpace((string)message?["refusal"])) throw new DirectLlmFailure("Refused");
                     if (message?["content"]?.Type != JTokenType.String) throw new DirectLlmFailure("EmptyResponse");
@@ -112,12 +125,25 @@ namespace OneWay.Decision.DirectLlm
                     result.InputTokens = (int?)root["usage"]?["prompt_tokens"] ?? -1;
                     result.OutputTokens = (int?)root["usage"]?["completion_tokens"] ?? -1;
                 }
-                result.CardsJson = Cards(content);
+                if (string.IsNullOrWhiteSpace(content)) throw new DirectLlmFailure("EmptyResponse");
+                result.RawText = content;
+                if (expectCards) result.CardsJson = Cards(content);
+                else result.Text = Dialogue(content);
                 return result;
             }
             catch (DirectLlmFailure) { throw; }
             catch (Exception e) when (e is ArgumentException || e is InvalidOperationException || e is FormatException || e is OverflowException)
             { throw new DirectLlmFailure("InvalidResponse"); }
+        }
+
+        internal static string Dialogue(string json)
+        {
+            var output = Parse(json) as JObject;
+            if (output?.Count != 1 || output["text"]?.Type != JTokenType.String)
+                throw new DirectLlmFailure("InvalidDialogueFormat");
+            string text = (string)output["text"];
+            if (string.IsNullOrWhiteSpace(text)) throw new DirectLlmFailure("EmptyResponse");
+            return text;
         }
 
         internal static string Cards(string text)

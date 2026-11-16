@@ -3,8 +3,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
+using OneWay.Decision.DirectLlm;
 using UnityEngine;
 
 public partial class SaveIOService
@@ -24,54 +23,37 @@ public partial class SaveIOService
         try
         {
             Directory.CreateDirectory(directory);
-            foreach (string chapter in Directory.EnumerateDirectories(directory).OrderBy(path => path, StringComparer.Ordinal))
+            if (Directory.Exists(GeneratedRoot))
             {
-                string chapterId = Path.GetFileName(chapter);
-                string title = chapterId == "Chapter_1" ? "갱도" : chapterId == "Chapter_Coast" ? "해안" : chapterId;
-                html.Append("<section><h2>").Append(WebUtility.HtmlEncode(title)).Append("</h2>");
-                var files = Directory.EnumerateFiles(chapter, "*.jsonl", SearchOption.AllDirectories)
-                    .Select(file => (file, parts: Path.GetRelativePath(chapter, file).Split(Path.DirectorySeparatorChar)))
-                    .Where(item => item.parts.Length >= 3 && item.parts[1].StartsWith("For_Run_", StringComparison.Ordinal) &&
-                        int.TryParse(item.parts[1].Substring("For_Run_".Length), out _))
-                    .OrderByDescending(item => int.Parse(item.parts[1].Substring("For_Run_".Length)))
-                    .ThenBy(item => item.file, StringComparer.Ordinal);
-                foreach (var (file, parts) in files)
+                html.Append("<section><h2>생성 대사</h2>");
+                foreach (string runDirectory in Directory.EnumerateDirectories(GeneratedRoot, "For_Run_*")
+                    .OrderByDescending(path => path, StringComparer.Ordinal))
                 {
-                    string run = int.Parse(parts[1].Substring("For_Run_".Length)).ToString();
-                    string story = Path.GetFileNameWithoutExtension(file);
-                    foreach (string line in File.ReadLines(file))
-                    {
-                        if (string.IsNullOrWhiteSpace(line)) continue;
-                        try
-                        {
-                            var messages = JObject.Parse(line)["messages"] as JArray;
-                            if (messages?.Count != 2) continue;
-                            string prompt = (string)messages[0]["content"] ?? "";
-                            int payloadStart = prompt.LastIndexOf("\n\n", StringComparison.Ordinal);
-                            if (payloadStart < 0) continue;
-                            var input = JObject.Parse(prompt.Substring(payloadStart + 2));
-                            var output = JObject.Parse((string)messages[1]["content"] ?? "{}");
-                            string original = (string)input["original"], revised = (string)output["text"];
-                            if (string.IsNullOrWhiteSpace(original) || string.IsNullOrWhiteSpace(revised) || original == revised) continue;
-                            string label = $"{run}회차 · {story} · {(string)input["npc"]?["name"]} · {(string)input["emotion"]}";
-                            html.Append("<article><small>").Append(WebUtility.HtmlEncode(label)).Append("</small><p><strong>원문</strong>")
-                                .Append(WebUtility.HtmlEncode(original)).Append("</p><p><strong>변경 대사</strong>")
-                                .Append(WebUtility.HtmlEncode(revised)).Append("</p></article>");
-                        }
-                        catch (JsonException error)
-                        {
-                            Debug.LogWarning("[LocalStory] 대사 비교에서 읽을 수 없는 줄을 건너뜁니다. " + error.Message);
-                        }
-                    }
+                    string queuePath = Path.Combine(runDirectory, "Queue.json");
+                    if (!File.Exists(queuePath)) continue;
+                    var queue = JsonUtility.FromJson<LocalStoryDialogueQueueData>(File.ReadAllText(queuePath));
+                    if (queue?.jobs == null) continue;
+                    foreach (var job in queue.jobs.Where(job => job.model == DirectStoryGenerator.ModelName && job.status == "Ready"))
+                        foreach (var line in job.emotionLines.Where(line => !string.IsNullOrWhiteSpace(line.generatedText)))
+                            AppendDialogueComparison(html, $"{job.targetRun}회차 · {job.storyPath} · {line.name} · {job.emotion}" +
+                                (string.IsNullOrEmpty(line.apiProvider) ? "" : $" · {line.apiProvider} / {line.apiModel}"),
+                                line.originalText, line.generatedText);
                 }
                 html.Append("</section>");
             }
-            if (!html.ToString().Contains("<article>")) html.Append("<p>검사를 통과해 저장된 변경 대사가 아직 없습니다.</p>");
+            if (!html.ToString().Contains("<article>")) html.Append("<p>저장된 변경 대사가 아직 없습니다.</p>");
             WriteTextAtomically(DialogueReportPath, html.Append("</body></html>").ToString());
         }
         catch (Exception error) when (error is IOException || error is UnauthorizedAccessException)
         {
             Debug.LogWarning("[LocalStory] 대사 비교 HTML 갱신 실패: " + error.Message);
         }
+    }
+
+    private static void AppendDialogueComparison(StringBuilder html, string label, string original, string revised)
+    {
+        html.Append("<article><small>").Append(WebUtility.HtmlEncode(label)).Append("</small><p><strong>원문</strong>")
+            .Append(WebUtility.HtmlEncode(original)).Append("</p><p><strong>변경 대사</strong>")
+            .Append(WebUtility.HtmlEncode(revised)).Append("</p></article>");
     }
 }

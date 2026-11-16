@@ -25,7 +25,7 @@ public sealed class LocalStoryTestPanel : MonoBehaviour
     private Button generateButton, previousButton, nextButton;
     private UnityEngine.UI.Button inputButton;
     private UnityEngine.UI.Button modelButton;
-    private LocalStoryTestModel selectedModel = LocalStoryTestModel.Gemma;
+    private LocalStoryTestModel selectedModel = LocalStoryTestModel.OmniRoute;
     public LocalStoryTestModel SelectedModel => selectedModel;
     private volatile bool correcting;
     private UnityEngine.UI.Button savedResultsButton;
@@ -149,15 +149,15 @@ public sealed class LocalStoryTestPanel : MonoBehaviour
             memory == null ? "실제 완료 회차 기록 없음 — 첫 만남 표현 테스트" :
             $"실제 기록: {memory.sourceRun} -> {memory.targetRun}회차 / {memory.chapterId} / 사건 {memory.events?.Count ?? 0}개 / 능력치 {string.Join("/", memory.finalStats ?? Array.Empty<int>())}";
         statusLabel.text = selectedModel==LocalStoryTestModel.OmniRoute?
-            LocalStoryTestModels.Name(selectedModel)+" / OmniRoute HTTP / 공통 프롬프트·검사 사용":
-            LocalStoryTestModels.Name(selectedModel)+" / 외부 통신 없음 / 모델 로딩 시간 포함\n"+
-            "초안·교정 모두 Gemma 사용. Windows x64 Mono 빌드 지원. 모델 파일 검증 시간 포함.";
+            LocalStoryTestModels.Name(selectedModel)+" / NPC 특징·감정·원문 대사":
+            LocalStoryTestModels.Name(selectedModel)+" / "+LocalStoryGemmaDialogue.Policy+" · 내장 모델";
     }
     private void UpdateModelLabels()
     {
-        string name=selectedModel.ToString();
+        string name=selectedModel==LocalStoryTestModel.OmniRoute?LocalStoryTestModels.Name(selectedModel):selectedModel.ToString();
         if(readingSaved) name=Report?.model?.IndexOf("Gemma",StringComparison.OrdinalIgnoreCase)>=0?"Gemma":
             Report?.model?.IndexOf("OmniRoute",StringComparison.OrdinalIgnoreCase)>=0?"OmniRoute":
+            Report?.model=="Direct HTTP"?"Direct HTTP":
             Report?.model?.IndexOf("Qwen",StringComparison.OrdinalIgnoreCase)>=0?"Qwen":"저장 결과";
         modelButton.GetComponentInChildren<TMP_Text>().text="모델: "+name;
         generateButton.GetComponentInChildren<TMP_Text>().text=readingSaved?"생성 (읽기 전용)":"생성 ("+name+")";
@@ -185,16 +185,32 @@ public sealed class LocalStoryTestPanel : MonoBehaviour
         var runOriginal = JsonUtility.FromJson<EncounterCardRoot>(JsonUtility.ToJson(original));
         string path = paths[selected];
         var model=selectedModel; // Capture once for every section of this request.
+        bool direct = model == LocalStoryTestModel.OmniRoute;
+        bool gemmaDialogue = model == LocalStoryTestModel.Gemma && useWritingExamples;
+        bool dialoguePreview = direct || gemmaDialogue;
+        if (dialoguePreview)
+        {
+            generationPart = "NPC 대사 요청";
+            generationPurpose = gemmaDialogue ? LocalStoryGemmaDialogue.Policy : "NPC 특징·감정·원문 대사";
+        }
         var report = new LocalStoryTestReport { storyPath = path, model=LocalStoryTestModels.Name(model), original = runOriginal, sourceRun = memory?.sourceRun ?? 1,
             targetRun = memory?.targetRun ?? 2, seed = 12345, createdUtc = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ") };
-        try { if(useWritingExamples) report.examplePrompt = LocalStoryTestArchive.CaptureWritingExamples(path,out report.exampleSummary,out report.exampleSources);
-            else { report.examplePrompt=""; report.exampleSources=Array.Empty<string>(); report.exampleSummary="수정 예시 미사용 대조 시험"; report.comparisonMode="NoWritingExamples"; }
-            LocalStoryPrompt.Plan(path,runOriginal); }
+        if (gemmaDialogue) report.generationMode = LocalStoryGemmaDialogue.Mode;
+        try
+        {
+            if (!dialoguePreview)
+            {
+                if(useWritingExamples) report.examplePrompt = LocalStoryTestArchive.CaptureWritingExamples(path,out report.exampleSummary,out report.exampleSources);
+                else { report.examplePrompt=""; report.exampleSources=Array.Empty<string>(); report.exampleSummary="수정 예시 미사용 대조 시험"; report.comparisonMode="NoWritingExamples"; }
+                LocalStoryPrompt.Plan(path,runOriginal);
+            }
+        }
         catch(Exception e) { statusLabel.text="생성 입력 확인 실패: "+e.Message;
             LocalStoryLog.Generation(LocalStoryLogStage.Failed,report,"테스트 / 입력 확인: "+e.Message); return; }
-        string writingPolicy=LocalStoryRewrite.WritingPolicy+" / "+LocalStorySections.PolicyVersion;
+        string writingPolicy=gemmaDialogue ? LocalStoryGemmaDialogue.Policy : direct ? "NPC 특징·감정·원문 대사" :
+            LocalStoryRewrite.WritingPolicy+" / "+LocalStorySections.PolicyVersion;
         report.testScenario=(inputScenario==0?"ActualRecord":"Synthetic / "+LocalStoryTestInputs.Name(inputScenario))+" / "+writingPolicy;
-        if(!useWritingExamples) report.testScenario+=" / 수정 예시 제외 대조";
+        if(!direct && !useWritingExamples) report.testScenario+=" / 수정 예시 제외 대조";
         report.writingPolicy=writingPolicy;
         report.interactionMemory=memory;
         report.interactionSource=inputScenario==0?"실제 플레이 기록을 입력으로 선택한 시험":"시험용 가상 기억 / "+LocalStoryTestInputs.Name(inputScenario);
@@ -206,7 +222,7 @@ public sealed class LocalStoryTestPanel : MonoBehaviour
         try { await job; }
         finally { if (this != null) SetBusy(false); }
     }
-    // The visible test button and gameplay call the same section planner, prompts and repair policy.
+    // Keep the embedded section comparison and the direct NPC dialogue preview available here.
     public static Task GenerateSections(LocalStoryTestReport report, CancellationToken token,
         Func<LocalStorySectionInput,bool,CancellationToken,Action<string>,Task<LocalStoryModelOutput>> infer=null)
     {
@@ -217,7 +233,9 @@ public sealed class LocalStoryTestPanel : MonoBehaviour
     private async Task RunGeneration(LocalStoryTestReport report, CancellationToken token)
     {
         var watch = Stopwatch.StartNew();
-        LocalStoryLog.Generation(LocalStoryLogStage.Working,report,"테스트 / Explanation 단락 생성 시작 (게임 적용 아님)");
+        LocalStoryLog.Generation(LocalStoryLogStage.Working, report,
+            report.model == "Direct HTTP" || report.generationMode == LocalStoryGemmaDialogue.Mode
+            ? "테스트 / NPC 대사 요청 시작" : "테스트 / Explanation 단락 생성 시작 (게임 적용 아님)");
         bool interrupted=false, failed=false;
         report.sectionProgress=(start,count,index,total,phase)=>
         {
@@ -231,7 +249,9 @@ public sealed class LocalStoryTestPanel : MonoBehaviour
         try
         {
             await GenerateSections(report,token);
-            if(this!=null) statusLabel.text=$"{report.model} / 요청 {report.sectionsGenerated}회 / 실패 구간 교정 {report.sectionsCorrected}회 / 합계 {watch.Elapsed.TotalSeconds:F1}초 / {report.backend}\n{report.exampleSummary} / 최종 검사: {(report.correctionAttempted?(report.correctionValid?"통과":report.correctionError):(report.valid?"통과":report.error))} / 의미·자연스러움은 직접 평가";
+            if(this!=null) statusLabel.text=report.generationMode == "DirectDialogue" || report.generationMode == LocalStoryGemmaDialogue.Mode
+                ? $"{report.model} / 응답 {report.sectionsGenerated}건 / {watch.Elapsed.TotalSeconds:F1}초 / {report.backend ?? report.error}"
+                : $"{report.model} / 요청 {report.sectionsGenerated}회 / 실패 구간 교정 {report.sectionsCorrected}회 / 합계 {watch.Elapsed.TotalSeconds:F1}초 / {report.backend}\n{report.exampleSummary} / 최종 검사: {(report.correctionAttempted?(report.correctionValid?"통과":report.correctionError):(report.valid?"통과":report.error))} / 의미·자연스러움은 직접 평가";
         }
         catch(OperationCanceledException)
         {
@@ -342,6 +362,9 @@ public sealed class LocalStoryTestPanel : MonoBehaviour
     }
     public static string DisplayOutput(LocalStoryTestReport report)
     {
+        if (report.generationMode == "DirectDialogue" || report.generationMode == LocalStoryGemmaDialogue.Mode)
+            return string.IsNullOrEmpty(report.rawOutput) ? report.error ?? "모델이 출력한 내용이 없습니다." :
+                LocalStoryTestArchive.DialogueText(report.rawOutput);
         string warning=report.reviewRequired?"[검사 실패 문구 포함 · 게임 확인 가능]\n"+report.reviewError+"\n":"";
         string heading=warning+(report.sectionsGenerated>0 || report.sectionOutputs?.Count>0?
             "[구간 합본 · 단락 "+report.paragraphsPlanned+"개 / 작성 요청 "+report.sectionsGenerated+"회 / 교정 "+report.sectionsCorrected+"회 · 모델 대상 "+(report.sectionInputs?.Sum(s=>s.count)??report.original?.MainStory?.Count??0)+"카드"+

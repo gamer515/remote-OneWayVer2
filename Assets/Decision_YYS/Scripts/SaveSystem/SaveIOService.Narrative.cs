@@ -77,7 +77,7 @@ public partial class SaveIOService
         int current = File.Exists(ProfilePath) ? ReadJson<ProfileData>(ProfilePath)?.currentRun ?? 1 : 1;
         int cutoff = Math.Max(2, current - NarrativeRetainedRuns + 1);
         // Old automatic variants are reproducible. Human/imported content and all actual play saves are retained.
-        chapter.stories.RemoveAll(e => (e.origin == "Runtime" || e.origin == LocalStoryEmotion.Origin) && e.targetRun < cutoff);
+        chapter.stories.RemoveAll(e => (e.origin == "Runtime" || IsEmotionOrigin(e.origin)) && e.targetRun < cutoff);
         chapter.queues.RemoveAll(q => q.targetRun < cutoff);
         string file = NarrativeChapterPath(chapter.chapterId);
         ParseNarrative(JsonUtility.ToJson(chapter), chapter.chapterId);
@@ -86,7 +86,7 @@ public partial class SaveIOService
     private static NarrativeStoryEntry Entry(int run, string path, string json, string origin, bool enabled,bool reviewRequired=false,string validationError=null)
     {
         string[] parts = path.Split('/');
-        var scene = origin == LocalStoryEmotion.Origin ? null :
+        var scene = IsEmotionOrigin(origin) ? null :
             NarrativeInteractions.Chapter(parts[0])?.scenes?.SingleOrDefault(s => s.storyPath == path);
         var root = JsonUtility.FromJson<EncounterCardRoot>(json);
         if (root?.MainStory == null || root.MainStory.Count == 0) throw new InvalidDataException("이야기 카드가 없습니다.");
@@ -132,6 +132,7 @@ public partial class SaveIOService
     {
         lock (narrativeGate)
         {
+            const string origin = OneWay.Decision.DirectLlm.DirectStoryGenerator.DialogueOrigin;
             string source = ChapterContentCatalog.Story(job.storyPath);
             if (job.targetRun != job.sourceRun + 1 || !SafeStoryPath(job.storyPath) ||
                 LocalStoryDialogueQueue.Hash(source) != job.sourceHash)
@@ -141,33 +142,38 @@ public partial class SaveIOService
             foreach (var line in accepted)
             {
                 var card = canonical.MainStory[line.cardIndex];
-                if (card.speakerId != line.speakerId || LocalStoryEmotion.CreateLine(job.chapterId, card, line.cardIndex) == null ||
-                    !LocalStoryEmotion.ValidChange(card.text, line.generatedText))
-                    throw new InvalidDataException("검사된 NPC 발화와 원문 카드가 일치하지 않습니다.");
+                if (card.speakerId != line.speakerId || LocalStoryEmotion.CreateLine(job.chapterId, card, line.cardIndex) == null)
+                    throw new InvalidDataException("NPC 응답의 대상 카드가 원문과 일치하지 않습니다.");
             }
-            string[] examples = accepted.Select(line => LocalStoryEmotion.TrainingExample(job.emotion, line,
-                canonical.MainStory[line.cardIndex].text)).ToArray();
             foreach (var line in accepted) canonical.MainStory[line.cardIndex].text = line.generatedText;
             string json = JsonUtility.ToJson(canonical, true);
             if (json != JsonUtility.ToJson(cards, true) || LocalStoryDialogueQueue.Hash(json) != job.contentHash)
                 throw new InvalidDataException("NPC 발화 외의 게임 데이터가 변경되었습니다.");
 
             var existing = FindNarrative(job.targetRun, job.storyPath);
-            if (existing == null)
+            if (existing == null || MatchesLegacyEmotion(existing, job))
             {
                 var chapter = EditNarrativeChapter(job.chapterId);
-                chapter.stories.Add(Entry(job.targetRun, job.storyPath, json, LocalStoryEmotion.Origin, true));
+                chapter.stories.RemoveAll(entry => entry.targetRun == job.targetRun && entry.storyPath == job.storyPath);
+                chapter.stories.Add(Entry(job.targetRun, job.storyPath, json, origin, true));
                 WriteNarrativeChapter(chapter);
             }
-            else if (!existing.enabled || existing.origin != LocalStoryEmotion.Origin || existing.contentHash != job.contentHash)
+            else if (!existing.enabled || existing.origin != origin || existing.contentHash != job.contentHash)
                 throw new InvalidDataException("이야기에 이미 적용된 버전이 있습니다.");
 
-            string[] path = job.storyPath.Split('/');
-            string trainingPath = Path.Combine(BasePath, "LocalStoryTraining", path[0], path[1],
-                $"For_Run_{job.targetRun:D2}", Path.Combine(path.Skip(2).ToArray()) + ".jsonl");
-            WriteTextAtomically(trainingPath, string.Join("\n", examples) + "\n");
-            RefreshDialogueReport();
         }
+    }
+
+    private static bool MatchesLegacyEmotion(NarrativeStoryEntry entry, LocalStoryDialogueJob job) =>
+        entry?.enabled == true && entry.origin == LocalStoryEmotion.Origin &&
+        !string.IsNullOrEmpty(job.legacyEmotionContentHash) && entry.contentHash == job.legacyEmotionContentHash &&
+        entry.contentHash == LocalStoryDialogueQueue.Hash(entry.contentJson);
+
+    internal bool CanReplaceEmotionDialogue(LocalStoryDialogueJob job)
+    {
+        lock (narrativeGate)
+            return CanReplaceNarrativeContent(job.targetRun, job.storyPath, job.contentHash) ||
+                (SafeStoryPath(job.storyPath) && MatchesLegacyEmotion(FindNarrative(job.targetRun, job.storyPath), job));
     }
     private bool SaveNarrativeContent<T>(int run, string key, T data, bool reviewed,bool reviewRequired=false,string validationError=null)
     {
@@ -232,9 +238,16 @@ public partial class SaveIOService
         reason=null;if(run<2||!SafeStoryPath(path))return false;
         lock(narrativeGate){var entry=FindNarrative(run,path);reason=entry?.validationError;return entry?.reviewRequired==true;}
     }
-    internal bool NarrativeUsesEmotion(int run, string path)
+    internal static bool IsEmotionOrigin(string origin) =>
+        origin == LocalStoryEmotion.Origin || origin == OneWay.Decision.DirectLlm.DirectStoryGenerator.DialogueOrigin;
+
+    internal string NarrativeEmotionOrigin(int run, string path)
     {
-        lock (narrativeGate) return FindNarrative(run, path)?.origin == LocalStoryEmotion.Origin;
+        lock (narrativeGate)
+        {
+            string origin = FindNarrative(run, path)?.origin;
+            return IsEmotionOrigin(origin) ? origin : null;
+        }
     }
     public bool HasNarrativeContent(int run, string path)
     {

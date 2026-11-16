@@ -243,7 +243,40 @@ unity command run_script --caller plugin --skill unity-cli --file AgentScripts/K
 <tr><td>실제 결과</td><td>브룩 대사 3개 중 곡괭이 대사가 통과했다. 통행세 대사는 요구 외의 설명을 덧붙였고, 첫 만남 대사는 반말을 높임말로 바꿔 탈락했다. <a href="chapter-dialogue.html#paraphrased-pair">원문과 변경 대사</a></td></tr>
 </tbody></table>
 <p>Unity 컴파일과 의미 검사 대조를 확인했다. 실제 플레이 저장을 수정하지 않고 Gemma의 출력만 검사했다. 임시 코드 파일은 없다. 모델 확인 기록은 <code>tmp/GemmaEmotionChecks/</code>에 남겼다. <a href="../tmp/GemmaEmotionChecks/Gemma-0c3467018378484e962a59003894494a.json">실제 Gemma 결과</a> · <a href="../Assets/Decision_YYS/Scripts/Ai/LocalStoryEmotion.cs">프롬프트 코드</a></p>
-</section></body></html>
+</section>
+<section id="team-loading-direct-llm">
+<h2>팀 로딩 씬과 Direct LLM 연동</h2>
+<p>2026-11-16 (Asia/Seoul) · <code>fearture/merge_progect</code></p>
+<table><thead><tr><th>단계</th><th>결과</th><th>확인</th></tr></thead><tbody>
+<tr><td>로딩 씬 연결</td><td>메인 메뉴 → LoadingScene → DecisionScene → LoadingScene → 3DBattleScene. 정식 전투는 승패와 회차를 저장한 뒤 LoadingScene을 거쳐 메인 메뉴로 돌아간다. 단독 3D 전투는 기존대로 LoadingScene을 거쳐 Decision으로 이동한다.</td><td>팀 로딩 진입점과 빌드 씬 등록을 확인했다. 3DBattle 파일 변경은 0개다.</td></tr>
+<tr><td>로딩 팁</td><td>팀이 지정한 폴더에 UTF-8 Decision 팁 텍스트를 추가했다.</td><td>텍스트 에셋과 로딩 카탈로그의 GUID가 일치한다.</td></tr>
+<tr><td>NPC 대사 요청</td><td><code>ZLLMControl_HJH</code>의 클라이언트를 호출한다. NPC 특징, 기존 회차 로직이 뽑은 감정, 원문을 보낸다. 응답은 <code>{"text":"변경된 대사"}</code> 형식으로 읽고, <code>text</code> 값을 다음 회차의 해당 NPC 대사로 저장한다.</td><td>Unity 컴파일과 격리 저장 테스트를 통과했다. 160자를 넘는 여러 줄 대사와 숫자가 바뀐 대사를 다음 회차에서 그대로 불러왔고 선택지와 게임 동작 데이터가 일치했다.</td></tr>
+<tr><td>API 검증</td><td>첨부의 Cloudflare, Groq, Gemini 자격 증명으로 가상 대사 세 건을 보냈다. Cloudflare 기본 모델을 <code>llama-3.1-8b-instruct-fast</code>로 변경했다.</td><td>세 공급자에서 HTTP 200과 응답 본문을 확인했다. 팀의 환경 변수 읽기 메서드가 세 키와 Cloudflare 계정 ID를 읽었다. Unity 플레이로 한 회차를 끝까지 진행하는 검증은 남아 있다.</td></tr>
+</tbody></table>
+<p><a href="https://developers.cloudflare.com/changelog/product/workers-ai/">Cloudflare 모델 종료 공지</a></p>
+<h3>로컬 실행</h3>
+<p>Unity 메뉴 <strong>Tools → Decision → Direct LLM API Settings</strong>에서 <a href="../Assets/Decision_YYS/ZLLMControl_HJH/Resources/DirectLlmSettings.asset">DirectLlmSettings</a> 인스펙터를 연다. Cloudflare API Token, Cloudflare Account ID, Groq API Key, Gemini API Key를 입력하고 <strong>Save API Keys</strong>를 누른다. 데스크톱의 네 값을 저장하고 에셋 선택을 확인했다. 노트북에서도 같은 메뉴에서 한 번 입력한다. 키는 PC별 Unity EditorPrefs에 저장되므로 별도 TXT 없이 플레이할 수 있다. 독립 실행 빌드에서는 팀 코드의 환경 변수 방식을 사용한다.</p>
+<h3>NPC 대사 제한 제거와 공급자 비교</h3>
+<p>구 버전의 비교 HTML에 원문 순서 유지와 160자 제한이 있는 로컬 응답이 남아 있었다. 새 NPC 자동 생성은 정해진 JSON에서 <code>text</code> 값을 읽어 저장한다. 교정 요청, 글자 수·어순·내용 검사, 감탄사 추가는 제거했다. 다음 회차에 읽히는 API 결과에는 공급자와 모델도 표시한다.</p>
+<p>회차 저장에는 NPC 대사만 바뀐다. 기존 회차 기록은 유지하고, 현재·다음 회차에 해당하는 이전 자동 대사 작업은 유효한 원문을 기준으로 API 생성으로 다시 큐에 넣는다. 콘솔의 <code>[대사 비교 HTML]</code>에는 API 응답을 표시한다.</p>
+<p>동일한 원문 6개를 Cloudflare, Groq, Gemini, 내장 Gemma에 입력한 요청과 응답은 <a href="direct-dialogue-comparison.html">NPC 대사 생성 비교</a>에서 확인할 수 있다.</p>
+<p>검증용 임시 코드 <code>tmp/DirectDialogueCheck/RunInUnity.cs</code>와 <code>C:/TempFolder/oneway-unrestricted-f0209db9-c8c0-43b1-88fa-1304fcb42ee0/LiveDialogueRequest.cs</code>는 결과 확인 후 정리 대기 중이다.</p>
+<h3>내장 Gemma 말투 우선 프롬프트</h3>
+<p>대사 테스트 화면에서 Gemma를 선택하면 NPC의 평소 말투, 원문의 높임 정도와 표현 수위를 먼저 반영하도록 요청한다. 실제 대사 JSON에는 <code>text</code> 필드가 들어간다. 같은 원문·감정·시드로 여섯 줄을 Unity에서 생성했다. 여섯 건의 JSON 형식을 확인했다. 브룩의 거친 표현과 도르의 높임말이 여전히 남았고, 일부 문장은 원문 상황을 바꿨다. <a href="direct-dialogue-comparison.html#gemma-voice">기존 결과, 새 결과와 프롬프트 비교</a></p>
+<p>이번 비교 실행에 만든 <code>tmp/DirectDialogueCheck/RunGemmaVoiceInUnity.cs</code>는 결과 확인 후 정리 대기 중이다.</p>
+<h3>공통 프롬프트에 직전 대화 추가</h3>
+<p>Unity Editor의 내장 Gemma로 같은 NPC·원문·감정·시드를 여섯 건 비교했다. 게임 원본의 같은 대화 구간에서 직전 발화를 최대 세 줄씩 자동으로 가져왔다. 여섯 건 모두 JSON 형식은 유효했다. 도르가 낯선 상대를 사람으로 해석했지만 앞선 화제와 존댓말이 섞이는 등 대사 의미와 말투 오류가 남았다. 이 시험은 게임의 생성 코드와 플레이 저장을 변경하지 않았다. <a href="direct-dialogue-comparison.html#gemma-common-context">여섯 건 전체 비교</a></p>
+<p>검증용 임시 코드 <code>tmp/DirectDialogueCheck/RunGemmaCommonContextInUnity.cs</code>는 결과 확인 후 정리 대기 중이다.</p>
+<h3>Gemma의 짧은 구절 변형</h3>
+<p>대사 테스트 화면의 내장 Gemma는 원문에서 구절 한 곳만 바꾸도록 요청한다. 수정 전후 각각 최대 네 어절을 허용하며, 등록된 인물 이름과 숫자 및 중괄호 치환 문구를 보호한다. 높임 표현은 그 자체로 탈락 사유가 아니다. Unity에서 여섯 줄을 생성해 최종 검사로 재검증했다. “어이, 거기”를 “저기요”로 바꾼 한 줄이 통과했고 다섯 줄은 원문으로 표시됐다. <a href="direct-dialogue-comparison.html#gemma-small-phrase">Gemma 응답과 최종 표시 대사</a></p>
+<p>다음 실험으로 원문을 고정하고 감탄사나 어울리는 짧은 문장을 추가하며 길이를 조절하는 방식을 남겼다. 검증용 임시 코드 <code>tmp/DirectDialogueCheck/RunGemmaSmallPhraseInUnity.cs</code>는 결과 확인 후 정리 대기 중이다.</p>
+<h3>API 우선 생성과 Gemma 응답 적용</h3>
+<p>회차용 각 대사는 설정된 외부 API 중 첫 유효 응답을 적용한다. 외부 API가 모두 실패한 줄에만 내장 Gemma를 사용한다. Gemma에는 짧은 구절 한 곳을 최대 네 어절 범위로 바꾸라는 프롬프트를 사용한다. 정상 JSON의 <code>text</code>를 그대로 적용하며, 구절 범위나 이름 변경을 이유로 원문을 대입하는 처리는 제거했다. 대사 비교 HTML은 각 줄의 실제 공급자를 표시한다.</p>
+<p>Unity 격리 저장 시험에서 첫 API 성공, 첫 API 실패 후 두 번째 API 성공, 세 API 모두 실패한 뒤 Gemma 사용을 한 회차에서 검증했다. 외부 응답 두 줄과 Gemma 응답 한 줄이 다음 회차에서 읽혔고 선택지 데이터가 유지됐다. 총 28개 검사를 통과했다.</p>
+<p>Gemma 테스트 여섯 건에서 정상 JSON의 대사 본문을 그대로 확인했다. 일부 응답은 프롬프트의 변형 범위를 넘기거나 인물 이름을 생략했다. <a href="direct-dialogue-comparison.html#gemma-direct-result">Gemma 응답 6건</a></p>
+<p>이번 비교용 임시 코드 <code>tmp/DirectDialogueCheck/RunGemmaDirectResultInUnity.cs</code>는 결과 확인 후 정리 대기 중이다.</p>
+</section>
+</body></html>
 
 
 

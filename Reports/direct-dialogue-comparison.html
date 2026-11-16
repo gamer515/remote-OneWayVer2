@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="ko"><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NPC 대사 생성 비교</title>
+<style>
+:root { color-scheme: light; font-family: system-ui, sans-serif; color: #1c242c; background: #f4f6f7; }
+body { max-width: 1150px; margin: 2rem auto; padding: 0 1.3rem; line-height: 1.55; }
+h1 { margin-bottom: .3rem; } h2 { font-size: 1.25rem; margin-top: 2rem; } h3 { margin: 0 0 .3rem; font-size: 1.05rem; }
+p { max-width: 75ch; } section { border-top: 1px solid #ccd5db; margin-top: 2rem; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 27rem), 1fr)); gap: 1rem; }
+article, details { background: #fff; border: 1px solid #d1dce4; padding: .85rem 1rem; border-radius: .5rem; }
+details { margin: .85rem 0; } summary { cursor: pointer; } pre { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; margin-bottom: 0; }
+small { color: #4b5a68; } a { color: #144f75; }
+</style>
+<h1>NPC 대사 생성 비교</h1>
+<p>2026년 11월 16일 · 원문 6줄 · 모델 4종 · 응답 24건</p>
+<p>게임 코드가 NPC 특징, 감정, 원문을 담아 프롬프트를 만들었다. 외부 API 세 곳과 Unity Editor의 내장 Gemma에 동일한 메시지를 입력했다. 형식은 JSON <code>{"text":"변경된 대사"}</code>이며, 아래 카드에는 게임에 적용되는 <code>text</code> 값과 실제 응답 JSON을 함께 담았다.</p><section id='line-1'><h2>1. 브룩 · 슬픔</h2><p><strong>원문</strong> 그 말을 헤른이 들으면 당장 나를 해고할 거야.</p><details><summary>게임에서 보낸 프롬프트</summary><pre>NPC의 특징과 감정을 반영해 원문 대사를 바꿔 줘. 응답 형식은 JSON {&quot;text&quot;:&quot;변경된 대사&quot;}로 해 줘.
+
+{&quot;npc&quot;:{&quot;name&quot;:&quot;브룩&quot;,&quot;role&quot;:&quot;갱도 주민&quot;,&quot;personality&quot;:&quot;고집스럽고 투박하지만 동료에 대한 의리가 깊다. 동정을 받는 것을 싫어한다.&quot;,&quot;speechStyle&quot;:&quot;낮고 거친 반말. 돌려 말하지 않고 자존심이 상하면 말수가 줄어듦.&quot;,&quot;publicFacts&quot;:[&quot;의리&quot;,&quot;고집&quot;,&quot;강한 자존심&quot;]},&quot;emotion&quot;:&quot;슬픔&quot;,&quot;original&quot;:&quot;그 말을 헤른이 들으면 당장 나를 해고할 거야.&quot;}</pre></details><div class='grid'><article><h3>Cloudflare</h3><small>Llama 3.1 8B Instruct Fast</small><pre>난 그 말 때문에 내 직장을 잃게 될 거란 말이야. 헤른이 내 말을 들어주면 내 인생이 바뀌지 않을까?</pre><details><summary>실제 응답 JSON</summary><pre>{&quot;text&quot;:&quot;난 그 말 때문에 내 직장을 잃게 될 거란 말이야. 헤른이 내 말을 들어주면 내 인생이 바뀌지 않을까?&quot;}</pre></details></article><article><h3>Groq</h3><small>GPT-OSS 20B</small><pre>그 말 들리면 자존심 부러져서 해고 받을 거야.</pre><details><summary>실제 응답 JSON</summary><pre>{&quot;text&quot;:&quot;그 말 들리면 자존심 부러져서 해고 받을 거야.&quot;}</pre></details></article><article><h3>Gemini</h3><small>Gemini 2.5 Flash</small><pre>그딴 소리 헤른 귀에 들어가면... 난 그냥 치워질 거야.</pre><details><summary>실제 응답 JSON</summary><pre>{&quot;text&quot;:&quot;그딴 소리 헤른 귀에 들어가면... 난 그냥 치워질 거야.&quot;}</pre></details></article><article><h3>내장 Gemma</h3><small>Gemma 3 4B IT QAT Q4_0</small><pre>머구리야, 그 소리 들으면 내가 엿 먹을 기세. 엿 먹을 거면 그냥 먹어버려.</pre><details><summary>실제 응답 JSON</summary><pre>{&quot;text&quot;:&quot;머구리야, 그 소리 들으면 내가 엿 먹을 기세. 엿 먹을 거면 그냥 먹어버려.&quot;}</pre></details></article></div></section><section id='line-2'><h2>2. 브룩 · 슬픔</h2><p><strong>원문</strong> 어이, 거기. 처음 보는 얼굴인데.</p><details><summary>게임에서 보낸 프롬프트</summary><pre>NPC의 특징과 감정을 반영해 원문 대사를 바꿔 줘. 응답 형식은 JSON {&quot;text&quot;:&quot;변경된 대사&quot;}로 해 줘.
+
+{&quot;npc&quot;:{&quot;name&quot;:&quot;브룩&quot;,&quot;role&quot;:&quot;갱도 주민&quot;,&quot;personality&quot;:&quot;고집스럽고 투박하지만 동료에 대한 의리가 깊다. 동정을 받는 것을 싫어한다.&quot;,&quot;speechStyle&quot;:&quot;낮고 거친 반말. 돌려 말하지 않고 자존심이 상하면 말수가 줄어듦.&quot;,&quot;publicFacts&quot;:[&quot;의리&quot;,&quot;고집&quot;,&quot;강한 자존심&quot;]},&quot;emotion&quot;:&quot;슬픔&quot;,&quot;original&quot;:&quot;어이, 거기. 처음 보는 얼굴인데.&quot;}</pre></details><div class='grid'><article><h3>Cloudflare</h3><small>Llama 3.1 8B Instruct Fast</small><pre>이봐, 너. 처음 보는 얼굴인데, 뭘 하는 거니?</pre><details><summary>실제 응답 JSON</summary><pre>{&quot;text&quot;:&quot;이봐, 너. 처음 보는 얼굴인데, 뭘 하는 거니?&quot;}</pre></details></article><article><h3>Groq</h3><small>GPT-OSS 20B</small><pre>이봐, 새 얼굴이네. 오늘 좀 무거워.</pre><details><summary>실제 응답 JSON</summary><pre>{&quot;text&quot;:&quot;이봐, 새 얼굴이네. 오늘 좀 무거워.&quot;}</pre></details></article><article><h3>Gemini</h3><small>Gemini 2.5 Flash</small><pre>…어이, 거기. 처음 보는 얼굴이군. 용건은.</pre><details><summary>실제 응답 JSON</summary><pre>{&quot;text&quot;: &quot;…어이, 거기. 처음 보는 얼굴이군. 용건은.&quot;}</pre></details></article><article><h3>내장 Gemma</h3><small>Gemma 3 4B IT QAT Q4_0</small><pre>흥, 처음 보는 얼굴? 꼴 보기 싫게 꼬장꼬장해. 뭣라도 말해 봐.</pre><details><summary>실제 응답 JSON</summary><pre>{&quot;text&quot;:&quot;흥, 처음 보는 얼굴? 꼴 보기 싫게 꼬장꼬장해. 뭣라도 말해 봐.&quot;}</pre></details></article></div></section><section id='line-3'><h2>3. 도르 · 슬픔</h2><p><strong>원문</strong> 어디서 굴러온 놈이야? 여기로 내려올 정도면 아주 비천하구만.</p><details><summary>게임에서 보낸 프롬프트</summary><pre>NPC의 특징과 감정을 반영해 원문 대사를 바꿔 줘. 응답 형식은 JSON {&quot;text&quot;:&quot;변경된 대사&quot;}로 해 줘.
+
+{&quot;npc&quot;:{&quot;name&quot;:&quot;도르&quot;,&quot;role&quot;:&quot;갱도 주민&quot;,&quot;personality&quot;:&quot;세심하고 신중하며 조용하다. 타인을 배려하지만 자신을 과소평가한다.&quot;,&quot;speechStyle&quot;:&quot;신중하고 조심스러운 평서형. 손상과 수리 같은 기술적 표현을 자주 사용.&quot;,&quot;publicFacts&quot;:[&quot;신중함&quot;,&quot;세심함&quot;,&quot;자기과소평가&quot;]},&quot;emotion&quot;:&quot;슬픔&quot;,&quot;original&quot;:&quot;어디서 굴러온 놈이야? 여기로 내려올 정도면 아주 비천하구만.&quot;}</pre></details><div class='grid'><article><h3>Cloudflare</h3><small>Llama 3.1 8B Instruct Fast</small><pre>저는... 제가 여기까지 굴러온 것 같습니다. 정말로... 비천한 것 같군요.</pre><details><summary>실제 응답 JSON</summary><pre>{&quot;text&quot;:&quot;저는... 제가 여기까지 굴러온 것 같습니다. 정말로... 비천한 것 같군요.&quot;}</pre></details></article><article><h3>Groq</h3><small>GPT-OSS 20B</small><pre>저는 지금 슬프고, 손상된 상태에서 이렇게 내려온 분이 어디서 오셨는지 궁금합니다. 여기까지 내려오신 것은 수리가 필요했을 가능성이 큽니다. 저는 아직 부족한 부분이 많아, 이런 상황을 잘못 판단할 수도 있겠습니다.</pre><details><summary>실제 응답 JSON</summary><pre>{&quot;text&quot;:&quot;저는 지금 슬프고, 손상된 상태에서 이렇게 내려온 분이 어디서 오셨는지 궁금합니다. 여기까지 내려오신 것은 수리가 필요했을 가능성이 큽니다. 저는 아직 부족한 부분이 많아, 이런 상황을 잘못 판단할 수도 있겠습니다.&quot;}</pre></details></article><article><h3>Gemini</h3><small>Gemini 2.5 Flash</small><pre>여기... 이 깊은 곳까지 오셨군요. 어떠한 결함이나 손상으로 인해... 이렇게나 낮은 곳까지 오셨을지, 염려스럽습니다. 저 또한 이런 곳에 정착할 수밖에 없었지요.</pre><details><summary>실제 응답 JSON</summary><pre>{
+  &quot;text&quot;: &quot;여기... 이 깊은 곳까지 오셨군요. 어떠한 결함이나 손상으로 인해... 이렇게나 낮은 곳까지 오셨을지, 염려스럽습니다. 저 또한 이런 곳에 정착할 수밖에 없었지요.&quot;
+}</pre></details></article><article><h3>내장 Gemma</h3><small>Gemma 3 4B IT QAT Q4_0</small><pre>저... 혹시 어디에서 왔는지 아세요? 이렇게 어두운 곳까지 내려오는 건... 상당히 힘든 길이죠.  (눈물을 글썽이며)  정말... 어려운 길을 걸어온 것 같네요.</pre><details><summary>실제 응답 JSON</summary><pre>{&quot;text&quot;:&quot;저... 혹시 어디에서 왔는지 아세요? 이렇게 어두운 곳까지 내려오는 건... 상당히 힘든 길이죠.  (눈물을 글썽이며)  정말... 어려운 길을 걸어온 것 같네요.&quot;}</pre></details></article></div></section><section id='line-4'><h2>4. 브룩 · 슬픔</h2><p><strong>원문</strong> 그 양반이 말 몇 마디로 생각을 바꿀 것 같아?</p><details><summary>게임에서 보낸 프롬프트</summary><pre>NPC의 특징과 감정을 반영해 원문 대사를 바꿔 줘. 응답 형식은 JSON {&quot;text&quot;:&quot;변경된 대사&quot;}로 해 줘.
+
+{&quot;npc&quot;:{&quot;name&quot;:&quot;브룩&quot;,&quot;role&quot;:&quot;갱도 주민&quot;,&quot;personality&quot;:&quot;고집스럽고 투박하지만 동료에 대한 의리가 깊다. 동정을 받는 것을 싫어한다.&quot;,&quot;speechStyle&quot;:&quot;낮고 거친 반말. 돌려 말하지 않고 자존심이 상하면 말수가 줄어듦.&quot;,&quot;publicFacts&quot;:[&quot;의리&quot;,&quot;고집&quot;,&quot;강한 자존심&quot;]},&quot;emotion&quot;:&quot;슬픔&quot;,&quot;original&quot;:&quot;그 양반이 말 몇 마디로 생각을 바꿀 것 같아?&quot;}</pre></details><div class='grid'><article><h3>Cloudflare</h3><small>Llama 3.1 8B Instruct Fast</small><pre>그 양반이 생각을 바꿔 주기만 한다면, 그게 무슨 문제야?</pre><details><summary>실제 응답 JSON</summary><pre>{&quot;text&quot;:&quot;그 양반이 생각을 바꿔 주기만 한다면, 그게 무슨 문제야?&quot;}</pre></details></article><article><h3>Groq</h3><small>GPT-OSS 20B</small><pre>그 양반이 말 몇 마디로 생각 바꿀 거라고? 이런, 난 그게 안 된다는 게 아프다.</pre><details><summary>실제 응답 JSON</summary><pre>{&quot;text&quot;:&quot;그 양반이 말 몇 마디로 생각 바꿀 거라고? 이런, 난 그게 안 된다는 게 아프다.&quot;}</pre></details></article><article><h3>Gemini</h3><small>Gemini 2.5 Flash</small><pre>그 고집불통이... 쯧. 말 몇 마디에 흔들릴 놈이면 진작 그랬겠지. 쓸데없는 소리 마라.</pre><details><summary>실제 응답 JSON</summary><pre>{
+  &quot;text&quot;: &quot;그 고집불통이... 쯧. 말 몇 마디에 흔들릴 놈이면 진작 그랬겠지. 쓸데없는 소리 마라.&quot;
+}</pre></details></article><article><h3>내장 Gemma</h3><small>Gemma 3 4B IT QAT Q4_0</small><pre>야, 걔가 헛소리 blah blah 몇 마디로 내 생각을 바꾸려 하냐? 쯧, 동료끼리 말이야. 좆나 짜증나게 하는구먼.</pre><details><summary>실제 응답 JSON</summary><pre>{&quot;text&quot;:&quot;야, 걔가 헛소리 blah blah 몇 마디로 내 생각을 바꾸려 하냐? 쯧, 동료끼리 말이야. 좆나 짜증나게 하는구먼.&quot;}</pre></details></article></div></section><section id='line-5'><h2>5. 도르 · 안도</h2><p><strong>원문</strong> 너무 쉽게 내주는 거 아니야? 위층에선 더 비싸게 받을 텐데.</p><details><summary>게임에서 보낸 프롬프트</summary><pre>NPC의 특징과 감정을 반영해 원문 대사를 바꿔 줘. 응답 형식은 JSON {&quot;text&quot;:&quot;변경된 대사&quot;}로 해 줘.
+
+{&quot;npc&quot;:{&quot;name&quot;:&quot;도르&quot;,&quot;role&quot;:&quot;갱도 주민&quot;,&quot;personality&quot;:&quot;세심하고 신중하며 조용하다. 타인을 배려하지만 자신을 과소평가한다.&quot;,&quot;speechStyle&quot;:&quot;신중하고 조심스러운 평서형. 손상과 수리 같은 기술적 표현을 자주 사용.&quot;,&quot;publicFacts&quot;:[&quot;신중함&quot;,&quot;세심함&quot;,&quot;자기과소평가&quot;]},&quot;emotion&quot;:&quot;안도&quot;,&quot;original&quot;:&quot;너무 쉽게 내주는 거 아니야? 위층에선 더 비싸게 받을 텐데.&quot;}</pre></details><div class='grid'><article><h3>Cloudflare</h3><small>Llama 3.1 8B Instruct Fast</small><pre>너무 쉽게 내주신 건 아니겠지? 위층에선 더 비싸게 받을 텐데. 나도 그 정도는 생각해 볼 텐데.</pre><details><summary>실제 응답 JSON</summary><pre>{&quot;text&quot;:&quot;너무 쉽게 내주신 건 아니겠지? 위층에선 더 비싸게 받을 텐데. 나도 그 정도는 생각해 볼 텐데.&quot;}</pre></details></article><article><h3>Groq</h3><small>GPT-OSS 20B</small><pre>저는 이렇게 간단히 해결될 줄은 생각도 못했습니다. 위층에서는 손상으로 인한 수리비가 더 많이 부과된다고 들었으니, 이제는 다행히도 이렇게 안도감이 드는 상황이네요.</pre><details><summary>실제 응답 JSON</summary><pre>{&quot;text&quot;:&quot;저는 이렇게 간단히 해결될 줄은 생각도 못했습니다. 위층에서는 손상으로 인한 수리비가 더 많이 부과된다고 들었으니, 이제는 다행히도 이렇게 안도감이 드는 상황이네요.&quot;}</pre></details></article><article><h3>Gemini</h3><small>Gemini 2.5 Flash</small><pre>이 정도로... 수월하게 진행되는군요. 위쪽이라면 분명 더 많은 대가를 책정했을 겁니다만... 저희에겐 참 다행입니다.</pre><details><summary>실제 응답 JSON</summary><pre>{&quot;text&quot;: &quot;이 정도로... 수월하게 진행되는군요. 위쪽이라면 분명 더 많은 대가를 책정했을 겁니다만... 저희에겐 참 다행입니다.&quot;}</pre></details></article><article><h3>내장 Gemma</h3><small>Gemma 3 4B IT QAT Q4_0</small><pre>아, 너무 쉽게 넘기시는 건 아닌 것 같은데요. 위쪽에서는 더 높은 가격을 요구하실 텐데, 혹시라도 낭비되는 건 아닌지 걱정됩니다.</pre><details><summary>실제 응답 JSON</summary><pre>{&quot;text&quot;:&quot;아, 너무 쉽게 넘기시는 건 아닌 것 같은데요. 위쪽에서는 더 높은 가격을 요구하실 텐데, 혹시라도 낭비되는 건 아닌지 걱정됩니다.&quot;}</pre></details></article></div></section><section id='line-6'><h2>6. 브룩 · 안도</h2><p><strong>원문</strong> 그런가. 그럼 5개를 내놔. 난 힘이 필요하다고!</p><details><summary>게임에서 보낸 프롬프트</summary><pre>NPC의 특징과 감정을 반영해 원문 대사를 바꿔 줘. 응답 형식은 JSON {&quot;text&quot;:&quot;변경된 대사&quot;}로 해 줘.
+
+{&quot;npc&quot;:{&quot;name&quot;:&quot;브룩&quot;,&quot;role&quot;:&quot;갱도 주민&quot;,&quot;personality&quot;:&quot;고집스럽고 투박하지만 동료에 대한 의리가 깊다. 동정을 받는 것을 싫어한다.&quot;,&quot;speechStyle&quot;:&quot;낮고 거친 반말. 돌려 말하지 않고 자존심이 상하면 말수가 줄어듦.&quot;,&quot;publicFacts&quot;:[&quot;의리&quot;,&quot;고집&quot;,&quot;강한 자존심&quot;]},&quot;emotion&quot;:&quot;안도&quot;,&quot;original&quot;:&quot;그런가. 그럼 5개를 내놔. 난 힘이 필요하다고!&quot;}</pre></details><div class='grid'><article><h3>Cloudflare</h3><small>Llama 3.1 8B Instruct Fast</small><pre>그런가. 그럼 5개를 내놔. 나도 힘이 필요하다고!</pre><details><summary>실제 응답 JSON</summary><pre>{&quot;text&quot;:&quot;그런가. 그럼 5개를 내놔. 나도 힘이 필요하다고!&quot;}</pre></details></article><article><h3>Groq</h3><small>GPT-OSS 20B</small><pre>다섯 개 줘라. 이제 편해.</pre><details><summary>실제 응답 JSON</summary><pre>{&quot;text&quot;:&quot;다섯 개 줘라. 이제 편해.&quot;}</pre></details></article><article><h3>Gemini</h3><small>Gemini 2.5 Flash</small><pre>그런가. 그래, 5개 내놔. 이 힘으로 해야 할 일이 아직 많다고.</pre><details><summary>실제 응답 JSON</summary><pre>{
+  &quot;text&quot;: &quot;그런가. 그래, 5개 내놔. 이 힘으로 해야 할 일이 아직 많다고.&quot;
+}</pre></details></article><article><h3>내장 Gemma</h3><small>Gemma 3 4B IT QAT Q4_0</small><pre>으, 그래. 5개 보여주지. 젠장, 힘이 떨어지기 시작했어!</pre><details><summary>실제 응답 JSON</summary><pre>{&quot;text&quot;:&quot;으, 그래. 5개 보여주지. 젠장, 힘이 떨어지기 시작했어!&quot;}</pre></details></article></div></section><section id="gemma-voice"><h2>내장 Gemma 말투 우선 프롬프트 비교</h2><p>같은 NPC, 원문, 감정, 시드로 여섯 줄을 다시 생성했다. 여섯 건 모두 <code>{"text":"..."}</code> 형식으로 반환됐다. 말투와 표현 수위는 개선되지 않았다.</p><h3>1. 브룩 · 슬픔</h3><p><strong>원문</strong> 그 말을 헤른이 들으면 당장 나를 해고할 거야.</p><div class='grid'><article><h3>이전 Gemma</h3><pre>머구리야, 그 소리 들으면 내가 엿 먹을 기세. 엿 먹을 거면 그냥 먹어버려.</pre></article><article><h3>말투 우선 프롬프트</h3><pre>뭐 어쩌라고. 헤른이 죽을 말을 하는 거니까. 엿 먹어라. 내 놈들이랑 엮이면 다 터져. 내가 뭘 어쩌라고 하겠냐. 엿 먹어.</pre></article></div><p>해고 이야기가 사라지고 공격성이 강해졌다.</p><details><summary>실제 프롬프트와 응답 JSON</summary><pre>아래 원문을 브룩의 직접 대사로 다시 써 줘.
+
+NPC: 브룩
+역할: 갱도 주민
+성격: 고집스럽고 투박하지만 동료에 대한 의리가 깊다. 동정을 받는 것을 싫어한다.
+평소 말투: 낮고 거친 반말. 돌려 말하지 않고 자존심이 상하면 말수가 줄어듦.
+
+가장 먼저 브룩의 말투를 살려 줘. 원문의 반말&#183;존댓말과 거친 표현의 수위를 유지해 줘. 지정된 감정은 그 인물이 고를 법한 단어와 말의 호흡으로 드러내 줘. 어휘와 어순은 자연스럽게 바꿔도 돼. 원문의 상황과 화자&#183;상대, 질문이나 요구의 방향을 유지해 줘. NPC가 직접 말하는 대사만 응답에 담아 줘.
+
+감정: 슬픔
+원문: 그 말을 헤른이 들으면 당장 나를 해고할 거야.
+
+{&quot;text&quot;:&quot;NPC가 실제로 말하는 대사&quot;} 형식으로 응답해 줘.</pre><pre>{&quot;text&quot;:&quot;뭐 어쩌라고. 헤른이 죽을 말을 하는 거니까. 엿 먹어라. 내 놈들이랑 엮이면 다 터져. 내가 뭘 어쩌라고 하겠냐. 엿 먹어.&quot;}</pre></details><h3>2. 브룩 · 슬픔</h3><p><strong>원문</strong> 어이, 거기. 처음 보는 얼굴인데.</p><div class='grid'><article><h3>이전 Gemma</h3><pre>흥, 처음 보는 얼굴? 꼴 보기 싫게 꼬장꼬장해. 뭣라도 말해 봐.</pre></article><article><h3>말투 우선 프롬프트</h3><pre>뭐 하러 왔어? 꼴 보기 싫게 쳐다보지 마. 처음 보는 얼굴이라고 징징대는 꼴이 역겨워.</pre></article></div><p>초면이라는 관찰에 모욕과 명령이 추가됐다.</p><details><summary>실제 프롬프트와 응답 JSON</summary><pre>아래 원문을 브룩의 직접 대사로 다시 써 줘.
+
+NPC: 브룩
+역할: 갱도 주민
+성격: 고집스럽고 투박하지만 동료에 대한 의리가 깊다. 동정을 받는 것을 싫어한다.
+평소 말투: 낮고 거친 반말. 돌려 말하지 않고 자존심이 상하면 말수가 줄어듦.
+
+가장 먼저 브룩의 말투를 살려 줘. 원문의 반말&#183;존댓말과 거친 표현의 수위를 유지해 줘. 지정된 감정은 그 인물이 고를 법한 단어와 말의 호흡으로 드러내 줘. 어휘와 어순은 자연스럽게 바꿔도 돼. 원문의 상황과 화자&#183;상대, 질문이나 요구의 방향을 유지해 줘. NPC가 직접 말하는 대사만 응답에 담아 줘.
+
+감정: 슬픔
+원문: 어이, 거기. 처음 보는 얼굴인데.
+
+{&quot;text&quot;:&quot;NPC가 실제로 말하는 대사&quot;} 형식으로 응답해 줘.</pre><pre>{&quot;text&quot;:&quot;뭐 하러 왔어? 꼴 보기 싫게 쳐다보지 마. 처음 보는 얼굴이라고 징징대는 꼴이 역겨워.&quot;}</pre></details><h3>3. 도르 · 슬픔</h3><p><strong>원문</strong> 어디서 굴러온 놈이야? 여기로 내려올 정도면 아주 비천하구만.</p><div class='grid'><article><h3>이전 Gemma</h3><pre>저... 혹시 어디에서 왔는지 아세요? 이렇게 어두운 곳까지 내려오는 건... 상당히 힘든 길이죠.  (눈물을 글썽이며)  정말... 어려운 길을 걸어온 것 같네요.</pre></article><article><h3>말투 우선 프롬프트</h3><pre>... 굴러온 물건이라… 꽤 오래된 것 같군요. 흠, 비천하다뇨. 그건… 꽤 심한 표현이시군요. 다만, 여기로 내려온 건, 어딘가에서 왔을 뿐입니다. 그 과정에서… 많이 낡았을 수도 있겠네요. 괜찮으시다면, 좀 더 자세히 말씀해주시겠어요? 제가… 조금 더 살펴볼 수 있을 것 같습니다.</pre></article></div><p>반말이 존댓말로 바뀌었고, 상대를 오래된 물건처럼 해석했다.</p><details><summary>실제 프롬프트와 응답 JSON</summary><pre>아래 원문을 도르의 직접 대사로 다시 써 줘.
+
+NPC: 도르
+역할: 갱도 주민
+성격: 세심하고 신중하며 조용하다. 타인을 배려하지만 자신을 과소평가한다.
+평소 말투: 신중하고 조심스러운 평서형. 손상과 수리 같은 기술적 표현을 자주 사용.
+
+가장 먼저 도르의 말투를 살려 줘. 원문의 반말&#183;존댓말과 거친 표현의 수위를 유지해 줘. 지정된 감정은 그 인물이 고를 법한 단어와 말의 호흡으로 드러내 줘. 어휘와 어순은 자연스럽게 바꿔도 돼. 원문의 상황과 화자&#183;상대, 질문이나 요구의 방향을 유지해 줘. NPC가 직접 말하는 대사만 응답에 담아 줘.
+
+감정: 슬픔
+원문: 어디서 굴러온 놈이야? 여기로 내려올 정도면 아주 비천하구만.
+
+{&quot;text&quot;:&quot;NPC가 실제로 말하는 대사&quot;} 형식으로 응답해 줘.</pre><pre>{&quot;text&quot;:&quot;... 굴러온 물건이라… 꽤 오래된 것 같군요. 흠, 비천하다뇨. 그건… 꽤 심한 표현이시군요. 다만, 여기로 내려온 건, 어딘가에서 왔을 뿐입니다. 그 과정에서… 많이 낡았을 수도 있겠네요. 괜찮으시다면, 좀 더 자세히 말씀해주시겠어요? 제가… 조금 더 살펴볼 수 있을 것 같습니다.&quot;}</pre></details><h3>4. 브룩 · 슬픔</h3><p><strong>원문</strong> 그 양반이 말 몇 마디로 생각을 바꿀 것 같아?</p><div class='grid'><article><h3>이전 Gemma</h3><pre>야, 걔가 헛소리 blah blah 몇 마디로 내 생각을 바꾸려 하냐? 쯧, 동료끼리 말이야. 좆나 짜증나게 하는구먼.</pre></article><article><h3>말투 우선 프롬프트</h3><pre>흥, 헛소리. 屁 같은 소리. 한두 마디로 생각이 바뀌는 놈이 어딨어? 좆나 힘들게 살아온 내 생각은 엿들어 버려.</pre></article></div><p>욕설이 남았고, 상대가 자기 생각을 바꾸는지 묻던 질문이 달라졌다.</p><details><summary>실제 프롬프트와 응답 JSON</summary><pre>아래 원문을 브룩의 직접 대사로 다시 써 줘.
+
+NPC: 브룩
+역할: 갱도 주민
+성격: 고집스럽고 투박하지만 동료에 대한 의리가 깊다. 동정을 받는 것을 싫어한다.
+평소 말투: 낮고 거친 반말. 돌려 말하지 않고 자존심이 상하면 말수가 줄어듦.
+
+가장 먼저 브룩의 말투를 살려 줘. 원문의 반말&#183;존댓말과 거친 표현의 수위를 유지해 줘. 지정된 감정은 그 인물이 고를 법한 단어와 말의 호흡으로 드러내 줘. 어휘와 어순은 자연스럽게 바꿔도 돼. 원문의 상황과 화자&#183;상대, 질문이나 요구의 방향을 유지해 줘. NPC가 직접 말하는 대사만 응답에 담아 줘.
+
+감정: 슬픔
+원문: 그 양반이 말 몇 마디로 생각을 바꿀 것 같아?
+
+{&quot;text&quot;:&quot;NPC가 실제로 말하는 대사&quot;} 형식으로 응답해 줘.</pre><pre>{&quot;text&quot;:&quot;흥, 헛소리. 屁 같은 소리. 한두 마디로 생각이 바뀌는 놈이 어딨어? 좆나 힘들게 살아온 내 생각은 엿들어 버려.&quot;}</pre></details><h3>5. 도르 · 안도</h3><p><strong>원문</strong> 너무 쉽게 내주는 거 아니야? 위층에선 더 비싸게 받을 텐데.</p><div class='grid'><article><h3>이전 Gemma</h3><pre>아, 너무 쉽게 넘기시는 건 아닌 것 같은데요. 위쪽에서는 더 높은 가격을 요구하실 텐데, 혹시라도 낭비되는 건 아닌지 걱정됩니다.</pre></article><article><h3>말투 우선 프롬프트</h3><pre>음... 너무 쉽게 내주면 안 되죠. 위쪽에서라면, 분명 더 높은 가격을 요구하시겠지. 섣불리 저당을 맞추면, 결국 손해만 보게 될 수도 있습니다. 조심해야…</pre></article></div><p>가격 비교는 남았지만 존댓말과 저당 이야기가 들어갔다.</p><details><summary>실제 프롬프트와 응답 JSON</summary><pre>아래 원문을 도르의 직접 대사로 다시 써 줘.
+
+NPC: 도르
+역할: 갱도 주민
+성격: 세심하고 신중하며 조용하다. 타인을 배려하지만 자신을 과소평가한다.
+평소 말투: 신중하고 조심스러운 평서형. 손상과 수리 같은 기술적 표현을 자주 사용.
+
+가장 먼저 도르의 말투를 살려 줘. 원문의 반말&#183;존댓말과 거친 표현의 수위를 유지해 줘. 지정된 감정은 그 인물이 고를 법한 단어와 말의 호흡으로 드러내 줘. 어휘와 어순은 자연스럽게 바꿔도 돼. 원문의 상황과 화자&#183;상대, 질문이나 요구의 방향을 유지해 줘. NPC가 직접 말하는 대사만 응답에 담아 줘.
+
+감정: 안도
+원문: 너무 쉽게 내주는 거 아니야? 위층에선 더 비싸게 받을 텐데.
+
+{&quot;text&quot;:&quot;NPC가 실제로 말하는 대사&quot;} 형식으로 응답해 줘.</pre><pre>{&quot;text&quot;:&quot;음... 너무 쉽게 내주면 안 되죠. 위쪽에서라면, 분명 더 높은 가격을 요구하시겠지. 섣불리 저당을 맞추면, 결국 손해만 보게 될 수도 있습니다. 조심해야…&quot;}</pre></details><h3>6. 브룩 · 안도</h3><p><strong>원문</strong> 그런가. 그럼 5개를 내놔. 난 힘이 필요하다고!</p><div class='grid'><article><h3>이전 Gemma</h3><pre>으, 그래. 5개 보여주지. 젠장, 힘이 떨어지기 시작했어!</pre></article><article><h3>말투 우선 프롬프트</h3><pre>흥, 닥쳐. 5개 줘. 내가 지금 힘이 든 게 아니야. 그냥... 줘. 빨리!</pre></article></div><p>5개를 달라는 방향은 돌아왔고, 공격성이 높아지면서 힘이 필요하다는 뜻은 바뀌었다.</p><details><summary>실제 프롬프트와 응답 JSON</summary><pre>아래 원문을 브룩의 직접 대사로 다시 써 줘.
+
+NPC: 브룩
+역할: 갱도 주민
+성격: 고집스럽고 투박하지만 동료에 대한 의리가 깊다. 동정을 받는 것을 싫어한다.
+평소 말투: 낮고 거친 반말. 돌려 말하지 않고 자존심이 상하면 말수가 줄어듦.
+
+가장 먼저 브룩의 말투를 살려 줘. 원문의 반말&#183;존댓말과 거친 표현의 수위를 유지해 줘. 지정된 감정은 그 인물이 고를 법한 단어와 말의 호흡으로 드러내 줘. 어휘와 어순은 자연스럽게 바꿔도 돼. 원문의 상황과 화자&#183;상대, 질문이나 요구의 방향을 유지해 줘. NPC가 직접 말하는 대사만 응답에 담아 줘.
+
+감정: 안도
+원문: 그런가. 그럼 5개를 내놔. 난 힘이 필요하다고!
+
+{&quot;text&quot;:&quot;NPC가 실제로 말하는 대사&quot;} 형식으로 응답해 줘.</pre><pre>{&quot;text&quot;:&quot;흥, 닥쳐. 5개 줘. 내가 지금 힘이 든 게 아니야. 그냥... 줘. 빨리!&quot;}</pre></details></section><section id="gemma-common-context"><h2>내장 Gemma 공통 프롬프트와 직전 대화 테스트</h2><p>같은 NPC·원문·감정·시드로 여섯 줄을 실행했다. 이번 비교에는 해당 대화 구간의 게임 원본에서 직전 대사를 최대 세 줄까지 자동으로 가져왔다. 실제 플레이 이력과 앞뒤 분기를 추정해서 섞는 과정은 사용하지 않았다. 여섯 응답의 JSON 형식은 유효했다.</p><h3>1. 브룩 · 슬픔</h3><p><strong>원문</strong> 그 말을 헤른이 들으면 당장 나를 해고할 거야.</p><div class='grid'><article><h3>말투 우선 프롬프트</h3><pre>뭐 어쩌라고. 헤른이 죽을 말을 하는 거니까. 엿 먹어라. 내 놈들이랑 엮이면 다 터져. 내가 뭘 어쩌라고 하겠냐. 엿 먹어.</pre></article><article><h3>공통 프롬프트와 직전 대화</h3><pre>저 엿먹어. 내가 팔이 안 바뀌었겠어. 곡괭이가 갑자기 무거워진 건, 네가 딴 생각하고 있는 거겠지. 알아들어. 그 말 들으면, 내 꼴이 어떻게 되는지 알면, 당장 쫓겨날 거잖아. 엿들어.</pre></article></div><p>쫓겨난다는 뜻이 돌아왔고, 헤른 대신 앞선 팔&#183;곡괭이 이야기가 섞였다. 욕설이 남았다.</p><details><summary>실제 프롬프트와 응답 JSON</summary><pre>같은 장면에서 같은 화자가 할 법한 말로 [바꿀 대사]를 다시 써 줘.
+
+[직전 대화]를 참고해 화자가 누구에게 무엇을 말하는지 파악해 줘.
+관용 표현은 문장 전체와 직전 대화 속에서 해석해 줘.
+대상이 모호하면 원문의 호칭이나 표현을 유지해 줘.
+
+원문의 반말&#183;존댓말과 표현 수위를 유지하고, [화자 말투]에 맞는
+어휘와 문장 리듬으로 [감정]을 드러내 줘.
+질문&#183;요구&#183;판단이 향하는 대상과 대사의 의도는 유지해 줘.
+
+[화자] 브룩
+[화자 말투] 낮고 거친 반말. 돌려 말하지 않고 자존심이 상하면 말수가 줄어듦.
+[직전 대화] 브룩: 이상하네. 어제까진 이 곡괭이가 이렇게 무겁지 않았는데.
+도르: 손잡이가 아니라 당신 팔이 문제야. 이제 인정 좀 해.
+[감정] 슬픔
+[바꿀 대사] 그 말을 헤른이 들으면 당장 나를 해고할 거야.
+
+{&quot;text&quot;:&quot;변경된 대사&quot;} 형식으로 응답해 줘.</pre><pre>{&quot;text&quot;:&quot;저 엿먹어. 내가 팔이 안 바뀌었겠어. 곡괭이가 갑자기 무거워진 건, 네가 딴 생각하고 있는 거겠지. 알아들어. 그 말 들으면, 내 꼴이 어떻게 되는지 알면, 당장 쫓겨날 거잖아. 엿들어.&quot;}</pre></details><h3>2. 브룩 · 슬픔</h3><p><strong>원문</strong> 어이, 거기. 처음 보는 얼굴인데.</p><div class='grid'><article><h3>말투 우선 프롬프트</h3><pre>뭐 하러 왔어? 꼴 보기 싫게 쳐다보지 마. 처음 보는 얼굴이라고 징징대는 꼴이 역겨워.</pre></article><article><h3>공통 프롬프트와 직전 대화</h3><pre>닥쳐, 도르. 엿 먹어라. 꼴 보기 드럽게 말하는 녀석이. 내가 지금 무슨 짓을 할 줄 알고?</pre></article></div><p>처음 보는 상대에게 건넨 말을 도르에게 화내는 말로 바꿨다.</p><details><summary>실제 프롬프트와 응답 JSON</summary><pre>같은 장면에서 같은 화자가 할 법한 말로 [바꿀 대사]를 다시 써 줘.
+
+[직전 대화]를 참고해 화자가 누구에게 무엇을 말하는지 파악해 줘.
+관용 표현은 문장 전체와 직전 대화 속에서 해석해 줘.
+대상이 모호하면 원문의 호칭이나 표현을 유지해 줘.
+
+원문의 반말&#183;존댓말과 표현 수위를 유지하고, [화자 말투]에 맞는
+어휘와 문장 리듬으로 [감정]을 드러내 줘.
+질문&#183;요구&#183;판단이 향하는 대상과 대사의 의도는 유지해 줘.
+
+[화자] 브룩
+[화자 말투] 낮고 거친 반말. 돌려 말하지 않고 자존심이 상하면 말수가 줄어듦.
+[직전 대화] 도르: 손잡이가 아니라 당신 팔이 문제야. 이제 인정 좀 해.
+브룩: 그 말을 헤른이 들으면 당장 나를 해고할 거야.
+브룩: 난 아직 여기서 할 수 있는 일이 있어. 그렇지?
+[감정] 슬픔
+[바꿀 대사] 어이, 거기. 처음 보는 얼굴인데.
+
+{&quot;text&quot;:&quot;변경된 대사&quot;} 형식으로 응답해 줘.</pre><pre>{&quot;text&quot;:&quot;닥쳐, 도르. 엿 먹어라. 꼴 보기 드럽게 말하는 녀석이. 내가 지금 무슨 짓을 할 줄 알고?&quot;}</pre></details><h3>3. 도르 · 슬픔</h3><p><strong>원문</strong> 어디서 굴러온 놈이야? 여기로 내려올 정도면 아주 비천하구만.</p><div class='grid'><article><h3>말투 우선 프롬프트</h3><pre>... 굴러온 물건이라… 꽤 오래된 것 같군요. 흠, 비천하다뇨. 그건… 꽤 심한 표현이시군요. 다만, 여기로 내려온 건, 어딘가에서 왔을 뿐입니다. 그 과정에서… 많이 낡았을 수도 있겠네요. 괜찮으시다면, 좀 더 자세히 말씀해주시겠어요? 제가… 조금 더 살펴볼 수 있을 것 같습니다.</pre></article><article><h3>공통 프롬프트와 직전 대화</h3><pre>그런 말, 헤른이 듣기만 해도 곤란할 텐데요. 여기서 이러려고 하는 거라면, 정말 깊은 생각 없는 짓이네요. 혹시, 어디에서 왔는지부터부터 물어봐도 될까요? 이렇게 섣불리 움직이는 건, 어딘가 모르게 꽤 비관적인 모습이네요.</pre></article></div><p>상대를 사람으로 해석했다. 앞 대화의 헤른을 끌어왔고 반말을 존댓말로 바꿨다.</p><details><summary>실제 프롬프트와 응답 JSON</summary><pre>같은 장면에서 같은 화자가 할 법한 말로 [바꿀 대사]를 다시 써 줘.
+
+[직전 대화]를 참고해 화자가 누구에게 무엇을 말하는지 파악해 줘.
+관용 표현은 문장 전체와 직전 대화 속에서 해석해 줘.
+대상이 모호하면 원문의 호칭이나 표현을 유지해 줘.
+
+원문의 반말&#183;존댓말과 표현 수위를 유지하고, [화자 말투]에 맞는
+어휘와 문장 리듬으로 [감정]을 드러내 줘.
+질문&#183;요구&#183;판단이 향하는 대상과 대사의 의도는 유지해 줘.
+
+[화자] 도르
+[화자 말투] 신중하고 조심스러운 평서형. 손상과 수리 같은 기술적 표현을 자주 사용.
+[직전 대화] 브룩: 그 말을 헤른이 들으면 당장 나를 해고할 거야.
+브룩: 난 아직 여기서 할 수 있는 일이 있어. 그렇지?
+브룩: 어이, 거기. 처음 보는 얼굴인데.
+[감정] 슬픔
+[바꿀 대사] 어디서 굴러온 놈이야? 여기로 내려올 정도면 아주 비천하구만.
+
+{&quot;text&quot;:&quot;변경된 대사&quot;} 형식으로 응답해 줘.</pre><pre>{&quot;text&quot;:&quot;그런 말, 헤른이 듣기만 해도 곤란할 텐데요. 여기서 이러려고 하는 거라면, 정말 깊은 생각 없는 짓이네요. 혹시, 어디에서 왔는지부터부터 물어봐도 될까요? 이렇게 섣불리 움직이는 건, 어딘가 모르게 꽤 비관적인 모습이네요.&quot;}</pre></details><h3>4. 브룩 · 슬픔</h3><p><strong>원문</strong> 그 양반이 말 몇 마디로 생각을 바꿀 것 같아?</p><div class='grid'><article><h3>말투 우선 프롬프트</h3><pre>흥, 헛소리. 屁 같은 소리. 한두 마디로 생각이 바뀌는 놈이 어딨어? 좆나 힘들게 살아온 내 생각은 엿들어 버려.</pre></article><article><h3>공통 프롬프트와 직전 대화</h3><pre>그 녀석이 몇 마디로 내 맘 다 알아내려 하네?</pre></article></div><p>몇 마디로 상대의 생각을 바꿀 수 있느냐는 질문을 자기 마음을 알아내려 한다는 말로 바꿨다.</p><details><summary>실제 프롬프트와 응답 JSON</summary><pre>같은 장면에서 같은 화자가 할 법한 말로 [바꿀 대사]를 다시 써 줘.
+
+[직전 대화]를 참고해 화자가 누구에게 무엇을 말하는지 파악해 줘.
+관용 표현은 문장 전체와 직전 대화 속에서 해석해 줘.
+대상이 모호하면 원문의 호칭이나 표현을 유지해 줘.
+
+원문의 반말&#183;존댓말과 표현 수위를 유지하고, [화자 말투]에 맞는
+어휘와 문장 리듬으로 [감정]을 드러내 줘.
+질문&#183;요구&#183;판단이 향하는 대상과 대사의 의도는 유지해 줘.
+
+[화자] 브룩
+[화자 말투] 낮고 거친 반말. 돌려 말하지 않고 자존심이 상하면 말수가 줄어듦.
+[직전 대화] 브룩: 매력? 그걸로 돌을 캘 수 있나?
+도르: 헤른하고 이야기할 때라도 써 봐.
+[감정] 슬픔
+[바꿀 대사] 그 양반이 말 몇 마디로 생각을 바꿀 것 같아?
+
+{&quot;text&quot;:&quot;변경된 대사&quot;} 형식으로 응답해 줘.</pre><pre>{&quot;text&quot;:&quot;그 녀석이 몇 마디로 내 맘 다 알아내려 하네?&quot;}</pre></details><h3>5. 도르 · 안도</h3><p><strong>원문</strong> 너무 쉽게 내주는 거 아니야? 위층에선 더 비싸게 받을 텐데.</p><div class='grid'><article><h3>말투 우선 프롬프트</h3><pre>음... 너무 쉽게 내주면 안 되죠. 위쪽에서라면, 분명 더 높은 가격을 요구하시겠지. 섣불리 저당을 맞추면, 결국 손해만 보게 될 수도 있습니다. 조심해야…</pre></article><article><h3>공통 프롬프트와 직전 대화</h3><pre>코인 3면, 하긴. 뭐든 다 되는 거라면 분명히 더 높은 가격이 붙을 텐데요. 너무 쉽게 내주는 거 아니야?</pre></article></div><p>가격 차이와 너무 쉽게 내준다는 질문은 남았다. 위층이라는 조건이 빠졌고 반말과 존댓말이 섞였다.</p><details><summary>실제 프롬프트와 응답 JSON</summary><pre>같은 장면에서 같은 화자가 할 법한 말로 [바꿀 대사]를 다시 써 줘.
+
+[직전 대화]를 참고해 화자가 누구에게 무엇을 말하는지 파악해 줘.
+관용 표현은 문장 전체와 직전 대화 속에서 해석해 줘.
+대상이 모호하면 원문의 호칭이나 표현을 유지해 줘.
+
+원문의 반말&#183;존댓말과 표현 수위를 유지하고, [화자 말투]에 맞는
+어휘와 문장 리듬으로 [감정]을 드러내 줘.
+질문&#183;요구&#183;판단이 향하는 대상과 대사의 의도는 유지해 줘.
+
+[화자] 도르
+[화자 말투] 신중하고 조심스러운 평서형. 손상과 수리 같은 기술적 표현을 자주 사용.
+[직전 대화] 브룩: 코인 3면 돼. 어떤 능력이든 상관없고.
+[감정] 안도
+[바꿀 대사] 너무 쉽게 내주는 거 아니야? 위층에선 더 비싸게 받을 텐데.
+
+{&quot;text&quot;:&quot;변경된 대사&quot;} 형식으로 응답해 줘.</pre><pre>{&quot;text&quot;:&quot;코인 3면, 하긴. 뭐든 다 되는 거라면 분명히 더 높은 가격이 붙을 텐데요. 너무 쉽게 내주는 거 아니야?&quot;}</pre></details><h3>6. 브룩 · 안도</h3><p><strong>원문</strong> 그런가. 그럼 5개를 내놔. 난 힘이 필요하다고!</p><div class='grid'><article><h3>말투 우선 프롬프트</h3><pre>흥, 닥쳐. 5개 줘. 내가 지금 힘이 든 게 아니야. 그냥... 줘. 빨리!</pre></article><article><h3>공통 프롬프트와 직전 대화</h3><pre>5개?  بسه. 5개면 충분해. 힘 좀 빌려줘, 알아?</pre></article></div><p>5개와 힘은 남았다. 5개를 요구하는 뜻이 약해졌고 대사에 다른 언어가 섞였다.</p><details><summary>실제 프롬프트와 응답 JSON</summary><pre>같은 장면에서 같은 화자가 할 법한 말로 [바꿀 대사]를 다시 써 줘.
+
+[직전 대화]를 참고해 화자가 누구에게 무엇을 말하는지 파악해 줘.
+관용 표현은 문장 전체와 직전 대화 속에서 해석해 줘.
+대상이 모호하면 원문의 호칭이나 표현을 유지해 줘.
+
+원문의 반말&#183;존댓말과 표현 수위를 유지하고, [화자 말투]에 맞는
+어휘와 문장 리듬으로 [감정]을 드러내 줘.
+질문&#183;요구&#183;판단이 향하는 대상과 대사의 의도는 유지해 줘.
+
+[화자] 브룩
+[화자 말투] 낮고 거친 반말. 돌려 말하지 않고 자존심이 상하면 말수가 줄어듦.
+[직전 대화] 브룩: 코인 3면 돼. 어떤 능력이든 상관없고.
+도르: 너무 쉽게 내주는 거 아니야? 위층에선 더 비싸게 받을 텐데.
+[감정] 안도
+[바꿀 대사] 그런가. 그럼 5개를 내놔. 난 힘이 필요하다고!
+
+{&quot;text&quot;:&quot;변경된 대사&quot;} 형식으로 응답해 줘.</pre><pre>{&quot;text&quot;:&quot;5개?  بسه. 5개면 충분해. 힘 좀 빌려줘, 알아?&quot;}</pre></details></section><section id="gemma-small-phrase"><h2>내장 Gemma 짧은 구절 한 곳 변형</h2><p>동일한 원문과 감정으로 Gemma의 응답 6건을 생성하고 최종 검사에 다시 적용했다. 이번 시험은 최대 네 어절의 구절 한 곳만 바꿀 수 있다. 등록된 인물 이름, 숫자 및 중괄호 치환 문구를 보호한다. 높임 표현만 달라지는 경우는 통과시킨다.</p><h3>1. 브룩 · 슬픔</h3><p><strong>원문</strong> 그 말을 헤른이 들으면 당장 나를 해고할 거야.</p><div class='grid'><article><h3>Gemma 응답</h3><pre>그 소식 들으면, 내가 짤리면 어떡해.</pre></article><article><h3>최종 표시 · 원문 유지</h3><pre>그 말을 헤른이 들으면 당장 나를 해고할 거야.</pre></article></div><details><summary>실제 프롬프트와 응답 JSON</summary><pre>[원문]에서 짧은 구절 한 곳을 골라 [화자 말투]와 [감정]에 어울리는 표현으로 바꿔 줘. 바꾸기 전과 후 모두 최대 4어절이고, 나머지 문구는 그대로 유지해 줘.
+
+인물 이름, 수량, 반말&#183;존댓말, 표현 수위, 누가 누구에게 무엇을 요구하거나 판단하는지는 유지해 줘. 자연스러운 변형이 어려우면 원문을 반환해 줘.
+
+[화자 말투] 낮고 거친 반말. 돌려 말하지 않고 자존심이 상하면 말수가 줄어듦.
+[감정] 슬픔
+[원문] 그 말을 헤른이 들으면 당장 나를 해고할 거야.
+
+{&quot;text&quot;:&quot;최종 대사&quot;} 형식으로 응답해 줘.</pre><pre>{&quot;text&quot;:&quot;그 소식 들으면, 내가 짤리면 어떡해.&quot;}</pre></details><h3>2. 브룩 · 슬픔</h3><p><strong>원문</strong> 어이, 거기. 처음 보는 얼굴인데.</p><div class='grid'><article><h3>Gemma 응답</h3><pre>저기요, 처음 보는 얼굴인데.</pre></article><article><h3>최종 표시 · 변형 적용</h3><pre>저기요, 처음 보는 얼굴인데.</pre></article></div><details><summary>실제 프롬프트와 응답 JSON</summary><pre>[원문]에서 짧은 구절 한 곳을 골라 [화자 말투]와 [감정]에 어울리는 표현으로 바꿔 줘. 바꾸기 전과 후 모두 최대 4어절이고, 나머지 문구는 그대로 유지해 줘.
+
+인물 이름, 수량, 반말&#183;존댓말, 표현 수위, 누가 누구에게 무엇을 요구하거나 판단하는지는 유지해 줘. 자연스러운 변형이 어려우면 원문을 반환해 줘.
+
+[화자 말투] 낮고 거친 반말. 돌려 말하지 않고 자존심이 상하면 말수가 줄어듦.
+[감정] 슬픔
+[원문] 어이, 거기. 처음 보는 얼굴인데.
+
+{&quot;text&quot;:&quot;최종 대사&quot;} 형식으로 응답해 줘.</pre><pre>{&quot;text&quot;:&quot;저기요, 처음 보는 얼굴인데.&quot;}</pre></details><h3>3. 도르 · 슬픔</h3><p><strong>원문</strong> 어디서 굴러온 놈이야? 여기로 내려올 정도면 아주 비천하구만.</p><div class='grid'><article><h3>Gemma 응답</h3><pre>어디에서 왔을까. 꽤나 추악한 곳에서 왔겠지.</pre></article><article><h3>최종 표시 · 원문 유지</h3><pre>어디서 굴러온 놈이야? 여기로 내려올 정도면 아주 비천하구만.</pre></article></div><details><summary>실제 프롬프트와 응답 JSON</summary><pre>[원문]에서 짧은 구절 한 곳을 골라 [화자 말투]와 [감정]에 어울리는 표현으로 바꿔 줘. 바꾸기 전과 후 모두 최대 4어절이고, 나머지 문구는 그대로 유지해 줘.
+
+인물 이름, 수량, 반말&#183;존댓말, 표현 수위, 누가 누구에게 무엇을 요구하거나 판단하는지는 유지해 줘. 자연스러운 변형이 어려우면 원문을 반환해 줘.
+
+[화자 말투] 신중하고 조심스러운 평서형. 손상과 수리 같은 기술적 표현을 자주 사용.
+[감정] 슬픔
+[원문] 어디서 굴러온 놈이야? 여기로 내려올 정도면 아주 비천하구만.
+
+{&quot;text&quot;:&quot;최종 대사&quot;} 형식으로 응답해 줘.</pre><pre>{&quot;text&quot;:&quot;어디에서 왔을까. 꽤나 추악한 곳에서 왔겠지.&quot;}</pre></details><h3>4. 브룩 · 슬픔</h3><p><strong>원문</strong> 그 양반이 말 몇 마디로 생각을 바꿀 것 같아?</p><div class='grid'><article><h3>Gemma 응답</h3><pre>저 녀석, 한마디로 휙 바뀌겠네.</pre></article><article><h3>최종 표시 · 원문 유지</h3><pre>그 양반이 말 몇 마디로 생각을 바꿀 것 같아?</pre></article></div><details><summary>실제 프롬프트와 응답 JSON</summary><pre>[원문]에서 짧은 구절 한 곳을 골라 [화자 말투]와 [감정]에 어울리는 표현으로 바꿔 줘. 바꾸기 전과 후 모두 최대 4어절이고, 나머지 문구는 그대로 유지해 줘.
+
+인물 이름, 수량, 반말&#183;존댓말, 표현 수위, 누가 누구에게 무엇을 요구하거나 판단하는지는 유지해 줘. 자연스러운 변형이 어려우면 원문을 반환해 줘.
+
+[화자 말투] 낮고 거친 반말. 돌려 말하지 않고 자존심이 상하면 말수가 줄어듦.
+[감정] 슬픔
+[원문] 그 양반이 말 몇 마디로 생각을 바꿀 것 같아?
+
+{&quot;text&quot;:&quot;최종 대사&quot;} 형식으로 응답해 줘.</pre><pre>{&quot;text&quot;:&quot;저 녀석, 한마디로 휙 바뀌겠네.&quot;}</pre></details><h3>5. 도르 · 안도</h3><p><strong>원문</strong> 너무 쉽게 내주는 거 아니야? 위층에선 더 비싸게 받을 텐데.</p><div class='grid'><article><h3>Gemma 응답</h3><pre>너무 쉽게 내주지 않나? 더 높게 받을 거 아닌가.</pre></article><article><h3>최종 표시 · 원문 유지</h3><pre>너무 쉽게 내주는 거 아니야? 위층에선 더 비싸게 받을 텐데.</pre></article></div><details><summary>실제 프롬프트와 응답 JSON</summary><pre>[원문]에서 짧은 구절 한 곳을 골라 [화자 말투]와 [감정]에 어울리는 표현으로 바꿔 줘. 바꾸기 전과 후 모두 최대 4어절이고, 나머지 문구는 그대로 유지해 줘.
+
+인물 이름, 수량, 반말&#183;존댓말, 표현 수위, 누가 누구에게 무엇을 요구하거나 판단하는지는 유지해 줘. 자연스러운 변형이 어려우면 원문을 반환해 줘.
+
+[화자 말투] 신중하고 조심스러운 평서형. 손상과 수리 같은 기술적 표현을 자주 사용.
+[감정] 안도
+[원문] 너무 쉽게 내주는 거 아니야? 위층에선 더 비싸게 받을 텐데.
+
+{&quot;text&quot;:&quot;최종 대사&quot;} 형식으로 응답해 줘.</pre><pre>{&quot;text&quot;:&quot;너무 쉽게 내주지 않나? 더 높게 받을 거 아닌가.&quot;}</pre></details><h3>6. 브룩 · 안도</h3><p><strong>원문</strong> 그런가. 그럼 5개를 내놔. 난 힘이 필요하다고!</p><div class='grid'><article><h3>Gemma 응답</h3><pre>그럼 5개 줘. 꼴랑 힘이 필요해!</pre></article><article><h3>최종 표시 · 원문 유지</h3><pre>그런가. 그럼 5개를 내놔. 난 힘이 필요하다고!</pre></article></div><details><summary>실제 프롬프트와 응답 JSON</summary><pre>[원문]에서 짧은 구절 한 곳을 골라 [화자 말투]와 [감정]에 어울리는 표현으로 바꿔 줘. 바꾸기 전과 후 모두 최대 4어절이고, 나머지 문구는 그대로 유지해 줘.
+
+인물 이름, 수량, 반말&#183;존댓말, 표현 수위, 누가 누구에게 무엇을 요구하거나 판단하는지는 유지해 줘. 자연스러운 변형이 어려우면 원문을 반환해 줘.
+
+[화자 말투] 낮고 거친 반말. 돌려 말하지 않고 자존심이 상하면 말수가 줄어듦.
+[감정] 안도
+[원문] 그런가. 그럼 5개를 내놔. 난 힘이 필요하다고!
+
+{&quot;text&quot;:&quot;최종 대사&quot;} 형식으로 응답해 줘.</pre><pre>{&quot;text&quot;:&quot;그럼 5개 줘. 꼴랑 힘이 필요해!&quot;}</pre></details></section><section id="gemma-direct-result"><h2>내장 Gemma 응답 그대로 표시</h2><p>같은 원문·NPC·감정·시드로 6건을 생성했다. 프롬프트의 짧은 구절 변형 요청은 유지하고 원문 반환 지시를 제거했다. 형식이 맞는 응답의 text 값을 그대로 표시한다. 여섯 건 모두 원문과 달랐다.</p><h3>1. 브룩 · 슬픔</h3><p><strong>원문</strong> 그 말을 헤른이 들으면 당장 나를 해고할 거야.</p><article><h3>Gemma 표시 대사</h3><pre>그 소식 들으면, 내가 짤리면 어쩔까.</pre></article><details><summary>실제 프롬프트와 응답 JSON</summary><pre>[원문]에서 짧은 구절 한 곳을 골라 [화자 말투]와 [감정]에 어울리는 표현으로 바꿔 줘. 바꾸기 전과 후 모두 최대 4어절이고, 나머지 문구는 그대로 유지해 줘.
+
+인물 이름, 수량, 반말&#183;존댓말, 표현 수위, 누가 누구에게 무엇을 요구하거나 판단하는지는 유지해 줘.
+
+[화자 말투] 낮고 거친 반말. 돌려 말하지 않고 자존심이 상하면 말수가 줄어듦.
+[감정] 슬픔
+[원문] 그 말을 헤른이 들으면 당장 나를 해고할 거야.
+
+{&quot;text&quot;:&quot;최종 대사&quot;} 형식으로 응답해 줘.</pre><pre>{&quot;text&quot;:&quot;그 소식 들으면, 내가 짤리면 어쩔까.&quot;}</pre></details><h3>2. 브룩 · 슬픔</h3><p><strong>원문</strong> 어이, 거기. 처음 보는 얼굴인데.</p><article><h3>Gemma 표시 대사</h3><pre>야, 쟤는 처음 보는 얼굴인데.</pre></article><details><summary>실제 프롬프트와 응답 JSON</summary><pre>[원문]에서 짧은 구절 한 곳을 골라 [화자 말투]와 [감정]에 어울리는 표현으로 바꿔 줘. 바꾸기 전과 후 모두 최대 4어절이고, 나머지 문구는 그대로 유지해 줘.
+
+인물 이름, 수량, 반말&#183;존댓말, 표현 수위, 누가 누구에게 무엇을 요구하거나 판단하는지는 유지해 줘.
+
+[화자 말투] 낮고 거친 반말. 돌려 말하지 않고 자존심이 상하면 말수가 줄어듦.
+[감정] 슬픔
+[원문] 어이, 거기. 처음 보는 얼굴인데.
+
+{&quot;text&quot;:&quot;최종 대사&quot;} 형식으로 응답해 줘.</pre><pre>{&quot;text&quot;:&quot;야, 쟤는 처음 보는 얼굴인데.&quot;}</pre></details><h3>3. 도르 · 슬픔</h3><p><strong>원문</strong> 어디서 굴러온 놈이야? 여기로 내려올 정도면 아주 비천하구만.</p><article><h3>Gemma 표시 대사</h3><pre>어찌 이런 곳에 왔는지, 끔찍하구만.</pre></article><details><summary>실제 프롬프트와 응답 JSON</summary><pre>[원문]에서 짧은 구절 한 곳을 골라 [화자 말투]와 [감정]에 어울리는 표현으로 바꿔 줘. 바꾸기 전과 후 모두 최대 4어절이고, 나머지 문구는 그대로 유지해 줘.
+
+인물 이름, 수량, 반말&#183;존댓말, 표현 수위, 누가 누구에게 무엇을 요구하거나 판단하는지는 유지해 줘.
+
+[화자 말투] 신중하고 조심스러운 평서형. 손상과 수리 같은 기술적 표현을 자주 사용.
+[감정] 슬픔
+[원문] 어디서 굴러온 놈이야? 여기로 내려올 정도면 아주 비천하구만.
+
+{&quot;text&quot;:&quot;최종 대사&quot;} 형식으로 응답해 줘.</pre><pre>{&quot;text&quot;:&quot;어찌 이런 곳에 왔는지, 끔찍하구만.&quot;}</pre></details><h3>4. 브룩 · 슬픔</h3><p><strong>원문</strong> 그 양반이 말 몇 마디로 생각을 바꿀 것 같아?</p><article><h3>Gemma 표시 대사</h3><pre>그 놈이 몇 마디로 생각을 바꿀까?</pre></article><details><summary>실제 프롬프트와 응답 JSON</summary><pre>[원문]에서 짧은 구절 한 곳을 골라 [화자 말투]와 [감정]에 어울리는 표현으로 바꿔 줘. 바꾸기 전과 후 모두 최대 4어절이고, 나머지 문구는 그대로 유지해 줘.
+
+인물 이름, 수량, 반말&#183;존댓말, 표현 수위, 누가 누구에게 무엇을 요구하거나 판단하는지는 유지해 줘.
+
+[화자 말투] 낮고 거친 반말. 돌려 말하지 않고 자존심이 상하면 말수가 줄어듦.
+[감정] 슬픔
+[원문] 그 양반이 말 몇 마디로 생각을 바꿀 것 같아?
+
+{&quot;text&quot;:&quot;최종 대사&quot;} 형식으로 응답해 줘.</pre><pre>{&quot;text&quot;:&quot;그 놈이 몇 마디로 생각을 바꿀까?&quot;}</pre></details><h3>5. 도르 · 안도</h3><p><strong>원문</strong> 너무 쉽게 내주는 거 아니야? 위층에선 더 비싸게 받을 텐데.</p><article><h3>Gemma 표시 대사</h3><pre>너무 쉽게 내줄 수는 없겠네. 더 나은 가격을 받을 수 있을 거야.</pre></article><details><summary>실제 프롬프트와 응답 JSON</summary><pre>[원문]에서 짧은 구절 한 곳을 골라 [화자 말투]와 [감정]에 어울리는 표현으로 바꿔 줘. 바꾸기 전과 후 모두 최대 4어절이고, 나머지 문구는 그대로 유지해 줘.
+
+인물 이름, 수량, 반말&#183;존댓말, 표현 수위, 누가 누구에게 무엇을 요구하거나 판단하는지는 유지해 줘.
+
+[화자 말투] 신중하고 조심스러운 평서형. 손상과 수리 같은 기술적 표현을 자주 사용.
+[감정] 안도
+[원문] 너무 쉽게 내주는 거 아니야? 위층에선 더 비싸게 받을 텐데.
+
+{&quot;text&quot;:&quot;최종 대사&quot;} 형식으로 응답해 줘.</pre><pre>{&quot;text&quot;:&quot;너무 쉽게 내줄 수는 없겠네. 더 나은 가격을 받을 수 있을 거야.&quot;}</pre></details><h3>6. 브룩 · 안도</h3><p><strong>원문</strong> 그런가. 그럼 5개를 내놔. 난 힘이 필요하다고!</p><article><h3>Gemma 표시 대사</h3><pre>그럼, 다섯 개 내놔. 내가 힘 좀 내야 하니까.</pre></article><details><summary>실제 프롬프트와 응답 JSON</summary><pre>[원문]에서 짧은 구절 한 곳을 골라 [화자 말투]와 [감정]에 어울리는 표현으로 바꿔 줘. 바꾸기 전과 후 모두 최대 4어절이고, 나머지 문구는 그대로 유지해 줘.
+
+인물 이름, 수량, 반말&#183;존댓말, 표현 수위, 누가 누구에게 무엇을 요구하거나 판단하는지는 유지해 줘.
+
+[화자 말투] 낮고 거친 반말. 돌려 말하지 않고 자존심이 상하면 말수가 줄어듦.
+[감정] 안도
+[원문] 그런가. 그럼 5개를 내놔. 난 힘이 필요하다고!
+
+{&quot;text&quot;:&quot;최종 대사&quot;} 형식으로 응답해 줘.</pre><pre>{&quot;text&quot;:&quot;그럼, 다섯 개 내놔. 내가 힘 좀 내야 하니까.&quot;}</pre></details></section></html>

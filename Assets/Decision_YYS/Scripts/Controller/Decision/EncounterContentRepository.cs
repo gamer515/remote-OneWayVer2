@@ -97,7 +97,9 @@ public sealed class EncounterContentRepository
             error = null;
             return true;
         }
-        if (ChapterContentCatalog.CanRewrite(contentPath) && runNumber > 1 && SaveIOService.Instance.TryLoadGeneratedContent(
+        string emotionOrigin = runNumber > 1 ? SaveIOService.Instance.NarrativeEmotionOrigin(runNumber, contentPath) : null;
+        if (emotionOrigin != LocalStoryEmotion.Origin && ChapterContentCatalog.CanRewrite(contentPath) && runNumber > 1 &&
+            SaveIOService.Instance.TryLoadGeneratedContent(
                 runNumber,
                 "Encounters",
                 contentPath + (variant == null ? "/Story" : "/Variants/" + variant + "/Story"),
@@ -105,7 +107,7 @@ public sealed class EncounterContentRepository
         {
             NormalizeOptionalActions(generated);
             bool review=SaveIOService.Instance.NarrativeRequiresReview(runNumber,contentPath,out string reviewError);
-            bool emotionOnly = SaveIOService.Instance.NarrativeUsesEmotion(runNumber, contentPath);
+            bool emotionOnly = emotionOrigin == OneWay.Decision.DirectLlm.DirectStoryGenerator.DialogueOrigin;
             if (TryApplyGeneratedText(original, generated, out string generatedError, review, emotionOnly))
             {
                 if(review)Debug.LogWarning("[LocalStory][검사 실패본 사용] "+runNumber+"회차 / "+contentPath+" / "+reviewError);
@@ -395,7 +397,7 @@ public sealed class EncounterContentRepository
                 return false;
             }
 
-            if (!reviewRequired && !HasSameImmutableCores(originalCard.text, generatedCard.text))
+            if (!reviewRequired && !emotionOnly && !HasSameImmutableCores(originalCard.text, generatedCard.text))
             {
                 error = $"{index}번째 카드의 {{ }} 핵심 문자열이 변경되었습니다.";
                 return false;
@@ -404,8 +406,7 @@ public sealed class EncounterContentRepository
             {
                 if (originalCard.text != generatedCard.text &&
                     (string.IsNullOrWhiteSpace(originalCard.speakerId) ||
-                      string.Equals(originalCard.speakerId, "Player", StringComparison.OrdinalIgnoreCase) ||
-                      !LocalStoryEmotion.ValidChange(originalCard.text, generatedCard.text)))
+                      string.Equals(originalCard.speakerId, "Player", StringComparison.OrdinalIgnoreCase)))
                 {
                     error = $"{index}번째 생성 카드가 NPC 발화 외의 내용을 변경했습니다.";
                     return false;

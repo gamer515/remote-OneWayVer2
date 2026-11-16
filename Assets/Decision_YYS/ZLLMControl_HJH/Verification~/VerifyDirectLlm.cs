@@ -40,9 +40,41 @@ public static class VerifyDirectLlm
         return new DirectLlmHttpResponse { StatusCode = 200, TransportSucceeded = true, Body = body.ToString(Formatting.None) };
     }
 
+    public static void CheckDialogue()
+    {
+        var line = new LocalStoryEmotionLine { name = "브룩", role = "광부", personality = "솔직함",
+            speechStyle = "반말", publicFacts = new[] { "갱도에서 일함" } };
+        string original = "곡괭이를 가져왔어.";
+        string rewritten = "정말 반가워!\n" + new string('아', 180) + " {다른 표현}";
+        string dialogueJson = new JObject { ["text"] = rewritten }.ToString(Formatting.None);
+        foreach (DirectLlmProvider provider in Enum.GetValues(typeof(DirectLlmProvider)))
+        {
+            var fake = new Fake { Handler = (request, token) => Task.FromResult(Reply(request.Provider, dialogueJson,
+                request.Provider == DirectLlmProvider.Gemini ? "MAX_TOKENS" : "length")) };
+            var options = new DirectLlmOptions();
+            foreach (var endpoint in options.endpoints) endpoint.enabled = endpoint.provider == provider;
+            var generator = new DirectStoryGenerator(new DirectLlmClient(options, fake, Credentials));
+            Check(generator.RewriteDialogueAsync(line, "기쁨", original, CancellationToken.None).GetAwaiter().GetResult().Text == rewritten,
+                "plain dialogue response retained verbatim");
+            var body = JObject.Parse(fake.Calls.Single().Body);
+            Check(body["generationConfig"]?["maxOutputTokens"] == null &&
+                body["max_tokens"] == null && body["max_completion_tokens"] == null, "no output token limits");
+            Check(provider == DirectLlmProvider.Gemini
+                ? (string)body["generationConfig"]["responseMimeType"] == "application/json"
+                : (string)body["response_format"]["type"] == "json_object", "JSON response format requested");
+            string prompt = provider == DirectLlmProvider.Gemini
+                ? (string)body["contents"].Single()["parts"].Single()["text"]
+                : (string)body["messages"].Single()["content"];
+            var input = JObject.Parse(prompt.Substring(prompt.IndexOf("\n\n", StringComparison.Ordinal) + 2));
+            Check(input.Count == 3 && (string)input["npc"]["personality"] == line.personality &&
+                (string)input["emotion"] == "기쁨" && (string)input["original"] == original, "NPC, emotion and source dialogue");
+        }
+    }
+
     public static async Task<string> Run()
     {
         checks = 0;
+        CheckDialogue();
         var fake = new Fake(); var client = Client(fake);
         var first = await client.GenerateAsync(Messages, 512, 17, CancellationToken.None);
         Check(first.Provider == DirectLlmProvider.Gemini && fake.Calls.Count == 1, "success stops further providers");

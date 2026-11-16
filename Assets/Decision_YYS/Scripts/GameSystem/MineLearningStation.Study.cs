@@ -360,8 +360,9 @@ public sealed partial class MineLearningStation
             return;
         }
         var coins = new int[4];
-        coins[job.ability] = job.reward;
-        AwardCoins(job.ability, job.reward);
+        int reward = book?.reward ?? job.reward;
+        coins[job.ability] = reward;
+        AwardCoins(job.ability, reward);
         progress.successfulStudies++;
         if (book != null)
         {

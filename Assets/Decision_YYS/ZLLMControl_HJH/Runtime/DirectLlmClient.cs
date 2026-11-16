@@ -20,6 +20,8 @@ namespace OneWay.Decision.DirectLlm
         public DirectLlmProvider Provider { get; internal set; }
         public string Model { get; internal set; }
         public string CardsJson { get; internal set; }
+        public string Text { get; internal set; }
+        public string RawText { get; internal set; }
         public int InputTokens { get; internal set; } = -1;
         public int OutputTokens { get; internal set; } = -1;
         public double TotalSeconds { get; internal set; }
@@ -69,12 +71,21 @@ namespace OneWay.Decision.DirectLlm
                 "|roundRobin=" + roundRobin + "|timeout=" + timeoutSeconds;
         }
 
-        public async Task<DirectLlmResult> GenerateAsync(string messages, int maxTokens, int seed,
+        public Task<DirectLlmResult> GenerateAsync(string messages, int maxTokens, int seed,
             CancellationToken token, Func<string, bool> acceptCards = null)
+        {
+            if (maxTokens < 1 || maxTokens > 8192) throw new ArgumentOutOfRangeException(nameof(maxTokens));
+            return Generate(messages, maxTokens, seed, token, acceptCards);
+        }
+
+        public Task<DirectLlmResult> GenerateDialogueAsync(string messages, CancellationToken token) =>
+            Generate(messages, null, 0, token, null);
+
+        private async Task<DirectLlmResult> Generate(string messages, int? maxTokens, int seed,
+            CancellationToken token, Func<string, bool> acceptCards)
         {
             token.ThrowIfCancellationRequested();
             var parsed = DirectLlmProtocol.Messages(messages);
-            if (maxTokens < 1 || maxTokens > 8192) throw new ArgumentOutOfRangeException(nameof(maxTokens));
             if (Interlocked.CompareExchange(ref busy, 1, 0) != 0)
                 throw new InvalidOperationException("This DirectLlmClient is already generating. Reuse it sequentially or create another client.");
             int start = next;
@@ -102,7 +113,7 @@ namespace OneWay.Decision.DirectLlm
                         attempt.HttpStatus = response.StatusCode;
                         if (!response.TransportSucceeded || response.StatusCode < 200 || response.StatusCode >= 300)
                             throw new DirectLlmFailure("HttpOrNetworkError");
-                        var result = DirectLlmProtocol.Response(endpoint.provider, response.Body);
+                        var result = DirectLlmProtocol.Response(endpoint.provider, response.Body, maxTokens.HasValue);
                         if (acceptCards != null && !acceptCards(result.CardsJson)) throw new DirectLlmFailure("GameValidationFailed");
                         token.ThrowIfCancellationRequested();
                         attempt.Code = "Success";

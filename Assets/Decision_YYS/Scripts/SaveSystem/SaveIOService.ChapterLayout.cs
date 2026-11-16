@@ -280,7 +280,7 @@ public partial class SaveIOService
                 var doc=JObject.Parse(File.ReadAllText(story));if((int?)doc["schemaVersion"]!=2) continue;
                 var entries=(JArray)doc["stories"];
                 foreach (var entry in entries.Where(e => (string)e["origin"] == "Runtime" ||
-                    (string)e["origin"] == LocalStoryEmotion.Origin).ToArray()) entry.Remove();
+                    IsEmotionOrigin((string)e["origin"])).ToArray()) entry.Remove();
                 if(entries.Count>0) WriteDocument(story,doc);else File.Delete(story);
             }
             string queue=Path.Combine(dir,"Queue.json");if(File.Exists(queue)) File.Delete(queue);
