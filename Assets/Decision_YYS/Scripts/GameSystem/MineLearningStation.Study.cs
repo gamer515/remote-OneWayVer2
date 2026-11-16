@@ -325,6 +325,7 @@ public sealed partial class MineLearningStation
                     {
                         if (!job.started)
                         {
+                            ApplyReadingDuration(job);
                             job.started = true;
                             job.studyAttempt = ++progress.sequence;
                             progress.attemptsToday++;
@@ -352,6 +353,16 @@ public sealed partial class MineLearningStation
             changed = true;
         }
         return changed;
+    }
+
+    private void ApplyReadingDuration(MineLearningJob job)
+    {
+        if (IsStrengthTutorial(job) || !readingBooks.ContainsKey(job.bookId ?? "")) return;
+
+        int comprehension = progress.skills.Find(skill => skill.id == "comprehension")?.value ?? 0;
+        float reduction = Mathf.Clamp(comprehension * .04f, 0f, .30f);
+        job.duration *= 1f - reduction;
+        job.remaining = job.duration;
     }
 
     private void CompleteStudy(MineLearningJob job)
