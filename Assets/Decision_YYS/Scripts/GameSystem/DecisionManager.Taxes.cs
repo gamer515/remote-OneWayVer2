@@ -161,12 +161,66 @@ public partial class DecisionManager
             (!line.IsFlexible ? DescribeTaxCost(line.cost) :
                 line.kind == "single" ? $"한 종류 {line.coins}" : $"혼합 가능 {line.coins}"));
         string bill = $"따라잡았다. 이번 순찰의 고지서를 확인하고 세금을 내라.\n{AnnounceCollectorTaxes(invoice)}\n고지 / {invoice.authority}\n{string.Join("\n", lines)}\n합계 {invoice.Total}개";
-        if (!string.IsNullOrEmpty(feedback)) bill += "\n" + feedback;
-        ShowTaxChoices(bill, new[] { "납부하기", "매력으로 설득", "결투" }, slot =>
+        var wallet = statContainer.stats;
+        bool normalPayment = CanPayGeneralTax(wallet, invoice.FixedCost(), invoice.Single, invoice.Mixed);
+        bool alternatePayment = false;
+        if (!normalPayment)
         {
-            if (slot == 1) TryPersuadeTaxCollector();
-            else if (slot == 2) BeginTaxDuel();
-            else BeginTaxPayment(invoice);
+            alternatePayment = AlternateTaxAbilities(invoice, wallet, out int amount).Length > 0;
+            bill += alternatePayment
+                ? $"\n대납 / 합계의 {mineRules.alternatePaymentMultiplier}배, 한 종류로 {amount}개"
+                : "\n납부에 필요한 코인이 부족합니다.";
+        }
+        if (!string.IsNullOrEmpty(feedback)) bill += "\n" + feedback;
+        string[] responses = { "매력으로 설득", "결투" };
+        string[] options = normalPayment || alternatePayment
+            ? new[] { normalPayment ? "납부하기" : "다른 능력으로 대납" }.Concat(responses).ToArray()
+            : responses;
+        ShowTaxChoices(bill, options, slot =>
+        {
+            if (slot == options.Length - 2) TryPersuadeTaxCollector();
+            else if (slot == options.Length - 1) BeginTaxDuel();
+            else if (normalPayment) BeginTaxPayment(invoice);
+            else ChooseAlternateTaxCoin(invoice);
+        });
+    }
+
+    private static bool CanPayGeneralTax(int[] wallet, int[] fixedCost, int single, int mixed) =>
+        AbilityPayment.CanPay(wallet, fixedCost) &&
+        wallet.Select((amount, index) => amount - fixedCost[index]).Sum() >= single + mixed &&
+        wallet.Where((amount, index) => amount - fixedCost[index] >= single).Any();
+
+    private int[] AlternateTaxAbilities(MineTaxInvoice invoice, int[] wallet, out int amount)
+    {
+        long total = (long)invoice.Total * mineRules.alternatePaymentMultiplier;
+        amount = total > 0 && total <= int.MaxValue ? (int)total : 0;
+        var fixedCost = invoice.FixedCost();
+        if (amount == 0 || CanPayGeneralTax(wallet, fixedCost, invoice.Single, invoice.Mixed))
+            return Array.Empty<int>();
+
+        int required = amount;
+        return Enumerable.Range(0, TaxAbilities.Length)
+            .Where(ability => wallet[ability] >= required && wallet[ability] >= fixedCost[ability]).ToArray();
+    }
+
+    private void ChooseAlternateTaxCoin(MineTaxInvoice invoice)
+    {
+        if (mine.collectorChaseClosed || !ReferenceEquals(mine.taxInvoice, invoice)) return;
+        var candidates = AlternateTaxAbilities(invoice, statContainer.stats, out int amount);
+        if (candidates.Length == 0)
+        {
+            ShowMineTax("대납 가능한 코인 종류가 없습니다.");
+            return;
+        }
+        var choices = candidates.Select(ability => $"{TaxAbilities[ability]} {amount}개 대납")
+            .Concat(new[] { "고지서로 돌아가기" }).ToArray();
+        ShowTaxChoices($"대납 / 고지서 합계 {invoice.Total}개 × {mineRules.alternatePaymentMultiplier}배\n한 종류로 {amount}개를 납부합니다.", choices, slot =>
+        {
+            if (slot == candidates.Length) { ShowMineTax(); return; }
+            int ability = candidates[slot];
+            var cost = new int[TaxAbilities.Length];
+            cost[ability] = amount;
+            CommitTaxPayment(cost, alternateAbility: ability);
         });
     }
 
@@ -175,9 +229,7 @@ public partial class DecisionManager
         var cost = invoice.FixedCost();
         var wallet = statContainer.stats;
         int single = invoice.Single, mixed = invoice.Mixed;
-        if (!AbilityPayment.CanPay(wallet, cost) ||
-            wallet.Select((amount, index) => amount - cost[index]).Sum() < single + mixed ||
-            !wallet.Where((amount, index) => amount - cost[index] >= single).Any())
+        if (!CanPayGeneralTax(wallet, cost, single, mixed))
         {
             ShowMineTax("납부에 필요한 코인이 부족합니다.");
             return;
@@ -213,15 +265,27 @@ public partial class DecisionManager
         });
     }
 
-    private void CommitTaxPayment(int[] cost, bool boardPaid = false)
+    private void CommitTaxPayment(int[] cost, bool boardPaid = false, int alternateAbility = -1)
     {
-        if (mine.collectorChaseClosed) return;
-        if (!mine.HasTaxInvoice || !AbilityPayment.TryPay(statContainer.stats, cost, out var after))
+        if (mine.collectorChaseClosed || !mine.HasTaxInvoice) return;
+        var invoice = mine.taxInvoice;
+        var wallet = statContainer.stats;
+        if (alternateAbility >= 0 &&
+            (!AlternateTaxAbilities(invoice, wallet, out int amount).Contains(alternateAbility) ||
+             cost[alternateAbility] != amount))
         {
-            if (mine.HasTaxInvoice) ShowMineTax("납부에 필요한 코인이 부족합니다.");
+            ShowMineTax("현재 잔액으로 대납 조건을 다시 확인하세요.");
             return;
         }
-        if (!boardPaid && TryBeginBoardPayment(cost, () => CommitTaxPayment(cost, true), () => ShowMineTax())) return;
+        if (!AbilityPayment.TryPay(wallet, cost, out var after))
+        {
+            ShowMineTax("납부에 필요한 코인이 부족합니다.");
+            return;
+        }
+        if (!boardPaid && TryBeginBoardPayment(cost, () =>
+        {
+            if (ReferenceEquals(mine.taxInvoice, invoice)) CommitTaxPayment(cost, true, alternateAbility);
+        }, () => ShowMineTax())) return;
         statContainer.SetStats(after);
         guideProgress.committedStats = after;
         mine.collected += cost.Sum();
