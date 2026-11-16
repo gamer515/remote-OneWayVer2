@@ -47,9 +47,20 @@ using UnityEngine;
     public bool collectorOpeningCompleted;
     public float collectorRouteStartZ, collectorRouteEndZ;
     public bool collectorReturning;
+    public int collectorChunkIndex;
+    public bool collectorChaseClosed;
     public MineTaxInvoice taxInvoice;
     public bool HasTaxInvoice => taxInvoice?.lines?.Length > 0;
     public MineLearningProgress learning = new MineLearningProgress();
+}
+
+[Serializable] public sealed class MineCollectorPatrolSettings
+{
+    public int inspectionStart = 1, inspectionIncrease = 1;
+    public float chaseSpeedStart = 2.70f, chaseSpeedIncrease = .20f, chaseSpeedMax = 3.60f;
+
+    public int MinimumCoins(int chunkIndex) => Mathf.Max(0, inspectionStart + inspectionIncrease * chunkIndex);
+    public float ChaseSpeed(int chunkIndex) => Mathf.Max(.01f, Mathf.Min(chaseSpeedMax, chaseSpeedStart + chaseSpeedIncrease * chunkIndex));
 }
 
 /// <summary>All provisional balance values are owned by the approved trial settings JSON.</summary>
@@ -57,6 +68,7 @@ using UnityEngine;
 {
     public ChapterDayCycle dayCycle;
     public float collectorArrivalSeconds, collectorNpcWaitMin, collectorNpcWaitMax;
+    public MineCollectorPatrolSettings collectorPatrol;
     public float laborSeconds, successBase, successBonus, abilityScale;
     public float encounterDistance;
     public int baseTax, alternatePaymentMultiplier;

@@ -67,7 +67,7 @@ public sealed class JourneyMapMarkers : MonoBehaviour
         }
 
         if (showCloud) warning.SetWarningFront(front.y, true);
-        string phase = collectors.Finished ? "징수원 대기" : collectors.IsReturning ? "징수원 복귀 ↑" : "징수원 접근 ↓";
+        string phase = collectors.Finished ? "징수원 대기" : collectors.IsReturning ? "세금 추격 ↑" : "시민 분류 검사 ↓";
         warningText.text = float.IsFinite(nearest) ? $"{phase} / {nearest:F0}u" : phase;
     }
     private void UpdateFacilityMarkers()

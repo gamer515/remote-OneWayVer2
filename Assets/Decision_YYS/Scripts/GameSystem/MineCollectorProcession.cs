@@ -32,6 +32,8 @@ public sealed class MineCollectorProcession : MonoBehaviour
     private float chunkStart, chunkEnd, preparationZ;
     private float firstPassSpeed, firstPassSeconds, npcWaitMin, npcWaitMax;
     private int routeSeed;
+    private const int PatrolVersion = 5;
+    private MineCollectorPatrolSettings patrolSettings;
     private Vector3[][] npcTargets, routeNpcTargets;
     private (Vector3 position, Quaternion rotation)[] dialoguePoses;
     public float RowWaitSeconds => rowWaitSeconds;
@@ -42,7 +44,17 @@ public sealed class MineCollectorProcession : MonoBehaviour
     public bool IsVisible => IsOnPatrol;
     public IReadOnlyList<Transform> Members => members ?? Array.Empty<Transform>();
     public string CurrentPhase => progress == null ? "NotStarted" : ((Phase)progress.collectorPhase).ToString();
-    public bool CanMeet => IsOnPatrol && !IsReturning && !progress.collectorPassedPlayer;
+    public int ChunkNumber => progress.collectorChunkIndex + 1;
+    public int InspectionMinimum => patrolSettings.MinimumCoins(progress.collectorChunkIndex);
+    public bool CanMeet(Vector3 point) => IsOnPatrol && point.z >= chunkStart && point.z < chunkEnd &&
+        (IsReturning ? !progress.collectorChaseClosed && progress.HasTaxInvoice : !progress.collectorPassedPlayer);
+
+    public bool RecordPlayerEscape(float z)
+    {
+        if (!IsOnPatrol || progress.collectorChaseClosed || z < chunkEnd) return false;
+        progress.collectorChaseClosed = true;
+        return true;
+    }
     public Transform NearestMember(Vector3 point) => members?.OrderBy(t => (t.position - point).sqrMagnitude).FirstOrDefault();
     public Transform MemberInRange(Vector3 point, float distance)
     {
@@ -70,10 +82,12 @@ public sealed class MineCollectorProcession : MonoBehaviour
 
     public void Initialize(GameObject prefab, MineChapterProgress state, Vector3 start, float length, int seed,
         float firstPassSeconds = 0, float minimumNpcWait = 0, float maximumNpcWait = 0,
-        IEnumerable<Vector3> npcPositions = null, IEnumerable<(Vector3 entrance, Vector3 exit)> placedDoors = null)
+        IEnumerable<Vector3> npcPositions = null, IEnumerable<(Vector3 entrance, Vector3 exit)> placedDoors = null,
+        MineCollectorPatrolSettings settings = null)
     {
         if (prefab == null) throw new InvalidOperationException("징수원 모델이 필요합니다.");
         origin = start; progress = state;
+        patrolSettings = settings ?? new MineCollectorPatrolSettings();
         this.firstPassSeconds = firstPassSeconds;
         authoredDoors = placedDoors?.OrderBy(door => door.entrance.z).Select(door => (door.entrance.z, door.exit.z)).ToArray();
         if (authoredDoors == null || authoredDoors.Length == 0)
@@ -91,16 +105,24 @@ public sealed class MineCollectorProcession : MonoBehaviour
         npcTargets = Enumerable.Range(0, authoredDoors.Length).Select(index => targets[index].ToArray()).ToArray();
         float endZ = (state.taxPatrolActive || state.collectorOpeningCompleted) && state.collectorRouteEndZ > start.z
             ? state.collectorRouteEndZ : start.z + length;
-        if (state.collectorRouteVersion != 4)
+        bool legacy = state.collectorRouteVersion < PatrolVersion;
+        bool legacyInspectionDone = state.taxPatrolActive && (state.collectorPassedPlayer || !state.HasTaxInvoice);
+        if (state.collectorRouteVersion < 4)
         {
-            state.collectorRouteVersion = 4;
             if (state.collectorCount == 0)
                 state.collectorCount = new System.Random(seed).Next(minimumCount, Mathf.Max(minimumCount, maximumCount) + 1);
-            bool settled = state.taxPatrolActive && state.collectorPassedPlayer;
-            BeginRoute(start.z, endZ);
-            state.collectorPassedPlayer = settled;
+            BeginRoute(start.z, endZ, 0);
+            state.collectorPassedPlayer = legacyInspectionDone;
         }
         else ConfigureRoute(state.collectorRouteStartZ > start.z ? state.collectorRouteStartZ : start.z, endZ);
+        if (legacy)
+        {
+            state.collectorRouteVersion = PatrolVersion;
+            state.collectorChunkIndex = Mathf.Max(0, Mathf.RoundToInt((chunkStart - start.z) / Mathf.Max(.01f, chunkEnd - chunkStart)));
+            // The former pass flag also marked a resolved general invoice.
+            state.collectorPassedPlayer = legacyInspectionDone;
+            state.collectorChaseClosed = legacyInspectionDone;
+        }
         if (Finished && !IsReturning && state.taxPatrolActive) BeginReturn();
         if (members != null) return;
         members = new Transform[state.collectorCount];
@@ -128,11 +150,13 @@ public sealed class MineCollectorProcession : MonoBehaviour
         firstPassSpeed = firstPassSeconds > 0 ? (chunkEnd - preparationZ + formationTravel) / firstPassSeconds : arrivalSpeed;
     }
 
-    public void BeginRoute(float startZ, float endZ)
+    public void BeginRoute(float startZ, float endZ, int chunkIndex)
     {
         ConfigureRoute(startZ, endZ);
         progress.collectorRouteStartZ = chunkStart;
         progress.collectorRouteEndZ = chunkEnd;
+        progress.collectorChunkIndex = chunkIndex;
+        progress.collectorChaseClosed = false;
         progress.collectorZ = chunkEnd;
         progress.collectorReturning = false;
         progress.collectorPhase = (int)(routeDoors.Length == 0 ? Phase.Arrival : Phase.RowMarch);
@@ -165,7 +189,7 @@ public sealed class MineCollectorProcession : MonoBehaviour
             if (!skipNpcStops) return;
         }
         var phase = (Phase)progress.collectorPhase;
-        float speed = IsReturning ? marchSpeed : phase == Phase.FormRow || phase == Phase.FormColumn ? firstPassSpeed :
+        float speed = IsReturning ? patrolSettings.ChaseSpeed(progress.collectorChunkIndex) : phase == Phase.FormRow || phase == Phase.FormColumn ? firstPassSpeed :
             progress.collectorPassedPlayer ? marchSpeed : firstPassSpeed;
         switch (phase)
         {
@@ -273,7 +297,7 @@ public sealed class MineCollectorProcession : MonoBehaviour
         }
         progress.collectorPhase = (int)next;
     }
-    public void ContinueForward()
+    public void CompleteInspection()
     {
         progress.collectorPassedPlayer = true; progress.collectorWait = 0;
         if ((Phase)progress.collectorPhase == Phase.Wait) progress.collectorPhase = (int)Phase.RowMarch;

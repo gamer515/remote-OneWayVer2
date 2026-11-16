@@ -92,7 +92,7 @@ public partial class DecisionManager
         float patrolLength = (envController.LoadedChunkEndZ ?? envController.CurrentTerrainEndZ) - origin.z;
         mineCollectors?.Initialize(mineCollectorPrefab, mine, origin,
             patrolLength, session.RunSeed, mineRules.collectorArrivalSeconds,
-            mineRules.collectorNpcWaitMin, mineRules.collectorNpcWaitMax, npcPositions, doors);
+            mineRules.collectorNpcWaitMin, mineRules.collectorNpcWaitMax, npcPositions, doors, mineRules.collectorPatrol);
         mineCollectors?.SetVisible(mineCollectors.IsVisible);
     }
 
@@ -270,13 +270,15 @@ public partial class DecisionManager
             mineCollectors is { Finished: false } procession)
         {
             var position = playerController.CurrentPosition;
+            if (procession.RecordPlayerEscape(position.z)) SaveGuideCheckpoint();
             bool canOpenDialogue = CanOpenCollectorDialogue();
-            bool hasCollection = canOpenDialogue && mine.HasTaxInvoice && procession.CanMeet;
-            var nearby = hasCollection ? procession.MemberInRange(position, mineRules.encounterDistance) : null;
+            var nearby = canOpenDialogue && procession.CanMeet(position)
+                ? procession.MemberInRange(position, mineRules.encounterDistance) : null;
             if (nearby == null)
             {
                 procession.Tick(Time.deltaTime, skipNpcStops: mineLaborInProgress);
-                if (hasCollection) nearby = procession.MemberInRange(position, mineRules.encounterDistance);
+                if (canOpenDialogue && procession.CanMeet(position))
+                    nearby = procession.MemberInRange(position, mineRules.encounterDistance);
             }
             if (canOpenDialogue)
             {
@@ -350,25 +352,20 @@ public partial class DecisionManager
 
     private void ResolveCollectorContact(Transform collector)
     {
-        var invoice = mine.taxInvoice;
-        if (invoice.CanPass(statContainer.stats, out int available, out int largest))
+        BeginCollectorDialogue(collector);
+        if (mineCollectors.IsReturning)
         {
-            BeginCollectorDialogue(collector);
-            presentationController.ShowInteraction($"{AnnounceCollectorTaxes(invoice)} 코인에 여유가 있군. 지나가라.", "징수원");
-            uiController.SetTaxCriteria(DescribeCollectorPassCriteria(invoice, available, largest));
-            collectorPass = StartCoroutine(FinishCollectorPass());
-            SetYellowInputInteractable(true);
+            ShowMineTax();
             return;
         }
-        BeginCollectorDialogue(collector);
-        ShowMineTax();
+        ShowCitizenInspection();
     }
 
     private IEnumerator FinishCollectorPass()
     {
         yield return new WaitForSecondsRealtime(3f);
         collectorPass = null;
-        FinishMineTax();
+        FinishCollectorDialogue();
     }
 
     private void TryBeginMineWitness(Transform collector)
@@ -407,7 +404,7 @@ public partial class DecisionManager
         {
             StopCoroutine(collectorPass);
             collectorPass = null;
-            FinishMineTax();
+            FinishCollectorDialogue();
             return;
         }
         if (taxWitnessStep == 1)
@@ -419,7 +416,7 @@ public partial class DecisionManager
         }
         if (taxWitnessStep == 2)
         {
-            FinishCollectorDialogue(false);
+            FinishCollectorDialogue();
             return;
         }
         if(taxSelected == null || taxSelection < 0 || taxSelection >= taxOptions.Length) return;
@@ -430,11 +427,12 @@ public partial class DecisionManager
     }
     private void FinishMineTax()
     {
+        mine.collectorChaseClosed = true;
         mine.taxInvoice = null;
-        FinishCollectorDialogue(true);
+        FinishCollectorDialogue();
     }
 
-    private void FinishCollectorDialogue(bool playerTaxSettled)
+    private void FinishCollectorDialogue()
     {
         uiController.SetTaxCriteria(null);
         taxWitnessStep = 0; taxWitness = null;
@@ -443,7 +441,6 @@ public partial class DecisionManager
         presentationController.ExitChoice();
         collectingTax = false;
         mineCollectors.RestoreDialoguePositions();
-        if (playerTaxSettled) mineCollectors.ContinueForward();
         mineView.Hide(); currentState = beforeTax;
         if (currentState == StoryState.MovingToEncounter && !mine.resting) playerController.ResumeMovement();
         SetYellowInputInteractable(currentState == StoryState.Exploring || currentState == StoryState.ShowingStory || currentState == StoryState.WaitingForChoice);

@@ -82,7 +82,7 @@ public partial class DecisionManager
             mine.taxInvoice = taxRules.Announce(session.RunSeed, TaxDay, mine.taxScheduleTier, statContainer.stats);
         mine.nextTaxDay = TaxDay + mine.taxScheduleInterval;
         mine.taxPatrolActive = true;
-        mineCollectors.BeginRoute(registry.GetChunkWorldPosition(chunk).z, registry.GetChunkWorldPosition(chunk + 1).z);
+        mineCollectors.BeginRoute(registry.GetChunkWorldPosition(chunk).z, registry.GetChunkWorldPosition(chunk + 1).z, chunk);
         SaveGuideCheckpoint();
     }
 
@@ -96,15 +96,62 @@ public partial class DecisionManager
         return $"오늘 걷는 세금은 {names}다.";
     }
 
-    private static string DescribeCollectorPassCriteria(MineTaxInvoice invoice, int available, int largest)
+    private void ShowCitizenInspection(string feedback = null)
     {
-        string message = "통과 기준 / 코인 종류마다 1개 남김";
-        string fixedCost = DescribeTaxCost(invoice.FixedCost());
-        if (fixedCost.Length > 0) message += $"\n지정 세금 / {fixedCost}";
-        int single = invoice.Single, mixed = invoice.Mixed;
-        if (single > 0) message += $"\n한 종류 / 필요 {single}개, 최대 여유 {largest}개";
-        if (single + mixed > 0) message += $"\n추가 세금 / 필요 {single + mixed}개, 전체 여유 {available}개";
-        return message;
+        int minimum = mineCollectors.InspectionMinimum;
+        var wallet = statContainer.stats;
+        var missing = wallet.Select((amount, index) => (index, count: minimum - amount))
+            .Where(item => item.count > 0).ToArray();
+        string criteria = $"{mineCollectors.ChunkNumber}번 청크 / 힘·속도·지능·매력 각 {minimum}개";
+        if (missing.Length == 0)
+        {
+            presentationController.ShowInteraction("이 구간의 기준을 충족했군. 기준세 없이 지나가라.", "징수원");
+            uiController.SetTaxCriteria(criteria);
+            mineCollectors.CompleteInspection();
+            SaveGuideCheckpoint();
+            collectorPass = StartCoroutine(FinishCollectorPass());
+            SetYellowInputInteractable(true);
+            return;
+        }
+
+        string shortage = string.Join(", ", missing.Select(item => $"{TaxAbilities[item.index]} {item.count}개"));
+        var first = missing[0];
+        string line = missing.Length == 1
+            ? $"{TaxAbilities[first.index]} 코인이 {(first.count == 1 ? "한 닢" : $"{first.count}개")} 모자라군."
+            : $"{shortage} 모자라군.";
+        line += " 여기서 기준세 한 닢을 내라.";
+        if (!string.IsNullOrEmpty(feedback)) line += "\n" + feedback;
+        if (wallet.Any(amount => amount > 0))
+        {
+            var choices = TaxAbilities.Select((name, index) => $"{name} 1개 납부 (보유 {wallet[index]}개)").ToArray();
+            ShowTaxChoices(line, choices, slot => CommitCitizenTax(slot));
+        }
+        else
+        {
+            ShowTaxChoices(line + "\n납부할 코인이 없으면 결투로 결정한다.",
+                new[] { "결투" }, _ => BeginTaxDuel(inspection: true));
+        }
+        uiController.SetTaxCriteria(criteria + "\n부족 / " + shortage);
+    }
+
+    private void CommitCitizenTax(int ability, bool boardPaid = false)
+    {
+        if (!collectingTax || mine.collectorReturning || mine.collectorPassedPlayer) return;
+        var cost = new int[4];
+        cost[ability] = 1;
+        if (!AbilityPayment.TryPay(statContainer.stats, cost, out var after))
+        {
+            ShowCitizenInspection("이 종류의 코인이 부족합니다.");
+            return;
+        }
+        if (!boardPaid && TryBeginBoardPayment(cost, () => CommitCitizenTax(ability, true), () => ShowCitizenInspection()))
+            return;
+        statContainer.SetStats(after);
+        guideProgress.committedStats = after;
+        SyncAbilityWallet();
+        mineCollectors.CompleteInspection();
+        FinishCollectorDialogue();
+        if (after[0] <= 0) FinishRunAndReturnToMainMenu("기준세 납부 후 체력 0");
     }
 
     private void ShowMineTax(string feedback = null)
@@ -113,7 +160,7 @@ public partial class DecisionManager
         var lines = invoice.lines.Select(line => line.label.Replace('·', '/') + " / " +
             (!line.IsFlexible ? DescribeTaxCost(line.cost) :
                 line.kind == "single" ? $"한 종류 {line.coins}" : $"혼합 가능 {line.coins}"));
-        string bill = $"{AnnounceCollectorTaxes(invoice)} 준비해라.\n고지 / {invoice.authority}\n{string.Join("\n", lines)}\n합계 {invoice.Total}개";
+        string bill = $"따라잡았다. 이번 순찰의 고지서를 확인하고 세금을 내라.\n{AnnounceCollectorTaxes(invoice)}\n고지 / {invoice.authority}\n{string.Join("\n", lines)}\n합계 {invoice.Total}개";
         if (!string.IsNullOrEmpty(feedback)) bill += "\n" + feedback;
         ShowTaxChoices(bill, new[] { "납부하기", "매력으로 설득", "결투" }, slot =>
         {
@@ -168,6 +215,7 @@ public partial class DecisionManager
 
     private void CommitTaxPayment(int[] cost, bool boardPaid = false)
     {
+        if (mine.collectorChaseClosed) return;
         if (!mine.HasTaxInvoice || !AbilityPayment.TryPay(statContainer.stats, cost, out var after))
         {
             if (mine.HasTaxInvoice) ShowMineTax("납부에 필요한 코인이 부족합니다.");
@@ -195,9 +243,14 @@ public partial class DecisionManager
         }
     }
 
-    private void BeginTaxDuel()
+    private void BeginTaxDuel(bool inspection = false)
     {
-        if (duelMiniGame == null) { ShowMineTax("결투를 시작할 수 없습니다."); return; }
+        if (duelMiniGame == null)
+        {
+            if (inspection) ShowCitizenInspection("결투를 시작할 수 없습니다.");
+            else ShowMineTax("결투를 시작할 수 없습니다.");
+            return;
+        }
         presentationController.ExitChoice();
         taxSelected = null;
         currentState = StoryState.Duel;
@@ -205,8 +258,13 @@ public partial class DecisionManager
         duelMiniGame.BeginDuel(won =>
         {
             duelMiniGame.CleanupDuel();
-            if (won) FinishMineTax();
-            else FinishRunAndReturnToMainMenu("징수원 결투 패배");
+            if (!won) FinishRunAndReturnToMainMenu("징수원 결투 패배");
+            else if (inspection)
+            {
+                mineCollectors.CompleteInspection();
+                FinishCollectorDialogue();
+            }
+            else FinishMineTax();
         }, mineRules.duelHitTarget, statContainer.stats[0], ConsumeMineDuelHealth);
     }
 }
