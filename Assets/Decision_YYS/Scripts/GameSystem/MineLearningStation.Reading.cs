@@ -119,7 +119,9 @@ public sealed partial class MineLearningStation
                     author = (string)entry["author"], seconds = template?.seconds ?? minimumSeconds,
                     generationSeconds = template?.generationSeconds ?? deliverySeconds,
                     requiredKnowledge = template?.requiredKnowledge ?? 0,
-                    requiredAbility = template?.requiredAbility ?? 0
+                    requiredAbility = template?.requiredAbility ?? 0,
+                    skill = exact?.skill,
+                    skillReward = exact?.skillReward ?? 0
                 };
             });
         }).ToArray();
@@ -179,6 +181,13 @@ public sealed partial class MineLearningStation
         progress.readingResult = (string)choice["result"] + "\n\n" +
             string.Join(" / ", amounts.Select((quantity, i) => quantity > 0 ? AbilityName(i) + " +" + quantity : null)
                 .Where(label => label != null));
+        var definition = id == StrengthTutorialBook ? null : authoredBooks.FirstOrDefault(entry => entry.id == id);
+        if (!string.IsNullOrEmpty(definition?.skill) && definition.skillReward > 0)
+        {
+            AwardSkill(definition.skill, definition.skillReward);
+            var skill = study.skills.FirstOrDefault(entry => entry.id == definition.skill);
+            progress.readingResult += $"\n세부 능력  {skill?.name ?? definition.skill} +{definition.skillReward}";
+        }
         if (combos.Count > 0) progress.readingResult += "\n콤보 달성\n" + string.Join("\n", combos);
         save?.Invoke();
     }
