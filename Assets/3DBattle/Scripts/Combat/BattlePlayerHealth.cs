@@ -22,6 +22,15 @@ namespace OneWay.Battle3D
             invulnerableUntil = 0f;
             lastAttackSource = null; lastStrike = -1;
         }
+        // Only the dedicated phase-entry rhythm calls this; ordinary guard/iframe rules remain unchanged.
+        public bool TakeGimmickDamage(float damage)
+        {
+            if (damage <= 0 || ignoreDamage || !IsAlive) return false;
+            Health = Mathf.Max(0, Health - damage);
+            invulnerableUntil = Time.time + Mathf.Max(0, hitInvulnerabilitySeconds);
+            if (!IsAlive) GetComponent<BattlePlayerController>()?.PlayDefeat();
+            return true;
+        }
         public void TakeDamage(float damage)
         {
             TryTakeDamage(damage, false, null, 0, -1);

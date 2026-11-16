@@ -1,0 +1,95 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 08bcac48a19579645ae8b4b2f58e2fca, type: 3}
+  m_Name: B1_Phase2_ParryAttack
+  m_EditorClassIdentifier: Assembly-CSharp::OneWay.Battle3D.BossWeaponAttackPattern
+  displayName: "Debug Phase 2 \xB7 seven timed parries (rotations 2\u20138)"
+  damage: 20
+  windupSeconds: 0.7
+  recoverySeconds: 0.3
+  animationState: Base Layer.Skill_02_Phase2_TenSpins
+  clip: {fileID: 7400000, guid: 61b21df5b9804ce49871e04128adf8df, type: 2}
+  travelX:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 8.900424
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  travelZ:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 8.900424
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  hitStartSeconds: 1.3110995
+  hitEndSeconds: 6.1779375
+  downwardExtension: 4.5
+  hitWindows:
+  - startSeconds: 1.3110995
+    endSeconds: 2.0942082
+    downwardExtension: 4.5
+  - startSeconds: 2.0942183
+    endSeconds: 2.774833
+    downwardExtension: 4.5
+  - startSeconds: 2.774843
+    endSeconds: 3.4554496
+    downwardExtension: 4.5
+  - startSeconds: 3.4554596
+    endSeconds: 4.136067
+    downwardExtension: 4.5
+  - startSeconds: 4.136077
+    endSeconds: 4.8166833
+    downwardExtension: 4.5
+  - startSeconds: 4.8166933
+    endSeconds: 5.497312
+    downwardExtension: 4.5
+  - startSeconds: 5.497322
+    endSeconds: 6.1779375
+    downwardExtension: 4.5
+  independentStrikes: 1
+  stepDecisionSeconds: []

@@ -64,7 +64,7 @@ namespace OneWay.Battle3D
 
         public float PlanarDistance(Vector3 playerPosition)
         {
-            if (hitbox == null) return float.PositiveInfinity;
+            if (hitbox == null || !hitbox.enabled || !hitbox.gameObject.activeInHierarchy) return float.PositiveInfinity;
             // Ground-plane distance to the boss's surface, not its tall model's centre.
             Vector3 sample = new Vector3(playerPosition.x, hitbox.bounds.center.y, playerPosition.z);
             Vector3 nearest = hitbox.ClosestPoint(sample);
@@ -74,24 +74,30 @@ namespace OneWay.Battle3D
 
         public void TakeDamage(float damage)
         {
-            if (!IsAlive) return;
+            if (!IsAlive || GetComponent<BossPhaseTwo>()?.IsInvulnerable == true || GetComponent<B2PhaseSmokeAttack>()?.IsInvulnerable == true) return;
+            float before = Health;
             Health = Mathf.Max(0f, Health - Mathf.Max(0f, damage));
             flashRemaining = 0.12f;
             actionPriority?.OnDamage();
+            GetComponent<B2CombatController>()?.OnDamage(before, Health);
         }
 
         public void ResetBoss()
         {
+            GetComponent<BossPhaseTwo>()?.ResetPhase();
             actionPriority?.ResetPriority();
             Health = maxHealth;
             phase = flashRemaining = 0f;
             transform.position = origin;
             animationState = 0;
+            var b2 = GetComponent<B2CombatController>();
+            if (b2 != null && b2.isActiveAndEnabled) b2.ResetCombat();
             UpdateAnimation();
         }
 
         void UpdateAnimation()
         {
+            if (GetComponent<B2CombatController>()?.ControlsAnimation == true) return;
             if (actionPriority != null && actionPriority.ControlsAnimation) return;
             if (PatternControlsAnimation && IsAlive) return;
             if (animator == null || animator.runtimeAnimatorController == null) return;

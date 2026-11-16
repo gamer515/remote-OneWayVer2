@@ -1,0 +1,21 @@
+using System;using System.Linq;using System.IO;using System.Collections.Generic;using UnityEngine;using UnityEditor;
+public static class CopyCathedralChair{
+const string Source="Assets/LoafbrrAssets/WoodFurnitures2/Prefab/Furnitures/Furns_Chair_7.prefab";
+const string Dest="Assets/3DBattle/Boss2/Cathedral/Chair";
+static void Folder(string p){if(AssetDatabase.IsValidFolder(p))return;var parent=Path.GetDirectoryName(p).Replace('\\','/');Folder(parent);AssetDatabase.CreateFolder(parent,Path.GetFileName(p));}
+public static string Run(){if(Application.isPlaying)throw new Exception("Edit mode required");Folder(Dest);if(AssetDatabase.LoadAssetAtPath<GameObject>(Dest+"/Furns_Chair_7.prefab")!=null)throw new Exception("Destination already exists");
+var paths=new Dictionary<string,string>();var objects=new Dictionary<UnityEngine.Object,UnityEngine.Object>();
+var deps=AssetDatabase.GetDependencies(Source,true).Where(p=>p.StartsWith("Assets/LoafbrrAssets/")&&!p.EndsWith(".fbx")&&!p.EndsWith(".prefab")).ToArray();
+foreach(var p in deps){string sub=p.EndsWith(".mat")?"Materials":p.EndsWith(".shadergraph")?"Shaders":"Textures";Folder(Dest+"/"+sub);string target=Dest+"/"+sub+"/"+Path.GetFileName(p);if(!AssetDatabase.CopyAsset(p,target))throw new Exception("Copy failed: "+p);paths[p]=target;}
+foreach(var pair in paths.Where(k=>k.Key.EndsWith(".shadergraph"))){string text=File.ReadAllText(pair.Value);foreach(var p in paths)text=text.Replace(AssetDatabase.AssetPathToGUID(p.Key),AssetDatabase.AssetPathToGUID(p.Value));File.WriteAllText(pair.Value,text);AssetDatabase.ImportAsset(pair.Value,ImportAssetOptions.ForceSynchronousImport);}
+foreach(var pair in paths)foreach(var original in AssetDatabase.LoadAllAssetsAtPath(pair.Key)){string guid;long id;if(!AssetDatabase.TryGetGUIDAndLocalFileIdentifier(original,out guid,out id))continue;var copy=AssetDatabase.LoadAllAssetsAtPath(pair.Value).FirstOrDefault(o=>{string g;long n;return AssetDatabase.TryGetGUIDAndLocalFileIdentifier(o,out g,out n)&&n==id;});if(copy!=null)objects[original]=copy;}
+Action<UnityEngine.Object> fix=o=>{var so=new SerializedObject(o);var p=so.GetIterator();while(p.Next(true))if(p.propertyType==SerializedPropertyType.ObjectReference&&p.objectReferenceValue!=null&&objects.ContainsKey(p.objectReferenceValue))p.objectReferenceValue=objects[p.objectReferenceValue];so.ApplyModifiedPropertiesWithoutUndo();EditorUtility.SetDirty(o);};
+foreach(var p in paths.Values.Where(p=>p.EndsWith(".mat")))fix(AssetDatabase.LoadAssetAtPath<Material>(p));
+var root=(GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>(Source));
+try{PrefabUtility.UnpackPrefabInstance(root,PrefabUnpackMode.Completely,InteractionMode.AutomatedAction);root.name="Furns_Chair_7";Folder(Dest+"/Meshes");int count=0;
+foreach(var component in root.GetComponentsInChildren<Component>(true)){var so=new SerializedObject(component);var it=so.GetIterator();while(it.Next(true)){if(it.propertyType!=SerializedPropertyType.ObjectReference)continue;var mesh=it.objectReferenceValue as Mesh;if(mesh==null||objects.ContainsKey(mesh))continue;var copy=UnityEngine.Object.Instantiate(mesh);copy.name=mesh.name;AssetDatabase.CreateAsset(copy,Dest+"/Meshes/ChairMesh_"+(++count)+".asset");objects[mesh]=copy;}}
+foreach(var c in root.GetComponentsInChildren<Component>(true))fix(c);string output=Dest+"/Furns_Chair_7.prefab";PrefabUtility.SaveAsPrefabAsset(root,output);AssetDatabase.SaveAssets();var refs=AssetDatabase.GetDependencies(output,true);if(refs.Any(p=>p.StartsWith("Assets/LoafbrrAssets/")))throw new Exception("Source dependency remains: "+string.Join(",",refs.Where(p=>p.StartsWith("Assets/LoafbrrAssets/"))));
+foreach(var m in root.GetComponentsInChildren<Renderer>(true).SelectMany(r=>r.sharedMaterials)){if(m==null||m.shader==null||ShaderUtil.ShaderHasError(m.shader))throw new Exception("Material/shader error");}
+Selection.activeObject=AssetDatabase.LoadAssetAtPath<GameObject>(output);return "PASS: standalone chair prefab, extracted chair meshes="+count+", copied textures/material/shader="+paths.Count+", no LoafbrrAssets dependencies; materials valid. Scene unchanged.";
+}finally{UnityEngine.Object.DestroyImmediate(root);}}
+}

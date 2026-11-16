@@ -1,0 +1,20 @@
+using System;using UnityEngine;using OneWay.Battle3D;
+public static class TestHeldShield {
+ static void Check(bool ok,string m){if(!ok)throw new Exception(m);}
+ public static object Run(){
+ Check(Application.isPlaying,"Play required");var c=UnityEngine.Object.FindFirstObjectByType<NewPlayerAttackCombo>();var p=c.GetComponent<BattlePlayerController>();var m=p.GetComponent<NewPlayerLocomotion>();var health=p.GetComponent<BattlePlayerHealth>();var fx=p.GetComponent<BattleParryEffect>();var motor=p.GetComponent<CharacterController>();var arena=p.GetComponent<BattleArenaBody>();
+ var pos=p.transform.position;var rot=p.transform.rotation;var camera=p.viewCamera;bool pe=p.enabled,ae=arena.enabled,input=c.readMouseInput,ignore=health.ignoreDamage;var blue=fx.effectPrefab;var red=fx.secondaryEffectPrefab;
+ var floor=GameObject.CreatePrimitive(PrimitiveType.Cube);floor.transform.position=new Vector3(1000,-.5f,1000);floor.transform.localScale=new Vector3(100,1,100);var camObject=new GameObject("Shield test camera");var cam=camObject.AddComponent<Camera>();cam.enabled=false;cam.transform.rotation=Quaternion.identity;
+ p.enabled=false;arena.enabled=false;c.readMouseInput=false;p.viewCamera=cam;fx.effectPrefab=fx.secondaryEffectPrefab=null;health.ignoreDamage=false;health.ResetHealth();p.CancelInput();motor.enabled=false;p.transform.SetPositionAndRotation(new Vector3(1000,.04f,1000),Quaternion.identity);motor.enabled=true;Physics.SyncTransforms();
+ Action press=()=>m.ProcessControlFrame(-1,true,false,true);Action release=()=>m.ProcessControlFrame(0,false,false,false);
+ try{
+  press();c.Tick(.99f);Check(p.IsBlocking,"Guard ended before release");float hp=health.Health;Check(fx.TryParry(20),"Early parry failed");Check(!m.KnockedBack,"Early parry recoiled");health.TakeDamage(20);Check(health.Health==hp,"Guard took damage");
+  c.Tick(.01f);Check(m.ShieldHeldSeconds>=1,"Timer incorrect");var before=p.transform.position;Check(fx.TryParry(20)&&m.KnockedBack,"1 second parry missing knockback");c.Tick(m.heldParryKnockbackDuration);float distance=Vector3.Dot(before-p.transform.position,Vector3.forward);Check(Mathf.Abs(distance-m.heldParryKnockbackDistance)<.02f,"Wrong recoil distance "+distance);Check(p.IsBlocking,"Recoil dropped shield");
+  for(int i=0;i<30;i++){m.ProcessControlFrame(0,false,false,true);c.Tick(.1f);}Check(p.IsBlocking&&m.ShieldHeldSeconds>4,"Long hold stopped or reset timer");Check(Mathf.Abs(m.MotionTime-m.parryClip.length/p.shieldAnimationSpeed*m.shieldHoldPose)<.001f,"Not holding guard pose");
+  before=p.transform.position;fx.TryParry(20);release();Check(!p.IsBlocking&&m.KnockedBack,"Release cancelled recoil or guard stuck");c.Tick(m.heldParryKnockbackDuration);Check(Mathf.Abs(Vector3.Dot(before-p.transform.position,Vector3.forward)-m.heldParryKnockbackDistance)<.02f,"Released recoil failed");Check(!fx.TryParry(20),"Released shield still parries");
+  press();Check(m.ShieldHeldSeconds==0,"Re-press did not reset timer");c.Tick(.2f);fx.TryParry(20);Check(!m.KnockedBack,"Fresh guard incorrectly late");m.ProcessControlFrame(0,false,true,true);Check(m.Rolling&&!p.IsBlocking&&m.ShieldHeldSeconds==0,"Roll did not cancel guard");p.CancelInput();press();m.ProcessControlFrame(1,false,false,true);Check(!p.IsBlocking&&!m.DefenseMode,"Mode switch retained guard");m.ProcessControlFrame(0,false,false,true);Check(!p.IsBlocking,"Attack mode hold raised shield");
+  press();c.Tick(1.1f);fx.TryParry(20);p.CancelInput();Check(!m.KnockedBack&&!p.IsBlocking,"Cancel retained guard/recoil");
+  return new{passed=true,earlyParryNoRecoil=true,thresholdSeconds=1,recoilDistance=distance,heldPose=m.shieldHoldPose,releaseAndRollAndModeSwitch=true,damageBlocked=true};
+ }finally{p.CancelInput();m.SetDefenseMode(false);p.viewCamera=camera;fx.effectPrefab=blue;fx.secondaryEffectPrefab=red;health.ignoreDamage=ignore;health.ResetHealth();motor.enabled=false;p.transform.SetPositionAndRotation(pos,rot);motor.enabled=true;p.enabled=pe;arena.enabled=ae;c.readMouseInput=input;UnityEngine.Object.DestroyImmediate(camObject);UnityEngine.Object.DestroyImmediate(floor);}
+ }
+}

@@ -28,6 +28,8 @@ namespace OneWay.Battle3D
         float yaw, pitch, distance;
         bool initialized, capturedThisFrame;
         bool returningFromIntro;
+        DebugPlayerCombatFeel combatFeel;
+        Transform feelTarget;
 
         public void ReturnToGameplayDistance(float value)
         {
@@ -127,6 +129,9 @@ namespace OneWay.Battle3D
             Quaternion rotation = Quaternion.Euler(pitch, yaw, 0f);
             Vector3 direction = rotation * Vector3.back;
             Vector3 pivot = target.position + lookOffset;
+            if (feelTarget != target) { feelTarget = target; combatFeel = target.GetComponent<DebugPlayerCombatFeel>(); }
+            bool useFeel = combatFeel != null && combatFeel.isActiveAndEnabled;
+            if (useFeel) pivot = combatFeel.CameraPivot(pivot, deltaTime > 0 ? Time.unscaledDeltaTime : 0);
             float allowedDistance = returningFromIntro ? Mathf.Max(distance, currentDistance) : distance;
             foreach (var hit in Physics.SphereCastAll(pivot, collisionRadius, direction,
                 allowedDistance, groundMask, QueryTriggerInteraction.Ignore))
@@ -151,7 +156,8 @@ namespace OneWay.Battle3D
                 currentDistance = Mathf.SmoothDamp(currentDistance, allowedDistance, ref distanceVelocity,
                     smoothTime, Mathf.Infinity, deltaTime);
             currentDistance = Mathf.Clamp(currentDistance, 0f, allowedDistance);
-            transform.SetPositionAndRotation(pivot + direction * currentDistance, rotation);
+            Vector3 shake = useFeel ? rotation * combatFeel.CameraShake() : Vector3.zero;
+            transform.SetPositionAndRotation(pivot + direction * currentDistance + shake, rotation);
         }
     }
 }

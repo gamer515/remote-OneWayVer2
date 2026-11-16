@@ -33,6 +33,9 @@ namespace OneWay.Battle3D
         public void Land() { Airborne=false; Resolve(); Actions.OnLanded(); }
         void Resolve()
         {
+            var phase = GetComponent<BossPhaseTwo>();
+            if (Boss.IsAlive && phase != null &&
+                (phase.IsInvulnerable || (phase.NeedsTransition && Actions.Current == BossActionKind.Attack))) return;
             if(Airborne || Down || (Boss.IsAlive && !PendingHit)) return;
             bool death=!Boss.IsAlive;
             PendingHit=false;

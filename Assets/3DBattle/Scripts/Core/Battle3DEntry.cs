@@ -24,6 +24,23 @@ namespace OneWay.Battle3D
             pendingData = data;
         }
 
+        /// <summary>전투 시작 정보를 전달하고 로딩 화면을 통해 이동합니다. 거절된 중복 요청은 정보를 덮어쓰지 않습니다.</summary>
+        public static bool OpenThroughLoading(Battle3DStartData data)
+        {
+            if (data == null) throw new ArgumentNullException(nameof(data));
+            var previous = pendingData;
+            try
+            {
+                return OneWay.Loading.LoadingScreenController.Open(
+                    OneWay.Loading.LoadingDestination.Battle, () => SetNext(data));
+            }
+            catch
+            {
+                pendingData = previous;
+                throw;
+            }
+        }
+
         // 3DBattleScene의 초기화 담당 코드에서 한 번 호출하고 결과를 보관합니다.
         public static Battle3DStartData TakeOrDefault()
         {

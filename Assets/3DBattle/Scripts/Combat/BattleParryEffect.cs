@@ -7,12 +7,22 @@ namespace OneWay.Battle3D
         public GameObject effectPrefab;
         public GameObject secondaryEffectPrefab;
         public Transform shield;
-        public bool TryParry(float damage)
+        public bool CanParry(float damage)
         {
             var health = GetComponent<BattlePlayerHealth>();
             var player = GetComponent<BattlePlayerController>();
-            if (damage <= 0 || health == null || !health.IsAlive || health.ignoreDamage ||
-                player == null || player.IsDashing || !player.IsBlocking) return false;
+            return damage > 0 && health != null && health.IsAlive && !health.ignoreDamage &&
+                player != null && !player.IsDashing && player.IsBlocking;
+        }
+        public bool TryParry(float damage)
+        {
+            if (!CanParry(damage)) return false;
+            GetComponent<NewPlayerLocomotion>()?.OnSuccessfulParry();
+            PlaySuccessEffect();
+            return true;
+        }
+        public void PlaySuccessEffect()
+        {
             if (effectPrefab != null)
             {
                 Vector3 point = shield != null ? shield.position : transform.position + Vector3.up;
@@ -23,7 +33,7 @@ namespace OneWay.Battle3D
                 Spawn(effectPrefab, point, scale, "Player Parry Hit Blue");
                 Spawn(secondaryEffectPrefab, point, scale, "Player Parry Hit Red");
             }
-            return true;
+
         }
         void Spawn(GameObject prefab, Vector3 point, Vector3 scale, string effectName)
         {

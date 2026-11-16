@@ -1,0 +1,10 @@
+using System;using System.Linq;using UnityEngine;using UnityEditor;using UnityEngine.Rendering;using UnityEngine.Rendering.Universal;
+public static class RefinePaleGoldenSlash{
+public static string Run(){if(Application.isPlaying)throw new Exception("Edit mode required");const string path="Assets/3DBattle/Boss2/GoldenSlashVFX/B2GoldenSlash.prefab";var root=PrefabUtility.LoadPrefabContents(path);
+try{var visual=root.transform.Find("Golden Crescent and Trails");foreach(string n in new[]{"Flying","Flying (1)","Smoke","Trails Flying"}){var t=visual.Find(n);if(t==null)throw new Exception("Missing effect "+n);t.gameObject.SetActive(false);}
+foreach(var ps in root.GetComponentsInChildren<ParticleSystem>()){var main=ps.main;var c=main.startColor.color;main.startColor=new Color(1,.98f,.9f,c.a);var over=ps.colorOverLifetime;if(over.enabled){var g=over.color.gradient;var keys=g.colorKeys;for(int i=0;i<keys.Length;i++)keys[i].color=new Color(1,.97f,.85f);g.SetKeys(keys,g.alphaKeys);over.color=g;}}
+foreach(var mat in root.GetComponentsInChildren<Renderer>().Select(r=>r.sharedMaterial).Distinct()){Undo.RecordObject(mat,"Pale gold slash");for(int i=0;i<mat.shader.GetPropertyCount();i++){if(mat.shader.GetPropertyType(i)!=ShaderPropertyType.Color)continue;string p=mat.shader.GetPropertyName(i);var old=mat.GetColor(p);if(old.a==0)continue;float intensity=Mathf.Max(old.r,old.g,old.b);mat.SetColor(p,new Color(intensity,intensity*.95f,intensity*.78f,old.a));}EditorUtility.SetDirty(mat);}
+if(root.GetComponentsInChildren<Transform>(true).Any(t=>t.name=="Golden Smoke"))throw new Exception("Old streak effect found");PrefabUtility.SaveAsPrefabAsset(root,path);
+var profile=AssetDatabase.LoadAssetAtPath<VolumeProfile>("Assets/3DBattle/Boss2/B2GoldenSlashBloom.asset");Bloom bloom;if(profile.TryGet(out bloom)){bloom.tint.Override(new Color(1,.94f,.75f));EditorUtility.SetDirty(bloom);}AssetDatabase.SaveAssets();return "Disabled Flying, Flying (1), Smoke, Trails Flying. Pale gold applied. Old 3D Golden Smoke streak is not present; only package crescent and its own two trails remain.";
+}finally{PrefabUtility.UnloadPrefabContents(root);}}
+}

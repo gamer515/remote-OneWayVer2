@@ -6,14 +6,20 @@ namespace OneWay.Battle3D
     public sealed class BossWeaponHit : MonoBehaviour
     {
         public Transform weapon;
+        [Header("Damage detection")]
         public Vector3 localCenter;
         public Vector3 localSize = Vector3.one;
+        [Header("Parry detection")]
+        [Min(1f), Tooltip("Scale the parry-only box and downward reach from the weapon center. Damage size is unchanged.")]
+        public float parrySizeMultiplier = 1f;
         public bool WindowOpen { get; private set; }
         public bool HasHit { get; private set; }
         public int HitCount { get; private set; }
+        public int ParryCount { get; private set; }
         public int CurrentStrikeIndex { get; private set; } = -1;
         public float CurrentDownwardExtension => pattern != null && CurrentStrikeIndex >= 0
             ? pattern.GetDownwardExtension(CurrentStrikeIndex) : 0;
+        public float CurrentParryDownwardExtension => CurrentDownwardExtension * Mathf.Max(1f, parrySizeMultiplier);
         public BossWeaponAttackPattern CurrentPattern => pattern;
         public float CurrentFrame => pattern != null && animator != null
             ? animator.GetCurrentAnimatorStateInfo(0).normalizedTime * pattern.clip.length * pattern.clip.frameRate : 0;
@@ -27,7 +33,7 @@ namespace OneWay.Battle3D
         uint attackSequence;
         public void Begin(BossWeaponAttackPattern attack, BattlePlayerHealth player)
         {
-            End(); pattern = attack; target = player; HasHit = false; HitCount = 0;
+            End(); pattern = attack; target = player; HasHit = false; HitCount = ParryCount = 0;
             animator = GetComponent<BattleBoss>().animator;
             struck = new bool[attack.StrikeCount];
             attackSequence++;
@@ -38,6 +44,8 @@ namespace OneWay.Battle3D
         public void SampleContact()
         {
             WindowOpen = false;
+            // Dedicated phase-entry rhythm resolves its seven strikes separately.
+            if (GetComponent<BossPhaseTwoGimmick>()?.OwnsAttack == true) { previousValid = false; return; }
             if (pattern == null || weapon == null || target == null || !target.IsAlive)
             { previousValid = false; CurrentStrikeIndex = -1; return; }
             var state = animator.GetCurrentAnimatorStateInfo(0);
@@ -50,6 +58,9 @@ namespace OneWay.Battle3D
             // Each swing can damage the target once, even if the invulnerability expires mid-swing.
             if (struck[strike]) { previousValid = false; return; }
             GetWorldBox(out Vector3 center, out Quaternion rotation, out Vector3 half);
+            var parry = target.GetComponent<BattleParryEffect>();
+            bool canParry = parry != null && parry.CanParry(pattern.damage);
+            Vector3 parryHalf = half * Mathf.Max(1f, parrySizeMultiplier);
             int steps = previousValid ? Mathf.Clamp(Mathf.CeilToInt(
                 Vector3.Distance(center, previousCenter) / .1f + Quaternion.Angle(rotation, previousRotation) / 5f), 1, 128) : 1;
             bool hitThisSample = false;
@@ -58,28 +69,33 @@ namespace OneWay.Battle3D
                 float t = i / (float)steps;
                 Vector3 sample = previousValid ? Vector3.Lerp(previousCenter, center, t) : center;
                 Quaternion turn = previousValid ? Quaternion.Slerp(previousRotation, rotation, t) : rotation;
-                foreach (var collider in Physics.OverlapBox(sample, half, turn, ~0, QueryTriggerInteraction.Ignore))
-                {
-                    if (TryHit(collider, strike)) { hitThisSample = true; break; }
-                }
-                // Sweep the same oriented box vertically. Unlike increasing its local Y size,
-                // this expands only downward even when the pickaxe is tilted or horizontal.
-                float down = CurrentDownwardExtension;
-                if (!hitThisSample && down > 0)
-                    foreach (var contact in Physics.BoxCastAll(sample, half, Vector3.down, turn, down, ~0, QueryTriggerInteraction.Ignore))
-                        if (TryHit(contact.collider, strike)) { hitThisSample = true; break; }
+                // Check the larger parry volume first. Only the original volume can deal damage.
+                if (canParry)
+                    hitThisSample = QueryContact(sample, turn, parryHalf, CurrentParryDownwardExtension, strike, parry);
+                if (!hitThisSample)
+                    hitThisSample = QueryContact(sample, turn, half, CurrentDownwardExtension, strike, null);
             }
             previousCenter = center; previousRotation = rotation; previousValid = true;
         }
-        bool TryHit(Collider collider, int strike)
+        bool QueryContact(Vector3 center, Quaternion rotation, Vector3 half, float down, int strike, BattleParryEffect parry)
+        {
+            foreach (var collider in Physics.OverlapBox(center, half, rotation, ~0, QueryTriggerInteraction.Ignore))
+                if (TryContact(collider, strike, parry)) return true;
+            // Preserve the world-down sweep even when the weapon itself is tilted.
+            if (down > 0)
+                foreach (var contact in Physics.BoxCastAll(center, half, Vector3.down, rotation, down, ~0, QueryTriggerInteraction.Ignore))
+                    if (TryContact(contact.collider, strike, parry)) return true;
+            return false;
+        }
+        bool TryContact(Collider collider, int strike, BattleParryEffect parry)
         {
             if (collider == null || collider.GetComponentInParent<BattlePlayerHealth>() != target) return false;
             if (struck[strike]) return false;
-            var parry = target.GetComponent<BattleParryEffect>();
-            if (parry != null && parry.TryParry(pattern.damage))
+            if (parry != null)
             {
+                if (!parry.TryParry(pattern.damage)) return false;
                 // A deflected swing is consumed even when the shield animation ends before the hit window.
-                struck[strike] = true;
+                struck[strike] = true; ParryCount++;
                 return true;
             }
             if (!target.TakeAttackDamage(pattern.damage, this, attackSequence, strike, pattern.independentStrikes)) return false;
@@ -93,15 +109,28 @@ namespace OneWay.Battle3D
             Vector3 scale = weapon.lossyScale;
             half = Vector3.Scale(localSize * .5f, new Vector3(Mathf.Abs(scale.x), Mathf.Abs(scale.y), Mathf.Abs(scale.z)));
         }
+        public void GetParryWorldBox(out Vector3 center, out Quaternion rotation, out Vector3 half)
+        {
+            GetWorldBox(out center, out rotation, out half);
+            half *= Mathf.Max(1f, parrySizeMultiplier);
+        }
         void OnDrawGizmosSelected()
         {
             if (weapon == null) return;
             var matrix = Gizmos.matrix;
+            var color = Gizmos.color;
             GetWorldBox(out var center, out var rotation, out var half);
+            DrawBox(center, rotation, half, CurrentDownwardExtension, WindowOpen ? Color.red : Color.yellow);
+            GetParryWorldBox(out center, out rotation, out half);
+            DrawBox(center, rotation, half, CurrentParryDownwardExtension, Color.cyan);
+            Gizmos.matrix = matrix;
+            Gizmos.color = color;
+        }
+        static void DrawBox(Vector3 center, Quaternion rotation, Vector3 half, float down, Color color)
+        {
             Gizmos.matrix = Matrix4x4.TRS(center, rotation, Vector3.one);
-            Gizmos.color = WindowOpen ? Color.red : Color.yellow;
+            Gizmos.color = color;
             Gizmos.DrawWireCube(Vector3.zero, half * 2);
-            float down = CurrentDownwardExtension;
             if (down > 0)
             {
                 Gizmos.matrix = Matrix4x4.TRS(center + Vector3.down * down, rotation, Vector3.one);
@@ -114,7 +143,6 @@ namespace OneWay.Battle3D
                     Gizmos.DrawLine(corner, corner + Vector3.down * down);
                 }
             }
-            Gizmos.matrix = matrix;
         }
     }
 }
