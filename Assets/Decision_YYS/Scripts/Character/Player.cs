@@ -6,6 +6,7 @@ public class Player : MonoBehaviour
     private static readonly int IsWalkingHash = Animator.StringToHash("IsWalking");
     private Vector3 movementTarget;
     [SerializeField] private float moveSpeed = 3.0f; // 이동 속도 (원하는 느낌에 따라 조절 가능)
+    private float destinationSpeedMultiplier = 1f;
     private bool isInitialized = false;
     private Animator animator;
     private Vector3 worldPosition;
@@ -50,9 +51,10 @@ public class Player : MonoBehaviour
         SetDestination(new Vector3(worldPosition.x, worldPosition.y, z));
     }
 
-    public void SetDestination(Vector3 destination)
+    public void SetDestination(Vector3 destination, float speedMultiplier = 1f)
     {
         movementTarget = destination;
+        destinationSpeedMultiplier = speedMultiplier;
         Vector3 direction = destination - worldPosition; direction.y = 0;
         if (direction.sqrMagnitude > 0.0001f) SetFacing(Quaternion.LookRotation(direction, Vector3.up));
     }
@@ -93,7 +95,7 @@ public class Player : MonoBehaviour
         SetWalking(isWalking);
         if (isWalking)
         {
-            worldPosition = Vector3.MoveTowards(currentPos, movementTarget, moveSpeed * Time.deltaTime);
+            worldPosition = Vector3.MoveTowards(currentPos, movementTarget, moveSpeed * destinationSpeedMultiplier * Time.deltaTime);
         }
         ApplyWorldPose();
     }

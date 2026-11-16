@@ -122,7 +122,7 @@ public partial class DecisionManager
         pendingEncounter = null;
         if (encounterFlow.TryFindFirst(startZ, endZ, resolvedPlaceIds, out var first))
         {
-            ApproachEncounter(first);
+            ApproachEncounter(first, journeyWalk: true);
             return;
         }
         if (startZ >= endZ - .01f) { CompleteEncounterEpisode(); return; }
@@ -130,11 +130,22 @@ public partial class DecisionManager
         SetYellowInputInteractable(false);
         presentationController.ShowWalkingView();
         var destination = new Vector3(envController.TerrainOrigin.x, playerController.CurrentPosition.y, endZ);
+        float speedMultiplier = GetJourneySpeedMultiplier();
         if (currentScenarioPath == MineAuthoredStory.Episode && envController.AuthoredMine != null)
-            playerController.MoveToZ(endZ);
+            playerController.MoveToZ(endZ, speedMultiplier);
         else
-            playerController.MoveAlongPath(envController.NpcPlacement != null ? envController.NpcPlacement.Path(playerController.CurrentPosition, destination) : new[] { destination });
+            playerController.MoveAlongPath(envController.NpcPlacement != null
+                ? envController.NpcPlacement.Path(playerController.CurrentPosition, destination) : new[] { destination }, speedMultiplier);
         SaveEncounterState("walking");
+    }
+
+    private float GetJourneySpeedMultiplier()
+    {
+        const int speedCoinIndex = 1;
+        int speedCoins = journeyCoinSupply?.IsReady == true
+            ? journeyCoinSupply.AvailableCoins(speedCoinIndex) : statContainer.stats[speedCoinIndex];
+        int mobility = guideProgress?.mineChapter?.learning?.skills?.Find(skill => skill.id == "mobility")?.value ?? 0;
+        return DecisionPlayerController.JourneySpeedMultiplier(speedCoins, mobility);
     }
 
     private void CompleteWalkStep()
@@ -157,7 +168,8 @@ public partial class DecisionManager
         Debug.Log($"[조우] {encounter.PlaceId} ({encounter.ContentPath})", this);
     }
 
-    private void ApproachEncounter(EncounterFlowController.Encounter encounter, int index = 0, string storyPath = null)
+    private void ApproachEncounter(EncounterFlowController.Encounter encounter, int index = 0, string storyPath = null,
+        bool journeyWalk = false)
     {
         pendingEncounter = encounter; arrivalCardIndex = index; arrivalStoryPath = storyPath;
         activePlaceId = encounter.PlaceId; activeCardIndex = index; activeEncounterPath = storyPath;
@@ -170,10 +182,18 @@ public partial class DecisionManager
         {
             var place = envController.TerrainData.places.FirstOrDefault(entry => entry.placeId == encounter.PlaceId);
             float offset = place?.authoredLocationId != null ? place.storyLocationDepth.x - encounterStopDistance : 0f;
-            playerController.MoveToZ(encounter.WorldPosition.z + offset);
+            float targetZ = encounter.WorldPosition.z + offset;
+            float speedMultiplier = journeyWalk && targetZ > playerController.CurrentPosition.z
+                ? GetJourneySpeedMultiplier() : 1f;
+            playerController.MoveToZ(targetZ, speedMultiplier);
         }
-        else playerController.MoveAlongPath(placement != null
-            ? placement.Path(playerController.CurrentPosition, target) : new[] { target });
+        else
+        {
+            float speedMultiplier = journeyWalk && target.z > playerController.CurrentPosition.z
+                ? GetJourneySpeedMultiplier() : 1f;
+            playerController.MoveAlongPath(placement != null
+                ? placement.Path(playerController.CurrentPosition, target) : new[] { target }, speedMultiplier);
+        }
         SaveEncounterState("walking");
     }
 

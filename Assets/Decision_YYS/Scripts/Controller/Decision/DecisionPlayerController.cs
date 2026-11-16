@@ -11,6 +11,7 @@ public sealed class DecisionPlayerController
     private readonly Queue<Vector3> path = new Queue<Vector3>();
     private Vector3 currentTarget;
     private float laneX;
+    private float movementSpeedMultiplier = 1f;
 
     public Vector3 TargetPosition { get; private set; }
     public bool IsAvailable => player != null;
@@ -22,7 +23,7 @@ public sealed class DecisionPlayerController
     {
         if (!IsAvailable || Vector3.Distance(CurrentPosition, currentTarget) > tolerance) return false;
         if (path.Count == 0) return true;
-        currentTarget = path.Dequeue(); player.SetDestination(currentTarget); return false;
+        currentTarget = path.Dequeue(); player.SetDestination(currentTarget, movementSpeedMultiplier); return false;
     }
 
     public DecisionPlayerController(Player player)
@@ -68,24 +69,28 @@ public sealed class DecisionPlayerController
             player.SetFacing(savedRotation.Value);
     }
 
-    public void MoveToZ(float targetZ)
+    public static float JourneySpeedMultiplier(int speedCoins, int mobility) =>
+        Mathf.Clamp(1f + (speedCoins - 5f) * .01f + mobility * .02f, .85f, 1.25f);
+
+    public void MoveToZ(float targetZ, float speedMultiplier = 1f)
     {
         if (!IsAvailable)
             return;
 
-        MoveAlongPath(new[] { new Vector3(laneX, CurrentPosition.y, targetZ) });
+        MoveAlongPath(new[] { new Vector3(laneX, CurrentPosition.y, targetZ) }, speedMultiplier);
     }
 
-    public void MoveAlongPath(IEnumerable<Vector3> waypoints)
+    public void MoveAlongPath(IEnumerable<Vector3> waypoints, float speedMultiplier = 1f)
     {
         path.Clear();
         foreach (var point in waypoints) if (Vector3.Distance(point, CurrentPosition) > 0.01f) path.Enqueue(point);
         TargetPosition = path.Count > 0 ? path.Last() : CurrentPosition;
         currentTarget = path.Count > 0 ? path.Dequeue() : CurrentPosition;
-        if (IsAvailable) { player.ResetNpcFraming(); player.SetDestination(currentTarget); }
+        movementSpeedMultiplier = speedMultiplier;
+        if (IsAvailable) { player.ResetNpcFraming(); player.SetDestination(currentTarget, movementSpeedMultiplier); }
     }
     public void PauseAndLookAt(Vector3 position) { if (IsAvailable) player.StopAndLookAt(position); }
-    public void ResumeMovement() { if (IsAvailable) player.SetDestination(currentTarget); }
+    public void ResumeMovement() { if (IsAvailable) player.SetDestination(currentTarget, movementSpeedMultiplier); }
 
     public void StopAndLookAt(Vector3 characterPosition)
     {
