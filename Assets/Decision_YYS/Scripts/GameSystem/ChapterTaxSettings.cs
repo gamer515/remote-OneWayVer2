@@ -92,14 +92,13 @@ public sealed class ChapterTaxSettings
                     string.IsNullOrWhiteSpace(levy.label)) ||
                 levies.Select(levy => levy.id).Distinct(StringComparer.Ordinal).Count() != levies.Length) return false;
             var enabled = levies.Where(levy => levy.enabled).ToArray();
-            return enabled.Count(levy => levy.kind != "largest") >= maximumLevies &&
-                enabled.Count(levy => levy.kind == "single") <= 1 && enabled.All(ValidLevy);
+            return enabled.Count(levy => levy.kind == "single") <= 1 && enabled.All(ValidLevy);
         }
     }
 
     private static bool ValidLevy(MineTaxLevy levy) => levy.kind switch
     {
-        "fixed" => levy.cost?.Length == 4 && levy.cost.All(amount => amount >= 0 && amount <= 1000) && levy.cost.Sum() > 0,
+        "fixed" or "shadow" => levy.cost?.Length == 4 && levy.cost.All(amount => amount >= 0 && amount <= 1000) && levy.cost.Sum() > 0,
         "mixed" or "single" or "notice" => levy.coins > 0 && levy.coins <= 1000,
         "largest" => levy.divisor > 0 && levy.minimum > 0 && levy.minimum <= 1000,
         _ => false
@@ -108,13 +107,27 @@ public sealed class ChapterTaxSettings
     public int Tier(int defeatedBosses) => Mathf.Clamp(defeatedBosses, 0, maximumBurdenTier);
     public int Interval(int defeatedBosses) => intervalDays[Mathf.Clamp(defeatedBosses, 0, intervalDays.Length - 1)];
 
-    public MineTaxInvoice Announce(int seed, int day, int tier, int[] wallet)
+    private static bool IsEligible(MineTaxLevy levy, int[] wallet, bool isMineChapter)
+    {
+        if (!levy.enabled) return false;
+        return levy.id switch
+        {
+            "head" or "tribute" or "labor" or "service" or "freedom" or "breath" => true,
+            "ability" => wallet.Any(amount => amount > 0),
+            "echo" => isMineChapter,
+            "shadow" => !isMineChapter,
+            // Land rights, exit-path use, mining, occupations, and exports have no qualifying player state.
+            _ => false
+        };
+    }
+
+    public MineTaxInvoice Announce(int seed, int day, int tier, int[] wallet, bool isMineChapter)
     {
         var random = new System.Random(unchecked(seed * 397 ^ day));
-        var available = levies.Where(levy => levy.enabled && (levy.kind != "largest" || wallet.Any(value => value > 0))).ToList();
+        var available = levies.Where(levy => IsEligible(levy, wallet, isMineChapter)).ToList();
         var selected = new List<MineTaxLevy>();
-        int count = random.Next(minimumLevies, maximumLevies + 1);
-        var minePool = available.Where(levy => levy.mine).ToArray();
+        int count = Mathf.Min(available.Count, random.Next(minimumLevies, maximumLevies + 1));
+        var minePool = available.Where(levy => isMineChapter && levy.mine).ToArray();
         if (minePool.Length > 0)
         {
             var local = minePool[random.Next(minePool.Length)];
