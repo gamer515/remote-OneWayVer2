@@ -296,7 +296,10 @@ public partial class DecisionManager
             }
             else if (currentState == StoryState.MovingToEncounter)
             {
-                mine.fatigue += mineRules.walkingFatiguePerSecond * Time.deltaTime;
+                float fatigueRate = mineRules.walkingFatiguePerSecond;
+                if (walkingForwardJourney)
+                    fatigueRate *= 1f - Mathf.Clamp(GetStudySkillLevel("endurance") * .03f, 0f, .30f);
+                mine.fatigue += fatigueRate * Time.deltaTime;
                 if (mine.fatigue >= mineRules.fatigueMax)
                 {
                     mine.resting = true;

@@ -69,8 +69,17 @@ public sealed class DecisionPlayerController
             player.SetFacing(savedRotation.Value);
     }
 
-    public static float JourneySpeedMultiplier(int speedCoins, int mobility) =>
-        Mathf.Clamp(1f + (speedCoins - 5f) * .01f + mobility * .02f, .85f, 1.25f);
+    public static float JourneySpeedMultiplier(int speedCoins, int mobility)
+    {
+        float multiplier = Mathf.Clamp(1f + (speedCoins - 5f) * .01f + mobility * .02f, .85f, 1.25f);
+        return speedCoins switch
+        {
+            <= 0 => Mathf.Min(multiplier, .60f),
+            1 => Mathf.Min(multiplier, .75f),
+            2 => Mathf.Min(multiplier, .85f),
+            _ => multiplier
+        };
+    }
 
     public void MoveToZ(float targetZ, float speedMultiplier = 1f)
     {

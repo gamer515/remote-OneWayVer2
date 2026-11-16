@@ -18,6 +18,7 @@ public partial class DecisionManager
     private int selectedGearIndex = -1;
     private int arrivalCardIndex;
     private string arrivalStoryPath;
+    private bool walkingForwardJourney;
 
     private void StartEncounterEpisode()
     {
@@ -130,6 +131,7 @@ public partial class DecisionManager
         SetYellowInputInteractable(false);
         presentationController.ShowWalkingView();
         var destination = new Vector3(envController.TerrainOrigin.x, playerController.CurrentPosition.y, endZ);
+        walkingForwardJourney = true;
         float speedMultiplier = GetJourneySpeedMultiplier();
         if (currentScenarioPath == MineAuthoredStory.Episode && envController.AuthoredMine != null)
             playerController.MoveToZ(endZ, speedMultiplier);
@@ -144,9 +146,11 @@ public partial class DecisionManager
         const int speedCoinIndex = 1;
         int speedCoins = journeyCoinSupply?.IsReady == true
             ? journeyCoinSupply.AvailableCoins(speedCoinIndex) : statContainer.stats[speedCoinIndex];
-        int mobility = guideProgress?.mineChapter?.learning?.skills?.Find(skill => skill.id == "mobility")?.value ?? 0;
-        return DecisionPlayerController.JourneySpeedMultiplier(speedCoins, mobility);
+        return DecisionPlayerController.JourneySpeedMultiplier(speedCoins, GetStudySkillLevel("mobility"));
     }
+
+    private int GetStudySkillLevel(string skillId) =>
+        guideProgress?.mineChapter?.learning?.skills?.Find(skill => skill.id == skillId)?.value ?? 0;
 
     private void CompleteWalkStep()
     {
@@ -183,14 +187,14 @@ public partial class DecisionManager
             var place = envController.TerrainData.places.FirstOrDefault(entry => entry.placeId == encounter.PlaceId);
             float offset = place?.authoredLocationId != null ? place.storyLocationDepth.x - encounterStopDistance : 0f;
             float targetZ = encounter.WorldPosition.z + offset;
-            float speedMultiplier = journeyWalk && targetZ > playerController.CurrentPosition.z
-                ? GetJourneySpeedMultiplier() : 1f;
+            walkingForwardJourney = journeyWalk && targetZ > playerController.CurrentPosition.z;
+            float speedMultiplier = walkingForwardJourney ? GetJourneySpeedMultiplier() : 1f;
             playerController.MoveToZ(targetZ, speedMultiplier);
         }
         else
         {
-            float speedMultiplier = journeyWalk && target.z > playerController.CurrentPosition.z
-                ? GetJourneySpeedMultiplier() : 1f;
+            walkingForwardJourney = journeyWalk && target.z > playerController.CurrentPosition.z;
+            float speedMultiplier = walkingForwardJourney ? GetJourneySpeedMultiplier() : 1f;
             playerController.MoveAlongPath(placement != null
                 ? placement.Path(playerController.CurrentPosition, target) : new[] { target }, speedMultiplier);
         }
