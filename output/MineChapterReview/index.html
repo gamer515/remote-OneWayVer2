@@ -480,6 +480,41 @@ a:focus-visible{outline:2px solid #cfe8fb;outline-offset:3px}
 </tbody></table></div>
 <p>엑셀 작업에 사용한 일회성 코드 <code>C:/TempFolder/OneWayRewards20261116/edit.mjs</code>는 정리 대기 중입니다.</p>
 </section>
+<section id="local-story-training-removal-20261117"><h2>2026-11-17 로컬 대사 비교 내보내기 제거</h2>
+<div class="table"><table><thead><tr><th scope="col">단계</th><th scope="col">작업 및 검증</th></tr></thead><tbody>
+<tr><th scope="row">의존성 확인</th><td>게임 시작과 대사 생성 완료에서 호출되는 비교 HTML 저장 코드, 콘솔 경로, 챕터 문서 도구의 이전 학습 후보 읽기와 비교 HTML 링크를 찾았습니다. 실제 다음 회차 대사와 큐는 <code>GeneratedContent</code>를 사용합니다.</td></tr>
+<tr><th scope="row">코드 정리</th><td>비교 HTML 전용 C# 파일과 메타를 삭제했습니다. 게임 시작과 생성 완료의 호출 및 경로 로그, 문서 도구의 저장 폴더 읽기 및 링크, 기존 검사 도구의 비교 HTML 의존을 제거했습니다. 공통 저장과 다음 회차 대사 처리, 독립 AI 진단 도구를 유지했습니다.</td></tr>
+<tr><th scope="row">컴파일과 참조</th><td>Unity 재컴파일에서 스크립트 오류와 경고가 각각 0건입니다. 씬 25개와 프리팹 507개의 직렬화 스크립트 GUID에 미해결 항목이 없었고, 삭제된 GUID의 참조도 발견되지 않았습니다. 스크립터블 에셋 2,338개에서도 삭제된 GUID를 찾지 못했습니다.</td></tr>
+<tr><th scope="row">격리 Play 검증</th><td>메인 메뉴에서 게임을 실행한 뒤 <code>Profile.json</code>, <code>Runs</code>, <code>ContentAuthoring</code>, <code>Records</code>가 작동하며 <code>GeneratedContent</code>의 큐를 저장하고 다시 읽을 수 있음을 확인했습니다. 시작 직후와 이 저장을 마친 뒤 모두 비교 보고서 폴더가 생성되지 않았습니다. 실제 AI 추론과 배포 플레이어 빌드 실행은 이번에 검사하지 않았습니다.</td></tr>
+</tbody></table></div>
+<p>기존 사용자 <code>Saves/LocalStoryTraining</code> 폴더는 보존했습니다. 프로젝트 내 임시 작업 코드 없음.</p>
+</section>
+<section id="strength-tutorial-book-20261117"><h2>2026-11-17 기본 힘 책 학습</h2>
+<div class="table"><table><thead><tr><th scope="col">단계</th><th scope="col">변경 및 확인</th></tr></thead><tbody>
+<tr><th scope="row">기본 책</th><td>기본 <code>힘 책</code>만 기존 호버에 게임의 기본 조작과 진행을 간접적으로 익히는 책이라는 설명을 표시합니다. 첫 힘 책으로 받을 수 있고, 완료 후 일반 힘 계열 책 순서가 이어집니다. 저장에 남은 기본 책은 식별자와 학습 시간을 보정합니다.</td></tr>
+<tr><th scope="row">학습과 보상</th><td>초록 보드에서 기존 기사 애니메이션과 5초 학습 타이머를 거쳐 책을 엽니다. 한 개의 확인 버튼을 누르면 힘 +1을 지급합니다.</td></tr>
+<tr><th scope="row">Play 검증</th><td>메인 메뉴에서 시작해 힘 책 생성, 호버, 기사 학습, 약 5초 후 펼친 책 표시, 버튼을 누르기 전 보상 0·누른 뒤 힘 +1을 확인했습니다. 이어 주문한 일반 책은 <cite>노녀와 온천</cite>이며 기존 제목만 표시됐습니다.</td></tr>
+</tbody></table></div>
+<p>임시 코드 파일 없음.</p>
+</section>
+<section id="strength-book-start-20261117"><h2>2026-11-17 시작 시 힘 책 배치</h2>
+<p>기본 힘 책을 게임 시작 시 흰 보드에 한 권 놓습니다. 이미 책을 가진 상태, 독서 선택 대기 중, 보상 수령 후에는 같은 책을 추가하지 않습니다. 호버에는 “초록 보드에 두면 기사가 펼쳐 볼지도.”를 표시합니다. 펼친 책 본문도 기사 행동을 묘사하는 짧은 문장으로 바꿨습니다.</p>
+<p>Unity 스크립트 컴파일 오류·경고 0건. 메인 메뉴에서 시작한 격리 세션의 빈 학습 진행도로 흰 보드의 책 한 권이 보이고 학습이 시작되지 않는 것을 확인했습니다. 재초기화 뒤 한 권을 유지했고, 완료 상태에서 재배치되지 않았습니다. 처음 주문한 힘 계열 책은 <cite>노녀와 온천</cite>이었습니다. 임시 작업 코드 파일 없음.</p>
+</section>
+<section id="reading-combo-guide-rest-20261117"><h2>2026-11-17 독서 콤보 안내와 강제 휴식</h2>
+<div class="table"><table><thead><tr><th scope="col">항목</th><th scope="col">변경 및 확인</th></tr></thead><tbody>
+<tr><th scope="row">콤보 안내</th><td>학습 보드 버튼으로 여는 안내에서 기존 콤보 39개의 조건, 대상 책과 완료 여부, 코인 보상 및 지급 여부를 조회합니다. 안내가 열려 있는 동안 뒷화면의 선택 입력을 막고 게임 시간은 계속 흐릅니다.</td></tr>
+<tr><th scope="row">강제 휴식</th><td>배포용 <code>Rules.xlsx</code>와 기본 <code>Rules.json</code>의 <code>recoveryPerSecond</code>를 20으로 변경했습니다. 개인 <code>Saves/ContentAuthoring/Rules.xlsx</code>가 우선 적용되는 경우 <code>Data!D16</code>의 10을 20으로 바꾼 뒤 게임을 다시 실행해야 합니다.</td></tr>
+<tr><th scope="row">검증</th><td>Unity 스크립트 재컴파일에서 오류와 경고가 각각 0건입니다. 메인 메뉴에서 시작한 격리 플레이에서 열기와 닫기, 목록 길이, 완료 및 보상 지급 표시, 조회 시 보상과 독서 진행 데이터 유지, 선택 입력 차단과 시간 진행을 확인했습니다. 피로 100에서 30까지 3.51초에 도달했고 휴식 종료 후 자동 이동을 재개했습니다.</td></tr>
+<tr><th scope="row">능력치 확인</th><td>플레이어 기본 이동은 초당 3유닛이며 속도 코인과 연결되어 있지 않습니다. 지역 우대의 코인 최소량과 가중치는 후속 기획 항목입니다.</td></tr>
+</tbody></table></div>
+<p>첨부 문서의 보완 사항을 반영해 책마다 선택지별 독서 보상의 최솟값과 최댓값을 표시하고, 조합별 고정 보상에는 ‘콤보 추가 보상’이라고 표시합니다. Unity 재컴파일 오류와 경고는 각각 0건이며, Unity에서 실제 책과 콤보 데이터를 읽어 보상 문구를 확인했습니다.</p>
+<p>배포용 Excel 수정에 사용한 일회성 코드 <code>C:/TempFolder/OneWayMineRules20261117/edit.mjs</code>는 정리 대기 중입니다.</p>
+</section>
+<section id="repeat-reading-combos-20261117"><h2>2026-11-17 독서 콤보 반복 지급</h2>
+<p>새 독서가 끝나면 각 콤보에서 해당 제목의 기록을 한 건 쌓습니다. 기존 조건에 지정된 서로 다른 제목이 필요 권수만큼 모이면 보상을 지급하고 사용한 기록을 그 콤보에서 차감합니다. 안내에 현재 조합의 완료 권수와 누적 지급 횟수를 표시합니다. 기존 저장의 수령 기록은 누적 1회로 반영하며 이전 독서 완료 이력은 새 콤보의 재료로 계산하지 않습니다.</p>
+<p>Unity 재컴파일 오류·경고 0건. 메인 메뉴에서 시작한 격리 Play에서 같은 제목 재생성, 첫 지급과 반복 지급, 저장의 코인·콤보 기록 복원, 중복 선택 차단과 안내의 조회 동작을 확인했습니다. 강제 휴식은 피로 100에서 30까지 3.50초가 걸렸고 이동을 재개했습니다. 별도 임시 코드 파일 없음.</p>
+</section>
 <section id="remaining"><h2>남은 작업</h2>
 <ul><li>예약 시설 상호작용, 갱도 서브의 특수 판정, 고정 주변 대사와 펫 전언 연출</li><li>해안 이야기·NPC·수면 연출</li><li>조건부 세목 5개, 추가 보스와 보스 간 송금</li></ul>
 <p><a href="work-history.html#remaining">기존 미작업 기록과 필요한 에셋 보기</a></p></section>

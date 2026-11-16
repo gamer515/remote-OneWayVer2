@@ -43,7 +43,6 @@ public class GameManager : MonoBehaviour
     {
         if (instance == null) { instance = this; DontDestroyOnLoad(gameObject); 
             currentState = GameState.Main; saveManager = new SaveManager();
-            SaveIOService.Instance.RefreshDialogueReport();
             LocalStoryRuntimeService.PrepareConfiguredModel();
             LocalStoryRuntimeService.TryResumePending();
         }

@@ -209,7 +209,7 @@ unity command run_script --caller plugin --skill unity-cli --file AgentScripts/K
 <li>조우 완료 시 실제 표시된 NPC 카드 ID를 기록한다. 진행 도중 사망 등으로 회차가 종료되면 마지막 조우에서 이미 본 카드도 기록한다. 회차 중 게임을 닫으면 기존 플레이 체크포인트에서 이어진다.</li>
 <li>추첨된 감정과 완료한 문장은 <code>Saves/GeneratedContent/For_Run_02/Queue.json</code>처럼 대상 회차의 큐에 저장된다. 생성 도중 종료되면 다음 실행에서 같은 감정으로 아직 처리되지 않은 문장부터 시작한다.</li>
 <li>생성본은 원문이 같은 경우 다음 회차에 사용할 수 있다. 대화에 들어갈 때 준비된 버전을 고르며, 이미 연 대화는 그때 고른 버전으로 끝까지 이어진다.</li>
-<li>통과한 줄은 <code>Saves/LocalStoryTraining/&lt;챕터ID&gt;/&lt;에피소드ID&gt;/For_Run_02/Encounters/&lt;이야기&gt;.jsonl</code>에 Gemma용 <code>messages</code> 형식으로 저장한다. 자동 문맥 판정은 후보를 거르는 용도다. 파인튜닝 실행은 이 작업 범위에 포함하지 않는다.</li>
+<li>당시 학습 후보는 Gemma용 <code>messages</code> 형식으로 내보냈다. 이 로컬 내보내기 경로와 자동 비교 HTML은 2026-11-17에 프로젝트에서 정리했다.</li>
 </ul>
 <p>변경 가능한 범위는 감탄사, 말의 쉼과 강조를 표시하는 문장부호, 코드에 등록한 구어 축약이다. 원문의 주요 어구를 보존하는 방향으로 범위를 좁혔다. 첫 실제 추론에서 Gemma가 곡괭이 무게의 뜻을 뒤집거나 통행세 요구를 약하게 쓴 문장까지 스스로 통과시킨 사례를 발견했다. 이 두 응답은 보강된 코드 검사에서 차단되는 것을 확인했다.</p>
 <h2 id="gemma-verified">실제 Gemma 검증</h2>
@@ -225,14 +225,14 @@ unity command run_script --caller plugin --skill unity-cli --file AgentScripts/K
 <p>2026-11-12 (Asia/Seoul). 챕터 페이지를 열면 실제 Gemma로 확인한 브룩 대사 두 쌍이 바로 보인다. 각 쌍은 <strong>원문</strong> 아래에 <strong>변경 대사</strong>를 표시한다. <a href="chapter-dialogue.html#verified-pairs">실제 Gemma 대사 비교</a></p>
 <table><thead><tr><th>단계</th><th>확인 결과</th></tr></thead><tbody>
 <tr><td>즉시 확인</td><td>실제 Gemma 예시 두 쌍이 갱도 섹션 상단에 펼쳐져 있다.</td></tr>
-<tr><td>자동 저장</td><td>게임은 대사 생성본을 저장할 때마다 <code>Saves/LocalStoryTraining/DialogueChanges.html</code>을 자동으로 갱신한다. 회차·이야기·NPC·감정과 함께 원문과 변경 대사를 차례로 표시한다.</td></tr>
+<tr><td>당시 비교 보고서</td><td>회차·이야기·NPC·감정과 함께 원문과 변경 대사를 표시했다. 자동 HTML 갱신 기능은 2026-11-17에 제거했다.</td></tr>
 </tbody></table>
-<p>최초 생성본을 저장하면 위 경로에 파일이 생긴다. 이미 열린 HTML에서 최신 내용이 필요하면 브라우저에서 새로고침한다. Unity 격리 테스트 27개가 통과했다. 자동 저장된 HTML에서 통과한 두 대사 쌍과 탈락한 대사의 제외를 확인했다. 이번 변경에서 만든 임시 코드 파일은 없다. <a href="../Assets/Decision_YYS/Scripts/SaveSystem/SaveIOService.DialogueReport.cs">자동 비교 HTML 생성 코드</a></p>
+<p>당시 Unity 격리 테스트 27개가 통과했다. 자동 저장된 HTML에서 통과한 두 대사 쌍과 탈락한 대사의 제외를 확인했다.</p>
 <h2 id="gemma-dialogue-status">게임 시작 로그와 실제 저장 화면</h2>
-<p>2026-11-12 (Asia/Seoul). <a href="chapter-dialogue.html#live-dialogue">챕터별 HTML의 게임 저장 영역</a>은 이 PC에서 게임이 갱신하는 HTML을 직접 표시한다. 브라우저 새로고침으로 저장된 최신 대사를 읽고, 위쪽 링크로 저장 HTML만 따로 열 수 있다.</p>
+<p>2026-11-12 (Asia/Seoul). 챕터별 HTML이 당시 게임의 비교 보고서를 표시했다. 현재 페이지에는 챕터 원문과 기존 검증 예시가 있다. <a href="chapter-dialogue.html">챕터별 HTML</a></p>
 <table><thead><tr><th>단계</th><th>확인 결과</th></tr></thead><tbody>
 <tr><td>저장 데이터와 HTML 연결</td><td>실제 2회차용 3개 이야기, 6줄을 확인했다. Chrome에서 프로젝트 HTML 안에 실제 저장 대사가 표시되는 것을 확인했다.</td></tr>
-<tr><td>로그</td><td>게임 진입의 <code>[대사 생성 상태]</code>와 <code>[대사 비교 HTML]</code>, 회차 종료의 <code>[대사 생성 요청]</code>, 처리 중의 <code>[대사 생성 중]</code>, 결과의 <code>[대사 생성 완료]</code> 또는 <code>[대사 생성 확인 필요]</code>, 게임에서 생성문을 읽는 <code>[대사 적용]</code>을 추가했다. Unity 컴파일을 통과했고 실행 중인 저장의 상태 로그와 HTML 경로를 확인했다.</td></tr>
+<tr><td>로그</td><td>게임 진입의 <code>[대사 생성 상태]</code>, 회차 종료의 <code>[대사 생성 요청]</code>, 처리 중의 <code>[대사 생성 중]</code>, 결과의 <code>[대사 생성 완료]</code> 또는 <code>[대사 생성 확인 필요]</code>, 게임에서 생성문을 읽는 <code>[대사 적용]</code>을 추가했다.</td></tr>
 </tbody></table>
 <p>진행 중인 플레이를 유지했다. 새 생성 전 과정을 격리 테스트로 다시 재생하는 검증은 플레이가 끝난 뒤 실행할 수 있다. 이번 변경에서 만든 임시 코드 파일은 없다. 브라우저 검증 화면과 프로필은 <code>tmp/GemmaEmotionChecks/BrowserPreview/</code>에 정리 대기 상태로 남겼다.</p>
 <h2 id="gemma-paraphrase">어휘와 어순을 바꾸는 프롬프트</h2>
@@ -258,7 +258,7 @@ unity command run_script --caller plugin --skill unity-cli --file AgentScripts/K
 <p>Unity 메뉴 <strong>Tools → Decision → Direct LLM API Settings</strong>에서 <a href="../Assets/Decision_YYS/ZLLMControl_HJH/Resources/DirectLlmSettings.asset">DirectLlmSettings</a> 인스펙터를 연다. Cloudflare API Token, Cloudflare Account ID, Groq API Key, Gemini API Key를 입력하고 <strong>Save API Keys</strong>를 누른다. 데스크톱의 네 값을 저장하고 에셋 선택을 확인했다. 노트북에서도 같은 메뉴에서 한 번 입력한다. 키는 PC별 Unity EditorPrefs에 저장되므로 별도 TXT 없이 플레이할 수 있다. 독립 실행 빌드에서는 팀 코드의 환경 변수 방식을 사용한다.</p>
 <h3>NPC 대사 제한 제거와 공급자 비교</h3>
 <p>구 버전의 비교 HTML에 원문 순서 유지와 160자 제한이 있는 로컬 응답이 남아 있었다. 새 NPC 자동 생성은 정해진 JSON에서 <code>text</code> 값을 읽어 저장한다. 교정 요청, 글자 수·어순·내용 검사, 감탄사 추가는 제거했다. 다음 회차에 읽히는 API 결과에는 공급자와 모델도 표시한다.</p>
-<p>회차 저장에는 NPC 대사만 바뀐다. 기존 회차 기록은 유지하고, 현재·다음 회차에 해당하는 이전 자동 대사 작업은 유효한 원문을 기준으로 API 생성으로 다시 큐에 넣는다. 콘솔의 <code>[대사 비교 HTML]</code>에는 API 응답을 표시한다.</p>
+<p>회차 저장에는 NPC 대사만 바뀐다. 기존 회차 기록은 유지하고, 현재·다음 회차에 해당하는 이전 자동 대사 작업은 유효한 원문을 기준으로 API 생성으로 다시 큐에 넣는다.</p>
 <p>동일한 원문 6개를 Cloudflare, Groq, Gemini, 내장 Gemma에 입력한 요청과 응답은 <a href="direct-dialogue-comparison.html">NPC 대사 생성 비교</a>에서 확인할 수 있다.</p>
 <p>검증용 임시 코드 <code>tmp/DirectDialogueCheck/RunInUnity.cs</code>와 <code>C:/TempFolder/oneway-unrestricted-f0209db9-c8c0-43b1-88fa-1304fcb42ee0/LiveDialogueRequest.cs</code>는 결과 확인 후 정리 대기 중이다.</p>
 <h3>내장 Gemma 말투 우선 프롬프트</h3>
@@ -271,7 +271,7 @@ unity command run_script --caller plugin --skill unity-cli --file AgentScripts/K
 <p>대사 테스트 화면의 내장 Gemma는 원문에서 구절 한 곳만 바꾸도록 요청한다. 수정 전후 각각 최대 네 어절을 허용하며, 등록된 인물 이름과 숫자 및 중괄호 치환 문구를 보호한다. 높임 표현은 그 자체로 탈락 사유가 아니다. Unity에서 여섯 줄을 생성해 최종 검사로 재검증했다. “어이, 거기”를 “저기요”로 바꾼 한 줄이 통과했고 다섯 줄은 원문으로 표시됐다. <a href="direct-dialogue-comparison.html#gemma-small-phrase">Gemma 응답과 최종 표시 대사</a></p>
 <p>다음 실험으로 원문을 고정하고 감탄사나 어울리는 짧은 문장을 추가하며 길이를 조절하는 방식을 남겼다. 검증용 임시 코드 <code>tmp/DirectDialogueCheck/RunGemmaSmallPhraseInUnity.cs</code>는 결과 확인 후 정리 대기 중이다.</p>
 <h3>API 우선 생성과 Gemma 응답 적용</h3>
-<p>회차용 각 대사는 설정된 외부 API 중 첫 유효 응답을 적용한다. 외부 API가 모두 실패한 줄에만 내장 Gemma를 사용한다. Gemma에는 짧은 구절 한 곳을 최대 네 어절 범위로 바꾸라는 프롬프트를 사용한다. 정상 JSON의 <code>text</code>를 그대로 적용하며, 구절 범위나 이름 변경을 이유로 원문을 대입하는 처리는 제거했다. 대사 비교 HTML은 각 줄의 실제 공급자를 표시한다.</p>
+<p>회차용 각 대사는 설정된 외부 API 중 첫 유효 응답을 적용한다. 외부 API가 모두 실패한 줄에만 내장 Gemma를 사용한다. Gemma에는 짧은 구절 한 곳을 최대 네 어절 범위로 바꾸라는 프롬프트를 사용한다. 정상 JSON의 <code>text</code>를 그대로 적용하며, 구절 범위나 이름 변경을 이유로 원문을 대입하는 처리는 제거했다.</p>
 <p>Unity 격리 저장 시험에서 첫 API 성공, 첫 API 실패 후 두 번째 API 성공, 세 API 모두 실패한 뒤 Gemma 사용을 한 회차에서 검증했다. 외부 응답 두 줄과 Gemma 응답 한 줄이 다음 회차에서 읽혔고 선택지 데이터가 유지됐다. 총 28개 검사를 통과했다.</p>
 <p>Gemma 테스트 여섯 건에서 정상 JSON의 대사 본문을 그대로 확인했다. 일부 응답은 프롬프트의 변형 범위를 넘기거나 인물 이름을 생략했다. <a href="direct-dialogue-comparison.html#gemma-direct-result">Gemma 응답 6건</a></p>
 <p>이번 비교용 임시 코드 <code>tmp/DirectDialogueCheck/RunGemmaDirectResultInUnity.cs</code>는 결과 확인 후 정리 대기 중이다.</p>

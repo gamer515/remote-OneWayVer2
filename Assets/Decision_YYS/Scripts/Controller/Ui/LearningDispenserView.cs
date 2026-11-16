@@ -20,6 +20,7 @@ public sealed class LearningDispenserView : MonoBehaviour
     [SerializeField] private Vector3 activeStep = new Vector3(0,.32f,0);
     [SerializeField] private BoxCollider bookBoard;
     [SerializeField] private TMPro.TMP_Text bookHoverLabel;
+    [SerializeField] private TMPro.TextMeshProUGUI studyNotice;
     [SerializeField] private Transform studentHead;
     [SerializeField] private Transform comboShelfPrefab;
     [SerializeField] private Vector3 comboShelfLocalEuler = new Vector3(-30f, 0f, 0f);
@@ -33,6 +34,11 @@ public sealed class LearningDispenserView : MonoBehaviour
     [SerializeField] private RectTransform[] overlays;
     [SerializeField] private Transform[] overlayAnchors;
     private readonly List<Transform> tiles = new List<Transform>();
+    private ChatBubbleGraphic studyNoticeBackdrop;
+    private TMPro.TextMeshProUGUI foregroundStudyNotice;
+    private Color originalStudyNoticeColor;
+    private string fittedStudyNotice;
+    private float fittedStudyNoticeWidth;
     private readonly Dictionary<MineLearningJob,Transform> books = new Dictionary<MineLearningJob,Transform>();
     private readonly List<MineLearningJob> finished = new List<MineLearningJob>();
     private MineLearningJob draggedJob;
@@ -271,7 +277,7 @@ public sealed class LearningDispenserView : MonoBehaviour
         }
         if (!IsDraggingBook && TryFindBook(viewCamera.ScreenPointToRay(screenPoint), out var job, out _))
         {
-            SetHover(station.GetBookDisplayName(job), screenPoint);
+            SetHover(station.GetBookHoverText(job), screenPoint);
             return;
         }
         if (!IsDraggingBook && station?.UsesStudyRules == true && refillAreas != null)
@@ -411,6 +417,8 @@ public sealed class LearningDispenserView : MonoBehaviour
         CancelBookDrag();
         CancelShelfDrag();
         HideStudentStats();
+        if (studyNoticeBackdrop != null) studyNoticeBackdrop.gameObject.SetActive(false);
+        if (foregroundStudyNotice != null && studyNotice != null) studyNotice.color = originalStudyNoticeColor;
         StopAllCoroutines();
         foreach (var job in settlingBooks) job.held = false;
         settlingBooks.Clear();
@@ -420,6 +428,11 @@ public sealed class LearningDispenserView : MonoBehaviour
             pickup = null;
             carriedBook = null;
         }
+    }
+
+    private void OnDestroy()
+    {
+        if (studyNoticeBackdrop != null) studyNoticeBackdrop.DisposeNoticeOverlay();
     }
 
     private Collider FindBoard(Vector2 screen, Transform item, out Vector3 hit)
@@ -475,7 +488,11 @@ public sealed class LearningDispenserView : MonoBehaviour
         if(station == null) return;
         var progress = station.Progress;
         if(progress == null) return;
-        if (station.UsesStudyRules) UpdateStudyControls();
+        if (station.UsesStudyRules)
+        {
+            UpdateStudyControls();
+            UpdateStudyNotice();
+        }
         UpdateShelf();
         UpdateStudyResult();
         UpdateLearningMeter(progress);
@@ -782,6 +799,43 @@ public sealed class LearningDispenserView : MonoBehaviour
         settlingBooks.Remove(job);
         job.held = false;
         if (book != null && surface != null) RememberBoardPosition(book, job, surface);
+    }
+
+    private void UpdateStudyNotice()
+    {
+        if (studyNotice == null || !studyNotice.isActiveAndEnabled || string.IsNullOrEmpty(studyNotice.text))
+        {
+            if (studyNoticeBackdrop != null) studyNoticeBackdrop.gameObject.SetActive(false);
+            return;
+        }
+
+        var rect = studyNotice.rectTransform;
+        var parent = (RectTransform)rect.parent;
+        if (studyNoticeBackdrop == null)
+        {
+            studyNoticeBackdrop = ChatBubbleGraphic.CreateNoticeBackdrop(parent, "StudyNoticeBubble", true);
+            originalStudyNoticeColor = studyNotice.color;
+            foregroundStudyNotice = Instantiate(studyNotice, studyNoticeBackdrop.transform);
+            foregroundStudyNotice.color = Color.black;
+            foregroundStudyNotice.alignment = TMPro.TextAlignmentOptions.Center;
+            foregroundStudyNotice.enableAutoSizing = false;
+            foregroundStudyNotice.raycastTarget = false;
+            var labelRect = foregroundStudyNotice.rectTransform;
+            labelRect.anchorMin = labelRect.anchorMax = new Vector2(.5f, .5f);
+            labelRect.pivot = new Vector2(.5f, .5f);
+            labelRect.anchoredPosition = Vector2.zero;
+        }
+        studyNotice.color = Color.clear;
+        float width = Mathf.Min(580f, parent.rect.width * .54f);
+        if (studyNotice.text != fittedStudyNotice || width != fittedStudyNoticeWidth)
+        {
+            foregroundStudyNotice.text = studyNotice.text;
+            studyNoticeBackdrop.FitNotice(foregroundStudyNotice, width);
+            fittedStudyNotice = studyNotice.text;
+            fittedStudyNoticeWidth = width;
+        }
+        bool anchored = studyNoticeBackdrop.FollowSpeaker(studentHead, viewCamera, 10f);
+        studyNoticeBackdrop.gameObject.SetActive(anchored);
     }
 
     private void UpdateStudyResult()

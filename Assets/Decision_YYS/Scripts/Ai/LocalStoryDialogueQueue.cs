@@ -348,7 +348,7 @@ public static class LocalStoryDialogueQueue
                 gemmaLines == accepted.Length ? LocalStoryGemmaDialogue.ProviderName : "Direct HTTP + Gemma";
             job.generationPart = job.emotion + " · " + accepted.Length + "/" + job.emotionLines.Count + "줄";
             LocalStoryLog.Write(LocalStoryLogStage.Complete,
-                $"{job.storyPath} / {job.generationPart} / {job.targetRun}회차용 / {store.DialogueReportPath}", activity: "대사 생성");
+                $"{job.storyPath} / {job.generationPart} / {job.targetRun}회차용", activity: "대사 생성");
         }
         catch (OperationCanceledException)
         {
@@ -371,7 +371,6 @@ public static class LocalStoryDialogueQueue
         finally
         {
             Save(store, queue);
-            if (job.status == "Ready") store.RefreshDialogueReport();
         }
     }
 }

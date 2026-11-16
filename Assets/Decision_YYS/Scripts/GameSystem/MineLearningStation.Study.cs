@@ -87,6 +87,10 @@ public sealed partial class MineLearningStation
         nextStudySave = 0;
         StudyResult = null;
         progress.stored ??= new List<MineLearningJob>();
+        // Older saves can deserialize an empty producing slot as a default job.
+        if (progress.producing is MineLearningJob slot && string.IsNullOrEmpty(slot.bookId) &&
+            string.IsNullOrEmpty(slot.bookName) && slot.duration <= 0 && slot.generationRemaining <= 0)
+            progress.producing = null;
         var excessOutletBooks = progress.active.Where(job => !job.onBoard).Skip(1).ToArray();
         foreach (var job in excessOutletBooks)
         {
@@ -97,6 +101,7 @@ public sealed partial class MineLearningStation
         foreach (var job in progress.active.Concat(progress.queued).Concat(progress.stored).Append(progress.producing))
         {
             if (job == null) continue;
+            PrepareStrengthTutorial(job);
             job.bookId = CurrentReadingBookId(job);
             job.bookName = GetBookDisplayName(job);
         }
@@ -106,6 +111,7 @@ public sealed partial class MineLearningStation
         progress.readingResult = null;
         progress.completedReading ??= new List<string>();
         progress.claimedReadingCombos ??= new List<string>();
+        progress.readingComboProgress ??= new List<ReadingComboProgress>();
         progress.mastered ??= new List<string>();
         if (!progress.studySuccessCountInitialized)
         {
@@ -122,6 +128,16 @@ public sealed partial class MineLearningStation
         if (progress.lastStudyDay?.Length != 4)
             progress.lastStudyDay = Enumerable.Repeat(Mathf.FloorToInt(progress.clockDays), 4).ToArray();
         RefreshDay();
+        if (NeedsStrengthTutorial)
+        {
+            var tutorial = new MineLearningJob
+            {
+                bookId = StrengthTutorialBook, requiresBoard = true,
+                onBoard = true, boardIndex = 0, boardU = .26f, boardV = .46f
+            };
+            PrepareStrengthTutorial(tutorial);
+            progress.active.Add(tutorial);
+        }
     }
 
     private bool RefreshDay()
@@ -179,7 +195,7 @@ public sealed partial class MineLearningStation
             return Explain("학습 대기열이 가득 찼습니다.");
 
         var amounts = wallet();
-        var available = authoredBooks.Where(book => book.ability == ability && CanRead(book, amounts)).ToArray();
+        var available = authoredBooks.Where(entry => entry.ability == ability && CanRead(entry, amounts)).ToArray();
         if (available.Length == 0) return Explain("이 분야의 책을 읽으려면 지능이나 해당 능력이 더 필요합니다.");
         var book = available[progress.nextBook[ability] % available.Length];
         progress.nextBook[ability]++;
@@ -219,10 +235,7 @@ public sealed partial class MineLearningStation
             return Explain("책장에 책을 두 권 이상 올려 주세요.");
         if (!study.combos.Any(combo => !progress.rewardedCombos.Contains(combo.id) &&
             combo.books.All(id => batch.Any(job => job.bookId == id))) &&
-            !readingCombos.Any(combo => !progress.claimedReadingCombos.Contains((string)combo["id"]) &&
-                combo["condition"]["bookIds"].Values<string>().Count(id =>
-                    batch.Any(job => job.bookId == id) || progress.completedReading.Contains(id)) >=
-                (int)combo["condition"]["minCompleted"]))
+            !readingCombos.Any(combo => CanCompleteReadingCombo(combo, batch)))
             return Explain("이 조합으로는 콤보가 발동하지 않습니다.");
         if (batch.Length > Capacity.simultaneous ||
             batch.Length > TodayLimit - progress.attemptsToday || !batch.All(CanRead))
@@ -290,6 +303,7 @@ public sealed partial class MineLearningStation
                 progress.producing.generationRemaining -= seconds;
                 if (progress.producing.generationRemaining <= 0)
                 {
+                    PrepareStrengthTutorial(progress.producing);
                     progress.queued.Add(progress.producing);
                     progress.producing = null;
                     enteredQueue = changed = true;
@@ -305,6 +319,7 @@ public sealed partial class MineLearningStation
                     SharesStudySession(job, currentStudy) &&
                     (job.comboStudy || job.started || progress.pendingReading.Count == 0))
                 {
+                    PrepareStrengthTutorial(job);
                     if (!CanRead(job)) notice = $"{GetBookDisplayName(job)} / 읽기 능력치 부족";
                     else if (job.started || progress.attemptsToday < TodayLimit)
                     {
@@ -341,16 +356,7 @@ public sealed partial class MineLearningStation
 
     private void CompleteStudy(MineLearningJob job)
     {
-        if (readingBooks.ContainsKey(job.bookId ?? ""))
-        {
-            if (!progress.completedReading.Contains(job.bookId) && !progress.pendingReading.Contains(job.bookId))
-            {
-                progress.pendingReading.Add(job.bookId);
-                readingDeferred = false;
-            }
-            else ShowStudyResult(true, "이미 보상을 받은 책이거나 선택을 기다리고 있습니다.");
-            return;
-        }
+        if (OpenCompletedReading(job.bookId)) return;
         var book = authoredBooks.FirstOrDefault(item => item.id == job.bookId);
         var tier = Intelligence(wallet()[2]);
         if (book != null && MineChapterSettings.Roll(seed, job.studyAttempt, "study:" + book.id) >= tier.success)

@@ -161,20 +161,13 @@ public static class PretrainingStructureCheck
             Check(JsonUtility.ToJson(replay.MainStory[choice].choiceActions[0]) ==
                 JsonUtility.ToJson(current.MainStory[choice].choiceActions[0]), "Choice action changed.");
 
-            string dialogueReport = Path.Combine(root, "LocalStoryTraining", "DialogueChanges.html");
-            string html = System.Net.WebUtility.HtmlDecode(File.ReadAllText(dialogueReport));
-            Check(html.Contains("<strong>원문</strong>" + current.MainStory[0].text) &&
-                html.Contains("<strong>변경 대사</strong>" + replay.MainStory[0].text), "The saved dialogue pair was not shown.");
-            Check(html.Split(new[] { "<article>" }, StringSplitOptions.None).Length == 4 &&
-                html.Contains(numericReply), "The report did not include every API reply.");
-            if (failAllApisForChoice) Check(html.Contains("Gemma / Gemma"), "The report did not label the Gemma result.");
             typeof(LocalStoryRuntimeService).GetMethod("LogDialogueStatus",
                 System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic).Invoke(null, new object[] { store, 2 });
             Check(dialogueLogs.Any(log => log.Contains("[대사 생성 요청]")) && dialogueLogs.Any(log => log.Contains("[대사 생성 중]")) &&
                 dialogueLogs.Any(log => log.Contains("[대사 생성 완료]")) && dialogueLogs.Any(log => log.Contains("[대사 적용]")),
                 "Dialogue lifecycle logs were missing.");
-            Check(dialogueLogs.Any(log => log.Contains("[대사 생성 상태]") && log.Contains("1개 이야기 / 3줄")) &&
-                dialogueLogs.Any(log => log.Contains("[대사 비교 HTML]") && log.Contains(dialogueReport)), "Startup status or report path was missing.");
+            Check(dialogueLogs.Any(log => log.Contains("[대사 생성 상태]") && log.Contains("1개 이야기 / 3줄")),
+                "Startup dialogue status was missing.");
             Check(LocalStoryDialogueQueue.Next(store) == null, "Completed work requeued.");
 
             var terminal = new GameProgress { activePlaceId = "brook", isCompleted = true, guideProgress = new GuideProgress() };

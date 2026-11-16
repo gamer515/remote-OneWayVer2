@@ -152,21 +152,24 @@ public partial class DecisionManager : MonoBehaviour
         TickMineChapter();
         TickLearning();
         if (uiController?.IsReadingOpen == true) return;
-        if (journeyCoinSupply?.HasBoardPayment == true)
+        if (uiController?.IsComboGuideInputBlocked != true)
         {
-            journeyCoinSupply.HandleBoardPaymentInput(FinishBoardPayment, CancelBoardPayment);
-            return;
+            if (journeyCoinSupply?.HasBoardPayment == true)
+            {
+                journeyCoinSupply.HandleBoardPaymentInput(FinishBoardPayment, CancelBoardPayment);
+                return;
+            }
+            if (guideProgress?.allocating == true)
+            {
+                HandleGuideAllocationInput();
+                return;
+            }
+            if (journeyCoinSupply?.CanStageCoins == true)
+                journeyCoinSupply.HandleBoardPaymentInput(FinishBoardPayment, CancelBoardPayment);
+            else if (currentState != StoryState.MovingToEncounter && currentState != StoryState.Transitioning &&
+                currentState != StoryState.Duel && encounterFlow == null)
+                journeyCoinSupply?.HandleInput();
         }
-        if (guideProgress?.allocating == true)
-        {
-            HandleGuideAllocationInput();
-            return;
-        }
-        if (journeyCoinSupply?.CanStageCoins == true)
-            journeyCoinSupply.HandleBoardPaymentInput(FinishBoardPayment, CancelBoardPayment);
-        else if (currentState != StoryState.MovingToEncounter && currentState != StoryState.Transitioning &&
-            currentState != StoryState.Duel && encounterFlow == null)
-            journeyCoinSupply?.HandleInput();
 
         // 이동 명령과 화면 표현은 분리하고, 실제 도착한 프레임에서 이야기 화면을 엽니다.
         if (encounterFlow != null && currentState == StoryState.MovingToEncounter && mine?.resting != true &&
@@ -337,7 +340,7 @@ public partial class DecisionManager : MonoBehaviour
 
     public void OnJourneyGearSelected(int selectedIndex)
     {
-        if (!isActiveAndEnabled) return;
+        if (!isActiveAndEnabled || uiController?.IsComboGuideInputBlocked == true) return;
         HandleEncounterGearSelection(selectedIndex);
     }
 
@@ -608,7 +611,7 @@ private void SetYellowInputInteractable(bool interactable)
 
     private void HandleScreenClicked()
     {
-        if (uiController != null && uiController.IsReadingOpen) return;
+        if (uiController != null && (uiController.IsReadingOpen || uiController.IsComboGuideInputBlocked)) return;
         HandleEncounterYellowPressed();
     }
 

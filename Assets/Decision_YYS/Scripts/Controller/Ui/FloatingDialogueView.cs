@@ -6,6 +6,9 @@ public sealed class FloatingDialogueView : MonoBehaviour
 {
     [SerializeField] private RectTransform playerArea;
     [SerializeField] private TextMeshProUGUI playerText;
+    [SerializeField] private Transform noticeSpeaker;
+    [SerializeField] private Camera noticeWorldCamera;
+    [SerializeField] private TextMeshProUGUI studyNotice;
     [SerializeField] private UnityEngine.UI.Button confirmButton;
     [SerializeField, Min(1)] private float fontSize = 15;
     [SerializeField] private Color background = new Color(.12f, .13f, .14f, .82f);
@@ -20,12 +23,25 @@ public sealed class FloatingDialogueView : MonoBehaviour
     private bool showingChoices;
     private TextMeshProUGUI overflowText;
     private TextMeshProUGUI storyHeading, storyNotice;
+    private ChatBubbleGraphic headingBackdrop, noticeBackdrop;
+    private CanvasGroup headingFade;
+    private float headingShownAt;
     private TextMeshProUGUI taxCriteria;
     private TextMeshProUGUI choiceHint;
     private System.Func<int, string> getChoiceHint;
     private string clueTarget;
     private System.Func<string> revealClue;
     private int firstChoice, choiceCount;
+
+    private void OnDisable()
+    {
+        if (noticeBackdrop != null) noticeBackdrop.gameObject.SetActive(false);
+    }
+
+    private void OnDestroy()
+    {
+        if (noticeBackdrop != null) noticeBackdrop.DisposeNoticeOverlay();
+    }
 
     internal void SetDialogueClue(string target, System.Func<string> reveal)
     {
@@ -42,6 +58,17 @@ public sealed class FloatingDialogueView : MonoBehaviour
 
     private void LateUpdate()
     {
+        if (headingFade != null && headingBackdrop.gameObject.activeSelf)
+        {
+            headingFade.alpha = 1f - Mathf.Clamp01(Time.unscaledTime - headingShownAt - 2f);
+            if (headingFade.alpha <= 0f) headingBackdrop.gameObject.SetActive(false);
+        }
+        if (noticeBackdrop != null && !string.IsNullOrEmpty(storyNotice.text))
+        {
+            float gap = studyNotice != null && studyNotice.isActiveAndEnabled
+                ? studyNotice.rectTransform.rect.height + 29f : 10f;
+            noticeBackdrop.gameObject.SetActive(noticeBackdrop.FollowSpeaker(noticeSpeaker, noticeWorldCamera, gap));
+        }
         string hint = null;
         var mouse = UnityEngine.InputSystem.Mouse.current;
         if (mouse != null && playerText.isActiveAndEnabled && playerText.canvas != null)
@@ -99,8 +126,18 @@ public sealed class FloatingDialogueView : MonoBehaviour
         choiceHint.gameObject.SetActive(!string.IsNullOrEmpty(hint));
     }
 
-    public void SetStoryHeading(string text) => SetStoryLabel(ref storyHeading, "StoryHeading", text, .95f, 19f);
-    public void SetStoryNotice(string text) => SetStoryLabel(ref storyNotice, "StoryNotice", text, .045f, 15f);
+    public void SetStoryHeading(string text)
+    {
+        if (storyHeading != null && storyHeading.text == (text ?? string.Empty)) return;
+        SetStoryLabel(ref storyHeading, ref headingBackdrop, "StoryHeading", text, .95f, 19f, false);
+        if (headingBackdrop == null || string.IsNullOrEmpty(text)) return;
+        headingFade ??= headingBackdrop.gameObject.AddComponent<CanvasGroup>();
+        headingFade.alpha = 1f;
+        headingShownAt = Time.unscaledTime;
+    }
+
+    public void SetStoryNotice(string text) =>
+        SetStoryLabel(ref storyNotice, ref noticeBackdrop, "StoryNotice", text, .045f, 15f, true);
 
     internal void SetTaxCriteria(string text)
     {
@@ -119,25 +156,38 @@ public sealed class FloatingDialogueView : MonoBehaviour
         if (playerArea.gameObject.activeSelf) FitPanel();
     }
 
-    private void SetStoryLabel(ref TextMeshProUGUI label, string objectName, string text, float height, float size)
+    private void SetStoryLabel(ref TextMeshProUGUI label, ref ChatBubbleGraphic backdrop, string objectName,
+        string text, float height, float size, bool tail)
     {
         if (label == null && string.IsNullOrEmpty(text)) return;
         if (label == null)
         {
-            label = Instantiate(playerText, playerArea.parent);
+            var parent = tail && playerText.canvas != null ? playerText.canvas.rootCanvas.transform : playerArea.parent;
+            backdrop = ChatBubbleGraphic.CreateNoticeBackdrop(parent, objectName + "Panel", tail);
+            backdrop.rectTransform.anchorMin = backdrop.rectTransform.anchorMax = new Vector2(.5f, height);
+            backdrop.rectTransform.anchoredPosition = Vector2.zero;
+            label = Instantiate(playerText, backdrop.transform);
             label.name = objectName;
+            label.text = string.Empty;
             label.alignment = TextAlignmentOptions.Center;
+            label.color = Color.black;
             label.raycastTarget = false;
+            label.enableAutoSizing = false;
             label.fontSize = size;
             var rect = label.rectTransform;
-            rect.anchorMin = new Vector2(.08f, height);
-            rect.anchorMax = new Vector2(.92f, height);
+            rect.anchorMin = rect.anchorMax = new Vector2(.5f, .5f);
             rect.pivot = new Vector2(.5f, .5f);
-            rect.sizeDelta = new Vector2(0f, 28f);
             rect.anchoredPosition = Vector2.zero;
         }
-        label.text = text;
-        label.gameObject.SetActive(!string.IsNullOrEmpty(text));
+        bool show = !string.IsNullOrEmpty(text);
+        if (label.text != (text ?? string.Empty) && show)
+        {
+            label.text = text;
+            backdrop.FitNotice(label, ((RectTransform)playerArea.parent).rect.width * .84f);
+        }
+        else if (!show) label.text = string.Empty;
+        label.gameObject.SetActive(show);
+        backdrop.gameObject.SetActive(show);
     }
 
     public int MessageCount { get; private set; }

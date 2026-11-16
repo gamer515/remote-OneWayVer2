@@ -42,6 +42,7 @@ public class UiController : MonoBehaviour
     public void SetStoryNotice(string text) => mainStoryUi?.SetStoryNotice(SanitizeText(text));
     internal void SetTaxCriteria(string text) => mainStoryUi?.SetTaxCriteria(SanitizeText(text));
     internal bool IsReadingOpen => mainStoryUi != null && mainStoryUi.IsReadingOpen;
+    internal bool IsComboGuideInputBlocked => mainStoryUi != null && mainStoryUi.IsComboGuideInputBlocked;
     internal void ShowReading(MineLearningStation station, bool available) => mainStoryUi?.ShowReading(station, available);
     internal void SetChoiceHints(Func<int, string> hint, int first, int count) => mainStoryUi?.SetChoiceHints(hint, first, count);
     internal void SetDialogueClue(string target, Func<string> reveal) => mainStoryUi?.SetDialogueClue(target, reveal);

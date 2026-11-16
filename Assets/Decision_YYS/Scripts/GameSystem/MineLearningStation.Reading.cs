@@ -11,11 +11,86 @@ public sealed partial class MineLearningStation
     private Dictionary<string, JObject> readingBooks = new Dictionary<string, JObject>();
     private readonly Dictionary<string, string> previousBookIds = new Dictionary<string, string>(StringComparer.Ordinal);
     private const string FirstComboBook = "BK001", SecondComboBook = "BK002";
+    private const string StrengthTutorialBook = "strength_basic";
     private JObject[] readingCombos = Array.Empty<JObject>();
     private bool readingDeferred;
+    internal IReadOnlyList<JObject> ReadingCombos => readingCombos;
+    internal string ReadingTitle(string id) => (string)readingBooks[id]["parodyTitle"];
+    internal int ReadingAbility(string id) => Array.IndexOf(AbilityKeys, (string)readingBooks[id]["mainStat"]);
+    internal IEnumerable<JToken> ReadingChoiceRewards(string id) =>
+        readingBooks[id]["choices"].Select(choice => choice["reward"]);
+
+    internal ReadingComboProgress FindReadingComboProgress(string id) =>
+        progress.readingComboProgress.Find(entry => entry.id == id);
+
+    internal int ReadingComboPayouts(string id) =>
+        FindReadingComboProgress(id)?.payouts ?? (progress.claimedReadingCombos.Contains(id) ? 1 : 0);
+
+    private bool CanCompleteReadingCombo(JObject combo, MineLearningJob[] batch)
+    {
+        var ids = combo["condition"]["bookIds"].Values<string>().Distinct().ToArray();
+        var credits = FindReadingComboProgress((string)combo["id"])?.unusedBooks;
+        return batch.Any(job => ids.Contains(job.bookId)) &&
+            ids.Count(id => credits?.Contains(id) == true || batch.Any(job => job.bookId == id)) >=
+            (int)combo["condition"]["minCompleted"];
+    }
+
+    private bool CreditReadingCombo(JObject combo, string bookId)
+    {
+        var ids = combo["condition"]["bookIds"].Values<string>().Distinct().ToArray();
+        if (!ids.Contains(bookId)) return false;
+        string id = (string)combo["id"];
+        var entry = FindReadingComboProgress(id);
+        if (entry == null)
+        {
+            entry = new ReadingComboProgress { id = id, payouts = ReadingComboPayouts(id) };
+            progress.readingComboProgress.Add(entry);
+        }
+        entry.unusedBooks.Add(bookId);
+        int required = (int)combo["condition"]["minCompleted"];
+        var used = ids.Where(entry.unusedBooks.Contains).Take(required).ToArray();
+        if (used.Length < required) return false;
+
+        foreach (string usedId in used) entry.unusedBooks.Remove(usedId);
+        entry.payouts++;
+        return true;
+    }
 
     internal static JObject ReadContent(string path) =>
         JObject.Parse(Resources.Load<TextAsset>(AuthoredContent + path).text);
+
+    private static bool IsStrengthTutorial(MineLearningJob job) => job?.ability == 0 &&
+        (job.bookId == StrengthTutorialBook ||
+            string.IsNullOrEmpty(job.bookId) && (string.IsNullOrEmpty(job.bookName) || job.bookName == "힘 책"));
+
+    public string GetBookHoverText(MineLearningJob job) => IsStrengthTutorial(job)
+        ? "힘 책\n초록 보드에 두면 기사가 펼쳐 볼지도."
+        : GetBookDisplayName(job);
+
+    private void PrepareStrengthTutorial(MineLearningJob job)
+    {
+        if (!IsStrengthTutorial(job)) return;
+        job.bookId = StrengthTutorialBook;
+        job.bookName = "힘 책";
+        if (job.duration <= 0) job.duration = job.remaining = Mathf.Max(.1f, minimumSeconds);
+    }
+
+    private bool NeedsStrengthTutorial => !progress.completedReading.Contains(StrengthTutorialBook) &&
+        !progress.pendingReading.Contains(StrengthTutorialBook) &&
+        !progress.active.Concat(progress.queued).Concat(progress.stored).Append(progress.producing).Any(IsStrengthTutorial);
+
+    private bool OpenCompletedReading(string id)
+    {
+        if (!readingBooks.ContainsKey(id ?? "")) return false;
+        if (id != StrengthTutorialBook ||
+            !progress.completedReading.Contains(id) && !progress.pendingReading.Contains(id))
+        {
+            progress.pendingReading.Add(id);
+            readingDeferred = false;
+        }
+        else ShowStudyResult(true, "이미 보상을 받은 책이거나 선택을 기다리고 있습니다.");
+        return true;
+    }
 
     private void ConfigureReading()
     {
@@ -52,6 +127,7 @@ public sealed partial class MineLearningStation
 
     private string CurrentReadingBookId(MineLearningJob job)
     {
+        if (IsStrengthTutorial(job)) return StrengthTutorialBook;
         if (!string.IsNullOrEmpty(job.bookId))
         {
             if (readingBooks.ContainsKey(job.bookId)) return job.bookId;
@@ -88,19 +164,14 @@ public sealed partial class MineLearningStation
 
         string id = (string)book["bookId"];
         progress.pendingReading.RemoveAt(0);
-        progress.completedReading.Add(id);
+        if (!progress.completedReading.Contains(id)) progress.completedReading.Add(id);
         if (!progress.mastered.Contains(id)) progress.mastered.Add(id);
         progress.successfulStudies++;
         AddRewards(choice["reward"]);
         var combos = new List<string>();
-        foreach (var combo in readingCombos)
+        foreach (var combo in id == StrengthTutorialBook ? Array.Empty<JObject>() : readingCombos)
         {
-            string comboId = (string)combo["id"];
-            var condition = combo["condition"];
-            if (progress.claimedReadingCombos.Contains(comboId) ||
-                condition["bookIds"].Values<string>().Count(progress.completedReading.Contains) <
-                (int)condition["minCompleted"]) continue;
-            progress.claimedReadingCombos.Add(comboId);
+            if (!CreditReadingCombo(combo, id)) continue;
             AddRewards(combo["reward"]);
             combos.Add((string)combo["name"]);
         }

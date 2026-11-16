@@ -12,6 +12,101 @@ public sealed class ChatBubbleGraphic : UnityEngine.UI.MaskableGraphic
     public bool showTail;
     public bool tailRight;
     public bool sendArrow;
+    private Transform speakerAnchor;
+    private Transform speakerHead;
+    private Transform speakerRig;
+    private Canvas speakerCanvas;
+
+    internal static ChatBubbleGraphic CreateNoticeBackdrop(Transform parent, string objectName, bool tail)
+    {
+        Canvas foreground = null;
+        if (tail)
+        {
+            var overlay = new GameObject(objectName + "Overlay", typeof(RectTransform), typeof(Canvas),
+                typeof(UnityEngine.UI.CanvasScaler));
+            UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(overlay, parent.gameObject.scene);
+            foreground = overlay.GetComponent<Canvas>();
+            foreground.renderMode = RenderMode.ScreenSpaceOverlay;
+            foreground.sortingOrder = 150;
+            var scaler = overlay.GetComponent<UnityEngine.UI.CanvasScaler>();
+            scaler.uiScaleMode = UnityEngine.UI.CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = new Vector2(1920f, 1080f);
+            scaler.matchWidthOrHeight = .5f;
+            parent = overlay.transform;
+        }
+        var panel = new GameObject(objectName, typeof(RectTransform), typeof(ChatBubbleGraphic))
+            .GetComponent<ChatBubbleGraphic>();
+        panel.rectTransform.SetParent(parent, false);
+        panel.speakerCanvas = foreground;
+        panel.color = new Color(1f, .97f, .88f, .98f);
+        panel.borderColor = new Color(.66f, .52f, .32f, .85f);
+        panel.cornerRadius = tail ? 10f : 5f;
+        panel.showTail = tail;
+        panel.raycastTarget = false;
+        return panel;
+    }
+
+    internal void DisposeNoticeOverlay()
+    {
+        if (speakerCanvas != null) Destroy(speakerCanvas.gameObject);
+    }
+
+    internal void FitNotice(TMPro.TextMeshProUGUI label, float maxWidth)
+    {
+        const float horizontalPadding = 24f;
+        const float verticalPadding = 14f;
+        label.margin = Vector4.zero;
+        label.textWrappingMode = TMPro.TextWrappingModes.Normal;
+        label.overflowMode = TMPro.TextOverflowModes.Overflow;
+        float naturalWidth = label.GetPreferredValues(label.text, Mathf.Infinity, Mathf.Infinity).x;
+        float textWidth = Mathf.Clamp(Mathf.Ceil(naturalWidth), 1f, Mathf.Max(1f, maxWidth - horizontalPadding));
+        float height = Mathf.Ceil(label.GetPreferredValues(label.text, textWidth, Mathf.Infinity).y);
+        rectTransform.sizeDelta = new Vector2(textWidth + horizontalPadding, height + verticalPadding);
+        label.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, textWidth);
+        label.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, height);
+    }
+
+    internal bool FollowSpeaker(Transform speaker, Camera worldCamera, float gap)
+    {
+        if (speaker == null || !speaker.gameObject.activeInHierarchy || worldCamera == null)
+            return false;
+        if (speakerAnchor != speaker)
+        {
+            speakerAnchor = speaker;
+            var animator = speaker.GetComponentInParent<Animator>();
+            speakerRig = animator != null ? animator.transform : null;
+            speakerHead = animator != null && animator.isHuman ? animator.GetBoneTransform(HumanBodyBones.Head) : null;
+        }
+        Vector3 headPosition = speakerHead != null
+            ? speakerHead.position + speakerRig.up * (.55f * Mathf.Abs(speakerRig.lossyScale.y))
+            : speaker.position;
+        Vector3 screen = worldCamera.WorldToScreenPoint(headPosition);
+        var parent = (RectTransform)rectTransform.parent;
+        var parentCanvas = parent.GetComponentInParent<Canvas>();
+        if (parentCanvas == null) return false;
+        var canvasCamera = parentCanvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : parentCanvas.worldCamera;
+        if (screen.z <= 0f ||
+            !RectTransformUtility.ScreenPointToLocalPointInRectangle(parent, screen, canvasCamera, out var point))
+            return false;
+
+        float halfWidth = rectTransform.rect.width * .5f;
+        float halfHeight = rectTransform.rect.height * .5f;
+        const float margin = 8f;
+        float left = parent.rect.xMin + halfWidth + margin;
+        float right = parent.rect.xMax - halfWidth - margin;
+        float desired = point.x + halfWidth - 12f;
+        bool useRightTail = desired > right;
+        if (useRightTail) desired = point.x - halfWidth + 12f;
+        float x = left <= right ? Mathf.Clamp(desired, left, right) : parent.rect.center.x;
+        float y = Mathf.Min(point.y + halfHeight + gap, parent.rect.yMax - halfHeight - margin);
+        rectTransform.localPosition = new Vector3(x, y, 0f);
+        if (tailRight != useRightTail)
+        {
+            tailRight = useRightTail;
+            SetVerticesDirty();
+        }
+        return true;
+    }
 
     protected override void OnPopulateMesh(UnityEngine.UI.VertexHelper vertices)
     {

@@ -19,6 +19,12 @@ using UnityEngine;
     public bool comboStudy;
     [NonSerialized] public bool held;
 }
+[Serializable] public sealed class ReadingComboProgress
+{
+    public string id;
+    public int payouts;
+    public List<string> unusedBooks = new List<string>();
+}
 [Serializable] public sealed class MineLearningProgress
 {
     public List<MineLearningJob> active = new List<MineLearningJob>(), queued = new List<MineLearningJob>();
@@ -36,6 +42,7 @@ using UnityEngine;
     public List<string> pendingReading = new List<string>();
     public List<string> completedReading = new List<string>();
     public List<string> claimedReadingCombos = new List<string>();
+    public List<ReadingComboProgress> readingComboProgress = new List<ReadingComboProgress>();
     public string readingResult;
     public Vector3 comboBoardPoint;
 }
@@ -113,6 +120,7 @@ public sealed partial class MineLearningStation : MonoBehaviour
     public int[] CurrentCoins => DisplayCoinCounts?.Invoke() ?? wallet?.Invoke();
     public string GetBookDisplayName(MineLearningJob job)
     {
+        if (IsStrengthTutorial(job)) return "힘 책";
         string id = CurrentReadingBookId(job);
         if (!string.IsNullOrWhiteSpace(id))
         {
@@ -155,6 +163,7 @@ public sealed partial class MineLearningStation : MonoBehaviour
     public void Initialize(MineLearningProgress state, int runSeed, Func<int[]> getWallet, Func<int,int,bool> spend, Action<int,int> reward, Action persist)
     {
         progress=state; seed=runSeed; wallet=getWallet; charge=spend; grant=reward; save=persist;paused=studyPaused=false;notice=null;
+        readingBooks[StrengthTutorialBook] = ReadContent("Reading/StrengthTutorial");
         progress.active ??= new List<MineLearningJob>();
         progress.queued ??= new List<MineLearningJob>();
         InitializeStudyState();
@@ -195,7 +204,7 @@ public sealed partial class MineLearningStation : MonoBehaviour
             remaining = seconds,
             bookId = book?.id,
             bookName = book?.name,
-            requiresBoard = book != null
+            requiresBoard = book != null || ability == 0
         });
         notice=null; FillSlots(); Rebuild(); save(); return true;
     }
@@ -223,9 +232,17 @@ public sealed partial class MineLearningStation : MonoBehaviour
                 var job=progress.active[i];
                 if(job.held) continue;
                 if(job.transit>0) { job.transit=Mathf.Max(0,job.transit-seconds); continue; }
-                if (job.requiresBoard && (!job.onBoard || job.boardIndex != 1)) continue;
+                bool tutorial = IsStrengthTutorial(job);
+                if ((job.requiresBoard || tutorial) && (!job.onBoard || job.boardIndex != 1)) continue;
+                if (tutorial) PrepareStrengthTutorial(job);
                 job.remaining=Mathf.Max(0,job.remaining-seconds);
                 if(job.remaining>0) continue;
+                if (tutorial && OpenCompletedReading(StrengthTutorialBook))
+                {
+                    progress.active.RemoveAt(i);
+                    changed = true;
+                    continue;
+                }
                 var book = authoredBooks?.FirstOrDefault(item => item.id == job.bookId);
                 int reward = book?.reward ?? (string.IsNullOrEmpty(job.bookId) ? Mathf.Max(0, rewards[job.ability]) : job.reward);
                 progress.active.RemoveAt(i); grant(job.ability,reward); changed=true;

@@ -91,7 +91,6 @@ public sealed class LocalStoryRuntimeService : MonoBehaviour
         {
             Debug.LogWarning("[LocalStory][대사 생성 상태] 저장된 상태를 읽지 못했습니다. " + error.Message);
         }
-        Debug.Log("[LocalStory][대사 비교 HTML] " + storage.DialogueReportPath);
     }
 
     private void Update()
