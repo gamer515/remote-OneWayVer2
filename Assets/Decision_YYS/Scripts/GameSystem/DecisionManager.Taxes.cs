@@ -184,8 +184,9 @@ public partial class DecisionManager
 
     private void TryPersuadeTaxCollector()
     {
-        bool success = MineChapterSettings.Roll(session.RunSeed, mine.persuasionAttempts, "persuade") <
-            mineRules.PersuasionChance(statContainer.stats[3], mine.persuasionAttempts++);
+        int attempts = mine.persuasionAttempts++;
+        bool success = MineChapterSettings.Roll(session.RunSeed, attempts, "persuade") <
+            mineRules.PersuasionChance(statContainer.stats[3], attempts, GetStudySkillLevel("persuasion"));
         if (success) FinishMineTax();
         else
         {

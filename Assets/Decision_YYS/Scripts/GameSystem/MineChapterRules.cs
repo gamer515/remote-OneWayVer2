@@ -80,7 +80,11 @@ using UnityEngine;
     public float SuccessChance(int ability) => successBase + successBonus * Mathf.Max(0, ability) / (Mathf.Max(0, ability) + abilityScale);
     public float StatusMultiplier(int strength) => 1 + Mathf.Max(0, statusThreshold - strength) * statusPenaltyPerPoint;
     public float BossAttackMultiplier(int collected) => 1 + Mathf.Max(0, collected) * bossAttackPerCoin;
-    public float PersuasionChance(int charm, int attempts) => Mathf.Clamp01(SuccessChance(charm) * persuasionBase - attempts * persuasionPerAttempt);
+    public float PersuasionChance(int charm, int attempts, int persuasion = 0)
+    {
+        float skillBonus = Mathf.Clamp(persuasion * .03f, 0f, .15f);
+        return Mathf.Clamp01(SuccessChance(charm) * persuasionBase + skillBonus - attempts * persuasionPerAttempt);
+    }
     public static int[] ApplyDelta(int[] balances, int[] delta)
     {
         if (balances == null || balances.Length != 4 || delta == null || delta.Length != 4)
