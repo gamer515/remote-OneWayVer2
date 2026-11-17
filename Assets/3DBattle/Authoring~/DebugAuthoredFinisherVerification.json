@@ -1,0 +1,197 @@
+{
+  "pose": {
+    "passed": true,
+    "holdSeconds": 0.8,
+    "stablePoseSeconds": 0.65,
+    "windupSeconds": 0.15,
+    "bodyTurnDegrees": 88.88841,
+    "chestTwistDegrees": -20.8949089,
+    "pulledBodyTurnDegrees": 98.89567,
+    "pulledChestTwistDegrees": -21.37308,
+    "leftLeadDuringPreparation": 0.6437988,
+    "leadingLeftStep": 0.159729,
+    "leadingStepAlongStance": 0.219211787,
+    "passingRightFootLift": 0.125289366,
+    "rightLeadAtImpact": 0.840026855,
+    "pelvisDrop": 0.199881673,
+    "swordPullDegrees": 31.92578,
+    "maxFootDrift": 0.0001227742,
+    "commitPositionChange": 0.000105996332,
+    "commitRotationChange": 0.0,
+    "productionOptOutPreserved": true
+  },
+  "timingAndFootworkPreserved": true,
+  "combo": {
+    "passed": true,
+    "results": [
+      {
+        "firstClickHoldDoesNotAutoCombo": true
+      },
+      {
+        "normalAttacks": 4,
+        "normalDamageApplications": 5
+      },
+      {
+        "fps": 60,
+        "holdSeconds": 0.8,
+        "totalHits": 8,
+        "noAutomaticRepeat": true
+      },
+      {
+        "fps": 30,
+        "holdSeconds": 0.8,
+        "totalHits": 8,
+        "noAutomaticRepeat": true
+      },
+      {
+        "fps": 15,
+        "holdSeconds": 0.8,
+        "totalHits": 8,
+        "noAutomaticRepeat": true
+      },
+      {
+        "releaseAt": 0.0,
+        "cancelledWithoutSlash": true
+      },
+      {
+        "releaseAt": 0.4,
+        "cancelledWithoutSlash": true
+      },
+      {
+        "releaseAt": 0.79,
+        "cancelledWithoutSlash": true
+      },
+      {
+        "committedSlashCompletesAfterRelease": true
+      },
+      {
+        "releasedSpecialStep": 1,
+        "stoppedAfterCurrentAttack": true
+      },
+      {
+        "releasedSpecialStep": 2,
+        "stoppedAfterCurrentAttack": true
+      },
+      {
+        "postJumpHoldWindowWorks": true
+      },
+      {
+        "postJumpTapStartsNormal": true
+      },
+      {
+        "gaugeConditionWorks": true
+      },
+      {
+        "holdIndependentOfAttackSpeed": true
+      },
+      {
+        "rollAndParryCancel": true
+      },
+      {
+        "originalSequencePreserved": true
+      }
+    ]
+  },
+  "torsoBefore": {
+    "torsoVertexCount": 73,
+    "results": [
+      {
+        "stage": "ready-pull",
+        "maxLeftForearmPenetration": 0.0241808537,
+        "worstArm": 0.435833335,
+        "maxLeftHandPenetration": 0.0,
+        "worstHand": 0.0
+      },
+      {
+        "stage": "left-step",
+        "maxLeftForearmPenetration": 0.0,
+        "worstArm": 0.0,
+        "maxLeftHandPenetration": 0.0,
+        "worstHand": 0.0
+      },
+      {
+        "stage": "right-step-cut",
+        "maxLeftForearmPenetration": 0.07394554,
+        "worstArm": 30.4,
+        "maxLeftHandPenetration": 0.0,
+        "worstHand": 0.0
+      }
+    ]
+  },
+  "torsoAfter": {
+    "torsoVertexCount": 73,
+    "results": [
+      {
+        "stage": "ready-pull",
+        "maxLeftForearmPenetration": 0.0,
+        "worstArm": 0.0,
+        "maxLeftHandPenetration": 0.0,
+        "worstHand": 0.0
+      },
+      {
+        "stage": "left-step",
+        "maxLeftForearmPenetration": 0.0,
+        "worstArm": 0.0,
+        "maxLeftHandPenetration": 0.0,
+        "worstHand": 0.0
+      },
+      {
+        "stage": "right-step-cut",
+        "maxLeftForearmPenetration": 0.00080646947,
+        "worstArm": 32.5,
+        "maxLeftHandPenetration": 0.0,
+        "worstHand": 0.0
+      }
+    ]
+  },
+  "helmet": {
+    "stages": [
+      {
+        "stage": "settle-into-ready",
+        "maxSwordPenetration": 0.0,
+        "worstSword": 0.0,
+        "maxForearmPenetration": 0.0,
+        "maxArmPenetration": 0.13167122,
+        "worstArm": 0.238333344,
+        "arm": "LeftUpper"
+      },
+      {
+        "stage": "ready-pull",
+        "maxSwordPenetration": 0.0,
+        "worstSword": 0.0,
+        "maxForearmPenetration": 0.0,
+        "maxArmPenetration": 0.115752637,
+        "worstArm": 0.5833334,
+        "arm": "LeftUpper"
+      },
+      {
+        "stage": "left-step",
+        "maxSwordPenetration": 0.0,
+        "worstSword": 0.0,
+        "maxForearmPenetration": 0.0,
+        "maxArmPenetration": 0.115688562,
+        "worstArm": 26.025,
+        "arm": "LeftUpper"
+      },
+      {
+        "stage": "right-step-cut",
+        "maxSwordPenetration": 0.0,
+        "worstSword": 0.0,
+        "maxForearmPenetration": 0.0567130931,
+        "maxArmPenetration": 0.145540833,
+        "worstArm": 31.6833324,
+        "arm": "LeftUpper"
+      },
+      {
+        "stage": "recovery",
+        "maxSwordPenetration": 0.0,
+        "worstSword": 0.0,
+        "maxForearmPenetration": 0.0,
+        "maxArmPenetration": 0.07807502,
+        "worstArm": 44.525,
+        "arm": "RightUpper"
+      }
+    ]
+  },
+  "productionAssetsUnchanged": true
+}

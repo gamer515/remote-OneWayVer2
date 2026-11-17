@@ -33,6 +33,10 @@ namespace OneWay.Battle3D
         public bool IsHoldingFinisher { get; private set; }
         public float FinisherHoldElapsed { get; private set; }
         public bool FinisherCommitted { get; private set; }
+        bool AuthoredFinisher => SpecialRules != null && SpecialRules.finisherPreparation != null &&
+            IsSpecialCombo && SequenceIndex == 6 && !InPreparation;
+        float AttackDashStart => AuthoredFinisher ? Mathf.Max(27, SpecialRules.finisherDashStartFrame) : 27;
+        float AttackDashEnd => AuthoredFinisher ? Mathf.Max(AttackDashStart + .1f, SpecialRules.finisherDashEndFrame) : 30;
         public bool CanEnterSpecial => SpecialRules != null && !IsSpecialCombo && SpecialRules.Ready &&
             ((IsActive && !InPreparation && SequenceIndex == 3 && jumpGateOpened) || (!IsActive && specialWindowRemaining > 0));
         DebugPlayerSpecialCombo specialRules;
@@ -195,9 +199,19 @@ namespace OneWay.Battle3D
         void Sample()
         {
             if (player.animator == null || current == null) return;
+            var clip = current.clip;
+            float normalized = Mathf.Clamp01(Frame / Mathf.Max(.001f, current.Frames));
+            // Only players with a dedicated preparation clip use the authored ready / pullback poses.
+            // The combat frame stays fixed: no rush, hit, or slash effect can start during the hold.
+            if (SpecialRules != null && SpecialRules.finisherPreparation != null && IsSpecialCombo &&
+                SequenceIndex == 6 && !InPreparation && !FinisherCommitted && Frame >= 13)
+            {
+                clip = SpecialRules.finisherPreparation;
+                normalized = SpecialRules.PreparationTime(Frame, FinisherHoldElapsed, IsHoldingFinisher) /
+                    Mathf.Max(.001f, clip.length);
+            }
             player.animator.speed = 0;
-            player.animator.Play(Animator.StringToHash("Base Layer." + current.clip.name), 0,
-                Mathf.Clamp01(Frame / Mathf.Max(.001f, current.Frames)));
+            player.animator.Play(Animator.StringToHash("Base Layer." + clip.name), 0, normalized);
             player.animator.Update(0);
         }
         void PlanSkillDash()
@@ -295,8 +309,8 @@ namespace OneWay.Battle3D
                 if (!InPreparation && AttackIndex == 0)
                 {
                     if (Frame < 13) next = Mathf.Min(next, 13);
-                    else if (Frame < 27) next = Mathf.Min(next, 27);
-                    else if (Frame < 30) next = Mathf.Min(next, 30);
+                    else if (Frame < AttackDashStart) next = Mathf.Min(next, AttackDashStart);
+                    else if (Frame < AttackDashEnd) next = Mathf.Min(next, AttackDashEnd);
                     if (SpecialRules != null && IsSpecialCombo && !FinisherCommitted)
                         next = Mathf.Min(next, Mathf.Clamp(SpecialRules.finisherPoseFrame,13,26.5f));
                 }
@@ -305,7 +319,7 @@ namespace OneWay.Battle3D
                 float before = Frame;
                 Frame = next;
                 // Capture the latest camera heading at the forward dash, before its hit window.
-                if (!InPreparation && AttackIndex == 0 && Frame >= 27 && !attackDashPlanned)
+                if (!InPreparation && AttackIndex == 0 && Frame >= AttackDashStart && !attackDashPlanned)
                     PlanAttackDash();
                 Sample();
                 if (!InPreparation) CheckDamage(before, next);
@@ -370,7 +384,9 @@ namespace OneWay.Battle3D
             if (!InPreparation && AttackIndex == 0)
             {
                 forward = b <= 13f ? -attackRetreatDistance * (DashProgress(b/13f) - DashProgress(a/13f))
-                    : a >= 27f && a < 30f ? ActiveAttackDashDistance * (DashProgress((b-27f)/3f)-DashProgress((a-27f)/3f)) : 0;
+                    : a >= AttackDashStart && a < AttackDashEnd ? ActiveAttackDashDistance *
+                        (DashProgress((b-AttackDashStart)/(AttackDashEnd-AttackDashStart))-
+                         DashProgress((a-AttackDashStart)/(AttackDashEnd-AttackDashStart))) : 0;
                 lateral = 0;
             }
             Vector3 start = transform.position;
