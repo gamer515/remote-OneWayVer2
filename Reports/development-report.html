@@ -295,6 +295,18 @@ unity command run_script --caller plugin --skill unity-cli --file AgentScripts/K
 <p>Unity 6000.3.12f1 컴파일 오류 0개. <a href="../AgentScripts/PretrainingStructureCheck.cs">저장 회귀 검사</a>에서 모의 API 응답 경로 31개와 내장 Gemma 대체 경로 36개를 통과했다. 일반 조우와 광산 스토리팩의 다음 회차 적용은 실제 게임의 읽기 경로를 호출해 확인했다. 라이브 외부 API와 보스전 화면을 포함한 연속 플레이는 검증 범위 밖이다. 에디터 실행 절차는 <a href="../Docs/PC_HANDOFF.md">PC 인계 문서</a>에 있다.</p>
 <p>이번 변경의 일회성 소스 코드는 없다. 격리 테스트 저장은 Git에서 제외되는 <code>tmp/DirectDialogueChecks/</code>에 있다.</p>
 </section>
+<hr><section id="mouse-position-validation">
+<h2>Play 모드 마우스 좌표 오류 수정</h2>
+<p>2026-11-20 (Asia/Seoul). 마우스 화면 좌표가 <code>NaN</code>인 상태로 UI와 카메라 레이 판정에 전달되면서 <code>Screen position out of view frustum</code> 오류가 반복됐다.</p>
+<table><thead><tr><th>단계</th><th>작업</th><th>확인 결과</th></tr></thead><tbody>
+<tr><td>1</td><td>포인터 좌표 전달 경로 추적</td><td>에디터 로그에서 같은 메시지 53건과 UI·게임 코드의 호출 경로 확인</td></tr>
+<tr><td>2</td><td>마우스 이벤트의 유효하지 않은 좌표 복원</td><td>Play 시작 시 공용 입력 단계에 처리 등록</td></tr>
+<tr><td>3</td><td>컴파일 및 모의 입력 검사</td><td>컴파일 오류 0건. Unity 에디터 모의 입력 검사 4항목 통과</td></tr>
+</tbody></table>
+<p><a href="../Assets/Decision_YYS/Scripts/GameSystem/MousePositionSanitizer.cs">MousePositionSanitizer.cs</a>는 Unity Input System에서 마우스 상태를 반영하기 전에 <code>NaN</code>과 무한대를 직전 유효값으로 복원한다. 직전 값도 유효하지 않으면 해당 축을 0으로 초기화한다. 버튼과 스크롤 데이터는 그대로 전달한다.</p>
+<p>Unity 6000.3.12f1 컴파일러로 전체 <code>Assembly-CSharp</code>의 C# 코드를 컴파일했다. 실행 중인 에디터에서 정상 좌표, 비정상 좌표, 버튼·스크롤 보존, 한 축만 포함된 입력 이벤트를 검사했다. 일시정지된 Play 세션을 유지했으며, 새 Play 세션에서의 실제 재현 여부와 비정상 입력의 최초 발생 지점은 확인하지 못했다. Play를 다시 시작하면 필터가 적용된다.</p>
+<p>별도의 일회성 소스 파일은 없다. 검증용 컴파일 응답 파일과 DLL은 Git에서 제외되는 <code>output/MousePositionValidation/</code>에 있다.</p>
+</section>
 </body></html>
 
 
