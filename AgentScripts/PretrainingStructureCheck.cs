@@ -61,22 +61,20 @@ public static class PretrainingStructureCheck
             }
             store.SaveRunCheckpoint(1, "Progress", progress);
             LocalStoryDialogueQueue.EncounterEnded(store, 1, "brook");
-            var waiting = LocalStoryDialogueQueue.Load(store, 1).jobs.Single();
-            Check(waiting.status == "WaitingForRunEnd" && waiting.emotionLines.Count == 3, "Displayed NPC cards were not recorded.");
-            Check(string.IsNullOrEmpty(waiting.emotion) && LocalStoryDialogueQueue.Next(store) == null, "Emotion assigned before run end.");
-
-            progress.isCompleted = true;
-            store.SaveRunCheckpoint(1, "Progress", progress);
-            LocalStoryDialogueQueue.FinalizeRun(store, 1);
             var pending = LocalStoryDialogueQueue.Next(store);
+            Check(pending?.status == "Pending" && pending.emotionLines.Count == 3, "A completed place did not queue its displayed NPC lines.");
             string emotion = pending.emotion;
-            Check(!string.IsNullOrWhiteSpace(emotion), "No saved emotion was selected.");
-            LocalStoryDialogueQueue.FinalizeRun(store, 1);
-            Check(LocalStoryDialogueQueue.Next(store).emotion == emotion, "Finalization rerolled emotion.");
+            Check(!string.IsNullOrWhiteSpace(emotion), "No saved emotion was selected at the place.");
+            LocalStoryDialogueQueue.EncounterEnded(store, 1, "brook");
+            Check(LocalStoryDialogueQueue.Next(store).emotion == emotion &&
+                LocalStoryDialogueQueue.Next(store).emotionLines.Count == 3, "Recording the same place changed the job.");
 
+            string expectedEmotion = emotion;
             int calls = 0;
             var failedProviders = new System.Collections.Generic.List<DirectLlmProvider>();
-            Task<DirectLlmHttpResponse> Reply(DirectLlmHttpRequest request, CancellationToken token)
+            TaskCompletionSource<bool> releaseAuthoredReply = null;
+            const string authoredOriginal = "곡괭이 한번 잡아 보지도 않은 사람에게 내 일자리를 맡길 순 없어.";
+            async Task<DirectLlmHttpResponse> Reply(DirectLlmHttpRequest request, CancellationToken token)
             {
                 if (++calls == 2) stop.Cancel();
                 token.ThrowIfCancellationRequested();
@@ -86,16 +84,17 @@ public static class PretrainingStructureCheck
                     : (string)body["messages"][0]["content"];
                 var data = JObject.Parse(input.Substring(input.IndexOf("\n\n", StringComparison.Ordinal) + 2));
                 Check(data.Count == 3 && data["npc"] != null &&
-                    (string)data["emotion"] == emotion && body["max_tokens"] == null,
+                    (string)data["emotion"] == expectedEmotion && body["max_tokens"] == null,
                     "Prompt added a restriction or lost the saved emotion.");
                 string original = (string)data["original"];
+                if (original == authoredOriginal && releaseAuthoredReply != null) await releaseAuthoredReply.Task;
                 if (failAllApisForChoice && original == source.MainStory[choice].text)
                 {
                     failedProviders.Add(request.Provider);
-                    return Task.FromResult(new DirectLlmHttpResponse { StatusCode = 503 });
+                    return new DirectLlmHttpResponse { StatusCode = 503 };
                 }
                 if (failAllApisForChoice && original == source.MainStory[1].text && request.Provider == DirectLlmProvider.Gemini)
-                    return Task.FromResult(new DirectLlmHttpResponse { StatusCode = 503 });
+                    return new DirectLlmHttpResponse { StatusCode = 503 };
                 string output = original == source.MainStory[0].text ? longReply :
                     original == source.MainStory[choice].text ? taxParaphrase : numericReply;
                 string dialogueJson = new JObject { ["text"] = output }.ToString();
@@ -116,12 +115,12 @@ public static class PretrainingStructureCheck
                             ["message"] = new JObject { ["content"] = dialogueJson }
                         })
                     };
-                return Task.FromResult(new DirectLlmHttpResponse
+                return new DirectLlmHttpResponse
                 {
                     StatusCode = 200,
                     TransportSucceeded = true,
                     Body = response.ToString()
-                });
+                };
             }
             var options = new DirectLlmOptions { roundRobin = false };
             if (!failAllApisForChoice)
@@ -134,8 +133,15 @@ public static class PretrainingStructureCheck
             Check(stopped.emotion == emotion && stopped.emotionLines.Count(line => line.finished) == 1, "Checkpoint lost the finished line.");
             Check(!store.HasNarrativeContent(2, path), "Interrupted job published partial output.");
 
-            store.SaveProfile(new ProfileData { currentRun = 2 });
             await LocalStoryDialogueQueue.Process(store, LocalStoryDialogueQueue.Next(store), generator, CancellationToken.None);
+            Check(store.HasNarrativeContent(2, path) && !LocalStoryDialogueQueue.Load(store, 1).finalized,
+                "Generated dialogue was not saved before the run ended.");
+
+            progress.isCompleted = true;
+            store.SaveRunCheckpoint(1, "Progress", progress);
+            LocalStoryDialogueQueue.FinalizeRun(store, 1);
+            Check(LocalStoryDialogueQueue.Load(store, 1).jobs.Single().emotion == emotion, "Finalization rerolled emotion.");
+            store.SaveProfile(new ProfileData { currentRun = 2 });
 
             var completed = LocalStoryDialogueQueue.Load(store, 1).jobs.Single();
             Check(completed.status == "Ready" && completed.emotionLines.Count(line => !string.IsNullOrEmpty(line.generatedText)) == 3,
@@ -180,11 +186,77 @@ public static class PretrainingStructureCheck
                 status = "Generating", emotionLines = new System.Collections.Generic.List<LocalStoryEmotionLine>()
             });
             LocalStoryDialogueQueue.Save(store, legacy);
-            LocalStoryDialogueQueue.RecoverFinishedRuns(store);
+            LocalStoryDialogueQueue.RecoverCompletedStories(store);
             var recovered = LocalStoryDialogueQueue.Next(store);
             Check(recovered?.targetRun == 3 && recovered.storyPath == path, "A terminal partial encounter was lost.");
             Check(recovered.emotionLines.Count == 1 && recovered.emotionLines[0].cardIndex == 0,
                 "An unfinished encounter queued unseen cards.");
+
+            const string authoredPath = "AuthoredMine/MAIN-01";
+            var authoredProgress = new GameProgress { guideProgress = new GuideProgress() };
+            authoredProgress.guideProgress.runHistory.Add(new PlayedEncounterCardRecord
+            {
+                placeId = "MAIN-01", encounterPath = authoredPath,
+                card = new Dialogue
+                {
+                    authoredLinePath = "opening[0]", authoredNpcId = "NPC-02",
+                    authoredOriginalText = authoredOriginal
+                }
+            });
+            store.SaveProfile(new ProfileData { currentRun = 4 });
+            store.SaveRunCheckpoint(4, "Progress", authoredProgress);
+            LocalStoryDialogueQueue.RecoverCompletedStories(store);
+            Check(LocalStoryDialogueQueue.Next(store) == null, "An unfinished authored location queued a line.");
+            authoredProgress.unlockedIds.Add("event:MAIN-01");
+            store.SaveRunCheckpoint(4, "Progress", authoredProgress);
+            LocalStoryDialogueQueue.RecoverCompletedStories(store);
+            var authored = LocalStoryDialogueQueue.Next(store);
+            Check(authored?.authoredPack == true && authored.storyPath == authoredPath && authored.targetRun == 5 &&
+                authored.emotionLines.Count == 1, "Recovery missed the completed authored location.");
+            expectedEmotion = authored.emotion;
+            releaseAuthoredReply = new TaskCompletionSource<bool>();
+            var generating = LocalStoryDialogueQueue.Process(store, authored, generator, CancellationToken.None);
+            Check(!generating.IsCompleted, "The test provider did not hold the first response.");
+
+            authoredProgress.guideProgress.runHistory.Add(new PlayedEncounterCardRecord
+            {
+                placeId = "second-stop", encounterPath = authoredPath,
+                card = new Dialogue
+                {
+                    authoredLinePath = "opening[2]", authoredNpcId = "NPC-02",
+                    authoredOriginalText = "떨리는 손목과 곡괭이 때문에 신경이 곤두서 있어. 함부로 끼어들지는 마."
+                }
+            });
+            authoredProgress.unlockedIds.Add("event:second-stop");
+            store.SaveRunCheckpoint(4, "Progress", authoredProgress);
+            LocalStoryDialogueQueue.EncounterEnded(store, 4, "second-stop");
+            Check(LocalStoryDialogueQueue.Load(store, 4).jobs.Single().emotionLines.Count == 2,
+                "A completed place could not add its line while generation was running.");
+
+            bool saved = false;
+            int menuLoads = 0;
+            var completion = new DecisionRunCompletionService(() => saved = true, () =>
+            {
+                store.SaveProfile(new ProfileData { currentRun = 5 });
+                return 5;
+            }, () => menuLoads++);
+            completion.Complete();
+            completion.Complete();
+            Check(saved && store.LoadOrCreateProfile().currentRun == 5 && menuLoads == 1 && !generating.IsCompleted,
+                "Pending dialogue delayed the transition or the transition ran twice.");
+
+            releaseAuthoredReply.SetResult(true);
+            await generating;
+            var remaining = LocalStoryDialogueQueue.Next(store);
+            Check(remaining?.status == "Pending" && remaining.emotionLines.Count(line => line.finished) == 1,
+                "The in-flight result overwrote the queued line.");
+            await LocalStoryDialogueQueue.Process(store, remaining, generator, CancellationToken.None);
+            var authoredQueue = LocalStoryDialogueQueue.Load(store, 4);
+            Check(authoredQueue.jobs.Single().status == "Ready" &&
+                authoredQueue.jobs.Single().emotionLines.All(line => line.generatedText == numericReply),
+                "Authored dialogue was not saved after switching to the next run.");
+            Check(ApplySavedPackLine(authoredProgress.guideProgress, authoredOriginal) == numericReply,
+                "The next run did not read the saved authored dialogue.");
             return new { passed = true, checks, emotion, isolatedSave = root, apiReplies = failAllApisForChoice ? 2 : 3,
                 gemmaReply = failAllApisForChoice ? choiceReply.generatedText : null };
         }
@@ -193,6 +265,41 @@ public static class PretrainingStructureCheck
             Application.logMessageReceived -= CaptureDialogueLog;
             instance.SetValue(null, previous);
         }
+    }
+
+    private static string ApplySavedPackLine(GuideProgress guide, string original)
+    {
+        const System.Reflection.BindingFlags hidden =
+            System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
+        var go = new GameObject("AuthoredDialogueCheck") { hideFlags = HideFlags.HideAndDontSave };
+        go.SetActive(false);
+        try
+        {
+            var manager = go.AddComponent<DecisionManager>();
+            var env = go.AddComponent<EnvController>();
+            var people = Resources.Load<TextAsset>("Chapters/Chapter_01/AuthoredNarrative/Relationships/NPC_전체목록");
+            var actors = JObject.Parse(people.text)["npcs"].Select(npc =>
+            {
+                var actor = new GameObject("NPC_Test_" + (string)npc["name"]);
+                actor.transform.SetParent(go.transform);
+                return actor;
+            }).ToArray();
+            var pack = Activator.CreateInstance(typeof(DecisionManager).Assembly.GetType("MineAuthoredStory"),
+                hidden, null, new object[] { actors, EnvController.MineStoryLength.Full }, null);
+            typeof(EnvController).GetProperty("AuthoredMine", hidden).SetValue(env, pack);
+            var type = typeof(DecisionManager);
+            guide.authoredMine = new MineAuthoredProgress { eventId = "MAIN-01" };
+            type.GetField("guideProgress", hidden).SetValue(manager, guide);
+            type.GetField("envController", hidden).SetValue(manager, env);
+            type.GetField("activeEncounterPath", hidden).SetValue(manager, "AuthoredMine/MAIN-01");
+            type.GetField("session", hidden).SetValue(manager, new DecisionSession(new OmnibusData(), 5, 1, 0, 0, 0));
+            var loaded = type.GetMethod("LoadPreviousPackDialogue", hidden).Invoke(manager, null);
+            type.GetField("previousPackDialogue", hidden).SetValue(manager, loaded);
+            var source = new JObject { ["opening"] = new JArray(new JObject { ["speaker_id"] = "NPC-02", ["text"] = original }) };
+            var applied = (JObject)type.GetMethod("ApplyPackEmotion", hidden).Invoke(manager, new object[] { source });
+            return (string)applied["opening"][0]["text"];
+        }
+        finally { UnityEngine.Object.DestroyImmediate(go); }
     }
 
     private sealed class DialogueTransport : IDirectLlmTransport

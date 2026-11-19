@@ -45,7 +45,9 @@ public partial class DecisionManager
         activePlaceId = loadedProgress?.activePlaceId;
         activeCardIndex = loadedProgress?.activeCardIndex ?? 0;
         string phase = loadedProgress?.interactionPhase;
-        if ((phase == "prompt" || phase == "card" || phase == "walking" || phase == "tutorial_result") && encounterFlow.TryGetEncounter(activePlaceId, out var encounter))
+        if ((phase == "prompt" || phase == "card" || phase == "walking" || phase == "tutorial_result") &&
+            !resolvedPlaceIds.Contains(activePlaceId) &&
+            encounterFlow.TryGetEncounter(activePlaceId, out var encounter))
         {
             pendingEncounter = encounter;
             if (phase != "card" && string.IsNullOrEmpty(loadedProgress?.activeStoryPath)) BeginEncounter(encounter);
@@ -546,26 +548,34 @@ public partial class DecisionManager
 
     private void ResolveEncounter()
     {
-        var finishedEncounter=pendingEncounter;
         duelMiniGame?.CleanupDuel();
         tutorialMiniGames?.Cleanup();
-        if (!string.IsNullOrEmpty(activePlaceId))
+        FinishEncounterAndResume(showRevisit: pendingEncounter.HasValue);
+    }
+
+    private void FinishEncounterAndResume(bool showRevisit)
+    {
+        string placeId = activePlaceId;
+        if (!string.IsNullOrEmpty(placeId))
         {
-            resolvedPlaceIds.Add(activePlaceId);
-            saveService?.MarkEncounterCompleted(activePlaceId);
-        }
-        BeginExploration();
-        LocalStoryNotebook.Refresh(SaveIOService.Instance);
-        if(finishedEncounter.HasValue)
-        {
-            var finished=finishedEncounter.Value;
-            ShowMineRevisit(finished.PlaceId);
+            resolvedPlaceIds.Add(placeId);
+            SaveGuideCheckpoint();
+            saveService?.MarkEncounterCompleted(placeId);
             try
             {
-                LocalStoryDialogueQueue.EncounterEnded(SaveIOService.Instance, session.RunNumber, finished.PlaceId);
+                LocalStoryDialogueQueue.EncounterEnded(SaveIOService.Instance, session.RunNumber, placeId);
             }
-            catch(Exception e) { LocalStoryLog.Write(LocalStoryLogStage.Failed,"대화 종료 기록: "+e.Message,this); }
+            catch (Exception e)
+            {
+                LocalStoryLog.Write(LocalStoryLogStage.Deferred, "장소 대사 생성 보류: " + e.Message, this);
+            }
         }
+
+        uiController?.SetStoryNotice(null);
+        BeginExploration();
+        if (showRevisit) ShowMineRevisit(placeId);
+        LocalStoryRuntimeService.TryResumePending(recover: false);
+        LocalStoryNotebook.Refresh(SaveIOService.Instance);
     }
 
     private void CompleteEncounterEpisode()

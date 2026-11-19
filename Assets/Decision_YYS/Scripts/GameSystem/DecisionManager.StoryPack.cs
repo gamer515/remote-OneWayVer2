@@ -39,10 +39,10 @@ public partial class DecisionManager
     {
         string intelligence = PackAbilityVariant(2, "지능");
         if (StoryPack.IsShort)
-            return intelligence == LowIntelligenceVariant ? PackStory(intelligence) : ApplyPackEmotion(PackStory());
+            return ApplyPackEmotion(PackStory(intelligence == LowIntelligenceVariant ? intelligence : null));
         string charm = PackAbilityVariant(3, "매력");
         if (intelligence == null && charm == null) return ApplyPackEmotion(PackStory());
-        if (intelligence == null || charm == null) return PackStory(charm ?? intelligence);
+        if (intelligence == null || charm == null) return ApplyPackEmotion(PackStory(charm ?? intelligence));
         bool lowIntelligence = intelligence == LowIntelligenceVariant;
         var primary = (JObject)PackStory(lowIntelligence ? intelligence : charm).DeepClone();
         var secondary = PackStory(lowIntelligence ? charm : intelligence);
@@ -65,7 +65,7 @@ public partial class DecisionManager
             {
                 unchanged.Replace(voice.DeepClone());
             }
-        return primary;
+        return ApplyPackEmotion(primary);
     }
 
     private JObject ApplyPackEmotion(JObject source)
@@ -76,7 +76,8 @@ public partial class DecisionManager
             if (line["speaker_id"]?.Type != JTokenType.String || line["text"]?.Type != JTokenType.String) continue;
             string npcId = IsPackMain ? (string)line["speaker_id"] : envController.TerrainData.places
                 .FirstOrDefault(place => place.placeId == activePlaceId)?.storyNpcId;
-            if (!StoryPack.IsPackNpc(npcId)) continue;
+            // A clue's highlighted phrase must stay present in the spoken line.
+            if (!StoryPack.IsPackNpc(npcId) || line["hover_hint"]?["target_text"]?.Type == JTokenType.String) continue;
             string path = line.Path;
             string original = (string)line["text"];
             line["played_line_path"] = path;
@@ -135,17 +136,19 @@ public partial class DecisionManager
         var store = SaveIOService.Instance;
         int sourceRun = session.RunNumber - 1;
         var queue = LocalStoryDialogueQueue.Load(store, sourceRun);
-        if (queue?.finalized != true) return null;
+        if (queue == null) return null;
         string mode = queue.authoredStoryPackMode;
         if (string.IsNullOrEmpty(mode))
         {
             var previous = store.LoadRunData<GameProgress>(sourceRun, "Progress");
             mode = MineAuthoredStory.ModeId(previous?.guideProgress?.authoredMine?.shortStoryPack == true);
         }
-        if (mode != MineAuthoredStory.ModeId(StoryPack.IsShort)) return null;
+        string currentMode = MineAuthoredStory.ModeId(StoryPack.IsShort);
         return queue.jobs.Where(job => job.authoredPack && job.model == DirectStoryGenerator.ModelName &&
+            LocalStoryDialogueQueue.AuthoredMode(job, mode) == currentMode &&
             job.status == "Ready" && job.targetRun == session.RunNumber &&
-            job.emotionLines != null && !string.IsNullOrEmpty(job.emotion)).ToDictionary(job => job.jobId);
+            job.emotionLines != null && !string.IsNullOrEmpty(job.emotion))
+            .ToDictionary(job => LocalStoryDialogueQueue.AuthoredJobId(job.storyPath, job.characterId));
     }
 
     private static void AppendPackLines(JArray destination, JToken source)
@@ -180,9 +183,9 @@ public partial class DecisionManager
             }
         }
         Add(StoryPack.IsShort || (PackAbilityVariant(2, "지능") == null && PackAbilityVariant(3, "매력") == null)
-            ? PackDialogueStory() : PackStory());
-        if (!StoryPack.IsShort && HasHighStoryAbility(2)) Add(PackStory("지능_높음"));
-        if (!StoryPack.IsShort && HasHighStoryAbility(3)) Add(PackStory("매력_높음"));
+            ? PackDialogueStory() : ApplyPackEmotion(PackStory()));
+        if (!StoryPack.IsShort && HasHighStoryAbility(2)) Add(ApplyPackEmotion(PackStory("지능_높음")));
+        if (!StoryPack.IsShort && HasHighStoryAbility(3)) Add(ApplyPackEmotion(PackStory("매력_높음")));
         return options.Values.ToArray();
     }
 

@@ -118,7 +118,9 @@ public class GameManager : MonoBehaviour
         if (saveManager == null)
             saveManager = new SaveManager();
 
-        return saveManager.StartNextRun();
+        int nextRun = saveManager.StartNextRun();
+        LocalStoryRuntimeService.TryResumePending(recover: false);
+        return nextRun;
     }
 
     public void EnterFinalBattle(int stage = 1, string chapterBossId = null)
@@ -186,7 +188,7 @@ public class GameManager : MonoBehaviour
                     try { LocalStoryDialogueQueue.FinalizeRun(SaveIOService.Instance, sourceRun); }
                     catch (System.Exception e) { LocalStoryLog.Write(LocalStoryLogStage.Failed, "전투 종료 감정 저장: " + e.Message); }
                 },
-                () => { int next = PrepareNextPlaythrough(); LocalStoryRuntimeService.TryResumePending(); return next; },
+                PrepareNextPlaythrough,
                 () => {
                     new SceneTransitionService().LoadMainMenuScene();
                     Cursor.lockState = CursorLockMode.None;

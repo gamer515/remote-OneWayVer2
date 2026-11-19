@@ -122,10 +122,7 @@ public partial class DecisionManager
     {
         uiController.SetDialogueClue(null, null);
         Authored.eventId = Authored.nodeId = null;
-        resolvedPlaceIds.Add(activePlaceId);
-        saveService.MarkEncounterCompleted(activePlaceId);
-        SaveGuideCheckpoint();
-        BeginExploration();
+        FinishEncounterAndResume(showRevisit: false);
     }
 
     private IEnumerator DeliverAuthoredPet()

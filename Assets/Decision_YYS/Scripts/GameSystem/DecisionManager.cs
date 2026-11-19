@@ -142,7 +142,6 @@ public partial class DecisionManager : MonoBehaviour
 
         if (GameManager.Instance.ResumeFinalBattle()) return;
 
-        // Background generation must not lock gameplay. Each dialogue loads ready content or its source.
         LocalStoryRuntimeService.TryResumePending();
         Initialize();
     }
@@ -540,7 +539,7 @@ private void SetYellowInputInteractable(bool interactable)
                     try { LocalStoryDialogueQueue.FinalizeRun(SaveIOService.Instance,session.RunNumber); }
                     catch(Exception e) { LocalStoryLog.Write(LocalStoryLogStage.Failed,"회차 종료 감정 저장: "+e.Message,this); }
                 },
-                () => { int next = GameManager.Instance.PrepareNextPlaythrough(); LocalStoryRuntimeService.TryResumePending(); return next; },
+                () => GameManager.Instance.PrepareNextPlaythrough(),
                 () => sceneTransitionService.LoadMainMenuScene());
         Debug.Log($"[Story] {session?.RunNumber ?? 1}회차 {reason}. " +
             "설정된 시작 챕터에서 다음 회차를 준비하고 메인 메뉴로 이동합니다.", this);

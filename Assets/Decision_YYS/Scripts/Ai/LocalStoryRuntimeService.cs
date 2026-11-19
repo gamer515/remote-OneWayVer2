@@ -60,7 +60,7 @@ public static class LocalStoryLog
     }
 }
 
-/// <summary>Dialogue-end background work, applied only to the next run. Never edits Resources.</summary>
+/// <summary>Runs saved dialogue jobs for the next playthrough.</summary>
 public sealed class LocalStoryRuntimeService : MonoBehaviour
 {
     private static LocalStoryRuntimeService instance;
@@ -78,14 +78,13 @@ public sealed class LocalStoryRuntimeService : MonoBehaviour
         {
             var previous = LocalStoryDialogueQueue.Load(storage, run - 1)?.jobs ?? new List<LocalStoryDialogueJob>();
             var current = LocalStoryDialogueQueue.Load(storage, run)?.jobs ?? new List<LocalStoryDialogueJob>();
-            int waiting = current.Count(job => job.status == "WaitingForRunEnd");
             int pending = previous.Concat(current).Count(job => job.status == "Pending" || job.status == "Generating");
             int ready = previous.Count(job => job.status == "Ready");
             int lines = previous.Where(job => job.status == "Ready").Sum(job =>
                 job.emotionLines?.Count(line => !string.IsNullOrEmpty(line.generatedText)) ?? 0);
             int rejected = previous.Count(job => job.status == "Rejected");
             Debug.Log($"[LocalStory][대사 생성 상태] {run}회차 시작 · 이번 회차용 저장 {ready}개 이야기 / {lines}줄" +
-                $" · 검사 탈락 {rejected}개 이야기 · 미완료 {pending}개 · 이번 회차 종료 대기 {waiting}개");
+                $" · 검사 탈락 {rejected}개 이야기 · 미완료 {pending}개");
         }
         catch (Exception error)
         {
@@ -127,19 +126,25 @@ public sealed class LocalStoryRuntimeService : MonoBehaviour
         catch(Exception e) { PreparationStatus="검사 실패 — 원문으로 플레이 가능"; LocalStoryLog.Write(LocalStoryLogStage.Deferred,"[내장형] Gemma 사전 검사: "+e.Message,activity:"모델 검사"); }
         finally { preparation.Dispose(); preparation=null; }
     }
-    public static void TryResumePending()
+    public static void TryResumePending(bool recover = true)
     {
-        if (IsBusy || !Application.isPlaying) return;
+        if (!Application.isPlaying || IsBusy) return;
         try
         {
             var storage = SaveIOService.Instance;
-            LocalStoryDialogueQueue.RecoverFinishedRuns(storage);
-            LocalStoryDialogueQueue.RequeueLegacyDialogue(storage);
-            if(LocalStoryDialogueQueue.Next(storage)==null) return;
+            if (recover)
+            {
+                LocalStoryDialogueQueue.RecoverCompletedStories(storage);
+                LocalStoryDialogueQueue.RequeueLegacyDialogue(storage);
+            }
+            if (LocalStoryDialogueQueue.Next(storage) == null) return;
             EnsureInstance();
-            instance.Pump(storage);
+            _ = instance.Pump(storage);
         }
-        catch(Exception e) { LocalStoryLog.Write(LocalStoryLogStage.Deferred,"저장된 생성 요청 재개 보류: "+e.Message); }
+        catch (Exception e)
+        {
+            LocalStoryLog.Write(LocalStoryLogStage.Deferred, "저장된 생성 요청 재개 보류: " + e.Message);
+        }
     }
     private static void EnsureInstance()
     {
@@ -148,27 +153,36 @@ public sealed class LocalStoryRuntimeService : MonoBehaviour
         instance=go.AddComponent<LocalStoryRuntimeService>();
         DontDestroyOnLoad(go);
     }
-    private async void Pump(SaveIOService storage)
+    private async Task Pump(SaveIOService storage)
     {
         cancellation=new CancellationTokenSource();
         var token=cancellation.Token;
         try
         {
+            await Task.Yield();
+            token.ThrowIfCancellationRequested();
             var generator = new DirectStoryGenerator(DirectLlmSettings.CreateProjectClient());
+            var deferred = new HashSet<(int Run, string Job)>();
             LocalStoryDialogueJob job;
-            while(!token.IsCancellationRequested && (job=LocalStoryDialogueQueue.Next(storage))!=null)
+            while (!token.IsCancellationRequested && (job = LocalStoryDialogueQueue.Next(storage, deferred)) != null)
             {
-                Status=job.sourceRun+"회차 "+job.characterId+" → "+job.targetRun+"회차용";
-                await LocalStoryDialogueQueue.Process(storage, job, generator, token);
+                Status = job.sourceRun + "회차 " + job.characterId + " → " + job.targetRun + "회차용";
+                try { await LocalStoryDialogueQueue.Process(storage, job, generator, token); }
+                catch (Exception e) when (!(e is OperationCanceledException))
+                {
+                    deferred.Add((job.sourceRun, job.jobId));
+                    LocalStoryLog.Write(LocalStoryLogStage.Deferred, job.storyPath + " / " + e.Message, activity: "대사 생성");
+                }
             }
         }
         catch(OperationCanceledException) { LocalStoryLog.Write(LocalStoryLogStage.Deferred,"작업 중단. 저장된 요청은 다음 실행에서 재개합니다.",activity:"대사 생성"); }
         catch(Exception e) { LocalStoryLog.Write(LocalStoryLogStage.Failed,"요청 큐 처리: "+e.Message,activity:"대사 생성"); }
         finally
         {
-            Status="회차 종료 감정 대사 대기";
-            cancellation.Dispose(); cancellation=null;
-            LocalStoryNotebook.Refresh(storage);
+            Status = "장소 이야기 종료 대기";
+            cancellation.Dispose(); cancellation = null;
+            try { LocalStoryNotebook.Refresh(storage); }
+            catch (Exception e) { LocalStoryLog.Write(LocalStoryLogStage.Deferred, "이야기 기록 갱신 보류: " + e.Message); }
         }
     }
     private void Cancel() { cancellation?.Cancel(); preparation?.Cancel(); }
