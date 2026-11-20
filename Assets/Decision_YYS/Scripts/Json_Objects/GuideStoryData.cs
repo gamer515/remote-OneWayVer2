@@ -59,6 +59,8 @@ public sealed class MineAuthoredProgress
     public bool storyPackNegotiated, storyPackTaskWon;
     public string storyPackRevealedHint;
     public float storyPackTaskRemaining;
+    public int storyPackShortcutSide;
+    public bool storyPackShortcutWon;
     public string eventId, nodeId, pendingPet;
     public List<string> flags = new List<string>();
     public List<string> choices = new List<string>();

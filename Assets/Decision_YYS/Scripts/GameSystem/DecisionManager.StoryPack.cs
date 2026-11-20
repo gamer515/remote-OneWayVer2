@@ -170,14 +170,14 @@ public partial class DecisionManager
     private static (string id, string text)[] PackRootOptions(JObject story)
     {
         var configured = story["choices"].ToDictionary(choice => (string)choice["id"]);
-        return new[] { "C3", "C1", "C4" }
+        return new[] { "C3", "C1" }
             .Where(id => configured.TryGetValue(id, out var choice) && (id switch
             {
                 "C3" => choice["requirement"] is JObject,
-                "C1" => (int?)choice["price"]?["base_fee"] > 0,
-                _ => choice["shortcut"] is JObject
+                _ => (int?)choice["price"]?["base_fee"] > 0
             }))
             .Select(id => (id, (string)configured[id]["text"]))
+            .Append(("C4", (string)configured.GetValueOrDefault("C4")?["text"] ?? "샛길로 돌아가 볼까?"))
             .Append((PackStudyChoice, "지금은 좀 부족한 것 같아. 책을 더 읽고 오자."))
             .ToArray();
     }
@@ -227,6 +227,7 @@ public partial class DecisionManager
     {
         var story = PackStory();
         uiController.SetStoryHeading((string)story["title"]);
+        if (TryPresentPackShortcut(story)) return;
         string frame = Authored.storyPackFrame;
         var lines = Authored.storyPackLines == null ? null : JArray.Parse(Authored.storyPackLines);
         if (frame == PetDelivery && (lines == null || Authored.storyPackLine >= lines.Count))
@@ -289,6 +290,7 @@ public partial class DecisionManager
 
     private void AdvanceStoryPack()
     {
+        if (TryAdvancePackShortcut()) return;
         if (Authored.storyPackLines != null && Authored.storyPackLine < JArray.Parse(Authored.storyPackLines).Count)
         {
             Authored.storyPackLine++;
@@ -345,6 +347,11 @@ public partial class DecisionManager
             PresentPackStudyPause();
             return;
         }
+        if (option.id == "C4")
+        {
+            ShowPackLines(null, PackShortcutDirection);
+            return;
+        }
         var choice = PackChoice(story, option.id);
         var dialogue = PackChoice(voiced, option.id);
         switch ((string)choice["id"])
@@ -354,10 +361,6 @@ public partial class DecisionManager
                 ShowPackLines(dialogue["dialogue"], (string)choice["mini_game"]["type"] == "duel" ? PackDuel : PackToss);
                 break;
             case "C3": BeginPackRequirement(dialogue); break;
-            case "C4":
-                Debug.Log((string)choice["shortcut"]["log_message"], this);
-                ShowPackLines(null, PackRoot);
-                break;
         }
     }
 
@@ -478,7 +481,6 @@ public partial class DecisionManager
             PackRoot when choiceId == "C1" => statContainer.stats.Any(stat => stat >= PackFee) ? 1f : 0f,
             PackRoot when choiceId == "C2" && (string)PackChoice(PackStory(), "C2")["mini_game"]["type"] == "gambling" => .5f,
             PackRoot when choiceId == "C3" => PackRequirementProbability(PackChoice(PackStory(), "C3")["requirement"]),
-            PackRoot when choiceId == "C4" => 0f,
             _ => null
         };
         if (!probability.HasValue)

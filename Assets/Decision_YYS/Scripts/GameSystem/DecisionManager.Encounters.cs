@@ -100,6 +100,8 @@ public partial class DecisionManager
 
     private void BeginExploration()
     {
+        packShortcutWalking = false;
+        packShortcutActor = null;
         roadsideStep = RoadsideStep.None;
         roadsideActor = null;
         roadsideEncounterId = null;
@@ -175,6 +177,7 @@ public partial class DecisionManager
 
     private void CompleteWalkStep()
     {
+        if (TryCompletePackShortcutWalk()) return;
         if (pendingEncounter.HasValue)
         {
             var encounter = pendingEncounter.Value;
@@ -779,6 +782,12 @@ public partial class DecisionManager
 
     private void FrameActiveEncounter(bool fullBody)
     {
+        if (packShortcutActor != null && IsPackShortcutNpcFrame)
+        {
+            playerController.FocusNpc(packShortcutActor, fullBody);
+            playerController.StopAndLookAt(packShortcutActor.position);
+            return;
+        }
         if (roadsideActor != null && roadsideStep != RoadsideStep.None)
         {
             playerController.FocusNpc(roadsideActor, fullBody);

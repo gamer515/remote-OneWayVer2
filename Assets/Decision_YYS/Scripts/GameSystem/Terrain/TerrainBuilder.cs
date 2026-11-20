@@ -49,6 +49,67 @@ public sealed class TerrainBuilder
     private const string RoadsideEncounterPrefix = "RoadsideNpc_Gap_";
     private const float RoadsideEncounterReach = 6.5f;
 
+    internal bool TryGetShortcutRoute(TerrainPlaceRegistry registry, PlaceData place, int side,
+        float height, out Vector3[] route, out Transform actor)
+    {
+        route = null;
+        actor = null;
+        var location = FindStoryPlace(registry, place);
+        if (location == null || !TryWorldBounds(location, out var bounds)) return false;
+
+        Vector3 origin = registry.GetChunkWorldPosition(place.chunkIndex);
+        float entryZ = bounds.min.z - 2f, exitZ = bounds.max.z + 2f;
+        const float clearance = .55f;
+        var blockers = new List<Bounds>();
+        var roadsideActors = new List<Transform>();
+        foreach (Transform child in location.parent)
+        {
+            if (child == location || !child.gameObject.activeInHierarchy) continue;
+            if (child.name.StartsWith("RoadsideNpc_", System.StringComparison.Ordinal))
+                roadsideActors.Add(child);
+            else if ((child.name.StartsWith("Place_", System.StringComparison.Ordinal) ||
+                child.name.StartsWith("Roadside_", System.StringComparison.Ordinal)) &&
+                TryWorldBounds(child, out var obstacle)) blockers.Add(obstacle);
+        }
+
+        bool Clear(Vector3 a, Vector3 b) => !blockers.Any(blocker =>
+            Mathf.Min(a.x, b.x) < blocker.max.x + clearance && Mathf.Max(a.x, b.x) > blocker.min.x - clearance &&
+            Mathf.Min(a.z, b.z) < blocker.max.z + clearance && Mathf.Max(a.z, b.z) > blocker.min.z - clearance);
+        float edge = side < 0 ? bounds.min.x : bounds.max.x;
+        var entry = new Vector3(origin.x, height, entryZ);
+        var exit = new Vector3(origin.x, height, exitZ);
+        for (float margin = 1.25f; margin <= 3.25f; margin += .5f)
+        {
+            float x = edge + side * margin;
+            if ((x - origin.x) * side < 4.25f || Mathf.Abs(x - origin.x) > 10.5f) continue;
+            var sideEntry = new Vector3(x, height, entryZ);
+            var sideExit = new Vector3(x, height, exitZ);
+            if (!Clear(entry, sideEntry) || !Clear(sideEntry, sideExit) || !Clear(sideExit, exit)) continue;
+            route = new[] { entry, sideEntry, sideExit, exit };
+            actor = roadsideActors.Where(candidate =>
+                    (candidate.position.x - origin.x) * side > 0 &&
+                    Mathf.Abs(candidate.position.x - x) <= 1.6f &&
+                    candidate.position.z >= entryZ && candidate.position.z <= exitZ)
+                .OrderBy(candidate => candidate.position.z).FirstOrDefault();
+            return true;
+        }
+        return false;
+    }
+
+    private static bool TryWorldBounds(Transform root, out Bounds bounds)
+    {
+        bounds = default;
+        bool found = false;
+        foreach (var renderer in root.GetComponentsInChildren<Renderer>())
+        {
+            if (!renderer.enabled) continue;
+            if (found) bounds.Encapsulate(renderer.bounds);
+            else bounds = renderer.bounds;
+            found = true;
+        }
+        return found;
+    }
+
     internal Transform FindRoadsideNpc(TerrainPlaceRegistry registry, float routeX, float fromZ, float toZ,
         ISet<string> resolved, out string encounterId)
     {
@@ -191,17 +252,9 @@ public sealed class TerrainBuilder
         foreach (Transform child in chunk)
         {
             if (!child.name.StartsWith("Place_", System.StringComparison.Ordinal)) continue;
-            Bounds? placeBounds = null;
-            foreach (var renderer in child.GetComponentsInChildren<Renderer>())
-            {
-                if (!renderer.enabled) continue;
-                var bounds = placeBounds ?? renderer.bounds;
-                bounds.Encapsulate(renderer.bounds);
-                placeBounds = bounds;
-            }
-            if (!placeBounds.HasValue) continue;
-            places.Add(placeBounds.Value);
-            occupied.Add(placeBounds.Value);
+            if (!TryWorldBounds(child, out var placeBounds)) continue;
+            places.Add(placeBounds);
+            occupied.Add(placeBounds);
         }
         foreach (var slot in segment.Facilities.Where(slot => slot.Chunk == chunkIndex))
             occupied.Add(new Bounds(origin + new Vector3(slot.X, 1f, slot.Z), new Vector3(12f, 2f, 12f)));
