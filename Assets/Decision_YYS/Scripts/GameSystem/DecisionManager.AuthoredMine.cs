@@ -31,7 +31,9 @@ public partial class DecisionManager
                     card.authoredStoryPackMode = MineAuthoredStory.ModeId(previous.shortStoryPack);
         if (pack.IsShort)
         {
-            pack.ShortLayoutSeed = ResolveShortLayoutSeed(previous);
+            pack.ShortLayoutSeed = previous?.shortStoryPack == true && previous.shortLayoutSeed > 0
+                ? previous.shortLayoutSeed
+                : session.RunSeed;
             if (previous?.shortStoryPack == true)
                 previous.shortLayoutSeed = pack.ShortLayoutSeed.Value;
         }
@@ -60,22 +62,6 @@ public partial class DecisionManager
         mineProgress.taxPatrolActive = mineProgress.collectorReturning = false;
         mineProgress.taxInvoice = null;
         return true;
-    }
-
-    private int ResolveShortLayoutSeed(MineAuthoredProgress current)
-    {
-        if (current?.shortStoryPack == true)
-            return current.shortLayoutSeed > 0 ? current.shortLayoutSeed : session.RunSeed;
-
-        if (session.RunNumber > 1)
-        {
-            var lastRun = SaveIOService.Instance.LoadRunData<GameProgress>(session.RunNumber - 1, "Progress");
-            var lastPack = lastRun?.guideProgress?.authoredMine;
-            if (lastRun?.isCompleted == true && lastPack?.shortStoryPack == true)
-                return lastPack.shortLayoutSeed > 0 ? lastPack.shortLayoutSeed :
-                    lastRun.runSeed > 0 ? lastRun.runSeed : session.RunSeed;
-        }
-        return session.RunSeed;
     }
 
     private void ShowAuthoredCard(string text, string speaker, string[] options, JToken line = null)

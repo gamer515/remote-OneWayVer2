@@ -3,7 +3,7 @@ using System.Collections;
 using UnityEngine;
 
 /// <summary>Initial 튜토리얼용 보드 오브젝트 생성과 금화 앞뒤 판정을 담당합니다.</summary>
-public sealed class TutorialMiniGameController : MonoBehaviour
+public sealed partial class TutorialMiniGameController : MonoBehaviour
 {
     [SerializeField] private Transform miniGameBoard;
     [SerializeField] private Collider duelBoardFloor;
@@ -152,6 +152,7 @@ public sealed class TutorialMiniGameController : MonoBehaviour
 
     public void Cleanup(bool detachFromParent)
     {
+        ClearRoadsideCoin();
         if (knightEntranceRoutine != null) StopCoroutine(knightEntranceRoutine);
         knightEntranceRoutine = null;
         if (coinRoutine != null) StopCoroutine(coinRoutine);

@@ -245,8 +245,14 @@ public partial class DecisionManager
             }
             BeginRoadsideGame();
             bool won = MineChapterSettings.Roll(session.RunSeed, 0, roadsideEncounterId + ":coin") < .5;
-            tutorialMiniGames.StartCoinToss(heads, (result, _) => FinishRoadsideGame(false, result),
-                won ? heads : !heads);
+            bool resultHeads = won ? heads : !heads;
+            RecordRoadsideGame(false, won);
+            tutorialMiniGames.StartRoadsideCoinToss(resultHeads, won, uiController, interrupted =>
+            {
+                if (roadsideStep != RoadsideStep.Playing) return;
+                if (interrupted) ResumeAfterRoadsideEncounter();
+                else ShowRoadsideGameResult(won);
+            });
         }
         else if (selected == 0)
         {
@@ -282,12 +288,21 @@ public partial class DecisionManager
     private void FinishRoadsideGame(bool duel, bool won)
     {
         if (roadsideStep != RoadsideStep.Playing) return;
-        roadsideStep = RoadsideStep.Result;
-        if (!duel) tutorialMiniGames.Cleanup();
+        RecordRoadsideGame(duel, won);
+        ShowRoadsideGameResult(won);
+    }
+
+    private void RecordRoadsideGame(bool duel, bool won)
+    {
         var card = activeCards.MainStory[activeCardIndex];
         var result = NewStoryEvent(roadsideEncounterId + ":result", duel ? "duel_result" : "gamble_result", card);
         result.placeId = roadsideEncounterId;
         RecordMiniGameResult(result, won);
+    }
+
+    private void ShowRoadsideGameResult(bool won)
+    {
+        roadsideStep = RoadsideStep.Result;
         ShowAuthoredCard(won ? "이번엔 네가 이겼네." : "이번엔 내가 이겼어.", "길가의 사람", null);
     }
 
