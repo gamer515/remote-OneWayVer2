@@ -32,7 +32,13 @@ public partial class DecisionManager
             },
             (ability,reward)=>
             {
-                var stats=statContainer.stats;stats[ability]+=reward;statContainer.SetStats(stats);guideProgress.committedStats=stats;SyncAbilityWallet();
+                var before = statContainer.stats;
+                var stats = (int[])before.Clone();
+                stats[ability] += reward;
+                statContainer.SetStats(stats);
+                guideProgress.committedStats = stats;
+                SyncAbilityWallet();
+                uiController?.ShowCoinGains(before, stats);
             },SaveGuideCheckpointForLearning);
         backpackInventory?.BindStudyBooks(learningStation);
     }

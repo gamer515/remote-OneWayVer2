@@ -92,10 +92,12 @@ public partial class DecisionManager
 
     private void ApplyAuthoredDelta(int[] delta)
     {
-        int[] stats = MineChapterSettings.ApplyDelta(statContainer.stats, delta);
+        int[] before = statContainer.stats;
+        int[] stats = MineChapterSettings.ApplyDelta(before, delta);
         statContainer.SetStats(stats);
         guideProgress.committedStats = stats;
         SyncAbilityWallet();
+        uiController?.ShowCoinGains(before, stats);
     }
 
     private void AddAuthoredFlags(System.Collections.Generic.IEnumerable<string> flags)

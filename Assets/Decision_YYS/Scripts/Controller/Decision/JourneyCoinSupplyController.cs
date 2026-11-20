@@ -24,6 +24,7 @@ public sealed class JourneyCoinSupplyController
     private readonly Action<int[]> saveInventory;
     private readonly Transform coinContainer;
     private static readonly string[] CoinNames = { "Health", "Speed", "Intelligence", "Charm" };
+    private static readonly Color32 IntelligenceMilestone = new Color32(255, 204, 0, 255);
     private readonly List<PaymentCoin> paymentCoins = new List<PaymentCoin>();
     private int[] paymentCost;
     private Collider paymentGrid;
@@ -100,7 +101,11 @@ public sealed class JourneyCoinSupplyController
         if (inventory == null) return;
         int[] counts = AvailableCoinCounts();
         for (int index = 0; index < stacks.Length; index++)
-            if (stacks[index] != null) stacks[index].SetCount(counts[index]);
+        {
+            if (stacks[index] == null) continue;
+            stacks[index].SetCount(counts[index]);
+            stacks[index].SetMilestoneTint(index == 2 ? IntelligenceMilestone : AbilityCoinPresentation.Colors[index]);
+        }
     }
 
     public int AvailableCoins(int index) =>

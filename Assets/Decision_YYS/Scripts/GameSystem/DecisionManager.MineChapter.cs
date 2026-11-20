@@ -244,8 +244,7 @@ public partial class DecisionManager
             if (labor)
             {
                 var record = NewStoryEvent(key, "labor_result", activeCards.MainStory[activeCardIndex]);
-                statContainer.SetStats(MineChapterSettings.ApplyDelta(statContainer.stats, mine.activityDelta));
-                guideProgress.committedStats = statContainer.stats; SyncAbilityWallet();
+                ApplyAuthoredDelta(mine.activityDelta);
                 record.reason = next == action.winStoryPath ? "win" : "lose";
                 record.statsAfter = statContainer.stats; record.coinsAfter = coinDropController.RemainingCoins;
                 storyEvents.Add(record);

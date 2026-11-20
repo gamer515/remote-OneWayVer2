@@ -115,6 +115,7 @@ public partial class DecisionManager
         }
         if (!guideProgress.completedEffects.Contains(key))
         {
+            bool resumedEffect = guideProgress.activeEffectId == key;
             currentState = StoryState.Transitioning;
             SetYellowInputInteractable(false);
             if (guideProgress.activeEffectId != key)
@@ -162,6 +163,8 @@ public partial class DecisionManager
             storyEvents.Add(record);
             guideProgress.activeEffectId = null;
             SaveGuideCheckpoint();
+            if (!resumedEffect && action.kind == "return_knowledge")
+                uiController?.ShowCoinGains(record.coinsBefore, record.coinsAfter);
         }
         currentState = StoryState.ShowingStory;
         SetYellowInputInteractable(true);

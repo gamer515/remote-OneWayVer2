@@ -10,6 +10,7 @@ public class UiController : MonoBehaviour
     public DisplayMode CurrentDisplayMode { get; private set; } = DisplayMode.Event;
     public Vector2 StoryScreenCenter => viewUi != null ? viewUi.ScreenCenter : new Vector2(Screen.width * .25f, Screen.height * .65f);
     internal TMP_FontAsset DialogueFont => mainStoryUi?.DialogueFont;
+    internal void ShowCoinGains(int[] before, int[] after) => mainStoryUi?.ShowCoinGains(before, after);
 
     [SerializeField] private MainStoryUi mainStoryUi;
     [SerializeField] private ViewUi viewUi;

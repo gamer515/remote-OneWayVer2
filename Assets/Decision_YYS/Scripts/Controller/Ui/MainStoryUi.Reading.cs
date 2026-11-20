@@ -103,6 +103,7 @@ public partial class MainStoryUi
     {
         if (readingPanel != null) Destroy(readingPanel);
         if (comboGuideCanvas != null) Destroy(comboGuideCanvas);
+        if (coinGainCanvas != null) Destroy(coinGainCanvas);
     }
 
     private void UpdateComboGuide(MineLearningStation station, bool canOpen)
