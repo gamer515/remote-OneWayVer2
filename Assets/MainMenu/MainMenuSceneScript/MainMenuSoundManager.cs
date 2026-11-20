@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class MainMenuSoundManager : MonoBehaviour
 {
@@ -31,18 +32,37 @@ public class MainMenuSoundManager : MonoBehaviour
 
         // 3. 저장된 볼륨 불러오기
         LoadVolume();
+        SceneManager.sceneLoaded += OnSceneLoaded;
     }
 
     void Start()
     {
-        // 시작할 때 BGM 파일이 잘 들어있으면 재생
-        if (mainMenuBGM != null && bgmSource != null)
-        {
-            bgmSource.clip = mainMenuBGM;
-            bgmSource.loop = true; // 배경음악이므로 반복 재생
-            bgmSource.Play();
-        }
+        UpdateBgmForScene(SceneManager.GetActiveScene());
     }
+
+    private void OnSceneLoaded(Scene scene, LoadSceneMode mode) => UpdateBgmForScene(scene);
+
+    private void UpdateBgmForScene(Scene scene)
+    {
+        if (bgmSource == null) return;
+        if (scene.name == "DecisionScene")
+        {
+            bgmSource.Stop();
+            return;
+        }
+        if (scene.name != "MainMenuScene" || mainMenuBGM == null || bgmSource.isPlaying) return;
+        bgmSource.clip = mainMenuBGM;
+        bgmSource.loop = true;
+        bgmSource.Play();
+    }
+
+    private void OnDestroy()
+    {
+        if (Instance != this) return;
+        SceneManager.sceneLoaded -= OnSceneLoaded;
+        Instance = null;
+    }
+
 
     // 볼륨 조절 및 PlayerPrefs에 저장
     public void SetBGMVolume(float volume)

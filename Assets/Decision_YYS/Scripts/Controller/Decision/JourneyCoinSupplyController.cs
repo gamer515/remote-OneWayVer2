@@ -295,6 +295,7 @@ public sealed class JourneyCoinSupplyController
             {
                 coinGrabY = point.y;
                 BoardItemDrop.Hold(draggedPaymentCoin.body);
+                inventory?.TryPlayAbilityCoinSound(draggedPaymentCoin.model, draggedPaymentCoin.type);
             }
             if (draggedPaymentCoin == null)
             {
@@ -429,7 +430,10 @@ public sealed class JourneyCoinSupplyController
         var item = new PaymentCoin { model = coin, body = body, type = index };
         paymentCoins.Add(item);
         RefreshDisplay();
-        return DropOnBoard(item, WhiteBoard ?? board.trayFloor, trayPosition, Mathf.Max(.18f, outlet.y - trayPosition.y));
+        if (!DropOnBoard(item, WhiteBoard ?? board.trayFloor, trayPosition, Mathf.Max(.18f, outlet.y - trayPosition.y)))
+            return false;
+        inventory?.TryPlayAbilityCoinSound(coin, index);
+        return true;
     }
 
     private static System.Collections.IEnumerator DropCoin(PaymentCoin item)
@@ -532,6 +536,7 @@ public sealed class JourneyCoinSupplyController
         BettingCoin coin = coinObject.GetComponent<BettingCoin>() ?? coinObject.AddComponent<BettingCoin>();
         coin.Initialize(index);
         activeCoins.Add(coin);
+        inventory.TryPlayAbilityCoinSound(coinObject, index);
         RefreshDisplay();
         saveInventory?.Invoke(inventory.RemainingCoins);
         Debug.Log($"[Journey 코인] {CoinNames[index]} 공급, 남은 수량 {inventory.RemainingCoins[index]}");

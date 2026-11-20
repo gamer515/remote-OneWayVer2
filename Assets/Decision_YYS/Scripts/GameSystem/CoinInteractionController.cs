@@ -161,6 +161,7 @@ public sealed class CoinInteractionController : MonoBehaviour
         grabbedColliders = grabbedCoin.GetComponentsInChildren<Collider>();
         foreach (Collider collider in grabbedColliders)
             collider.enabled = false;
+        coinDropController?.TryPlayAbilityCoinSound(grabbedCoin.gameObject, grabbedCoin.CoinTypeIndex);
     }
 
     private void UpdateTargetPosition()
