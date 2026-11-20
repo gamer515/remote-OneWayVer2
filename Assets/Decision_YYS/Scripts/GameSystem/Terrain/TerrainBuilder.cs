@@ -46,6 +46,39 @@ public sealed class TerrainBuilder
         return chunk.transform.Find("Place_" + (place.sharedStoryVisualId ?? place.placeId));
     }
 
+    private const string RoadsideEncounterPrefix = "RoadsideNpc_Gap_";
+    private const float RoadsideEncounterReach = 6.5f;
+
+    internal Transform FindRoadsideNpc(TerrainPlaceRegistry registry, float routeX, float fromZ, float toZ,
+        ISet<string> resolved, out string encounterId)
+    {
+        encounterId = null;
+        Transform nearest = null;
+        var segment = segments.Find(candidate => candidate.Registry == registry);
+        if (segment == null) return null;
+        foreach (var entry in chunkInstances)
+        {
+            if (entry.Key < segment.FirstGlobalChunkIndex ||
+                entry.Key >= segment.FirstGlobalChunkIndex + segment.ChunkCount ||
+                !entry.Value || !entry.Value.activeInHierarchy) continue;
+            string id = "roadside:" + entry.Key;
+            if (resolved.Contains(id)) continue;
+            foreach (Transform child in entry.Value.transform)
+            {
+                if (!child.gameObject.activeInHierarchy ||
+                    !child.name.StartsWith(RoadsideEncounterPrefix, System.StringComparison.Ordinal) ||
+                    Mathf.Abs(child.position.x - routeX) > RoadsideEncounterReach) continue;
+                float z = child.position.z;
+                if (z >= fromZ && z <= toZ && (nearest == null || z < nearest.position.z))
+                {
+                    nearest = child;
+                    encounterId = id;
+                }
+            }
+        }
+        return nearest;
+    }
+
     internal float? LoadedChunkEndZ(TerrainPlaceRegistry registry)
     {
         var segment = segments.Find(candidate => candidate.Registry == registry);
@@ -176,6 +209,18 @@ public sealed class TerrainBuilder
         // The central strip includes both walking and the widest collector formation.
         const float corridorHalfWidth = 4.25f, preferredDecorationHalfWidth = 7.25f;
         const float placementHalfWidth = 10.5f, clearance = .75f;
+        float chunkStart = origin.z + 6f;
+        float chunkEnd = origin.z + segment.Data.chunkLength - 6f;
+        var gaps = new List<(float start, float end)>();
+        float previousEnd = float.NegativeInfinity;
+        foreach (var place in places.OrderBy(bounds => bounds.min.z))
+        {
+            float start = Mathf.Max(previousEnd, chunkStart);
+            float end = Mathf.Min(place.min.z, chunkEnd);
+            if (!float.IsNegativeInfinity(previousEnd) && end - start >= 3f)
+                gaps.Add((start, end));
+            previousEnd = Mathf.Max(previousEnd, place.max.z);
+        }
         Vector3[] Candidates(float startZ, float endZ)
         {
             var points = new List<Vector3>();
@@ -224,7 +269,10 @@ public sealed class TerrainBuilder
                     if (bounds.min.z < startZ || bounds.max.z > endZ || !Fits(bounds, outerLimit)) continue;
                     var offset = new Vector3(localBounds.center.x, localBounds.min.y, localBounds.center.z);
                     var instance = Object.Instantiate(prefab, point - rotation * offset, rotation, chunk);
-                    instance.name = (npc ? "RoadsideNpc_" : "Roadside_") + key + "_" + prefab.name;
+                    bool betweenPlaces = npc && gaps.Any(gap =>
+                        bounds.min.z >= gap.start && bounds.max.z <= gap.end);
+                    string prefix = betweenPlaces ? RoadsideEncounterPrefix : npc ? "RoadsideNpc_" : "Roadside_";
+                    instance.name = prefix + key + "_" + prefab.name;
                     occupied.Add(bounds);
                     used.Add(prefab);
                     return true;
@@ -235,8 +283,6 @@ public sealed class TerrainBuilder
 
         var usedNpcs = new HashSet<GameObject>();
         int npcCount = 1 + Mathf.Min(1, (int)(Roll("roadside-npc:count") * 2));
-        float chunkStart = origin.z + 6f;
-        float chunkEnd = origin.z + segment.Data.chunkLength - 6f;
         var npcPoints = Candidates(chunkStart, chunkEnd);
         var sides = new[] { -1, 1 }.OrderBy(side => Roll("roadside-npc:side:" + side)).ToArray();
         foreach (int side in sides)
@@ -248,15 +294,9 @@ public sealed class TerrainBuilder
         }
 
         var usedDecorations = new HashSet<GameObject>();
-        float previousEnd = float.NegativeInfinity;
         int gap = 0;
-        foreach (var place in places.OrderBy(bounds => bounds.min.z))
+        foreach (var (startZ, endZ) in gaps)
         {
-            bool hasPreviousPlace = !float.IsNegativeInfinity(previousEnd);
-            float startZ = Mathf.Max(previousEnd, chunkStart);
-            float endZ = Mathf.Min(place.min.z, chunkEnd);
-            previousEnd = Mathf.Max(previousEnd, place.max.z);
-            if (!hasPreviousPlace || endZ - startZ < 3f) continue;
             var points = Candidates(startZ, endZ);
             string key = "decoration:" + gap++;
             int count = 1 + Mathf.Min(2, (int)(Roll(key + ":count") * 3));

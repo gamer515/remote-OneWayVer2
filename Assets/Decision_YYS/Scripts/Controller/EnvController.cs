@@ -55,6 +55,9 @@ public class EnvController : MonoBehaviour
     public float CurrentTerrainEndZ { get; private set; }
     internal float? LoadedChunkEndZ => terrainBuilder.LoadedChunkEndZ(PlaceRegistry);
     internal Transform FindStoryPlace(PlaceData place) => terrainBuilder.FindStoryPlace(PlaceRegistry, place);
+    internal Transform FindRoadsideNpc(float routeX, float fromZ, float toZ,
+        System.Collections.Generic.ISet<string> resolved, out string encounterId) =>
+        terrainBuilder.FindRoadsideNpc(PlaceRegistry, routeX, fromZ, toZ, resolved, out encounterId);
     public Vector3 TerrainOrigin => environment != null ? environment.transform.position : Vector3.zero;
 
     private TerrainRepository terrainRepository = new TerrainRepository();

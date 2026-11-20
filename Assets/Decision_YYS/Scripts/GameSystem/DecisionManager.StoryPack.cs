@@ -14,7 +14,8 @@ public partial class DecisionManager
     private const string LowIntelligenceVariant = "지능_낮음";
     private const float PackRequirementSeconds = 3f;
     private const string PackRoot = "root", PackCoins = "coins", PackNegotiate = "negotiate",
-        PackToss = "toss", PackTask = "task", PackDuel = "duel", PackLeave = "leave";
+        PackToss = "toss", PackTask = "task", PackDuel = "duel", PackLeave = "leave", PackStudy = "study";
+    private const string PackStudyChoice = "STUDY_MORE";
     private MineAuthoredStory StoryPack => envController.AuthoredMine;
     private bool IsPackMain => Authored.eventId.StartsWith("MAIN-", StringComparison.Ordinal);
     private Dictionary<string, LocalStoryDialogueJob> previousPackDialogue;
@@ -166,6 +167,39 @@ public partial class DecisionManager
     }
 
     private JToken PackChoice(JObject story, string id) => story["choices"].First(choice => (string)choice["id"] == id);
+    private static (string id, string text)[] PackRootOptions(JObject story)
+    {
+        var configured = story["choices"].ToDictionary(choice => (string)choice["id"]);
+        return new[] { "C3", "C1", "C4" }
+            .Where(id => configured.TryGetValue(id, out var choice) && (id switch
+            {
+                "C3" => choice["requirement"] is JObject,
+                "C1" => (int?)choice["price"]?["base_fee"] > 0,
+                _ => choice["shortcut"] is JObject
+            }))
+            .Select(id => (id, (string)configured[id]["text"]))
+            .Append((PackStudyChoice, "지금은 좀 부족한 것 같아. 책을 더 읽고 오자."))
+            .ToArray();
+    }
+
+    private bool IsPackStudyPaused => activeEncounterPath?.StartsWith(MineAuthoredStory.Prefix,
+        StringComparison.Ordinal) == true && Authored?.storyPackFrame == PackStudy;
+
+    private void PresentPackStudyPause()
+    {
+        currentState = StoryState.Exploring;
+        selectedGearIndex = -1;
+        journeyBoardInput?.SetChoiceCount(0);
+        ResetGearSelection();
+        presentationController.ExitChoice();
+        presentationController.ShowWalkingView();
+        playerController.ResetNpcFraming();
+        uiController.SetDialogueClue(null, null);
+        uiController.SetStoryNotice("책을 더 읽을 수 있어요. 노란 버튼을 누르면 대화를 이어갑니다.");
+        SetYellowInputInteractable(true);
+        SaveGuideCheckpoint();
+        SaveEncounterState("card");
+    }
     private JToken PackPayment(JObject story) => PackChoice(story, "C1");
     private int PackFee => Authored.storyPackFee > 0 ? Authored.storyPackFee : (int)PackPayment(PackStory())["price"]["base_fee"];
 
@@ -240,12 +274,15 @@ public partial class DecisionManager
             case PackTask:
                 StartCoroutine(RunStoryPackTask());
                 break;
+            case PackStudy:
+                PresentPackStudyPause();
+                break;
             case PackLeave:
                 Authored.storyPackFrame = Authored.storyPackLines = null;
                 FinishAuthoredEncounter();
                 break;
             default:
-                ShowAuthoredCard(speech, speaker, story["choices"].Select(choice => (string)choice["text"]).ToArray());
+                ShowAuthoredCard(speech, speaker, PackRootOptions(story).Select(choice => choice.text).ToArray());
                 break;
         }
     }
@@ -297,9 +334,19 @@ public partial class DecisionManager
                 }
                 return;
         }
-        var choice = story["choices"][selected];
-        var dialogue = voiced["choices"][selected];
-        presentationController.ConfirmChoice((string)choice["text"]);
+        var rootChoices = PackRootOptions(story);
+        if (selected >= rootChoices.Length) return;
+        var option = rootChoices[selected];
+        presentationController.ConfirmChoice(option.text);
+        if (option.id == PackStudyChoice)
+        {
+            // Keep the finished dialogue lines so the same speaker and card return after study.
+            Authored.storyPackFrame = PackStudy;
+            PresentPackStudyPause();
+            return;
+        }
+        var choice = PackChoice(story, option.id);
+        var dialogue = PackChoice(voiced, option.id);
         switch ((string)choice["id"])
         {
             case "C1": ShowPackLines(dialogue["dialogue"], PackCoins); break;
@@ -421,19 +468,21 @@ public partial class DecisionManager
     private string PackChoiceHint(int index)
     {
         if (Authored?.eventId == null || (!HasHighStoryAbility(2) && !HasHighStoryAbility(3))) return null;
+        string choiceId = Authored.storyPackFrame == PackRoot
+            ? PackRootOptions(PackStory()).ElementAtOrDefault(index).id : null;
         float? probability = Authored.storyPackFrame switch
         {
             PackCoins when index < 4 => statContainer.stats[index] >= PackFee ? 1f : 0f,
             PackNegotiate => PackCondition(PackNegotiationRoutes()[index]["condition"]) ? 1f : 0f,
             PackToss => .5f,
-            PackRoot when index == 0 => statContainer.stats.Any(stat => stat >= PackFee) ? 1f : 0f,
-            PackRoot when index == 1 && (string)PackChoice(PackStory(), "C2")["mini_game"]["type"] == "gambling" => .5f,
-            PackRoot when index == 2 => PackRequirementProbability(PackChoice(PackStory(), "C3")["requirement"]),
-            PackRoot when index == 3 => 0f,
+            PackRoot when choiceId == "C1" => statContainer.stats.Any(stat => stat >= PackFee) ? 1f : 0f,
+            PackRoot when choiceId == "C2" && (string)PackChoice(PackStory(), "C2")["mini_game"]["type"] == "gambling" => .5f,
+            PackRoot when choiceId == "C3" => PackRequirementProbability(PackChoice(PackStory(), "C3")["requirement"]),
+            PackRoot when choiceId == "C4" => 0f,
             _ => null
         };
         if (!probability.HasValue)
-            return Authored.storyPackFrame == PackRoot && index == 1 ?
+            return choiceId == "C2" ?
                 "결투 결과는 전투로 결정됩니다." : null;
         string number = HasHighStoryAbility(2) ? $"성공 확률 {Mathf.RoundToInt(probability.Value * 100)}%" : null;
         string words = HasHighStoryAbility(3) ? probability.Value switch

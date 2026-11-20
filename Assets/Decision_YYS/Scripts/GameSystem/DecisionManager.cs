@@ -171,6 +171,7 @@ public partial class DecisionManager : MonoBehaviour
         }
 
         // 이동 명령과 화면 표현은 분리하고, 실제 도착한 프레임에서 이야기 화면을 엽니다.
+        if (TryOpenRoadsideEncounter()) return;
         if (encounterFlow != null && currentState == StoryState.MovingToEncounter && mine?.resting != true &&
             playerController != null && playerController.HasReachedTarget())
         {
