@@ -476,6 +476,8 @@ public sealed class TerrainPrefabCatalog
     [SerializeField] private TerrainPrefabEntry[] characterEntries;
     [SerializeField] private GameObject[] mineRoadsideDecorations;
     internal IReadOnlyList<GameObject> MineRoadsideDecorations => mineRoadsideDecorations;
+    [SerializeField] private GameObject[] mineRoadsideNpcs;
+    internal IReadOnlyList<GameObject> MineRoadsideNpcs => mineRoadsideNpcs;
 
     private Dictionary<string, GameObject> prefabsById;
 
