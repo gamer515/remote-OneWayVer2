@@ -78,8 +78,7 @@ public class GameManager : MonoBehaviour
             saveManager,
             savedPlayerPosition,
             savedPlayerRotation,
-            saveManager.LoadRemainingCoins(),
-            saveManager.LoadInventoryState());
+            saveManager.LoadRemainingCoins());
     }
 
     private (int, int, int, PlayerStats) LoadData()

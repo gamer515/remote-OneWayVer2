@@ -63,10 +63,11 @@ public partial class DecisionManager : MonoBehaviour
     [Tooltip("코인통 왼쪽부터 Blue, Red, Yellow, Teal 순서의 Journey 코인 프리팹입니다.")]
     [SerializeField] private GameObject[] journeyCoinPrefabs;
     [SerializeField] private Collider journeyCoinRamp;
-    [SerializeField] private BackpackInventoryController backpackInventory;
+    [SerializeField] private BoxCollider journeyStudyGrid;
     [SerializeField] private TutorialMiniGameController tutorialMiniGames;
     [SerializeField] private DuelMiniGameBridge duelMiniGame;
     private JourneyCoinSupplyController journeyCoinSupply;
+    private BoxCollider StudyGrid => journeyStudyGrid;
     [Header("Player Movement")]
     [Tooltip("NPC와 대화할 때 플레이어가 실제로 걸어가서 멈추는 거리입니다.")]
     [SerializeField, Range(0.5f, 10f)] private float encounterStopDistance = 2f;
@@ -85,8 +86,6 @@ public partial class DecisionManager : MonoBehaviour
             journeyBoardInput = FindFirstObjectByType<JourneyBoardInput>();
         if (coinDropController == null)
             coinDropController = FindFirstObjectByType<CoinDropController>();
-        if (backpackInventory == null)
-            backpackInventory = FindFirstObjectByType<BackpackInventoryController>();
         if (tutorialMiniGames == null)
             tutorialMiniGames = FindFirstObjectByType<TutorialMiniGameController>();
         if (duelMiniGame == null)
@@ -95,6 +94,7 @@ public partial class DecisionManager : MonoBehaviour
 
     private void OnEnable()
     {
+        if (uiController != null) uiController.OnPlayerViewChanged += OnNpcPaymentViewChanged;
         if (statContainer != null)
         {
             statContainer.OnTargetStatReached += HandleTargetStatReached;
@@ -112,6 +112,10 @@ public partial class DecisionManager : MonoBehaviour
 
     private void OnDisable()
     {
+        npcBoardPaymentCost = null;
+        resumeNpcPaymentAfterTax = null;
+        if (uiController != null) uiController.OnPlayerViewChanged -= OnNpcPaymentViewChanged;
+        StopNpcPaymentPresentation();
         journeyCoinSupply?.ClearBoardPayment();
         StopChapterSky();
         RestoreGuideKneel();
@@ -279,18 +283,16 @@ public partial class DecisionManager : MonoBehaviour
         }
 
         coinDropController.InitializeInventory(startData.RemainingCoins);
-        backpackInventory?.Initialize(
-            startData.Inventory,
-            saveService.SaveInventoryState);
+        var dispenser = FindFirstObjectByType<LearningDispenserView>();
+        dispenser?.BindStudyGrid(StudyGrid);
         if (journeyBoardInput != null)
         {
             journeyCoinSupply = new JourneyCoinSupplyController(
                 journeyBoardInput, journeyCoinPrefabs, coinDropController,
                 saveService.SaveRemainingCoins);
-            journeyCoinSupply.SetBoardGrid(backpackInventory?.StudyGrid);
+            journeyCoinSupply.SetBoardGrid(StudyGrid);
             journeyCoinSupply.CoinRamp = journeyCoinRamp;
             journeyCoinSupply.DropRunner = this;
-            var dispenser = FindFirstObjectByType<LearningDispenserView>();
             if (dispenser != null)
             {
                 journeyCoinSupply.WhiteBoard = dispenser.WhiteBoard;

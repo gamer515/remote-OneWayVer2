@@ -57,7 +57,8 @@ public partial class DecisionManager
         actor = null;
         var place = envController.TerrainData.places.FirstOrDefault(entry => entry.placeId == activePlaceId);
         return place != null && (side == -1 || side == 1) &&
-            envController.TryGetShortcutRoute(place, side, playerController.CurrentPosition.y, out route, out actor);
+            envController.TryGetShortcutRoute(place, side, playerController.CurrentPosition.y, encounterStopDistance,
+                out route, out actor);
     }
 
     private bool TryPresentPackShortcut(JObject story)
@@ -86,6 +87,9 @@ public partial class DecisionManager
             case PackShortcutToss:
                 if (!TryGetPackShortcut(Authored.storyPackShortcutSide, out _, out packShortcutActor) || !packShortcutActor)
                     ShowPackLines(null, PackShortcutExit);
+                else if (Vector3.ProjectOnPlane(playerController.CurrentPosition - packShortcutActor.position, Vector3.up)
+                    .sqrMagnitude < Mathf.Pow(encounterStopDistance - .05f, 2f))
+                    BeginPackShortcutWalk();
                 else if (Authored.storyPackFrame == PackShortcutGame)
                     ShowAuthoredCard("이쪽으로 지나가려고? 나랑 한 판 어때?", ShortcutNpcName,
                         new[] { "동전 던지기 한 판 할래요?", "저랑 한 판 겨뤄 볼래요?" });
@@ -189,12 +193,13 @@ public partial class DecisionManager
             ApplyAuthoredDelta(cost.Select(value => -value).ToArray());
             ReceiveMinePayment(new StoryChoiceAction { abilityCost = cost, receiverId = pendingEncounter?.DisplayName });
             ShowPackLines(null, PackShortcutTravel);
-        }, () => ReturnFromShortcutOffer()))
+        }, () => ReturnFromShortcutOffer(), useNpcBowl: true))
             ReturnFromShortcutOffer("코인통을 사용할 수 없습니다.");
     }
 
     private void BeginPackShortcutWalk()
     {
+        if (npcPaymentConfirmed && npcPaymentRoot != null) return;
         if (!TryGetPackShortcut(Authored.storyPackShortcutSide, out var route, out var actor))
         {
             // A paid route may be restored before a changed map is repaired.
@@ -203,10 +208,14 @@ public partial class DecisionManager
         }
         bool exiting = Authored.storyPackFrame == PackShortcutExit;
         var position = playerController.CurrentPosition;
+        bool onSide = Mathf.Abs(position.x - route[1].x) < .6f &&
+            position.z >= route[1].z - .05f && position.z <= route[2].z;
         if (!exiting && actor != null)
-            route = new[] { route[0], route[1], new Vector3(route[1].x, position.y, actor.position.z) };
-        else if (exiting && Mathf.Abs(position.x - route[1].x) < .6f &&
-            position.z >= route[1].z && position.z <= route[2].z)
+        {
+            var stop = new Vector3(route[1].x, position.y, actor.position.z - encounterStopDistance);
+            route = onSide ? new[] { stop } : new[] { route[0], route[1], stop };
+        }
+        else if (exiting && onSide)
             route = route.Skip(2).ToArray();
         packShortcutActor = exiting ? null : actor;
         packShortcutWalking = true;
@@ -226,8 +235,11 @@ public partial class DecisionManager
     {
         if (!packShortcutWalking) return false;
         packShortcutWalking = false;
-        if (packShortcutActor != null && Authored.storyPackFrame == PackShortcutTravel)
-            ShowPackLines(null, PackShortcutGame);
+        if (packShortcutActor != null)
+        {
+            if (Authored.storyPackFrame == PackShortcutTravel) ShowPackLines(null, PackShortcutGame);
+            else PresentStoryPack();
+        }
         else
         {
             Authored.storyPackShortcutSide = 0;

@@ -315,7 +315,7 @@ public partial class DecisionManager
                 var cost = new int[AuthoredStats.Length];
                 cost[selected] = PackFee;
                 if (!TryBeginBoardPayment(cost, () => FinishPackOutcome(coin, coinVoice, selected),
-                    PresentStoryPack))
+                    PresentStoryPack, useNpcBowl: true))
                     ShowPackLines(new JArray(new JObject { ["text"] = "코인통을 사용할 수 없습니다." }), PackRoot);
                 return;
             case PackNegotiate:

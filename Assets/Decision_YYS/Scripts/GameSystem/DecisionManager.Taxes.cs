@@ -8,36 +8,76 @@ public partial class DecisionManager
     private static readonly string[] TaxAbilities = { "힘", "속도", "지능", "매력" };
     private ChapterTaxSettings taxRules;
     private Action commitBoardPayment, cancelBoardPayment;
+    private int[] npcBoardPaymentCost;
+    private Action resumeNpcPaymentAfterTax;
 
-    private bool TryBeginBoardPayment(int[] cost, Action commit, Action cancel)
+    private bool TryBeginBoardPayment(int[] cost, Action commit, Action cancel, bool useNpcBowl = false)
     {
-        if (journeyCoinSupply?.BeginBoardPayment(cost, backpackInventory?.StudyGrid) != true) return false;
+        if (journeyCoinSupply == null || journeyCoinSupply.HasBoardPayment || (useNpcBowl && !CanShowNpcPaymentBowl))
+            return false;
+        if (!journeyCoinSupply.BeginBoardPayment(cost, StudyGrid, useNpcBowl ? NpcPaymentBowlOpening : null,
+            useNpcBowl ? QueueNpcPaymentCoin : null))
+            return false;
+        StopNpcPaymentPresentation();
+        npcBoardPaymentCost = useNpcBowl ? (int[])cost.Clone() : null;
+        if (useNpcBowl) BeginNpcPaymentPresentation();
         commitBoardPayment = commit;
         cancelBoardPayment = cancel;
         SetYellowInputInteractable(false);
         journeyBoardInput?.SetChoiceCount(0);
         presentationController.ExitChoice();
-        presentationController.ShowInteraction($"필요 코인 {DescribeTaxCost(cost)}\n코인통에서 꺼내 초록 보드에 올리세요.\nEsc 취소", "납부");
+        string placement = useNpcBowl ? "코인을 꺼내 나무 통 안에 넣으세요." : "코인통에서 꺼내 초록 보드에 올리세요.";
+        presentationController.ShowInteraction($"필요 코인 {DescribeTaxCost(cost)}\n{placement}\nEsc 취소", "납부");
         return true;
+    }
+
+    private void SuspendNpcPaymentForCollector()
+    {
+        var cost = npcBoardPaymentCost;
+        var commit = commitBoardPayment;
+        var cancel = cancelBoardPayment;
+        resumeNpcPaymentAfterTax = () =>
+        {
+            if (AbilityPayment.CanPay(statContainer.stats, cost) &&
+                TryBeginBoardPayment(cost, commit, cancel, useNpcBowl: true)) return;
+            cancel?.Invoke();
+            uiController.SetStoryNotice("징수 후 납부에 필요한 코인을 다시 확인해 주세요.");
+        };
+        commitBoardPayment = cancelBoardPayment = null;
+        npcBoardPaymentCost = null;
+        StopNpcPaymentPresentation();
+        journeyCoinSupply.ClearBoardPayment();
     }
 
     private void FinishBoardPayment() => StartCoroutine(CompleteBoardPayment());
 
     private System.Collections.IEnumerator CompleteBoardPayment()
     {
-        yield return journeyCoinSupply.AbsorbBoardPayment(uiController.StoryScreenCenter);
-        uiController.FlashCoinPayment();
         var commit = commitBoardPayment;
+        if (commit == null) yield break;
         commitBoardPayment = cancelBoardPayment = null;
+        npcBoardPaymentCost = null;
+        if (npcPaymentRoot != null)
+        {
+            journeyCoinSupply.ClearBoardPayment(keepBowlCoins: true);
+            npcPaymentConfirmed = true;
+        }
+        else
+        {
+            yield return journeyCoinSupply.AbsorbBoardPayment(uiController.StoryScreenCenter);
+            uiController.FlashCoinPayment();
+        }
         SetYellowInputInteractable(true);
-        commit?.Invoke();
+        commit.Invoke();
     }
 
     private void CancelBoardPayment()
     {
+        StopNpcPaymentPresentation();
         journeyCoinSupply.ClearBoardPayment();
         var cancel = cancelBoardPayment;
         commitBoardPayment = cancelBoardPayment = null;
+        npcBoardPaymentCost = null;
         SetYellowInputInteractable(true);
         cancel?.Invoke();
     }

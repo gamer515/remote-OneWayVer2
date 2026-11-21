@@ -40,7 +40,6 @@ public partial class DecisionManager
                 SyncAbilityWallet();
                 uiController?.ShowCoinGains(before, stats);
             },SaveGuideCheckpointForLearning);
-        backpackInventory?.BindStudyBooks(learningStation);
     }
     private void SaveGuideCheckpointForLearning() => SaveGuideCheckpoint();
     private void OnApplicationQuit()

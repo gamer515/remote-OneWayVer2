@@ -50,7 +50,7 @@ public sealed class TerrainBuilder
     private const float RoadsideEncounterReach = 6.5f;
 
     internal bool TryGetShortcutRoute(TerrainPlaceRegistry registry, PlaceData place, int side,
-        float height, out Vector3[] route, out Transform actor)
+        float height, float encounterStopDistance, out Vector3[] route, out Transform actor)
     {
         route = null;
         actor = null;
@@ -76,21 +76,24 @@ public sealed class TerrainBuilder
             Mathf.Min(a.x, b.x) < blocker.max.x + clearance && Mathf.Max(a.x, b.x) > blocker.min.x - clearance &&
             Mathf.Min(a.z, b.z) < blocker.max.z + clearance && Mathf.Max(a.z, b.z) > blocker.min.z - clearance);
         float edge = side < 0 ? bounds.min.x : bounds.max.x;
-        var entry = new Vector3(origin.x, height, entryZ);
         var exit = new Vector3(origin.x, height, exitZ);
         for (float margin = 1.25f; margin <= 3.25f; margin += .5f)
         {
             float x = edge + side * margin;
             if ((x - origin.x) * side < 4.25f || Mathf.Abs(x - origin.x) > 10.5f) continue;
-            var sideEntry = new Vector3(x, height, entryZ);
-            var sideExit = new Vector3(x, height, exitZ);
-            if (!Clear(entry, sideEntry) || !Clear(sideEntry, sideExit) || !Clear(sideExit, exit)) continue;
-            route = new[] { entry, sideEntry, sideExit, exit };
-            actor = roadsideActors.Where(candidate =>
+            var candidateActor = roadsideActors.Where(candidate =>
                     (candidate.position.x - origin.x) * side > 0 &&
                     Mathf.Abs(candidate.position.x - x) <= 1.6f &&
                     candidate.position.z >= entryZ && candidate.position.z <= exitZ)
                 .OrderBy(candidate => candidate.position.z).FirstOrDefault();
+            float approachZ = candidateActor == null ? entryZ :
+                Mathf.Min(entryZ, candidateActor.position.z - encounterStopDistance);
+            var entry = new Vector3(origin.x, height, approachZ);
+            var sideEntry = new Vector3(x, height, approachZ);
+            var sideExit = new Vector3(x, height, exitZ);
+            if (!Clear(entry, sideEntry) || !Clear(sideEntry, sideExit) || !Clear(sideExit, exit)) continue;
+            route = new[] { entry, sideEntry, sideExit, exit };
+            actor = candidateActor;
             return true;
         }
         return false;

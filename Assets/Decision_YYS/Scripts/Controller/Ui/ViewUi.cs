@@ -8,15 +8,14 @@ public class ViewUi : ParentUi
     private Color flashColor;
     private float hitFlashRemaining;
     private const float HitFlashSeconds = 0.2f;
-    public Vector2 ScreenCenter
+    public Vector2 ScreenCenter => ScreenPoint(new Vector2(.5f, .5f));
+
+    internal Vector2 ScreenPoint(Vector2 normalized)
     {
-        get
-        {
-            if (view == null) return new Vector2(Screen.width * .25f, Screen.height * .65f);
-            var canvas = view.GetComponentInParent<Canvas>();
-            Camera camera = canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay ? canvas.worldCamera : null;
-            return RectTransformUtility.WorldToScreenPoint(camera, view.TransformPoint(view.rect.center));
-        }
+        if (view == null) return new Vector2(Screen.width * .25f, Screen.height * (.42f + normalized.y * .46f));
+        var canvas = view.GetComponentInParent<Canvas>();
+        Camera camera = canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay ? canvas.worldCamera : null;
+        return RectTransformUtility.WorldToScreenPoint(camera, view.TransformPoint(Rect.NormalizedToPoint(view.rect, normalized)));
     }
 
     public void FlashPlayerHit() => Flash(new Color(1f, .04f, .02f, .28f));

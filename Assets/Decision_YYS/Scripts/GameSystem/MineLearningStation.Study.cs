@@ -251,33 +251,6 @@ public sealed partial class MineLearningStation
         return true;
     }
 
-    public event Action StoredBooksChanged;
-
-    public bool StoreBook(MineLearningJob job)
-    {
-        if (!CanMoveBooks || job == null || job.comboStudy || !job.onBoard || !progress.active.Remove(job)) return false;
-        job.onBoard = job.held = false;
-        progress.stored.Add(job);
-        notice = $"{GetBookDisplayName(job)} / 가방에 보관";
-        Rebuild();
-        save?.Invoke();
-        StoredBooksChanged?.Invoke();
-        return true;
-    }
-
-    public bool RestoreBook(MineLearningJob job, float u, float v, int boardIndex = 0)
-    {
-        if (!CanMoveBooks || job == null || progress.active.Count >= Capacity.simultaneous)
-            return Explain("보드에 놓을 수 있는 책 자리가 없습니다.");
-        if (!progress.stored.Remove(job)) return false;
-        progress.active.Add(job);
-        job.transit = 0;
-        RememberPlacement(job, u, v, boardIndex);
-        Rebuild();
-        StoredBooksChanged?.Invoke();
-        return true;
-    }
-
     private bool TickStudy(float seconds, bool stop, float? calendarDays)
     {
         progress.clockDays = calendarDays ?? (progress.clockDays + seconds / studyDaySeconds);

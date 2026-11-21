@@ -271,17 +271,23 @@ public partial class DecisionManager
             var position = playerController.CurrentPosition;
             if (procession.RecordPlayerEscape(position.z)) SaveGuideCheckpoint();
             bool canOpenDialogue = CanOpenCollectorDialogue();
-            var nearby = canOpenDialogue && procession.CanMeet(position)
+            bool canSuspendNpcPayment = npcBoardPaymentCost != null && journeyCoinSupply?.HasBoardPayment == true;
+            var nearby = (canOpenDialogue || npcPaymentRoot != null) && procession.CanMeet(position)
                 ? procession.MemberInRange(position, mineRules.encounterDistance) : null;
             if (nearby == null)
             {
                 procession.Tick(Time.deltaTime, skipNpcStops: mineLaborInProgress);
-                if (canOpenDialogue && procession.CanMeet(position))
+                if ((canOpenDialogue || canSuspendNpcPayment) && procession.CanMeet(position))
                     nearby = procession.MemberInRange(position, mineRules.encounterDistance);
+            }
+            if (nearby != null && (canOpenDialogue || canSuspendNpcPayment))
+            {
+                if (canSuspendNpcPayment) SuspendNpcPaymentForCollector();
+                ResolveCollectorContact(nearby);
+                return;
             }
             if (canOpenDialogue)
             {
-                if (nearby != null) { ResolveCollectorContact(nearby); return; }
                 var witnessCollector = procession.NearestMember(position);
                 if (witnessCollector != null) TryBeginMineWitness(witnessCollector);
             }
@@ -327,7 +333,8 @@ public partial class DecisionManager
         SaveGuideCheckpoint();
     }
 
-    private bool CanOpenCollectorDialogue() => journeyCoinSupply?.HasBoardPayment != true && !guideProgress.allocating &&
+    private bool CanOpenCollectorDialogue() => journeyCoinSupply?.HasBoardPayment != true && npcPaymentRoot == null &&
+        !guideProgress.allocating &&
         (uiController == null || !uiController.IsReadingOpen) &&
         currentState != StoryState.Duel && (currentState != StoryState.Transitioning || mineLaborInProgress);
 
@@ -463,6 +470,9 @@ public partial class DecisionManager
             playerController.ResetNpcFraming();
             if (lastMinePlace != null) ShowMineRevisit(lastMinePlace, beforeTaxSelection);
         }
+        var resumePayment = resumeNpcPaymentAfterTax;
+        resumeNpcPaymentAfterTax = null;
+        if (statContainer.stats[0] > 0) resumePayment?.Invoke();
         Debug.Log($"[징수] 누적 {mine.collected}, 향후 보스 공격 배율 {mineRules.BossAttackMultiplier(mine.collected):F2}. 보스전 적용은 후속 범위.");
     }
 

@@ -430,13 +430,21 @@ public partial class DecisionManager
             else BeginInsufficientPaymentDuel(card);
             return true;
         }
-        if (!confirmed && !boardPaid && TryBeginBoardPayment(choice.abilityCost,
-            () => AdvanceEncounterCard(true), () =>
+        if (!confirmed && !boardPaid && choice.abilityCost?.Any(amount => amount > 0) == true)
+        {
+            bool locationPayment = pendingEncounter.HasValue && pendingEncounter.Value.PlaceId == activePlaceId;
+            if (TryBeginBoardPayment(choice.abilityCost, () => AdvanceEncounterCard(true), () =>
+                {
+                    presentationController.ShowDialogue(card);
+                    journeyBoardInput?.SetChoiceCount(card.options.Length);
+                    RenderEncounterOptions();
+                }, useNpcBowl: locationPayment)) return true;
+            if (locationPayment)
             {
-                presentationController.ShowDialogue(card);
-                journeyBoardInput?.SetChoiceCount(card.options.Length);
-                RenderEncounterOptions();
-            })) return true;
+                uiController.SetStoryNotice("납부통을 사용할 수 없습니다.");
+                return true;
+            }
+        }
         RecordStoryChoice(card, choice);
         int relationshipDelta = choice.relationshipDelta *
             (statContainer.stats.Length == 4 && statContainer.stats[3] == 0 ? 2 : 1);
@@ -445,11 +453,7 @@ public partial class DecisionManager
             choice.grantsUnlocks, choice.relationshipId, relationshipDelta);
         var selected = storyEvents.FindLast(e => e.eventKey == "choice:" + storyVisit);
         var interactions = saveService.ApplyNarrativeInteractions(selected);
-        if (interactions.Count > 0)
-        {
-            backpackInventory?.Initialize(saveService.LoadInventoryState(), saveService.SaveInventoryState);
-            foreach (var interaction in interactions) presentationController.ShowInteraction(interaction.notice, selected.characterId);
-        }
+        foreach (var interaction in interactions) presentationController.ShowInteraction(interaction.notice, selected.characterId);
         if (choice.abilityCost != null && statContainer.stats[0] <= 0)
         {
             FinishRunAndReturnToMainMenu("체력 0으로 사망");
