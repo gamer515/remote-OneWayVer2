@@ -285,6 +285,8 @@ public partial class DecisionManager : MonoBehaviour
         coinDropController.InitializeInventory(startData.RemainingCoins);
         var dispenser = FindFirstObjectByType<LearningDispenserView>();
         dispenser?.BindStudyGrid(StudyGrid);
+        dispenser?.BindTaxScale(taxScaleView);
+        taxScaleView?.BindCoinPrefabs(journeyCoinPrefabs);
         if (journeyBoardInput != null)
         {
             journeyCoinSupply = new JourneyCoinSupplyController(

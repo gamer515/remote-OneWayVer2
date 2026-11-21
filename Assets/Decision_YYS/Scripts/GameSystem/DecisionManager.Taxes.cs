@@ -5,6 +5,7 @@ using static Constants;
 
 public partial class DecisionManager
 {
+    [SerializeField] private TaxScaleView taxScaleView;
     private static readonly string[] TaxAbilities = { "힘", "속도", "지능", "매력" };
     private ChapterTaxSettings taxRules;
     private Action commitBoardPayment, cancelBoardPayment;
@@ -198,10 +199,9 @@ public partial class DecisionManager
     private void ShowMineTax(string feedback = null)
     {
         var invoice = mine.taxInvoice;
-        var lines = invoice.lines.Select(line => line.label.Replace('·', '/') + " / " +
-            (!line.IsFlexible ? DescribeTaxCost(line.cost) :
-                line.kind == "single" ? $"한 종류 {line.coins}" : $"혼합 가능 {line.coins}"));
-        string bill = $"따라잡았다. 이번 순찰의 고지서를 확인하고 세금을 내라.\n{AnnounceCollectorTaxes(invoice)}\n고지 / {invoice.authority}\n{string.Join("\n", lines)}\n합계 {invoice.Total}개";
+        string notice = DescribeTaxNotice(invoice);
+        taxScaleView?.ShowNotice(invoice.FixedCost(), invoice.Single + invoice.Mixed, notice);
+        string bill = $"따라잡았다. 이번 순찰의 고지서를 확인하고 세금을 내라.\n{AnnounceCollectorTaxes(invoice)}\n{notice}";
         var wallet = statContainer.stats;
         bool normalPayment = CanPayGeneralTax(wallet, invoice.FixedCost(), invoice.Single, invoice.Mixed);
         bool alternatePayment = false;
@@ -224,6 +224,24 @@ public partial class DecisionManager
             else if (normalPayment) BeginTaxPayment(invoice);
             else ChooseAlternateTaxCoin(invoice);
         });
+    }
+
+    private static string DescribeTaxNotice(MineTaxInvoice invoice)
+    {
+        var lines = invoice.lines.Select(line => line.label.Replace('·', '/') + " / " +
+            (!line.IsFlexible ? DescribeTaxCost(line.cost) :
+                line.kind == "single" ? $"한 종류 {line.coins}" : $"혼합 가능 {line.coins}"));
+        return $"고지 / {invoice.authority}\n{string.Join("\n", lines)}\n합계 {invoice.Total}개";
+    }
+
+    private void ShowAllocatedTaxNotice(int[] cost, int remaining)
+    {
+        if (taxScaleView == null) return;
+        var invoice = mine.taxInvoice;
+        string text = DescribeTaxNotice(invoice);
+        if (remaining < invoice.Single + invoice.Mixed)
+            text += $"\n현재 배정 / {DescribeTaxCost(cost)}";
+        taxScaleView.ShowNotice(cost, remaining, text);
     }
 
     private static bool CanPayGeneralTax(int[] wallet, int[] fixedCost, int single, int mixed) =>
@@ -281,6 +299,7 @@ public partial class DecisionManager
 
     private void ChooseTaxCoin(int[] cost, int single, int mixed, string feedback = null)
     {
+        ShowAllocatedTaxNotice(cost, single + mixed);
         int amount = single > 0 ? single : 1;
         string prompt = single > 0
             ? $"자유세 / 한 종류를 골라 {single}개 배정하세요."
@@ -300,9 +319,13 @@ public partial class DecisionManager
             cost[slot] += amount;
             int remainingMixed = single > 0 ? mixed : mixed - 1;
             if (remainingMixed > 0) ChooseTaxCoin(cost, 0, remainingMixed);
-            else ShowTaxChoices($"총 {cost.Sum()}개 / {DescribeTaxCost(cost)}",
-                new[] { "이대로 납부", "고지서로 돌아가기" },
-                confirm => { if (confirm == 0) CommitTaxPayment(cost); else ShowMineTax(); });
+            else
+            {
+                ShowAllocatedTaxNotice(cost, 0);
+                ShowTaxChoices($"총 {cost.Sum()}개 / {DescribeTaxCost(cost)}",
+                    new[] { "이대로 납부", "고지서로 돌아가기" },
+                    confirm => { if (confirm == 0) CommitTaxPayment(cost); else ShowMineTax(); });
+            }
         });
     }
 

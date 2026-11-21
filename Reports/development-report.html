@@ -318,6 +318,16 @@ unity command run_script --caller plugin --skill unity-cli --file AgentScripts/K
 <p>기존 ThreeFingers_CoinBowlPickup.anim만 같은 GUID로 교체했다. 대상 파일이 작업 도중 바뀌지 않았는지 백업과 해시를 대조한 뒤 반영했다. 게임 에디터가 Play 중이어서 제작·검증은 별도 복제 프로젝트에서 진행했고, 게임 에디터의 Play 종료·씬 전환을 실행하지 않았다. 수정 전 14~21프레임 중 위치 정지 간격 7개가 수정 후 0개가 됐다.</p>
 <p><a href="ThreeFingersCoinBowlPickup-ApproachComparison.html">앞·옆 수정 전후 동시 재생</a> · <a href="../output/ThreeFingersCoinBowlPickup/approach-after/motion-check.json">접근 위치 비교</a> · <a href="../output/ThreeFingersCoinBowlPickup/approach-after/cleanup.json">정리 기록</a></p>
 <p>유지 도구는 기존 PickupAuthoring.cs, PickupPlayCheck.cs, BuildPreviewAnimation.cjs를 갱신했다. 조사 중 검증용 초기 씬 저장 오류와 파일 교체 API 오류를 수정한 뒤 정상 재생 결과와 최종 대상 클립의 일치를 확인했다. 검증 복제 프로젝트·조사 로그·프로세스 기록은 정리했으며, 수정 전 클립은 되돌리기와 비교를 위해 보존했다. 삭제 대기 임시 코드는 없다. 게임 내부 상태 전환 블렌딩 전체를 이번 검사 범위로 포함하지 않았다.</p>
+</section>
+<hr><section id="threefingers-tax-collection">
+<h1>ThreeFingers 일반세 회수 · 직접 집기</h1>
+<p>2026-11-22 (Asia/Seoul). 기존 손 본 계층과 검증된 통 잡기 자세를 재사용해 두 클립을 별도 폴더에 제작했다. 손과 나무 통·저울·코인의 원본, 기존 통 집기 클립과 게임 씬은 보존했다.</p>
+<table><tr><th>계획</th><th>완료 결과</th></tr><tr><td>일반세 저울 회수</td><td>60fps·3초. 플레이어 접시 집기 30f, 통 투입 75f, 안착 87f, 통 회수 120f, NPC 인계 위치 도착 180f</td></tr><tr><td>직접 집기</td><td>60fps·1.2초. 납부 코인 더미 집기 30f, 인계 위치 도착 72f</td></tr><tr><td>연결과 재생 검증</td><td>별도 Unity 프로젝트에서 정상 Animator 재생, 각 193/85프레임 샘플, 네이티브 ParentConstraint, 순간이동·끝 자세·통 수평·통 벽 관통 검사 통과</td></tr></table>
+<p><a href="../output/ThreeFingersTaxCollection/index.html">앞·옆 재생 및 프레임 선택 미리보기</a> · <a href="../output/ThreeFingersTaxCollection/ThreeFingers_TaxCollection.unitypackage">Unity 패키지</a> · <a href="../Assets/ThreeFingersTaxCollection/Documentation/README.md">씬·프리팹 사용 및 이벤트 연결 방법</a> · <a href="../output/ThreeFingersTaxCollection/verification-summary.json">검증 수치</a></p>
+<p>결과물: <code>Assets/ThreeFingersTaxCollection/Animations/</code>, <code>Prefabs/</code>, <code>Scenes/</code>. 클립은 Rig 루트 Animator에서 <code>Hand/...</code> 본 경로와 통·코인 제약을 제어한다. 실제 게임의 코인 처리·세금 차감·NPC 완료 로직과 UI 카메라 배치 정렬은 이번 작업에 포함하지 않았다. 이벤트는 수신기가 없어도 오류가 발생하지 않으며, 프레임 번호를 intParameter로 제공한다. 예제 통은 원본 통의 독립된 중첩 프리팹이다.</p>
+<p>제작·재현 도구 <code>AssetBuild/ThreeFingersTaxCollection/TaxCollectionAuthoring.cs</code>, <code>TaxCollectionPlayCheck.cs</code>, <code>TaxCollectionDelivery.cs</code>, <code>BuildDelivery.cjs</code>는 보존한다. 저울 코인 높이는 접시 Floor 메시의 실제 윗면을 기준으로 정렬했고, 운반 궤적은 저울 상단을 넘도록 조정했다. 메인 에디터는 MainMenuScene을 유지했다. Unity 컴파일 실패 없음·현재 콘솔 오류 0건을 확인했다.</p>
+<p><strong>2026-11-22 에셋 정리 확인.</strong> 첨부 패키지 59개 항목의 파일 내용과 GUID가 프로젝트에 있는 원본과 일치해 기존 <code>Assets/ThreeFingersTaxCollection/</code>을 사용한다. Unity에서 두 리그와 미리보기 씬의 컨트롤러·클립 참조를 확인했다. 두 리그의 누락 스크립트·재질은 0건이며, 이번 확인에서는 미리보기 재생과 게임 연결 작업을 수행하지 않았다. 추가 임시 코드는 없다.</p>
+<p id="tax-cleanup">임시 검증 복제 프로젝트 <code>AssetBuild/ThreeFingersTaxCollection/ValidationProject/</code>와 실행 로그 <code>output/ThreeFingersTaxCollection/validation.log</code>는 실행 종료·절대 경로·재분석 지점 유무 확인 후 기존 정리 요청 범위에서 삭제했다. 원본 소스, 재현 도구, 클립, 패키지, 프레임 캡처와 검증 결과는 보존한다. 삭제 대기 임시 코드는 없다. <a href="../output/ThreeFingersTaxCollection/cleanup.json">정리 기록</a></p>
 </section></body></html>
 
 

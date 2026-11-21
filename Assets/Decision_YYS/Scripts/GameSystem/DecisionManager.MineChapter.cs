@@ -440,6 +440,7 @@ public partial class DecisionManager
 
     private void FinishCollectorDialogue()
     {
+        taxScaleView?.ClearNotice();
         uiController.SetTaxCriteria(null);
         taxWitnessStep = 0; taxWitness = null;
         taxOptions = null; taxSelected = null; taxSelection = -1;

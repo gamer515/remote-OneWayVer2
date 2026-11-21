@@ -83,6 +83,9 @@ public sealed class LearningDispenserView : MonoBehaviour
     public bool IsDraggingBook => draggedBook != null;
     public BoxCollider WhiteBoard => bookBoard;
     internal void BindStudyGrid(BoxCollider grid) => studyGrid = grid;
+    private TaxScaleView taxScale;
+    private Vector2? defaultHoverSize;
+    internal void BindTaxScale(TaxScaleView view) => taxScale = view;
     public void BindCoinSupply(JourneyCoinSupplyController supply)
     {
         coinSupply = supply;
@@ -262,6 +265,11 @@ public sealed class LearningDispenserView : MonoBehaviour
     private void ShowHoveredBook(Vector2 screenPoint)
     {
         if (bookHoverLabel == null || viewCamera == null || overlayRoot == null) return;
+        if (!IsDraggingBook && taxScale?.GetHover(viewCamera.ScreenPointToRay(screenPoint)) is string taxNotice)
+        {
+            SetHover(taxNotice, screenPoint, keepOnScreen: true);
+            return;
+        }
         if (!IsDraggingBook && station?.Progress?.producing is MineLearningJob producing)
         {
             Vector2 center = viewCamera.WorldToScreenPoint(queueBottom.TransformPoint(generationSlotOffset));
@@ -304,14 +312,13 @@ public sealed class LearningDispenserView : MonoBehaviour
         if (bookHoverBackground != null) bookHoverBackground.gameObject.SetActive(false);
     }
 
-    private void SetHover(string label, Vector2 screenPoint)
+    private void SetHover(string label, Vector2 screenPoint, bool keepOnScreen = false)
     {
         if (bookHoverLabel == null || overlayRoot == null) return;
         bookHoverLabel.text = label;
         bookHoverLabel.color = Color.black;
         bookHoverLabel.gameObject.SetActive(true);
         RectTransformUtility.ScreenPointToLocalPointInRectangle(overlayRoot, screenPoint + Vector2.up * 28, null, out var point);
-        bookHoverLabel.rectTransform.anchoredPosition = point;
         if (bookHoverBackground == null)
         {
             var background = new GameObject("BookTitleBackground", typeof(RectTransform), typeof(Image));
@@ -325,8 +332,21 @@ public sealed class LearningDispenserView : MonoBehaviour
         rect.anchorMin = bookHoverLabel.rectTransform.anchorMin;
         rect.anchorMax = bookHoverLabel.rectTransform.anchorMax;
         rect.pivot = bookHoverLabel.rectTransform.pivot;
+        var labelRect = bookHoverLabel.rectTransform;
+        defaultHoverSize ??= labelRect.sizeDelta;
+        var preferredSize = bookHoverLabel.GetPreferredValues(label);
+        labelRect.sizeDelta = keepOnScreen ? preferredSize + new Vector2(2, 2) : defaultHoverSize.Value;
+        rect.sizeDelta = preferredSize + new Vector2(20, 10);
+        if (keepOnScreen)
+        {
+            var bounds = overlayRoot.rect;
+            var beforePivot = Vector2.Scale(rect.sizeDelta, rect.pivot);
+            var afterPivot = rect.sizeDelta - beforePivot;
+            point.x = Mathf.Clamp(point.x, bounds.xMin + beforePivot.x, bounds.xMax - afterPivot.x);
+            point.y = Mathf.Clamp(point.y + beforePivot.y, bounds.yMin + beforePivot.y, bounds.yMax - afterPivot.y);
+        }
+        bookHoverLabel.rectTransform.anchoredPosition = point;
         rect.anchoredPosition = point;
-        rect.sizeDelta = bookHoverLabel.GetPreferredValues(label) + new Vector2(20, 10);
         bookHoverBackground.gameObject.SetActive(true);
     }
 
