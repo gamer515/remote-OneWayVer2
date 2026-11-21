@@ -49,12 +49,23 @@ public sealed class MineCollectorProcession : MonoBehaviour
     public bool CanMeet(Vector3 point) => IsOnPatrol && point.z >= chunkStart && point.z < chunkEnd &&
         (IsReturning ? !progress.collectorChaseClosed && progress.HasTaxInvoice : !progress.collectorPassedPlayer);
 
-    public bool RecordPlayerEscape(float z)
+    public bool RecordPlayerEscape(float z, bool clearedShortcutChase = false)
     {
-        if (!IsOnPatrol || progress.collectorChaseClosed || z < chunkEnd) return false;
+        if (!IsOnPatrol || progress.collectorChaseClosed ||
+            (!IsAtEscapeBoundary(z) && (!clearedShortcutChase || !IsReturning || !progress.HasTaxInvoice))) return false;
         progress.collectorChaseClosed = true;
         return true;
     }
+
+    internal bool IsAtEscapeBoundary(float z) => z >= chunkEnd;
+
+    internal bool IsBesidePursuers(Vector3 point, float reach) =>
+        IsReturning && CanMeet(point) && MemberInRange(point, reach) == null &&
+        Members.Any(member => Mathf.Abs(member.position.z - point.z) <= reach);
+
+    internal bool IsAheadOfPursuers(Vector3 point, float reach) =>
+        IsReturning && Members.Count > 0 &&
+        Members.All(member => point.z - member.position.z > reach);
     public Transform NearestMember(Vector3 point) => members?.OrderBy(t => (t.position - point).sqrMagnitude).FirstOrDefault();
     public Transform MemberInRange(Vector3 point, float distance)
     {
@@ -157,6 +168,7 @@ public sealed class MineCollectorProcession : MonoBehaviour
         progress.collectorRouteEndZ = chunkEnd;
         progress.collectorChunkIndex = chunkIndex;
         progress.collectorChaseClosed = false;
+        progress.shortcutPursuitInvoiceId = null;
         progress.collectorZ = chunkEnd;
         progress.collectorReturning = false;
         progress.collectorPhase = (int)(routeDoors.Length == 0 ? Phase.Arrival : Phase.RowMarch);

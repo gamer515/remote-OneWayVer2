@@ -14,6 +14,7 @@ public partial class DecisionManager
     private const string ShortcutNpcName = "샛길의 사람";
     private Transform packShortcutActor;
     private bool packShortcutWalking;
+    private float shortcutLaneX, shortcutLaneStartZ, shortcutLaneEndZ, shortcutLastZ;
     private string PackShortcutResultKey => activePlaceId + ":shortcut:result";
 
     private bool IsPackShortcutNpcFrame => Authored?.storyPackFrame is PackShortcutGame or PackShortcutToss
@@ -163,6 +164,7 @@ public partial class DecisionManager
 
     private void ReturnFromShortcutOffer(string notice = null)
     {
+        if (mine != null) mine.shortcutPursuitInvoiceId = null;
         Authored.storyPackShortcutSide = 0;
         ShowPackLines(null, PackRoot);
         uiController.SetStoryNotice(notice);
@@ -208,6 +210,10 @@ public partial class DecisionManager
         }
         bool exiting = Authored.storyPackFrame == PackShortcutExit;
         var position = playerController.CurrentPosition;
+        shortcutLaneX = route[1].x;
+        shortcutLaneStartZ = route[1].z;
+        shortcutLaneEndZ = route[2].z;
+        shortcutLastZ = position.z;
         bool onSide = Mathf.Abs(position.x - route[1].x) < .6f &&
             position.z >= route[1].z - .05f && position.z <= route[2].z;
         if (!exiting && actor != null)
@@ -242,6 +248,7 @@ public partial class DecisionManager
         }
         else
         {
+            if (mine != null) mine.shortcutPursuitInvoiceId = null;
             Authored.storyPackShortcutSide = 0;
             if (IsPackMain)
             {

@@ -214,18 +214,19 @@ public partial class DecisionManager
 
     private void ShowMineTax(string feedback = null)
     {
-        var invoice = mine.taxInvoice;
-        OpenTaxScalePreparation(invoice);
-        string notice = DescribeTaxNotice(invoice);
-        taxScaleView?.ShowNotice(invoice.FixedCost(), invoice.Single + invoice.Mixed, notice);
-        string bill = $"따라잡았다. 이번 순찰의 고지서를 확인하고 세금을 내라.\n{AnnounceCollectorTaxes(invoice)}\n{notice}";
+        var quote = new MineTaxBill(mine.taxInvoice, mine.taxArrears);
+        OpenTaxScalePreparation(quote.Current);
+        string notice = DescribeTaxNotice(quote);
+        var fixedCost = quote.FixedCost();
+        taxScaleView?.ShowNotice(fixedCost, quote.FlexibleTotal, notice);
+        string bill = $"따라잡았다. 이번 순찰의 고지서를 확인하고 세금을 내라.\n{AnnounceCollectorTaxes(quote.Current)}\n{notice}";
         if (taxScaleView != null) bill += "\n오른쪽 접시에 코인을 올려 납부를 준비할 수 있습니다.";
         var wallet = statContainer.stats;
-        bool normalPayment = CanPayGeneralTax(wallet, invoice.FixedCost(), invoice.Single, invoice.Mixed);
+        bool normalPayment = quote.CanAllocate(wallet, fixedCost, 0, quote.Mixed);
         bool alternatePayment = false;
         if (!normalPayment)
         {
-            alternatePayment = AlternateTaxAbilities(invoice, wallet, out int amount).Length > 0;
+            alternatePayment = AlternateTaxAbilities(quote, wallet, out int amount).Length > 0;
             bill += alternatePayment
                 ? $"\n대납 / 합계의 {mineRules.alternatePaymentMultiplier}배, 한 종류로 {amount}개"
                 : "\n납부에 필요한 코인이 부족합니다.";
@@ -239,40 +240,43 @@ public partial class DecisionManager
         {
             if (slot == options.Length - 2) TryPersuadeTaxCollector();
             else if (slot == options.Length - 1) BeginTaxDuel();
-            else if (normalPayment) BeginTaxPayment(invoice);
-            else ChooseAlternateTaxCoin(invoice);
+            else if (normalPayment) BeginTaxPayment(quote);
+            else ChooseAlternateTaxCoin(quote);
         });
     }
 
-    private static string DescribeTaxNotice(MineTaxInvoice invoice)
-    {
-        var lines = invoice.lines.Select(line => line.label.Replace('·', '/') + " / " +
+    private static string DescribeTaxLines(MineTaxLine[] lines) =>
+        string.Join("\n", lines.Select(line => line.label.Replace('·', '/') + " / " +
             (!line.IsFlexible ? DescribeTaxCost(line.cost) :
-                line.kind == "single" ? $"한 종류 {line.coins}" : $"혼합 가능 {line.coins}"));
-        return $"고지 / {invoice.authority}\n{string.Join("\n", lines)}\n합계 {invoice.Total}개";
+                line.kind == "single" ? $"한 종류 {line.coins}" : $"혼합 가능 {line.coins}")));
+
+    private static string DescribeTaxNotice(MineTaxBill bill)
+    {
+        string notice = $"고지 / {bill.Current.authority}\n";
+        if (bill.Arrears.Length == 0)
+            return notice + $"{DescribeTaxLines(bill.Current.lines)}\n합계 {bill.Total}개";
+
+        notice += $"새 일반세 {bill.Current.Total}개\n{DescribeTaxLines(bill.Current.lines)}";
+        notice += $"\n미납 원금 {bill.Principal}개\n" +
+            string.Join("\n", bill.Arrears.Select(entry => DescribeTaxLines(entry.invoice.lines)));
+        return notice + $"\n벌금 {bill.Penalty}개 / 한 종류 선택\n합계 {bill.Total}개";
     }
 
-    private void ShowAllocatedTaxNotice(int[] cost, int remaining)
+    private void ShowAllocatedTaxNotice(MineTaxBill bill, int[] cost, int remaining)
     {
         if (taxScaleView == null) return;
-        var invoice = mine.taxInvoice;
-        string text = DescribeTaxNotice(invoice);
-        if (remaining < invoice.Single + invoice.Mixed)
+        string text = DescribeTaxNotice(bill);
+        if (remaining < bill.FlexibleTotal)
             text += $"\n현재 배정 / {DescribeTaxCost(cost)}";
         taxScaleView.ShowNotice(cost, remaining, text);
     }
 
-    private static bool CanPayGeneralTax(int[] wallet, int[] fixedCost, int single, int mixed) =>
-        AbilityPayment.CanPay(wallet, fixedCost) &&
-        wallet.Select((amount, index) => amount - fixedCost[index]).Sum() >= single + mixed &&
-        wallet.Where((amount, index) => amount - fixedCost[index] >= single).Any();
-
-    private int[] AlternateTaxAbilities(MineTaxInvoice invoice, int[] wallet, out int amount)
+    private int[] AlternateTaxAbilities(MineTaxBill bill, int[] wallet, out int amount)
     {
-        long total = (long)invoice.Total * mineRules.alternatePaymentMultiplier;
+        long total = (long)bill.Total * mineRules.alternatePaymentMultiplier;
         amount = total > 0 && total <= int.MaxValue ? (int)total : 0;
-        var fixedCost = invoice.FixedCost();
-        if (amount == 0 || CanPayGeneralTax(wallet, fixedCost, invoice.Single, invoice.Mixed))
+        var fixedCost = bill.FixedCost();
+        if (amount == 0 || bill.CanAllocate(wallet, fixedCost, 0, bill.Mixed))
             return Array.Empty<int>();
 
         int required = amount;
@@ -280,10 +284,10 @@ public partial class DecisionManager
             .Where(ability => wallet[ability] >= required && wallet[ability] >= fixedCost[ability]).ToArray();
     }
 
-    private void ChooseAlternateTaxCoin(MineTaxInvoice invoice)
+    private void ChooseAlternateTaxCoin(MineTaxBill bill)
     {
-        if (mine.collectorChaseClosed || !ReferenceEquals(mine.taxInvoice, invoice)) return;
-        var candidates = AlternateTaxAbilities(invoice, statContainer.stats, out int amount);
+        if (mine.collectorChaseClosed || !ReferenceEquals(mine.taxInvoice, bill.Current)) return;
+        var candidates = AlternateTaxAbilities(bill, statContainer.stats, out int amount);
         if (candidates.Length == 0)
         {
             ShowMineTax("대납 가능한 코인 종류가 없습니다.");
@@ -291,7 +295,7 @@ public partial class DecisionManager
         }
         var choices = candidates.Select(ability => $"{TaxAbilities[ability]} {amount}개 대납")
             .Concat(new[] { "고지서로 돌아가기" }).ToArray();
-        ShowTaxChoices($"대납 / 고지서 합계 {invoice.Total}개 × {mineRules.alternatePaymentMultiplier}배\n한 종류로 {amount}개를 납부합니다.", choices, slot =>
+        ShowTaxChoices($"대납 / 고지서 합계 {bill.Total}개 × {mineRules.alternatePaymentMultiplier}배\n한 종류로 {amount}개를 납부합니다.", choices, slot =>
         {
             if (slot == candidates.Length) { ShowMineTax(); return; }
             int ability = candidates[slot];
@@ -301,27 +305,32 @@ public partial class DecisionManager
         });
     }
 
-    private void BeginTaxPayment(MineTaxInvoice invoice)
+    private void BeginTaxPayment(MineTaxBill bill)
     {
-        var cost = invoice.FixedCost();
+        if (mine.collectorChaseClosed || !ReferenceEquals(mine.taxInvoice, bill.Current)) return;
+        var cost = bill.FixedCost();
         var wallet = statContainer.stats;
-        int single = invoice.Single, mixed = invoice.Mixed;
-        if (!CanPayGeneralTax(wallet, cost, single, mixed))
+        if (!bill.CanAllocate(wallet, cost, 0, bill.Mixed))
         {
             ShowMineTax("납부에 필요한 코인이 부족합니다.");
             return;
         }
-        if (single > 0 || mixed > 0) ChooseTaxCoin(cost, single, mixed);
+        if (bill.FlexibleTotal > 0) ChooseTaxCoin(bill, cost, 0, bill.Mixed);
         else CommitTaxPayment(cost);
     }
 
-    private void ChooseTaxCoin(int[] cost, int single, int mixed, string feedback = null)
+    private void ChooseTaxCoin(MineTaxBill bill, int[] cost, int singleIndex, int mixed, string feedback = null)
     {
-        ShowAllocatedTaxNotice(cost, single + mixed);
-        int amount = single > 0 ? single : 1;
-        string prompt = single > 0
-            ? $"자유세 / 한 종류를 골라 {single}개 배정하세요."
-            : $"인두세 / 종류를 섞을 수 있습니다. 남은 코인 {mixed}개.";
+        if (!ReferenceEquals(bill.Current, mine.taxInvoice)) return;
+        ShowAllocatedTaxNotice(bill, cost, bill.RemainingFlexible(singleIndex, mixed));
+        var single = bill.SingleLines.ElementAtOrDefault(singleIndex);
+        int amount = single?.coins ?? 1;
+        string mixedLabel = bill.Arrears.Length == 0
+            ? bill.Current.lines.FirstOrDefault(line => line.kind == "mixed")?.label ?? "혼합 가능 세목"
+            : "혼합 가능 세목";
+        string prompt = single != null
+            ? $"{single.label} / 한 종류를 골라 {amount}개 배정하세요."
+            : $"{mixedLabel} / 종류를 섞을 수 있습니다. 남은 코인 {mixed}개.";
         if (feedback != null) prompt += "\n" + feedback;
         var choices = TaxAbilities.Select((name, index) =>
             $"{name} {amount}개 배정 (사용 가능 {statContainer.stats[index] - cost[index]}개)")
@@ -331,15 +340,23 @@ public partial class DecisionManager
             if (slot == TaxAbilities.Length) { ShowMineTax(); return; }
             if (statContainer.stats[slot] - cost[slot] < amount)
             {
-                ChooseTaxCoin(cost, single, mixed, "이 종류의 코인이 부족합니다.");
+                ChooseTaxCoin(bill, cost, singleIndex, mixed, "이 종류의 코인이 부족합니다.");
                 return;
             }
             cost[slot] += amount;
-            int remainingMixed = single > 0 ? mixed : mixed - 1;
-            if (remainingMixed > 0) ChooseTaxCoin(cost, 0, remainingMixed);
+            int nextSingle = single != null ? singleIndex + 1 : singleIndex;
+            int remainingMixed = single != null ? mixed : mixed - 1;
+            if (!bill.CanAllocate(statContainer.stats, cost, nextSingle, remainingMixed))
+            {
+                cost[slot] -= amount;
+                ChooseTaxCoin(bill, cost, singleIndex, mixed, "다른 세목에 필요한 코인을 남겨 주세요.");
+                return;
+            }
+            if (bill.RemainingFlexible(nextSingle, remainingMixed) > 0)
+                ChooseTaxCoin(bill, cost, nextSingle, remainingMixed);
             else
             {
-                ShowAllocatedTaxNotice(cost, 0);
+                ShowAllocatedTaxNotice(bill, cost, 0);
                 ShowTaxChoices($"총 {cost.Sum()}개 / {DescribeTaxCost(cost)}",
                     new[] { "이대로 납부", "고지서로 돌아가기" },
                     confirm => { if (confirm == 0) CommitTaxPayment(cost); else ShowMineTax(); });
@@ -353,7 +370,7 @@ public partial class DecisionManager
         var invoice = mine.taxInvoice;
         var wallet = statContainer.stats;
         if (alternateAbility >= 0 &&
-            (!AlternateTaxAbilities(invoice, wallet, out int amount).Contains(alternateAbility) ||
+            (!AlternateTaxAbilities(new MineTaxBill(invoice, mine.taxArrears), wallet, out int amount).Contains(alternateAbility) ||
              cost[alternateAbility] != amount))
         {
             ShowMineTax("현재 잔액으로 대납 조건을 다시 확인하세요.");

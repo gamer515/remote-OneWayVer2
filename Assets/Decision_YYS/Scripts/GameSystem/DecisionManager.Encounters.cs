@@ -101,6 +101,7 @@ public partial class DecisionManager
     private void BeginExploration()
     {
         packShortcutWalking = false;
+        if (mine != null) mine.shortcutPursuitInvoiceId = null;
         packShortcutActor = null;
         roadsideStep = RoadsideStep.None;
         roadsideActor = null;

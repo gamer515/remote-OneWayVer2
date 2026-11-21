@@ -50,6 +50,8 @@ using UnityEngine;
     public int collectorChunkIndex;
     public bool collectorChaseClosed;
     public MineTaxInvoice taxInvoice;
+    public List<MineTaxArrear> taxArrears = new List<MineTaxArrear>();
+    public string shortcutPursuitInvoiceId;
     public bool HasTaxInvoice => taxInvoice?.lines?.Length > 0;
     public MineLearningProgress learning = new MineLearningProgress();
 }

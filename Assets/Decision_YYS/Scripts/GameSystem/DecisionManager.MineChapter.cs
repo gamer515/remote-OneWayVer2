@@ -54,6 +54,7 @@ public partial class DecisionManager
             mine.collectorOpeningCompleted = false;
             mine.collectorReturning = false;
             mine.taxInvoice = null;
+            mine.shortcutPursuitInvoiceId = null;
             mine.collectorRouteVersion = 0;
         }
         taxRules = ChapterTaxSettings.Load(ChapterContentCatalog.ChapterFolder(chapter.chapterId));
@@ -269,7 +270,7 @@ public partial class DecisionManager
             mineCollectors is { Finished: false } procession)
         {
             var position = playerController.CurrentPosition;
-            if (procession.RecordPlayerEscape(position.z)) SaveGuideCheckpoint();
+            RecordMineCollectorEscape(procession, position);
             bool canOpenDialogue = CanOpenCollectorDialogue();
             bool canSuspendNpcPayment = npcBoardPaymentCost != null && journeyCoinSupply?.HasBoardPayment == true;
             var nearby = (canOpenDialogue || npcPaymentRoot != null) && procession.CanMeet(position)
@@ -361,6 +362,7 @@ public partial class DecisionManager
         BeginCollectorDialogue(collector);
         if (mineCollectors.IsReturning)
         {
+            mine.shortcutPursuitInvoiceId = null;
             ShowMineTax();
             return;
         }
@@ -442,6 +444,8 @@ public partial class DecisionManager
     {
         mine.collectorChaseClosed = true;
         mine.taxInvoice = null;
+        mine.shortcutPursuitInvoiceId = null;
+        mine.taxArrears?.Clear();
     }
 
     private void FinishCollectorDialogue()
