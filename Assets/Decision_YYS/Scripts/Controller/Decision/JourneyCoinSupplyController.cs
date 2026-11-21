@@ -11,7 +11,7 @@ using UnityEngine.InputSystem;
 /// JourneyCoinSupplyRack 클릭을 실제 재고와 연결합니다.
 /// 이야기/베팅 규칙은 DecisionManager에 남기고, 이 클래스는 공급과 물리 생성만 담당합니다.
 /// </summary>
-public sealed class JourneyCoinSupplyController
+public sealed partial class JourneyCoinSupplyController
 {
     private readonly JourneyBoardReferences board;
     private readonly Camera inputCamera;
@@ -41,9 +41,10 @@ public sealed class JourneyCoinSupplyController
     public Func<Vector2, int, Transform> RefillSlot { get; set; }
     public Func<int, int, bool> RefillBooks { get; set; }
     internal Transform BoardShelf { get; set; }
+    internal Func<IEnumerable<Transform>> BooksOnBoard { get; set; }
     internal IEnumerable<Transform> BoardCoins => paymentCoins
         .Where(coin => coin != draggedPaymentCoin && !coin.inPaymentBowl && !coin.onTaxPan && coin.refillSlot < 0 && coin.model != null)
-        .Select(coin => coin.model.transform);
+        .Select(coin => coin.model.transform).Concat(learningCoins.Select(coin => coin.Model.transform));
     public MonoBehaviour DropRunner { get; set; }
     public bool HasBoardPayment => paymentCost != null;
     public bool CanStageCoins => IsReady && board.trayFloor != null && paymentGrid != null &&
@@ -106,23 +107,28 @@ public sealed class JourneyCoinSupplyController
     public void RefreshDisplay()
     {
         if (inventory == null) return;
+        ReconcileLearningCoins();
         int[] counts = AvailableCoinCounts();
         for (int index = 0; index < stacks.Length; index++)
         {
             if (stacks[index] == null) continue;
             stacks[index].SetCount(counts[index]);
             stacks[index].SetMilestoneTint(index == 2 ? IntelligenceMilestone : AbilityCoinPresentation.Colors[index]);
+            foreach (var coin in stacks[index].coins ?? Array.Empty<GameObject>())
+                if (coin != null && coin.activeSelf) StampCoin(coin);
         }
     }
 
     public int AvailableCoins(int index) =>
-        Mathf.Max(0, inventory.RemainingCoins[index] - paymentCoins.Count(coin => coin.type == index));
+        AvailableCoinCounts()[index];
 
     public int[] AvailableCoinCounts()
     {
         int[] counts = inventory.RemainingCoins;
         foreach (var coin in paymentCoins)
             counts[coin.type] = Mathf.Max(0, counts[coin.type] - 1);
+        foreach (var coin in learningCoins)
+            counts[coin.Data.ability] = Mathf.Max(0, counts[coin.Data.ability] - 1);
         return counts;
     }
 
@@ -149,6 +155,7 @@ public sealed class JourneyCoinSupplyController
 
     public void ResetBoard()
     {
+        UnbindLearningBoard();
         ClearBoardPayment();
         foreach (BettingCoin coin in activeCoins)
             if (coin != null) UnityEngine.Object.Destroy(coin.gameObject);
@@ -214,6 +221,7 @@ public sealed class JourneyCoinSupplyController
             !AbilityPayment.IsValid(cost) || cost == null || !Array.Exists(cost, amount => amount > 0))
             return false;
         if (!useTaxPan) SetTaxScale(null);
+        CancelLearningSelection();
         paymentCost = (int[])cost.Clone();
         paymentGrid = grid;
         paymentBowlOpening = bowlOpening;
@@ -263,6 +271,7 @@ public sealed class JourneyCoinSupplyController
 #if ENABLE_INPUT_SYSTEM
         if (Keyboard.current?.escapeKey.wasPressedThisFrame == true)
         {
+            if (CancelLearningSelection()) return;
             if (HasBoardPayment) cancelled(); else ClearBoardPayment();
             return;
         }
@@ -273,6 +282,7 @@ public sealed class JourneyCoinSupplyController
 #else
         if (Input.GetKeyDown(KeyCode.Escape))
         {
+            if (CancelLearningSelection()) return;
             if (HasBoardPayment) cancelled(); else ClearBoardPayment();
             return;
         }
@@ -284,6 +294,7 @@ public sealed class JourneyCoinSupplyController
 
     private void HandleBoardPaymentPointer(Vector2 point, bool down, bool held, bool up, Action ready)
     {
+        if (draggedPaymentCoin == null && HandleLearningPointer(point, down, held, up)) return;
         if (!HasBoardPayment && taxScale == null && draggedPaymentCoin != null &&
             RefillSlot?.Invoke(point, draggedPaymentCoin.type) is Transform refill)
         {
@@ -504,6 +515,7 @@ public sealed class JourneyCoinSupplyController
         var coin = UnityEngine.Object.Instantiate(coinPrefabs[index], outlet, Quaternion.identity, coinContainer);
         coin.name = "PaymentCoin_" + CoinNames[index];
         SetLayerRecursively(coin, board.gameObject.layer);
+        StampCoin(coin);
         var body = coin.GetComponent<Rigidbody>();
         body.constraints = RigidbodyConstraints.None;
         body.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;
@@ -669,6 +681,7 @@ public sealed class JourneyCoinSupplyController
             coinPrefabs[index], spawn, Quaternion.identity, coinContainer);
         coinObject.name = CoinNames[index];
         SetLayerRecursively(coinObject, board.gameObject.layer);
+        StampCoin(coinObject);
         BettingCoin coin = coinObject.GetComponent<BettingCoin>() ?? coinObject.AddComponent<BettingCoin>();
         coin.Initialize(index);
         activeCoins.Add(coin);

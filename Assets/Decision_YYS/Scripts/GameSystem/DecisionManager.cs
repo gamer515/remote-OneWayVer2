@@ -157,13 +157,20 @@ public partial class DecisionManager : MonoBehaviour
     {
         if (endTaxCollection != null)
         {
+            journeyCoinSupply?.CancelLearningSelection();
             if (collectorCollectionView == null || !collectorCollectionView.isActiveAndEnabled)
                 FinishTaxCollectionPresentation();
             return;
         }
         TickMineChapter();
         TickLearning();
-        if (uiController?.IsReadingOpen == true) return;
+        if (uiController?.IsReadingOpen == true)
+        {
+            journeyCoinSupply?.CancelLearningSelection();
+            return;
+        }
+        if (uiController?.IsComboGuideInputBlocked == true)
+            journeyCoinSupply?.CancelLearningSelection();
         if (uiController?.IsComboGuideInputBlocked != true)
         {
             if (journeyCoinSupply?.HasBoardPayment == true)

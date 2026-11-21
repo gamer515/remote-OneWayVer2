@@ -89,7 +89,11 @@ public sealed class LearningDispenserView : MonoBehaviour
     public void BindCoinSupply(JourneyCoinSupplyController supply)
     {
         coinSupply = supply;
-        if (supply != null) supply.BoardShelf = comboShelf;
+        if (supply != null)
+        {
+            supply.BoardShelf = comboShelf;
+            supply.BooksOnBoard = BookBoardOccupants;
+        }
     }
 
     private IEnumerable<Transform> BookBoardOccupants()

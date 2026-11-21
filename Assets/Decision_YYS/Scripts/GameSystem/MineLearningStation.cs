@@ -4,6 +4,18 @@ using System.Linq;
 using TMPro;
 using UnityEngine;
 
+public readonly struct LearningComboReward
+{
+    public readonly string Name;
+    public readonly int[] Coins;
+
+    public LearningComboReward(string name, int[] coins)
+    {
+        Name = name;
+        Coins = coins;
+    }
+}
+
 [Serializable] public sealed class MineLearningJob
 {
     public int ability, reward;
@@ -25,6 +37,12 @@ using UnityEngine;
     public int payouts;
     public List<string> unusedBooks = new List<string>();
 }
+[Serializable] public sealed class LearningBoardCoin
+{
+    public int ability;
+    public Vector2 position;
+}
+
 [Serializable] public sealed class MineLearningProgress
 {
     public List<MineLearningJob> active = new List<MineLearningJob>(), queued = new List<MineLearningJob>();
@@ -45,6 +63,7 @@ using UnityEngine;
     public List<ReadingComboProgress> readingComboProgress = new List<ReadingComboProgress>();
     public string readingResult;
     public Vector3 comboBoardPoint;
+    public List<LearningBoardCoin> boardRewardCoins = new List<LearningBoardCoin>();
 }
 
 /// <summary>FIFO learning, paid once on entry; capacities and durations are authored in the Inspector.</summary>
@@ -94,7 +113,7 @@ public sealed partial class MineLearningStation : MonoBehaviour
     private MineLearningProgress progress;
     private Func<int[]> wallet;
     private Func<int,int,bool> charge;
-    private Action<int,int> grant;
+    private Action<int[], IReadOnlyList<LearningComboReward>> grant;
     private Action save;
     private int seed;
     private bool paused;
@@ -160,7 +179,8 @@ public sealed partial class MineLearningStation : MonoBehaviour
         authoredBooks = books?.books;
         authoredLearning = settings;
     }
-    public void Initialize(MineLearningProgress state, int runSeed, Func<int[]> getWallet, Func<int,int,bool> spend, Action<int,int> reward, Action persist)
+    public void Initialize(MineLearningProgress state, int runSeed, Func<int[]> getWallet, Func<int,int,bool> spend,
+        Action<int[], IReadOnlyList<LearningComboReward>> reward, Action persist)
     {
         progress=state; seed=runSeed; wallet=getWallet; charge=spend; grant=reward; save=persist;paused=studyPaused=false;notice=null;
         readingBooks[StrengthTutorialBook] = ReadContent("Reading/StrengthTutorial");
@@ -245,7 +265,7 @@ public sealed partial class MineLearningStation : MonoBehaviour
                 }
                 var book = authoredBooks?.FirstOrDefault(item => item.id == job.bookId);
                 int reward = book?.reward ?? (string.IsNullOrEmpty(job.bookId) ? Mathf.Max(0, rewards[job.ability]) : job.reward);
-                progress.active.RemoveAt(i); grant(job.ability,reward); changed=true;
+                progress.active.RemoveAt(i); GrantSingleAbility(job.ability, reward); changed=true;
             }
             changed |= FillSlots();
         }

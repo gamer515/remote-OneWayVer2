@@ -20,6 +20,8 @@ public partial class DecisionManager
                 calendarDay > 0 ? progress.elapsedSeconds / calendarDay : 0);
         }
         progress.learning ??= new MineLearningProgress();
+        if (journeyCoinSupply?.CanStageCoins == true)
+            journeyCoinSupply.BindLearningBoard(progress.learning, SaveGuideCheckpointForLearning);
         learningStation.DisplayCoinCounts = journeyCoinSupply?.IsReady == true
             ? journeyCoinSupply.AvailableCoinCounts : null;
         learningStation.Initialize(progress.learning,session.RunSeed,()=>statContainer.stats,
@@ -30,15 +32,18 @@ public partial class DecisionManager
                 if(stats[0]>0) return true;
                 FinishRunAndReturnToMainMenu("학습 비용 지불 후 힘 0");return false;
             },
-            (ability,reward)=>
+            (reward, combos)=>
             {
                 var before = statContainer.stats;
                 var stats = (int[])before.Clone();
-                stats[ability] += reward;
+                for (int ability = 0; ability < stats.Length; ability++) stats[ability] += reward[ability];
                 statContainer.SetStats(stats);
                 guideProgress.committedStats = stats;
                 SyncAbilityWallet();
-                uiController?.ShowCoinGains(before, stats);
+                uiController?.ShowLearningReward(before, stats, combos,
+                    journeyBoardInput != null ? journeyBoardInput.inputCamera : Camera.main,
+                    StudyGrid, coinDropController, journeyCoinSupply?.CanStageCoins == true
+                        ? journeyCoinSupply : null);
             },SaveGuideCheckpointForLearning);
     }
     private void SaveGuideCheckpointForLearning() => SaveGuideCheckpoint();

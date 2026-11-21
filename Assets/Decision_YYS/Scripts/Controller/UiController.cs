@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using static Constants;
@@ -13,6 +14,11 @@ public class UiController : MonoBehaviour
         ? viewUi.ScreenPoint(new Vector2(.5f, .33f)) : new Vector2(Screen.width * .25f, Screen.height * .57f);
     internal TMP_FontAsset DialogueFont => mainStoryUi?.DialogueFont;
     internal void ShowCoinGains(int[] before, int[] after) => mainStoryUi?.ShowCoinGains(before, after);
+    internal void ShowLearningReward(int[] before, int[] after, IReadOnlyList<LearningComboReward> combos,
+        Camera boardCamera, Collider board, CoinDropController audio, JourneyCoinSupplyController supply = null) =>
+        mainStoryUi?.ShowLearningReward(before, after, combos, () => StoryScreenCenter,
+            () => viewUi != null ? viewUi.ScreenWidth : Screen.width * .55f,
+            offset => viewUi?.SetLearningRecoil(offset), boardCamera, board, audio, supply);
 
     [SerializeField] private MainStoryUi mainStoryUi;
     [SerializeField] private ViewUi viewUi;

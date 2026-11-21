@@ -7,8 +7,35 @@ public class ViewUi : ParentUi
     private UnityEngine.UI.Image hitFlash;
     private Color flashColor;
     private float hitFlashRemaining;
+    private RawImage learningRecoilImage;
+    private Rect learningRecoilRest;
     private const float HitFlashSeconds = 0.2f;
     public Vector2 ScreenCenter => ScreenPoint(new Vector2(.5f, .5f));
+    internal float ScreenWidth => Vector2.Distance(ScreenPoint(Vector2.zero), ScreenPoint(Vector2.right));
+
+    internal void SetLearningRecoil(Vector2 offset)
+    {
+        if (offset == Vector2.zero)
+        {
+            if (learningRecoilImage != null) learningRecoilImage.uvRect = learningRecoilRest;
+            learningRecoilImage = null;
+            return;
+        }
+        if (learningRecoilImage == null)
+        {
+            learningRecoilImage = view != null ? view.GetComponent<RawImage>() : null;
+            if (learningRecoilImage == null) return;
+            learningRecoilRest = learningRecoilImage.uvRect;
+        }
+
+        // Shift the image inside its fixed viewport; the frame and HUD stay in place.
+        var rest = learningRecoilRest;
+        Vector2 inset = new Vector2(Mathf.Abs(offset.x) + Mathf.Abs(offset.y) * .30f,
+            Mathf.Abs(offset.y) + Mathf.Abs(offset.x) * .30f);
+        var crop = new Rect(rest.position + Vector2.Scale(rest.size, inset + offset),
+            Vector2.Scale(rest.size, Vector2.one - 2f * inset));
+        learningRecoilImage.uvRect = crop;
+    }
 
     internal Vector2 ScreenPoint(Vector2 normalized)
     {
@@ -58,7 +85,11 @@ public class ViewUi : ParentUi
         if (hitFlashRemaining == 0f) hitFlash.enabled = false;
     }
 
-    private void OnDisable() => ClearPlayerHitFlash();
+    private void OnDisable()
+    {
+        ClearPlayerHitFlash();
+        SetLearningRecoil(Vector2.zero);
+    }
 
     public override void SetActivateUi(bool isActive)
     {

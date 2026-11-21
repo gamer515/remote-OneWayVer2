@@ -17,7 +17,8 @@ public partial class MainStoryUi
     private UnityEngine.UI.ScrollRect comboGuideScroll;
     private TextMeshProUGUI comboGuideText;
     private int comboGuideInputFrame = -1, guideStudyCount = -1;
-    internal bool IsReadingOpen => readingPanel != null && readingPanel.activeInHierarchy;
+    private bool hideReadingForReward;
+    internal bool IsReadingOpen => hideReadingForReward || (readingPanel != null && readingPanel.activeInHierarchy);
     private bool IsComboGuideOpen => comboGuidePanel != null && comboGuidePanel.activeInHierarchy;
     internal bool IsComboGuideInputBlocked => IsComboGuideOpen || comboGuideInputFrame == Time.frameCount;
 
@@ -25,8 +26,9 @@ public partial class MainStoryUi
     {
         var book = station.PendingReading;
         string result = station.ReadingResult;
+        hideReadingForReward = available && !IsComboGuideOpen && result != null && HasLearningRewardPresentation;
         UpdateComboGuide(station, available && book == null && result == null);
-        if (IsComboGuideOpen || !available || (book == null && result == null))
+        if (IsComboGuideOpen || !available || (book == null && result == null) || hideReadingForReward)
         {
             if (readingPanel != null) readingPanel.SetActive(false);
             return;
@@ -104,6 +106,7 @@ public partial class MainStoryUi
         if (readingPanel != null) Destroy(readingPanel);
         if (comboGuideCanvas != null) Destroy(comboGuideCanvas);
         if (coinGainCanvas != null) Destroy(coinGainCanvas);
+        if (learningRewardView != null) Destroy(learningRewardView.transform.parent.gameObject);
     }
 
     private void UpdateComboGuide(MineLearningStation station, bool canOpen)

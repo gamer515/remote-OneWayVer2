@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System;
 using TMPro;
 using UnityEngine;
 
@@ -15,12 +16,16 @@ internal static class AbilityCoinPresentation
 
 public partial class MainStoryUi
 {
-    private readonly Queue<string> coinGainMessages = new Queue<string>();
+    private readonly Queue<(string Text, Action StartLearningReward)> coinGainMessages = new();
     private GameObject coinGainCanvas;
     private Coroutine coinGainRoutine;
     private ChatBubbleGraphic coinGainPanel;
     private TextMeshProUGUI coinGainLabel;
     private CanvasGroup coinGainOpacity;
+    private LearningCoinRewardView learningRewardView;
+    private int waitingLearningRewards;
+    private bool HasLearningRewardPresentation => waitingLearningRewards > 0 ||
+        (learningRewardView != null && learningRewardView.IsPlaying);
 
     internal void ShowCoinGains(int[] before, int[] after)
     {
@@ -33,8 +38,55 @@ public partial class MainStoryUi
             string color = ColorUtility.ToHtmlStringRGB(AbilityCoinPresentation.Colors[i]);
             lines.Add($"<color=#{color}>{AbilityCoinPresentation.Names[i]} +{gain}</color>");
         }
-        if (lines.Count == 0) return;
-        coinGainMessages.Enqueue(string.Join("\n", lines));
+        if (lines.Count > 0) QueueCoinGainPopup(string.Join("\n", lines));
+    }
+
+    internal void ShowLearningReward(int[] before, int[] after, IReadOnlyList<LearningComboReward> combos,
+        Func<Vector2> storyCenter, Func<float> storyWidth, Action<Vector2> recoil,
+        Camera boardCamera, Collider board, CoinDropController audio, JourneyCoinSupplyController supply = null)
+    {
+        if (!isActiveAndEnabled) return;
+        var amounts = new int[AbilityCoinPresentation.Names.Length];
+        for (int i = 0; i < amounts.Length; i++) amounts[i] = Mathf.Max(0, after[i] - before[i]);
+        string popup = FormatLearningCoins(amounts);
+        if (string.IsNullOrEmpty(popup)) return;
+        if (combos != null)
+            foreach (var combo in combos)
+            {
+                string bonus = FormatLearningCoins(combo.Coins);
+                if (!string.IsNullOrEmpty(bonus))
+                    popup += $"\n<b>{combo.Name}</b>\n{bonus}";
+            }
+        if (learningRewardView == null) learningRewardView = LearningCoinRewardView.Create(gameObject.scene);
+        void ShowEffects() => learningRewardView.Enqueue(amounts, storyCenter, storyWidth, recoil, boardCamera, board, audio, supply);
+        if (DialogueFont == null)
+        {
+            ShowEffects();
+            return;
+        }
+        waitingLearningRewards++;
+        QueueCoinGainPopup(popup, () =>
+        {
+            waitingLearningRewards--;
+            ShowEffects();
+        });
+    }
+
+    private static string FormatLearningCoins(int[] coins)
+    {
+        var lines = new List<string>();
+        for (int ability = 0; ability < coins.Length; ability++)
+        {
+            if (coins[ability] <= 0) continue;
+            string color = ColorUtility.ToHtmlStringRGB(LearningCoinRewardView.CoinColors[ability]);
+            lines.Add($"<color=#{color}>{AbilityCoinPresentation.Names[ability]} +{coins[ability]}</color>");
+        }
+        return string.Join("  ", lines);
+    }
+
+    private void QueueCoinGainPopup(string message, Action startLearningReward = null)
+    {
+        coinGainMessages.Enqueue((message, startLearningReward));
         if (coinGainRoutine == null)
             coinGainRoutine = StartCoroutine(PlayCoinGains());
     }
@@ -44,11 +96,15 @@ public partial class MainStoryUi
         if (coinGainCanvas == null) CreateCoinGainCanvas();
         while (coinGainMessages.Count > 0)
         {
-            coinGainLabel.text = coinGainMessages.Dequeue();
+            var popup = coinGainMessages.Dequeue();
+            coinGainLabel.text = popup.Text;
             coinGainPanel.FitNotice(coinGainLabel, 300f);
             coinGainOpacity.alpha = 1f;
             coinGainCanvas.SetActive(true);
+            popup.StartLearningReward?.Invoke();
             yield return new WaitForSecondsRealtime(1.5f);
+            while (popup.StartLearningReward != null && learningRewardView != null && learningRewardView.IsPlaying)
+                yield return null;
             const float fadeTime = .25f;
             for (float elapsed = 0f; elapsed < fadeTime; elapsed += Time.unscaledDeltaTime)
             {
@@ -95,6 +151,8 @@ public partial class MainStoryUi
         if (coinGainRoutine != null) StopCoroutine(coinGainRoutine);
         coinGainRoutine = null;
         coinGainMessages.Clear();
+        waitingLearningRewards = 0;
         if (coinGainCanvas != null) coinGainCanvas.SetActive(false);
+        if (learningRewardView != null) learningRewardView.Clear();
     }
 }

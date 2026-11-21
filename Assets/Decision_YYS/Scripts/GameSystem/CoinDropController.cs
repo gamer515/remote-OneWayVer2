@@ -76,6 +76,14 @@ public sealed class CoinDropController : MonoBehaviour
         "mixkit-light-spell-873_charm"
     };
     private readonly AudioClip[] abilityCoinClips = new AudioClip[4];
+    private readonly AudioClip[] learningCoinClips = new AudioClip[4];
+    private static readonly string[] LearningCoinSounds =
+    {
+        "freesound_community-stones-falling-6375_Powers",
+        "floraphonic-rotate-movement-whoosh-1-185335_speeds",
+        "freesound_community-flipping-novel-80266_knowledges",
+        "universfield-magic-twinkle-244951_charms"
+    };
     private readonly HashSet<int> soundedCoins = new HashSet<int>();
     private AudioSource abilityCoinSource;
     private int abilityCoinSoundFrame = -1;
@@ -92,9 +100,17 @@ public sealed class CoinDropController : MonoBehaviour
         }
         // The rack and the grab handler can see the same coin on a single pointer press.
         if (!soundedCoins.Add(coin.GetInstanceID())) return false;
+        return PlayAbilityCoinClip(ref abilityCoinClips[type], AbilityCoinSounds[type]);
+    }
+
+    internal void PlayLearningCoinSound(int type) =>
+        PlayAbilityCoinClip(ref learningCoinClips[type], LearningCoinSounds[type]);
+
+    private bool PlayAbilityCoinClip(ref AudioClip clip, string path)
+    {
         float volume = Mathf.Clamp01(PlayerPrefs.GetFloat("BGM_Volume", .5f));
         if (volume <= 0f) return false;
-        var clip = abilityCoinClips[type] ??= Resources.Load<AudioClip>("Audio/AbilityCoins/" + AbilityCoinSounds[type]);
+        clip ??= Resources.Load<AudioClip>("Audio/AbilityCoins/" + path);
         if (clip == null) return false;
         if (abilityCoinSource == null)
         {

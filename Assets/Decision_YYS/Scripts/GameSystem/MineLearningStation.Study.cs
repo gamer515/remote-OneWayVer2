@@ -264,7 +264,7 @@ public sealed partial class MineLearningStation
             // Leave a living player's last health coin available for movement and recovery.
             int floor = ability == 0 && amounts[ability] > 0 ? 1 : 0;
             int loss = (int)Math.Min(Math.Max(0, amounts[ability] - floor), (long)periods * study.decayCoins);
-            if (loss > 0) grant(ability, -loss);
+            if (loss > 0) GrantSingleAbility(ability, -loss);
             progress.lastStudyDay[ability] += periods * decayDays;
             changed = true;
         }
@@ -352,14 +352,13 @@ public sealed partial class MineLearningStation
         var coins = new int[4];
         int reward = book?.reward ?? job.reward;
         coins[job.ability] = reward;
-        AwardCoins(job.ability, reward);
         progress.successfulStudies++;
         if (book != null)
         {
             AwardSkill(book.skill, book.skillReward);
             if (!progress.mastered.Contains(book.id)) progress.mastered.Add(book.id);
         }
-        var combos = new List<string>();
+        var combos = new List<LearningComboReward>();
         if (job.comboStudy) progress.comboSuccesses.Add(job.bookId);
         foreach (var combo in study.combos)
         {
@@ -367,20 +366,18 @@ public sealed partial class MineLearningStation
                 !combo.books.All(progress.comboSuccesses.Contains)) continue;
             progress.rewardedCombos.Add(combo.id);
             for (int ability = 0; ability < combo.coins.Length; ability++)
-            {
-                AwardCoins(ability, combo.coins[ability]);
                 coins[ability] += combo.coins[ability];
-            }
             AwardSkill(combo.skill, combo.skillReward);
-            combos.Add(combo.name.Replace('·', '/').Replace('×', '/'));
+            combos.Add(new LearningComboReward(combo.name.Replace('·', '/').Replace('×', '/'), combo.coins));
         }
+        AwardCoins(coins, combos);
         if (job.comboStudy && !HasComboStudy) progress.comboSuccesses.Clear();
         var rewards = coins.Select((amount, ability) => amount > 0 ? $"{AbilityNames[ability]} +{amount}" : null)
             .Where(text => text != null).ToList();
         var skill = study.skills.FirstOrDefault(item => item.id == book?.skill);
         if (skill != null && book.skillReward > 0) rewards.Add($"{skill.name} +{book.skillReward}");
         string detail = rewards.Count == 0 ? "획득 없음" : string.Join(" / ", rewards);
-        if (combos.Count > 0) detail += "\n콤보 " + string.Join(" / ", combos);
+        if (combos.Count > 0) detail += "\n콤보 " + string.Join(" / ", combos.Select(combo => combo.Name));
         ShowStudyResult(true, "학습 성공\n" + detail);
     }
 
@@ -395,11 +392,19 @@ public sealed partial class MineLearningStation
         StudyResultUntil = Time.unscaledTime + 3.5f;
     }
 
-    private void AwardCoins(int ability, int amount)
+    private void AwardCoins(int[] amounts, IReadOnlyList<LearningComboReward> combos)
     {
-        if (amount == 0) return;
-        grant(ability, amount);
-        progress.lastStudyDay[ability] = progress.day;
+        if (!amounts.Any(amount => amount != 0)) return;
+        grant(amounts, combos);
+        for (int ability = 0; ability < amounts.Length; ability++)
+            if (amounts[ability] != 0) progress.lastStudyDay[ability] = progress.day;
+    }
+
+    private void GrantSingleAbility(int ability, int amount)
+    {
+        var delta = new int[4];
+        delta[ability] = amount;
+        grant(delta, null);
     }
 
     private void AwardSkill(string id, int amount)

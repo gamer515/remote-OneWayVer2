@@ -159,9 +159,15 @@ public sealed partial class MineLearningStation
         if (book == null || ReadingResult != null || index < 0 || index >= book["choices"].Count()) return;
         var choice = book["choices"][index];
         var amounts = new int[4];
-        void AddRewards(JToken reward)
+        int[] AddRewards(JToken reward)
         {
-            for (int i = 0; i < amounts.Length; i++) amounts[i] += (int?)reward?[AbilityKeys[i]] ?? 0;
+            var added = new int[amounts.Length];
+            for (int i = 0; i < amounts.Length; i++)
+            {
+                added[i] = (int?)reward?[AbilityKeys[i]] ?? 0;
+                amounts[i] += added[i];
+            }
+            return added;
         }
 
         string id = (string)book["bookId"];
@@ -170,14 +176,13 @@ public sealed partial class MineLearningStation
         if (!progress.mastered.Contains(id)) progress.mastered.Add(id);
         progress.successfulStudies++;
         AddRewards(choice["reward"]);
-        var combos = new List<string>();
+        var combos = new List<LearningComboReward>();
         foreach (var combo in id == StrengthTutorialBook ? Array.Empty<JObject>() : readingCombos)
         {
             if (!CreditReadingCombo(combo, id)) continue;
-            AddRewards(combo["reward"]);
-            combos.Add((string)combo["name"]);
+            combos.Add(new LearningComboReward((string)combo["name"], AddRewards(combo["reward"])));
         }
-        for (int i = 0; i < amounts.Length; i++) AwardCoins(i, amounts[i]);
+        AwardCoins(amounts, combos);
         progress.readingResult = (string)choice["result"] + "\n\n" +
             string.Join(" / ", amounts.Select((quantity, i) => quantity > 0 ? AbilityName(i) + " +" + quantity : null)
                 .Where(label => label != null));
@@ -188,7 +193,7 @@ public sealed partial class MineLearningStation
             var skill = study.skills.FirstOrDefault(entry => entry.id == definition.skill);
             progress.readingResult += $"\n세부 능력  {skill?.name ?? definition.skill} +{definition.skillReward}";
         }
-        if (combos.Count > 0) progress.readingResult += "\n콤보 달성\n" + string.Join("\n", combos);
+        if (combos.Count > 0) progress.readingResult += "\n콤보 달성\n" + string.Join("\n", combos.Select(combo => combo.Name));
         save?.Invoke();
     }
 
