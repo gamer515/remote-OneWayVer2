@@ -8,15 +8,20 @@ public sealed class TaxScaleView : MonoBehaviour
     [SerializeField] private Transform playerPan;
     [SerializeField] private Transform bowl;
 
-    private const float StackSpacing = .089f;
+    internal const float StackSpacing = .089f;
     private readonly List<GameObject> coins = new List<GameObject>();
     private GameObject[] coinPrefabs;
     private Quaternion beamRest;
     private Vector3 noticeRest, playerRest;
-    private Transform stackBase;
-    private Renderer panCup;
+    private Transform stackBase, playerStack;
+    private Renderer panCup, playerCup;
     private string noticeText;
     private float targetTilt, tilt;
+    private int playerCount;
+
+    internal Transform CollectionBowl => bowl;
+    internal Vector3 PlayerStackPosition => playerStack.position;
+    internal int PlayerCapacity => playerPan.GetComponent<CounterBalanceScale.CoinTray>().Capacity;
 
     internal void BindCoinPrefabs(GameObject[] prefabs) => coinPrefabs = prefabs;
 
@@ -27,7 +32,9 @@ public sealed class TaxScaleView : MonoBehaviour
         playerRest = playerPan.localPosition;
         panCup = noticePan.Find("Brass cup").GetComponent<Renderer>();
         stackBase = noticePan.Find("Coin stack bases/Coin Stack");
-        // The display is independent of the board's payment and drag targets.
+        playerStack = playerPan.Find("Coin stack bases/Coin Stack");
+        playerCup = playerPan.Find("Brass cup").GetComponent<Renderer>();
+        // The pans use pointer tests, so they do not intercept other board physics.
         foreach (var collider in beam.parent.GetComponentsInChildren<Collider>())
             collider.enabled = false;
         foreach (var collider in bowl.GetComponentsInChildren<Collider>())
@@ -43,7 +50,7 @@ public sealed class TaxScaleView : MonoBehaviour
         for (int ability = 0; ability < cost.Length; ability++)
             for (int level = 0; level < cost[ability]; level++)
                 AddCoin(coinPrefabs[ability]);
-        targetTilt = coins.Count > 0 ? 8f : 0f;
+        UpdateTilt();
     }
 
     private void AddCoin(GameObject prefab, bool unassigned = false)
@@ -74,8 +81,31 @@ public sealed class TaxScaleView : MonoBehaviour
             Destroy(coin);
         }
         coins.Clear();
-        targetTilt = 0f;
+        UpdateTilt();
     }
+
+    internal bool HitsPlayerPan(Ray ray)
+    {
+        var bounds = playerCup.bounds;
+        if (playerCount > 0)
+            bounds.Encapsulate(playerStack.position + playerStack.up * (StackSpacing * playerCount));
+        return bounds.IntersectRay(ray);
+    }
+
+    internal void PlacePlayerCoin(Transform coin, int level)
+    {
+        coin.SetParent(playerStack, true);
+        coin.SetPositionAndRotation(playerStack.position + playerStack.up * (level * StackSpacing),
+            playerStack.rotation * Quaternion.Euler(0f, level * 19f, 0f));
+    }
+
+    internal void SetPlayerCount(int count)
+    {
+        playerCount = count;
+        UpdateTilt();
+    }
+
+    private void UpdateTilt() => targetTilt = Mathf.Clamp((coins.Count - playerCount) * 4f, -8f, 8f);
 
     private void Update()
     {

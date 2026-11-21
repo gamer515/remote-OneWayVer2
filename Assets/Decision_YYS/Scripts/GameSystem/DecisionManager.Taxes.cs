@@ -9,25 +9,29 @@ public partial class DecisionManager
     private static readonly string[] TaxAbilities = { "힘", "속도", "지능", "매력" };
     private ChapterTaxSettings taxRules;
     private Action commitBoardPayment, cancelBoardPayment;
+    private bool collectorBoardPayment;
     private int[] npcBoardPaymentCost;
     private Action resumeNpcPaymentAfterTax;
 
-    private bool TryBeginBoardPayment(int[] cost, Action commit, Action cancel, bool useNpcBowl = false)
+    private bool TryBeginBoardPayment(int[] cost, Action commit, Action cancel, bool useNpcBowl = false,
+        bool collectorPayment = false, bool useTaxPan = false)
     {
         if (journeyCoinSupply == null || journeyCoinSupply.HasBoardPayment || (useNpcBowl && !CanShowNpcPaymentBowl))
             return false;
         if (!journeyCoinSupply.BeginBoardPayment(cost, StudyGrid, useNpcBowl ? NpcPaymentBowlOpening : null,
-            useNpcBowl ? QueueNpcPaymentCoin : null))
+            useNpcBowl ? QueueNpcPaymentCoin : null, useTaxPan))
             return false;
         StopNpcPaymentPresentation();
         npcBoardPaymentCost = useNpcBowl ? (int[])cost.Clone() : null;
         if (useNpcBowl) BeginNpcPaymentPresentation();
         commitBoardPayment = commit;
         cancelBoardPayment = cancel;
+        collectorBoardPayment = collectorPayment;
         SetYellowInputInteractable(false);
         journeyBoardInput?.SetChoiceCount(0);
         presentationController.ExitChoice();
         string placement = useNpcBowl ? "코인을 꺼내 나무 통 안에 넣으세요." : "코인통에서 꺼내 초록 보드에 올리세요.";
+        if (useTaxPan) placement = "오른쪽 접시에 올린 코인을 먼저 사용합니다. 부족한 코인은 초록 보드에 올리세요.";
         presentationController.ShowInteraction($"필요 코인 {DescribeTaxCost(cost)}\n{placement}\nEsc 취소", "납부");
         return true;
     }
@@ -58,6 +62,12 @@ public partial class DecisionManager
         if (commit == null) yield break;
         commitBoardPayment = cancelBoardPayment = null;
         npcBoardPaymentCost = null;
+        if (collectorBoardPayment)
+        {
+            collectorBoardPayment = false;
+            CollectBoardTaxPayment(commit);
+            yield break;
+        }
         if (npcPaymentRoot != null)
         {
             journeyCoinSupply.ClearBoardPayment(keepBowlCoins: true);
@@ -78,6 +88,7 @@ public partial class DecisionManager
         journeyCoinSupply.ClearBoardPayment();
         var cancel = cancelBoardPayment;
         commitBoardPayment = cancelBoardPayment = null;
+        collectorBoardPayment = false;
         npcBoardPaymentCost = null;
         SetYellowInputInteractable(true);
         cancel?.Invoke();
@@ -140,6 +151,7 @@ public partial class DecisionManager
 
     private void ShowCitizenInspection(string feedback = null)
     {
+        CloseTaxScalePreparation();
         int minimum = mineCollectors.InspectionMinimum;
         var wallet = statContainer.stats;
         var missing = wallet.Select((amount, index) => (index, count: minimum - amount))
@@ -186,22 +198,28 @@ public partial class DecisionManager
             ShowCitizenInspection("이 종류의 코인이 부족합니다.");
             return;
         }
-        if (!boardPaid && TryBeginBoardPayment(cost, () => CommitCitizenTax(ability, true), () => ShowCitizenInspection()))
+        if (!boardPaid && TryBeginBoardPayment(cost, () => CommitCitizenTax(ability, true), () => ShowCitizenInspection(),
+            collectorPayment: true))
             return;
         statContainer.SetStats(after);
         guideProgress.committedStats = after;
         SyncAbilityWallet();
         mineCollectors.CompleteInspection();
-        FinishCollectorDialogue();
-        if (after[0] <= 0) FinishRunAndReturnToMainMenu("기준세 납부 후 체력 0");
+        PresentSettledTaxPayment(() =>
+        {
+            FinishCollectorDialogue();
+            if (after[0] <= 0) FinishRunAndReturnToMainMenu("기준세 납부 후 체력 0");
+        });
     }
 
     private void ShowMineTax(string feedback = null)
     {
         var invoice = mine.taxInvoice;
+        OpenTaxScalePreparation(invoice);
         string notice = DescribeTaxNotice(invoice);
         taxScaleView?.ShowNotice(invoice.FixedCost(), invoice.Single + invoice.Mixed, notice);
         string bill = $"따라잡았다. 이번 순찰의 고지서를 확인하고 세금을 내라.\n{AnnounceCollectorTaxes(invoice)}\n{notice}";
+        if (taxScaleView != null) bill += "\n오른쪽 접시에 코인을 올려 납부를 준비할 수 있습니다.";
         var wallet = statContainer.stats;
         bool normalPayment = CanPayGeneralTax(wallet, invoice.FixedCost(), invoice.Single, invoice.Mixed);
         bool alternatePayment = false;
@@ -349,13 +367,17 @@ public partial class DecisionManager
         if (!boardPaid && TryBeginBoardPayment(cost, () =>
         {
             if (ReferenceEquals(mine.taxInvoice, invoice)) CommitTaxPayment(cost, true, alternateAbility);
-        }, () => ShowMineTax())) return;
+        }, () => ShowMineTax(), collectorPayment: true, useTaxPan: taxScaleView != null)) return;
         statContainer.SetStats(after);
         guideProgress.committedStats = after;
         mine.collected += cost.Sum();
         SyncAbilityWallet();
-        FinishMineTax();
-        if (after[0] <= 0) FinishRunAndReturnToMainMenu("징수 후 체력 0");
+        CloseSettledMineTax();
+        PresentSettledTaxPayment(() =>
+        {
+            FinishCollectorDialogue();
+            if (after[0] <= 0) FinishRunAndReturnToMainMenu("징수 후 체력 0");
+        });
     }
 
     private void TryPersuadeTaxCollector()
@@ -381,6 +403,7 @@ public partial class DecisionManager
         }
         presentationController.ExitChoice();
         taxSelected = null;
+        CloseTaxScalePreparation();
         currentState = StoryState.Duel;
         playerController.FocusNpc(mineCollectors.NearestMember(playerController.CurrentPosition), true);
         duelMiniGame.BeginDuel(won =>

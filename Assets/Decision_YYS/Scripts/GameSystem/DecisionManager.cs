@@ -95,6 +95,7 @@ public partial class DecisionManager : MonoBehaviour
     private void OnEnable()
     {
         if (uiController != null) uiController.OnPlayerViewChanged += OnNpcPaymentViewChanged;
+        if (uiController != null) uiController.OnPlayerViewChanged += OnTaxCollectionViewChanged;
         if (statContainer != null)
         {
             statContainer.OnTargetStatReached += HandleTargetStatReached;
@@ -115,6 +116,8 @@ public partial class DecisionManager : MonoBehaviour
         npcBoardPaymentCost = null;
         resumeNpcPaymentAfterTax = null;
         if (uiController != null) uiController.OnPlayerViewChanged -= OnNpcPaymentViewChanged;
+        if (uiController != null) uiController.OnPlayerViewChanged -= OnTaxCollectionViewChanged;
+        StopTaxCollection();
         StopNpcPaymentPresentation();
         journeyCoinSupply?.ClearBoardPayment();
         StopChapterSky();
@@ -152,6 +155,12 @@ public partial class DecisionManager : MonoBehaviour
 
     private void Update()
     {
+        if (endTaxCollection != null)
+        {
+            if (collectorCollectionView == null || !collectorCollectionView.isActiveAndEnabled)
+                FinishTaxCollectionPresentation();
+            return;
+        }
         TickMineChapter();
         TickLearning();
         if (uiController?.IsReadingOpen == true) return;

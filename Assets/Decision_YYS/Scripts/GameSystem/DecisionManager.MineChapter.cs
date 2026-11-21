@@ -406,6 +406,7 @@ public partial class DecisionManager
     }
     private void ConfirmMineTaxChoice()
     {
+        if (endTaxCollection != null) return;
         if (collectorPass != null)
         {
             StopCoroutine(collectorPass);
@@ -433,13 +434,19 @@ public partial class DecisionManager
     }
     private void FinishMineTax()
     {
+        CloseSettledMineTax();
+        FinishCollectorDialogue();
+    }
+
+    private void CloseSettledMineTax()
+    {
         mine.collectorChaseClosed = true;
         mine.taxInvoice = null;
-        FinishCollectorDialogue();
     }
 
     private void FinishCollectorDialogue()
     {
+        CloseTaxScalePreparation();
         taxScaleView?.ClearNotice();
         uiController.SetTaxCriteria(null);
         taxWitnessStep = 0; taxWitness = null;

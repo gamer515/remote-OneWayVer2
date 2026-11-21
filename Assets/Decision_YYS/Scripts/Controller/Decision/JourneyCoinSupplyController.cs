@@ -32,15 +32,17 @@ public sealed class JourneyCoinSupplyController
     private Action<Vector3, Rigidbody, Action<bool>> dropPaymentCoin;
     internal Transform PaymentBowl { get; set; }
     private PaymentCoin draggedPaymentCoin;
+    private bool grabbedFromTaxPan;
     private float coinGrabY;
     private bool absorbingPayment;
+    private TaxScaleView taxScale;
     public Collider WhiteBoard { get; set; }
     public Collider CoinRamp { get; set; }
     public Func<Vector2, int, Transform> RefillSlot { get; set; }
     public Func<int, int, bool> RefillBooks { get; set; }
     internal Transform BoardShelf { get; set; }
     internal IEnumerable<Transform> BoardCoins => paymentCoins
-        .Where(coin => coin != draggedPaymentCoin && !coin.inPaymentBowl && coin.refillSlot < 0 && coin.model != null)
+        .Where(coin => coin != draggedPaymentCoin && !coin.inPaymentBowl && !coin.onTaxPan && coin.refillSlot < 0 && coin.model != null)
         .Select(coin => coin.model.transform);
     public MonoBehaviour DropRunner { get; set; }
     public bool HasBoardPayment => paymentCost != null;
@@ -55,6 +57,7 @@ public sealed class JourneyCoinSupplyController
         public int type;
         public bool landing;
         public bool inPaymentBowl;
+        public bool onTaxPan;
         public int refillSlot = -1;
     }
 
@@ -204,12 +207,13 @@ public sealed class JourneyCoinSupplyController
     }
 
     public bool BeginBoardPayment(int[] cost, Collider grid, Func<Ray, Vector3?> bowlOpening = null,
-        Action<Vector3, Rigidbody, Action<bool>> dropCoin = null)
+        Action<Vector3, Rigidbody, Action<bool>> dropCoin = null, bool useTaxPan = false)
     {
         if (!IsReady || board.trayFloor == null || grid == null ||
             board.supplyButtons == null || board.supplyButtons.Length < 4 ||
             !AbilityPayment.IsValid(cost) || cost == null || !Array.Exists(cost, amount => amount > 0))
             return false;
+        if (!useTaxPan) SetTaxScale(null);
         paymentCost = (int[])cost.Clone();
         paymentGrid = grid;
         paymentBowlOpening = bowlOpening;
@@ -221,11 +225,20 @@ public sealed class JourneyCoinSupplyController
                 TrayPosition(draggedPaymentCoin.type, paymentCoins.IndexOf(draggedPaymentCoin)), .20f);
         }
         draggedPaymentCoin = null;
-        var retained = new int[4];
+        grabbedFromTaxPan = false;
+        // Reservations on the scale fill matching requirements before loose coins.
+        var requiredOnBoard = (int[])cost.Clone();
+        foreach (var coin in paymentCoins)
+            if (coin.onTaxPan && requiredOnBoard[coin.type] > 0)
+                requiredOnBoard[coin.type]--;
+        var retainedPan = new int[4];
+        var retainedBoard = new int[4];
         for (int i = 0; i < paymentCoins.Count;)
         {
             var coin = paymentCoins[i];
-            if (retained[coin.type] < cost[coin.type])
+            int limit = coin.onTaxPan ? cost[coin.type] - requiredOnBoard[coin.type] : requiredOnBoard[coin.type];
+            int[] retained = coin.onTaxPan ? retainedPan : retainedBoard;
+            if (retained[coin.type] < limit)
             {
                 retained[coin.type]++;
                 i++;
@@ -234,6 +247,7 @@ public sealed class JourneyCoinSupplyController
             RemovePaymentCoin(coin);
             paymentCoins.RemoveAt(i);
         }
+        RestackTaxPan();
         RefreshDisplay();
         return true;
     }
@@ -270,7 +284,7 @@ public sealed class JourneyCoinSupplyController
 
     private void HandleBoardPaymentPointer(Vector2 point, bool down, bool held, bool up, Action ready)
     {
-        if (!HasBoardPayment && draggedPaymentCoin != null &&
+        if (!HasBoardPayment && taxScale == null && draggedPaymentCoin != null &&
             RefillSlot?.Invoke(point, draggedPaymentCoin.type) is Transform refill)
         {
             InsertRefillCoin(refill, up);
@@ -284,6 +298,7 @@ public sealed class JourneyCoinSupplyController
                 DropOnBoard(draggedPaymentCoin, WhiteBoard ?? board.trayFloor,
                     TrayPosition(draggedPaymentCoin.type, paymentCoins.IndexOf(draggedPaymentCoin)), .20f);
                 draggedPaymentCoin = null;
+                grabbedFromTaxPan = false;
             }
             return;
         }
@@ -302,6 +317,13 @@ public sealed class JourneyCoinSupplyController
             {
                 coinGrabY = point.y;
                 BoardItemDrop.Hold(draggedPaymentCoin.body);
+                grabbedFromTaxPan = draggedPaymentCoin.onTaxPan;
+                if (grabbedFromTaxPan)
+                {
+                    draggedPaymentCoin.onTaxPan = false;
+                    draggedPaymentCoin.model.transform.SetParent(coinContainer, true);
+                    RestackTaxPan();
+                }
                 inventory?.TryPlayAbilityCoinSound(draggedPaymentCoin.model, draggedPaymentCoin.type);
             }
             if (draggedPaymentCoin == null)
@@ -317,6 +339,7 @@ public sealed class JourneyCoinSupplyController
             if (up)
             {
                 draggedPaymentCoin = null;
+                grabbedFromTaxPan = false;
                 RemovePaymentCoin(coin);
                 paymentCoins.Remove(coin);
                 RefreshDisplay();
@@ -340,10 +363,15 @@ public sealed class JourneyCoinSupplyController
                 WhiteBoard ?? board.trayFloor, paymentGrid, out hit);
         float lift = BoardItemDrop.PointerLift(inputCamera, point, coinGrabY);
         var opening = paymentBowlOpening?.Invoke(ray);
+        bool taxPanTarget = taxScale != null && taxScale.HitsPlayerPan(ray) &&
+            paymentCoins.Count(coin => coin.onTaxPan) < taxScale.PlayerCapacity;
         if (held)
         {
             var model = draggedPaymentCoin.model.transform;
-            if (opening is Vector3 aboveRim)
+            if (taxPanTarget)
+                model.position = taxScale.PlayerStackPosition + Vector3.up *
+                    (paymentCoins.Count(coin => coin.onTaxPan) * TaxScaleView.StackSpacing + lift);
+            else if (opening is Vector3 aboveRim)
             {
                 Bounds shape = BoardItemDrop.ItemBounds(model);
                 model.position = aboveRim + Vector3.up * (lift + model.position.y - shape.min.y);
@@ -358,8 +386,14 @@ public sealed class JourneyCoinSupplyController
         if (!up) return;
         var item = draggedPaymentCoin;
         draggedPaymentCoin = null;
+        grabbedFromTaxPan = false;
         item.refillSlot = -1;
-        if (opening is Vector3 entry && dropPaymentCoin != null) InsertPaymentCoin(item, entry);
+        if (taxPanTarget)
+        {
+            item.onTaxPan = true;
+            RestackTaxPan();
+        }
+        else if (opening is Vector3 entry && dropPaymentCoin != null) InsertPaymentCoin(item, entry);
         else DropOnBoard(item, surface, hit, lift);
     }
 
@@ -444,7 +478,7 @@ public sealed class JourneyCoinSupplyController
         var placed = new int[4];
         foreach (var coin in paymentCoins)
             if (!coin.landing && coin.refillSlot < 0 && (paymentBowlOpening != null
-                    ? coin.inPaymentBowl : BoardItemDrop.IsOnSurface(paymentGrid, coin.model.transform)))
+                    ? coin.inPaymentBowl : coin.onTaxPan || BoardItemDrop.IsOnSurface(paymentGrid, coin.model.transform)))
                 placed[coin.type]++;
         for (int i = 0; i < placed.Length; i++) if (placed[i] != paymentCost[i]) return false;
         return true;
@@ -525,8 +559,59 @@ public sealed class JourneyCoinSupplyController
         dropPaymentCoin = null;
         PaymentBowl = null;
         draggedPaymentCoin = null;
+        grabbedFromTaxPan = false;
         absorbingPayment = false;
+        taxScale?.SetPlayerCount(0);
         RefreshDisplay();
+    }
+
+    internal void SetTaxScale(TaxScaleView scale)
+    {
+        if (taxScale == scale) return;
+        if (grabbedFromTaxPan && draggedPaymentCoin != null)
+        {
+            RemovePaymentCoin(draggedPaymentCoin);
+            paymentCoins.Remove(draggedPaymentCoin);
+            draggedPaymentCoin = null;
+            grabbedFromTaxPan = false;
+        }
+        foreach (var coin in paymentCoins)
+            if (coin.onTaxPan) RemovePaymentCoin(coin);
+        paymentCoins.RemoveAll(coin => coin.onTaxPan);
+        taxScale?.SetPlayerCount(0);
+        taxScale = scale;
+        RefreshDisplay();
+    }
+
+    private void RestackTaxPan()
+    {
+        if (taxScale == null) return;
+        int level = 0;
+        foreach (var coin in paymentCoins)
+            if (coin.onTaxPan) taxScale.PlacePlayerCoin(coin.model.transform, level++);
+        taxScale.SetPlayerCount(level);
+    }
+
+    internal Transform[] TakeCollectorCoins(out bool allOnScale, out Vector3 boardCoinPosition)
+    {
+        allOnScale = paymentCoins.Count > 0 && paymentCoins.All(coin => coin.onTaxPan);
+        var boardCoin = paymentCoins.FirstOrDefault(coin => !coin.onTaxPan);
+        boardCoinPosition = boardCoin != null ? boardCoin.model.transform.position : Vector3.zero;
+        var visuals = new Transform[paymentCoins.Count];
+        for (int i = 0; i < paymentCoins.Count; i++)
+        {
+            var coin = paymentCoins[i];
+            BoardItemDrop.Hold(coin.body);
+            coin.body.detectCollisions = false;
+            UnityEngine.Object.Destroy(coin.body);
+            visuals[i] = coin.model.transform;
+        }
+        paymentCoins.Clear();
+        paymentCost = null;
+        draggedPaymentCoin = null;
+        grabbedFromTaxPan = false;
+        if (!allOnScale) taxScale?.SetPlayerCount(0);
+        return visuals;
     }
 
     private static void RemovePaymentCoin(PaymentCoin coin)
