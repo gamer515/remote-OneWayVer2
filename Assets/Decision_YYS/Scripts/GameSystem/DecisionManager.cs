@@ -162,6 +162,7 @@ public partial class DecisionManager : MonoBehaviour
                 FinishTaxCollectionPresentation();
             return;
         }
+        if (activeRunIntro != null) return;
         TickMineChapter();
         TickLearning();
         if (uiController?.IsReadingOpen == true)
@@ -221,6 +222,9 @@ public partial class DecisionManager : MonoBehaviour
 
         session = startData.Session;
         loadedProgress = startData.SaveManager.LoadProgress();
+        newRunEntrance = chapterIndex == 0 && episodeIndex == 0 &&
+            !startData.SavedPlayerPosition.HasValue && string.IsNullOrEmpty(loadedProgress.interactionPhase) &&
+            loadedProgress.guideProgress?.mineChapter?.initialized != true;
         guideProgress = loadedProgress.guideProgress ?? new GuideProgress();
         guideProgress.completedEffects ??= new List<string>();
         guideProgress.runHistory ??= new List<PlayedEncounterCardRecord>();
@@ -632,6 +636,11 @@ private void SetYellowInputInteractable(bool interactable)
     private void HandleScreenClicked()
     {
         if (uiController != null && (uiController.IsReadingOpen || uiController.IsComboGuideInputBlocked)) return;
+        if (activeRunIntro != null)
+        {
+            AdvanceRunIntro();
+            return;
+        }
         HandleEncounterYellowPressed();
     }
 

@@ -64,7 +64,7 @@ public partial class DecisionManager
                 ApproachEncounter(encounter, activeCardIndex, loadedProgress?.activeStoryPath);
             }
         }
-        else BeginExploration();
+        else if (!TryStartRunIntro()) BeginExploration();
     }
 
     private void HandleEncounterYellowPressed()
