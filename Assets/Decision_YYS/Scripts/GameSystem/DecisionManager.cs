@@ -119,6 +119,7 @@ public partial class DecisionManager : MonoBehaviour
         if (uiController != null) uiController.OnPlayerViewChanged -= OnTaxCollectionViewChanged;
         StopTaxCollection();
         StopNpcPaymentPresentation();
+        StopNpcRewardPresentation();
         journeyCoinSupply?.ClearBoardPayment();
         StopChapterSky();
         RestoreGuideKneel();

@@ -245,7 +245,7 @@ public partial class DecisionManager
             if (labor)
             {
                 var record = NewStoryEvent(key, "labor_result", activeCards.MainStory[activeCardIndex]);
-                ApplyAuthoredDelta(mine.activityDelta);
+                ApplyAuthoredDelta(mine.activityDelta, locationNpcReward: true);
                 record.reason = next == action.winStoryPath ? "win" : "lose";
                 record.statsAfter = statContainer.stats; record.coinsAfter = coinDropController.RemainingCoins;
                 storyEvents.Add(record);

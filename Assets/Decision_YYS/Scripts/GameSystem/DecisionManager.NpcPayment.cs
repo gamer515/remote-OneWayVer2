@@ -261,6 +261,7 @@ public partial class DecisionManager
 
     private void OnNpcPaymentViewChanged(bool walking)
     {
+        if (walking) StopNpcRewardPresentation();
         if (!walking || npcPaymentRoot == null) return;
         if (journeyCoinSupply?.HasBoardPayment == true)
         {

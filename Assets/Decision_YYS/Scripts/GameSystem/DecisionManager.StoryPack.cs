@@ -461,7 +461,7 @@ public partial class DecisionManager
         var result = outcome?["result"];
         var delta = MineLearningStation.AbilityKeys.Select(key => (int?)result?["stats"]?[key] ?? 0).ToArray();
         if (coin >= 0) delta[coin] = -PackFee;
-        if (delta.Any(amount => amount != 0)) ApplyAuthoredDelta(delta);
+        if (delta.Any(amount => amount != 0)) ApplyAuthoredDelta(delta, locationNpcReward: true);
         AddAuthoredFlags(result?["reward_flags"]?.Values<string>() ?? Enumerable.Empty<string>());
         bool completed = (bool?)result?[IsPackMain ? "main_progress" : "side_completed"] ?? false;
         if (completed) Authored.storyPackResolution = (string)result?["resolution"] ?? "worked";

@@ -90,7 +90,7 @@ public partial class DecisionManager
         SetYellowInputInteractable(true);
     }
 
-    private void ApplyAuthoredDelta(int[] delta)
+    private void ApplyAuthoredDelta(int[] delta, bool locationNpcReward = false)
     {
         int[] before = statContainer.stats;
         int[] stats = MineChapterSettings.ApplyDelta(before, delta);
@@ -98,6 +98,8 @@ public partial class DecisionManager
         guideProgress.committedStats = stats;
         SyncAbilityWallet();
         uiController?.ShowCoinGains(before, stats);
+        if (locationNpcReward && pendingEncounter.HasValue && pendingEncounter.Value.PlaceId == activePlaceId)
+            EnqueueNpcRewardPresentation(before, stats);
     }
 
     private void AddAuthoredFlags(System.Collections.Generic.IEnumerable<string> flags)

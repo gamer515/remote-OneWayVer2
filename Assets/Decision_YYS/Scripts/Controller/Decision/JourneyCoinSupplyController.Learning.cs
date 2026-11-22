@@ -11,6 +11,7 @@ public sealed partial class JourneyCoinSupplyController
         internal LearningBoardCoin Data;
         internal GameObject Model;
         internal Vector3 RestPosition;
+        internal bool InFlight;
     }
 
     private readonly List<LandedCoin> learningCoins = new();
@@ -112,6 +113,34 @@ public sealed partial class JourneyCoinSupplyController
         return true;
     }
 
+    internal GameObject ReserveNpcRewardCoin(int ability, Vector3 position)
+    {
+        if (learningProgress == null || !CanStageCoins || AvailableCoins(ability) <= 0) return null;
+        var data = new LearningBoardCoin { ability = ability };
+        if (!PlaceLearningCoin(data, position)) return null;
+        learningProgress.boardRewardCoins.Add(data);
+        var coin = learningCoins[learningCoins.Count - 1];
+        coin.InFlight = true;
+        foreach (var renderer in coin.Model.GetComponentsInChildren<Renderer>()) renderer.forceRenderingOff = true;
+        RefreshDisplay();
+        return coin.Model;
+    }
+
+    internal void RevealNpcRewardCoin(GameObject model)
+    {
+        if (model == null) return;
+        var coin = learningCoins.Find(item => item.Model == model);
+        if (coin == null) return;
+        coin.InFlight = false;
+        foreach (var renderer in model.GetComponentsInChildren<Renderer>()) renderer.forceRenderingOff = false;
+    }
+
+    internal Vector3 RewardCanisterOpening(int ability)
+    {
+        Bounds bounds = supplyHoverBounds[ability];
+        return new Vector3(bounds.center.x, bounds.max.y, bounds.center.z);
+    }
+
     private void ReconcileLearningCoins()
     {
         if (learningCoins.Count == 0) return;
@@ -158,7 +187,7 @@ public sealed partial class JourneyCoinSupplyController
         bool hasRay = boardInput.TryCreateRay(point, out var ray);
         if (down && hasRay)
         {
-            var hit = learningCoins.Where(coin => BoardItemDrop.ItemBounds(coin.Model.transform).IntersectRay(ray, out _))
+            var hit = learningCoins.Where(coin => !coin.InFlight && BoardItemDrop.ItemBounds(coin.Model.transform).IntersectRay(ray, out _))
                 .OrderBy(coin => (coin.RestPosition - ray.origin).sqrMagnitude).FirstOrDefault();
             if (hit != null)
             {
@@ -190,7 +219,8 @@ public sealed partial class JourneyCoinSupplyController
                 Rect area = SelectionRect(point);
                 selectedLearningCoins.Clear();
                 if (area.width >= 5f && area.height >= 5f)
-                    selectedLearningCoins.AddRange(learningCoins.Where(coin => area.Contains(CoinScreenPoint(coin.RestPosition))));
+                    selectedLearningCoins.AddRange(learningCoins.Where(coin => !coin.InFlight &&
+                        area.Contains(CoinScreenPoint(coin.RestPosition))));
                 ShowLearningSelection(area, held || selectedLearningCoins.Count > 0);
             }
             if (up || !held) selectingLearningCoins = false;
