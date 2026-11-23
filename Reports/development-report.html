@@ -396,6 +396,46 @@ unity command run_script --caller plugin --skill unity-cli --file AgentScripts/K
 <p>측정 도구 문서 <a href="https://github.com/GameTechDev/PresentMon/blob/main/README-ConsoleApplication.md">PresentMon 콘솔</a> · <a href="https://docs.unity3d.com/6000.0/Documentation/Manual/profiler-command-line-arguments.html">Unity Profiler 실행 인수</a>.</p>
 <p>로컬 근거는 Git에서 제외된 <code>Builds/Perf00</code>에 있다. <a href="../Builds/Perf00/release-idle-summary.csv">정위치 표본 요약</a> · <a href="../Builds/Perf00/release-tax-run2-1.csv">2회차 납부 PresentMon</a> · <a href="../Builds/Perf00/release-battle-1.csv">전투 혼합 PresentMon</a> · <a href="../Builds/Perf00/release-first-markers.txt">첫 진입 이벤트</a> · <a href="../Builds/Perf00/release-first.csv">첫 진입 PresentMon</a> · <a href="../Builds/Perf00/release-resume-markers.txt">1회차 이어하기</a> · <a href="../Builds/Perf00/dev-journey-unity.csv">Unity 카운터</a> · <a href="../Builds/Perf00/dev-journey-unity.csv.markers.txt">Unity CPU 마커</a> · <a href="../Builds/Perf00/dev-journey.raw">Profiler 원본</a></p>
 </section>
+<hr><section id="perf-00a">
+<h1>PERF-00A · 이어하기 로딩 막대 시작 지연</h1>
+<p>2026-11-24 (Asia/Seoul). 시작 HEAD는 <code>fearture/merge_progect</code>의 <code>739e96d6ef0939b9d194a8a9d08c88ca3ac6e2fb</code>이며 사용자 변경은 없었다. 이 커밋은 PERF-00 기준선 보고를 포함하고 게임 코드는 기존 측정 커밋 <code>7485923b</code>와 같았다.</p>
+
+<h2>계획과 변경 파일</h2>
+<table>
+<tr><th>파일</th><th>변경과 확인</th></tr>
+<tr><td><a href="../Assets/MainMenu/MainMenuSceneScript/MainMenuController.cs">MainMenuController.cs</a></td><td>기존 시작 요청에 이어하기 판정을 전달한다. 시작 효과와 연타 방지 잠금은 기존 경로를 사용한다.</td></tr>
+<tr><td><a href="../Assets/Decision_YYS/Scripts/GameSystem/GameManager.cs">GameManager.cs</a> · <a href="../Assets/Decision_YYS/Scripts/SaveSystem/SaveManager.cs">SaveManager.cs</a></td><td>이미 존재하는 SaveManager에서 <code>HasSaveData("Progress")</code>와 메모리의 위치·진행·전투 대기·도입 기록을 확인한다. 메뉴가 처음 뜰 때 생성되는 초기 저장이나 미시작 다음 회차는 이어하기로 분류하지 않는다. 별도의 저장 본문 읽기나 Queue.json 읽기를 추가하지 않았다.</td></tr>
+<tr><td><a href="../Assets/Loading/Scripts/LoadingScreenController.cs">LoadingScreenController.cs</a></td><td>이어하기 요청만 막대 시작 지연을 2초에서 0초로 설정한다. 실제 로드 진행률, 최소 표시 2초, 최대 초당 1.5의 막대 보간과 페이드 0.25초를 유지한다. 실제 로드와 표시 조건이 충족되면 씬 활성화를 허용한다. 전투·메뉴 요청은 기존 기본값을 사용한다.</td></tr>
+<tr><td>development-report.html</td><td>일반 빌드에서 변경 전·후 각 3회, 신규 시작·연타·전투·메뉴 회귀를 확인하고 기록했다.</td></tr>
+</table>
+
+<h2>Windows 일반 빌드 · 전후 3회</h2>
+<p>Unity 6000.3.12f1, URP 17.3.0, Windows x64 Mono 일반 Player. 앞선 PERF-00과 같은 i5-10400·GTX 1660 SUPER(D3D12, 드라이버 32.0.16.1088)·약 16GiB 데스크톱에서 1280×720 클라이언트 창을 확인했다. 디스플레이 1920×1080 / 143Hz, AC 전원·균형 조정, PC 품질 인덱스 1·VSync 0. 노트북은 미측정이다. <a href="../Builds/Perf00A/Environment.json">환경 원본</a></p>
+<p>비교마다 앱을 종료하고 다시 실행했으며 PERF-00 1회차 이어하기 체크포인트의 동일 복사본을 OneWayPerf00A 전용 저장 위치에 복원했다. 같은 계측용 일반 빌드에서 <code>-perf00a-baseline</code>으로 이전의 2초 고정 대기를 재현하고, 플래그가 없으면 제품 변경과 같은 0초 경로로 실행했다. 계측 위치와 다른 코드·에셋은 동일하다. 기존 PERF-00 약 3.7초는 외부 클릭 시각과 로그로 잰 단일 표본이다. 아래 표는 시작 클릭 핸들러에서부터 동일한 초기화 구간을 내부 시간으로 다시 쟀다.</p>
+<table>
+<tr><th>표본</th><th>막대 첫 이동 (초)</th><th>씬 활성화 (초)</th><th>갱도 초기화 로그 (초)</th><th>첫 입력 수신 가능 (초)</th><th>첫 실제 버튼 수신 (초)</th><th>페이드 종료 (초)</th><th>전환 p95 / p99 (ms)</th><th>≥100ms</th></tr>
+<tr><td>변경 전 1</td><td>2.597</td><td>3.350</td><td>3.361</td><td>3.640</td><td>3.802</td><td>3.811</td><td>1.294 / 2.931</td><td>1</td></tr>
+<tr><td>변경 전 2</td><td>2.592</td><td>3.349</td><td>3.360</td><td>3.644</td><td>3.823</td><td>3.831</td><td>1.386 / 3.079</td><td>1</td></tr>
+<tr><td>변경 전 3</td><td>2.598</td><td>3.351</td><td>3.363</td><td>3.677</td><td>3.844</td><td>3.852</td><td>1.354 / 3.353</td><td>1</td></tr>
+<tr><td>변경 후 1</td><td>0.598</td><td>2.680</td><td>2.691</td><td>2.974</td><td>3.141</td><td>3.149</td><td>1.321 / 3.526</td><td>1</td></tr>
+<tr><td>변경 후 2</td><td>0.602</td><td>2.683</td><td>2.695</td><td>2.980</td><td>3.153</td><td>3.162</td><td>1.436 / 4.359</td><td>1</td></tr>
+<tr><td>변경 후 3</td><td>0.618</td><td>2.701</td><td>2.712</td><td>3.024</td><td>3.204</td><td>3.214</td><td>1.484 / 3.922</td><td>1</td></tr>
+<tr><td>전 → 후 중앙값</td><td>2.597 → 0.602</td><td>3.350 → 2.683</td><td>3.361 → 2.695</td><td>3.644 → 2.980</td><td>3.823 → 3.153</td><td>3.831 → 3.162</td><td>1.354 / 3.079 → 1.436 / 3.922</td><td>합계 3 → 3</td></tr>
+</table>
+<p>막대 첫 이동은 표시 진행률이 처음 0보다 커진 프레임이다. 씬 활성화는 <code>sceneLoaded</code>, 갱도 초기화는 기존 <code>[GameManager]</code> 초기화 로그 직전이다. 입력 가능은 활성화된 보드가 노란 버튼 입력을 처음 읽는 프레임이며, 실제 클릭 수신 로그를 별도로 기록했다. 실제 버튼은 초기화·복원 이후 페이드 끝 직전에 수신됐다. 전환 프레임은 클릭부터 페이드 종료 사이에 전체가 들어온 주 스왑체인 Present 간격이다. 런타임 시각과 ETW는 로그 감시로 맞췄으므로 표본 양끝은 근사치다. p95·p99는 표본별 nearest-rank다. 전환 시간은 줄었고 이 표본에서 p95·p99 또는 100ms 이상 건수의 개선은 확인되지 않았다.</p>
+
+<h2>남은 시간과 회귀 확인</h2>
+<ul>
+<li>변경 후 메뉴 효과와 LoadingScene 진입까지 약 0.60초. DecisionScene 비동기 로드는 시작 후 0.39~0.44초에 활성화 대기점에 도달했지만, 최소 표시 조건을 채우는 데 약 1.56~1.61초를 더 사용했다. 로드 시작부터 활성화 허용까지 약 2.00초였다. 막대 보간은 이전에는 2초 대기 뒤 약 0.67초를 더 사용했고, 변경 후에는 최소 표시 시간과 겹쳤다.</li>
+<li>변경 후 활성화 허용부터 <code>sceneLoaded</code>까지 약 0.09초, 그 뒤 첫 입력 읽기까지 약 0.30초였다. 첫 실제 클릭 수신까지는 한 프레임가량 더 걸렸다. 최소 표시 2초가 남은 시간의 가장 큰 부분이었다.</li>
+<li>전후 6회 모두 1회차 <code>Chapter 0 / Episode 0 / Story 0</code>, 위치 <code>(-200, 0, 10)</code>, 코인통 잔액 <code>[10, 1, 7, 2]</code>가 복원됐다. 일반세 조우 화면에서 실제 노란 버튼 입력으로 납부 화면까지 진행했다. 갱도 초기화 전에 수신된 노란 버튼 이벤트는 없었다.</li>
+<li>빈 저장의 신규 1회차에서 막대 지연 2초와 도입 화면을 확인했다. 시작 버튼 5회 클릭 중 추가 4회가 차단됐고 LoadingScene과 DecisionScene이 각각 한 번 열렸다. 보스 대기 복사본에선 이어하기 0초 → 전투 2초 → 패배 후 메뉴 복귀 2초, 이후 미시작 2회차 2초를 확인했다. 전투 중 PERF-00에서 관측된 BossFootGrounding 예외가 재현됐고 메뉴 복귀는 진행됐다.</li>
+<li>계측용 Windows 빌드는 성공했고 오류 0건이었다. 계측 제거 후 제품 소스 재컴파일과 이번 작업의 새 Editor 콘솔 오류 0건도 확인했다. 노트북과 콜드 부팅 직후 캐시 조건, 레거시 저장 조합 전체, 자연 진행에 의한 보스 진입은 별도 측정하지 않았다.</li>
+</ul>
+
+<h2>측정 근거와 임시 파일</h2>
+<p>제품 코드에서 계측을 제거하고 제품명과 빌드 중 바뀐 폰트 아틀라스를 원복했다. 원본 사용자 저장에는 쓰지 않았다. 로컬 계측용 빌드, 복사본, 원본 로그·PresentMon과 검증 도구는 Git에서 제외한 <code>Builds/Perf00A</code>에 있다. 임시 계측 소스 <code>Perf00AMeasurement.cs</code>와 메타, <code>Perf00AMeasurement.template</code>, <code>ProbeEdits.json</code>, <code>ProbeHashes.csv</code>, <code>SourceBackup/</code>, 실행·정렬 스크립트 <code>Launch-Trial.ps1</code>, <code>Start-Run.ps1</code>, <code>Start-Capture.ps1</code>, <code>Watch-Click.ps1</code>, <code>Summarize-Trials.ps1</code>는 결과 확인 후 정리 대기 상태다. <a href="../Builds/Perf00A/Trials.csv">측정 집계</a> · <a href="../Builds/Perf00A/Before-2.log">변경 전 이벤트</a> · <a href="../Builds/Perf00A/After-2.log">변경 후 이벤트</a> · <a href="../Builds/Perf00A/Before-2.csv">변경 전 PresentMon</a> · <a href="../Builds/Perf00A/After-2.csv">변경 후 PresentMon</a> · <a href="../Builds/Perf00A/Fresh.log">신규·연타</a> · <a href="../Builds/Perf00A/Battle.log">전투·메뉴 복귀·2회차</a></p>
+</section>
 </body></html>
 
 

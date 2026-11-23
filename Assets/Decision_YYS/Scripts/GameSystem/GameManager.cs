@@ -31,6 +31,7 @@ public class GameManager : MonoBehaviour
     public GameState CurrentState { get => currentState; set => currentState = value; }
 
     private SaveManager saveManager;
+    public bool HasJourneyCheckpoint => saveManager.HasJourneyCheckpoint;
     private DecisionRunCompletionService finalBattleCompletion;
 
     [Header("Player")]

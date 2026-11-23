@@ -32,7 +32,8 @@ public class MainMenuController : MonoBehaviour
         yield return StartCoroutine(PlayBurstEffect());
 
         // ¾À ÀüÈ¯
-        if (!LoadingScreenController.Open(LoadingDestination.Decision))
+        if (!LoadingScreenController.Open(
+                LoadingDestination.Decision, startProgressImmediately: GameManager.Instance.HasJourneyCheckpoint))
             isAnimating = false;
     }
 

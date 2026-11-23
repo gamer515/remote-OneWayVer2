@@ -11,6 +11,16 @@ public class SaveManager
 
     public int CurrentRun => profile.currentRun;
 
+    // New runs already have a Progress file before the player reaches the journey.
+    public bool HasJourneyCheckpoint =>
+        HasSaveData("Progress") &&
+        (LoadPlayerPosition().HasValue ||
+         cachedProgress.chapterIndex > 0 || cachedProgress.episodeIndex > 0 || cachedProgress.storyIndex > 0 ||
+         !string.IsNullOrEmpty(cachedProgress.interactionPhase) ||
+         cachedProgress.finalBattlePending ||
+         cachedProgress.guideProgress?.mineChapter?.initialized == true ||
+         cachedProgress.guideProgress?.runIntroLinesSeen > 0);
+
     public SaveManager()
     {
         // 프로필의 현재 회차를 기준으로 진행도와 능력치의 저장 폴더를 고정합니다.
