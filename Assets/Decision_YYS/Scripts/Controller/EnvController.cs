@@ -54,6 +54,7 @@ public class EnvController : MonoBehaviour
     public float ChunkSize => chunkSize;
     public float CurrentTerrainEndZ { get; private set; }
     internal float? LoadedChunkEndZ => terrainBuilder.LoadedChunkEndZ(PlaceRegistry);
+    internal BossPreviewIdle FindBossPreview() => terrainBuilder.FindBossPreview(PlaceRegistry);
     internal Transform FindStoryPlace(PlaceData place) => terrainBuilder.FindStoryPlace(PlaceRegistry, place);
     internal bool TryGetShortcutRoute(PlaceData place, int side, float height, float encounterStopDistance,
         out Vector3[] route, out Transform actor) =>

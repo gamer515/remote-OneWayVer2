@@ -17,6 +17,21 @@ public class MainMenuController : MonoBehaviour
 
     private bool isAnimating = false;
 
+    private void OnEnable() => RestoreMenuCursor();
+
+    private void OnApplicationFocus(bool focused)
+    {
+        if (focused) RestoreMenuCursor();
+    }
+
+    private void LateUpdate() => RestoreMenuCursor();
+
+    private static void RestoreMenuCursor()
+    {
+        if (Cursor.lockState != CursorLockMode.None) Cursor.lockState = CursorLockMode.None;
+        if (!Cursor.visible) Cursor.visible = true;
+    }
+
     // 1. 시작 버튼 클릭
     public void OnClickStart()
     {

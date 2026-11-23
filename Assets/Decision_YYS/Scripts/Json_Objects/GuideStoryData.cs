@@ -50,6 +50,7 @@ public sealed class GuideProgress
 [Serializable]
 public sealed class MineAuthoredProgress
 {
+    public int bossStudyStartCount;
     public int contentVersion;
     public bool shortStoryPack;
     public int shortLayoutSeed;

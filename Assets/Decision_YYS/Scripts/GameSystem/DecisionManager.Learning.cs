@@ -61,6 +61,12 @@ public partial class DecisionManager
             ? cycle.ElapsedDays(mine.elapsedSeconds) : null;
         learningStation?.Tick(Time.deltaTime, busy, stopStudying: task, calendarDays: calendarDays);
         if (learningStation != null)
+        {
             uiController?.ShowReading(learningStation, !busy && !task && guideProgress?.allocating != true);
+            if (IsMineBossEpisode && Authored?.nodeId == BossStudy && currentState == Constants.StoryState.Exploring &&
+                learningStation.Progress?.successfulStudies > Authored.bossStudyStartCount &&
+                learningStation.CanBeginStudySession && !learningStation.HasComboStudy && learningStation.ReadingResult == null)
+                AdvanceAuthoredBoss();
+        }
     }
 }

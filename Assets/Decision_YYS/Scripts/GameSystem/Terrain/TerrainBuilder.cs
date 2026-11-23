@@ -53,6 +53,13 @@ public sealed class TerrainBuilder
     internal IEnumerable<List<MapPoint>> LoadedMapPoints => chunkMapPoints.Values;
     internal bool HasChapter(string chapterId) => facilityHistory.ContainsKey(chapterId);
 
+    internal BossPreviewIdle FindBossPreview(TerrainPlaceRegistry registry)
+    {
+        var segment = segments.Find(candidate => candidate.Registry == registry);
+        return segment != null && chunkInstances.TryGetValue(segment.FirstGlobalChunkIndex, out var chunk) && chunk != null
+            ? chunk.GetComponentInChildren<BossPreviewIdle>() : null;
+    }
+
     internal Transform FindStoryPlace(TerrainPlaceRegistry registry, PlaceData place)
     {
         var segment = segments.Find(candidate => candidate.Registry == registry);

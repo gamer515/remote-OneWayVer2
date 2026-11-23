@@ -594,6 +594,21 @@ unity command run_script --caller plugin --skill unity-cli --file AgentScripts/K
 <p>임시 검증기 <code>Builds/MumbleVoiceReview/ReviewMumbleSpeech.cs</code>, Windows 검증 빌드와 격리 저장은 Git에서 제외했고 결과 확인 후 정리 대기 중이다.</p>
 <p>음색 후속 조정은 <code>animalese</code> 속도 2.0→1.85, NPC 음성 볼륨 계수 0.30→0.36이다. Unity 컴파일 오류 0건. 같은 한국어 세 줄을 새 설정으로 합성해 0.93초, 1.17초, 1.35초를 확인했다. 조정 후 Windows 빌드 재생은 미검증이다. 새 임시 코드 파일은 없다.</p>
 </section>
+<hr><section id="mine-boss-approach">
+<h2>갱도 보스 앞 정지와 전투 선택</h2>
+<p>2026-11-24 · 갱도 보스 프리뷰에서 보스 앞 7유닛을 조우 위치로 사용한다. 보스 프리뷰 오브젝트의 좌표를 읽어 실제 청크에 맞춘다. 기존 장면의 확인 위치는 플레이어 (-200, 0, 378), 보스 (-200, 0, 385)였다.</p>
+<table><tr><th>단계</th><th>작업</th><th>검증 방법</th></tr>
+<tr><td>정지·이어하기</td><td>대화, 선택지와 학습 상태를 기존 체크포인트에 저장한다. 보스 앞에서 멈추면 보스와 플레이어가 서로를 향한다.</td><td>원본 Unity 에디터의 실제 DecisionScene과 격리 저장을 사용한다.</td></tr>
+<tr><td>학습과 전투</td><td>기존 학습 기능으로 책을 읽고 결과를 닫으면 싸우기·학습하기가 다시 열린다. 싸우기를 선택할 때만 기존 전투 정보를 저장하고 로딩을 요청한다.</td><td>같은 위치의 학습, 선택 상태의 복원, 연타와 실제 전투 씬을 확인한다.</td></tr></table>
+<p>변경 지점은 <a href="../Assets/Decision_YYS/Scripts/GameSystem/BossPreviewIdle.cs">BossPreviewIdle.cs</a>, <a href="../Assets/Decision_YYS/Scripts/GameSystem/Terrain/TerrainBuilder.cs">TerrainBuilder.cs</a>, <a href="../Assets/Decision_YYS/Scripts/Controller/EnvController.cs">EnvController.cs</a>, <a href="../Assets/Decision_YYS/Scripts/GameSystem/DecisionManager.AuthoredMine.cs">DecisionManager.AuthoredMine.cs</a>, <a href="../Assets/Decision_YYS/Scripts/GameSystem/DecisionManager.Encounters.cs">DecisionManager.Encounters.cs</a>, <a href="../Assets/Decision_YYS/Scripts/GameSystem/DecisionManager.Learning.cs">DecisionManager.Learning.cs</a>, <a href="../Assets/Decision_YYS/Scripts/Json_Objects/GuideStoryData.cs">GuideStoryData.cs</a>다. 전투 진입 검증 중 첫 보스의 발 위치 보정이 메시 정점을 읽을 수 없어 초기화 오류가 재현됐다. <a href="../Assets/3DBattle/Boss1/Meshy_AI_boss_character_model_biped_5/Meshy_AI_boss_character_model_biped_Animation_Axe_Breathe_and_Look_Around_frame_rate_30.fbx.meta">해당 FBX 가져오기 설정</a>에서 읽기를 활성화해 기존 발 위치 보정을 사용한다.</p>
+<p>Unity 컴파일 오류 0건. 실제 DecisionScene에서 정지·대화·학습·독서 결과를 닫은 뒤 선택지 복귀를 확인했다. 학습 중 저장과 선택지 저장을 각각 다시 읽어 전투 대기 플래그가 꺼져 있음을 확인했다. 싸우기 직후에만 기존 1단계 갱도 보스 정보가 저장되고, 추가 확정 호출에도 LoadingScene과 3DBattleScene이 각각 한 번 열렸다. 메시 수정 후 3DBattleScene 초기화 오류는 0건이었다. 검증에는 기존 입력 메서드를 사용했다. 전투 승패와 Windows 플레이어 빌드는 검증하지 않았다. <a href="../Builds/MineBossEntryReview/Verification.log">Play 검증 로그</a></p>
+<p>임시 검증기 <code>Builds/MineBossEntryReview/ReviewMineBoss.cs</code>와 격리 저장은 Git에서 제외했고 결과 확인 후 정리 대기 상태다.</p>
+</section>
+<hr><section id="main-menu-cursor">
+<h2>메인 메뉴 커서와 버튼 입력 복구</h2>
+<p>2026-11-24 · <a href="../Assets/MainMenu/MainMenuSceneScript/MainMenuController.cs">MainMenuController.cs</a>에서 메뉴가 열리거나 포커스를 되찾을 때 커서를 표시하고 잠금을 푼다. 메뉴에 있는 동안 늦게 잠금이나 숨김이 적용돼도 같은 프레임 끝에 복구한다.</p>
+<p>Unity 컴파일 오류 0건. 격리 저장으로 실제 MainMenuScene을 재생하고 강제로 숨기고 잠근 커서가 Esc 없이 복구되는 것을 확인했다. 버튼 위치의 UI 레이캐스트와 모의 클릭으로 갱도 진입을 확인했고, 기존 씬 전환 서비스로 메뉴에 돌아온 뒤에도 커서가 표시되고 잠기지 않았다. 물리 마우스와 Windows 일반 빌드는 이번 검증에 포함하지 않았다. <a href="../Builds/MenuCursorReview/Verification.log">Play 검증 로그</a></p>
+</section>
 </body></html>
 
 

@@ -43,10 +43,11 @@ public partial class DecisionManager
 
         pendingEncounter = null;
         roadsideStep = RoadsideStep.None;
-        if (currentScenarioPath == "Chapter_1/Chapter_1_BossPreview" &&
-            Authored?.nodeId?.StartsWith(BossEntry, StringComparison.Ordinal) == true)
+        if (IsMineBossEpisode &&
+            (Authored?.nodeId is BossEntry or BossChoices or BossStudy || loadedProgress?.interactionPhase == "walking"))
         {
-            PresentAuthoredBoss();
+            BeginExploration();
+            BeginAuthoredBossApproach();
             return;
         }
         activePlaceId = loadedProgress?.activePlaceId;
@@ -84,7 +85,9 @@ public partial class DecisionManager
         switch (currentState)
         {
             case StoryState.Exploring:
-                if (IsPackStudyPaused)
+                if (IsMineBossEpisode && Authored?.nodeId == BossStudy)
+                    AdvanceAuthoredBoss();
+                else if (IsPackStudyPaused)
                 {
                     uiController.SetStoryNotice(null);
                     Authored.storyPackFrame = PackRoot;
@@ -129,6 +132,11 @@ public partial class DecisionManager
     private void BeginWalkStep()
     {
         mineView?.Hide();
+        if (IsMineBossEpisode)
+        {
+            BeginAuthoredBossApproach();
+            return;
+        }
         float startZ = playerController.CurrentPosition.z;
         // 한 번 누르면 다음 이벤트 오브젝트까지 계속 걷습니다. 그 사이 청크는 EnvController가 스트리밍합니다.
         float endZ = encounterFlow.EpisodeEndZ;
@@ -179,6 +187,11 @@ public partial class DecisionManager
 
     private void CompleteWalkStep()
     {
+        if (IsMineBossEpisode)
+        {
+            PresentAuthoredBoss();
+            return;
+        }
         if (TryCompletePackShortcutWalk()) return;
         if (pendingEncounter.HasValue)
         {
@@ -629,7 +642,7 @@ public partial class DecisionManager
             AdvanceRoadsideEncounter();
             return;
         }
-        if (activeEncounterPath == MineAuthoredStory.Prefix + "Boss")
+        if (activeEncounterPath == BossEncounterPath)
         {
             AdvanceAuthoredBoss();
             return;
@@ -757,9 +770,9 @@ public partial class DecisionManager
             return;
         }
         var chapter = currentOmnibus.chapters[chapterIndex];
-        if (currentScenarioPath == "Chapter_1/Chapter_1_BossPreview" && Authored != null && envController.AuthoredMine != null)
+        if (IsMineBossEpisode)
         {
-            PresentAuthoredBoss();
+            BeginAuthoredBossApproach();
             return;
         }
         if (episodeIndex == chapter.episodeIds.Count - 1 && chapter.bossStage > 0)
