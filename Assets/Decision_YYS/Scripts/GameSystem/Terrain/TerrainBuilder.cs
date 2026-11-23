@@ -7,6 +7,20 @@ using System.Linq;
 /// </summary>
 public sealed class TerrainBuilder
 {
+    internal enum MapPointKind { Place, Shop, RoadsideNpc }
+
+    internal readonly struct MapPoint
+    {
+        internal readonly Transform Target;
+        internal readonly MapPointKind Kind;
+
+        internal MapPoint(Transform target, MapPointKind kind)
+        {
+            Target = target;
+            Kind = kind;
+        }
+    }
+
     internal readonly struct FacilityMarker
     {
         internal readonly string Id;
@@ -32,9 +46,11 @@ public sealed class TerrainBuilder
 
     private readonly List<TerrainSegment> segments = new List<TerrainSegment>();
     private readonly Dictionary<int, GameObject> chunkInstances = new Dictionary<int, GameObject>();
+    private readonly Dictionary<int, List<MapPoint>> chunkMapPoints = new Dictionary<int, List<MapPoint>>();
     private readonly Dictionary<string, TerrainFacilityPlan.History> facilityHistory = new Dictionary<string, TerrainFacilityPlan.History>();
     private readonly List<FacilityMarker> facilityMarkers = new List<FacilityMarker>();
     internal IReadOnlyList<FacilityMarker> FacilityMarkers => facilityMarkers;
+    internal IEnumerable<List<MapPoint>> LoadedMapPoints => chunkMapPoints.Values;
     internal bool HasChapter(string chapterId) => facilityHistory.ContainsKey(chapterId);
 
     internal Transform FindStoryPlace(TerrainPlaceRegistry registry, PlaceData place)
@@ -47,7 +63,9 @@ public sealed class TerrainBuilder
     }
 
     private const string RoadsideEncounterPrefix = "RoadsideNpc_Gap_";
+    private const string CentralRoadsideKey = "npc:center";
     private const float RoadsideEncounterReach = 6.5f;
+    private const float ShortcutEncounterReach = 1.6f;
 
     internal bool TryGetShortcutRoute(TerrainPlaceRegistry registry, PlaceData place, int side,
         float height, float encounterStopDistance, out Vector3[] route, out Transform actor)
@@ -75,6 +93,17 @@ public sealed class TerrainBuilder
         bool Clear(Vector3 a, Vector3 b) => !blockers.Any(blocker =>
             Mathf.Min(a.x, b.x) < blocker.max.x + clearance && Mathf.Max(a.x, b.x) > blocker.min.x - clearance &&
             Mathf.Min(a.z, b.z) < blocker.max.z + clearance && Mathf.Max(a.z, b.z) > blocker.min.z - clearance);
+
+        bool InShortcutReach(Vector3 position, float laneX)
+        {
+            if ((position.x - origin.x) * side <= 0f) return false;
+
+            // An actor just beyond a turn can still be within reach of the chosen side of the route.
+            float dx = position.x - laneX;
+            float dz = position.z - Mathf.Clamp(position.z, entryZ, exitZ);
+            return dx * dx + dz * dz <= ShortcutEncounterReach * ShortcutEncounterReach;
+        }
+
         float edge = side < 0 ? bounds.min.x : bounds.max.x;
         var exit = new Vector3(origin.x, height, exitZ);
         for (float margin = 1.25f; margin <= 3.25f; margin += .5f)
@@ -82,9 +111,7 @@ public sealed class TerrainBuilder
             float x = edge + side * margin;
             if ((x - origin.x) * side < 4.25f || Mathf.Abs(x - origin.x) > 10.5f) continue;
             var candidateActor = roadsideActors.Where(candidate =>
-                    (candidate.position.x - origin.x) * side > 0 &&
-                    Mathf.Abs(candidate.position.x - x) <= 1.6f &&
-                    candidate.position.z >= entryZ && candidate.position.z <= exitZ)
+                    InShortcutReach(candidate.position, x))
                 .OrderBy(candidate => candidate.position.z).FirstOrDefault();
             float approachZ = candidateActor == null ? entryZ :
                 Mathf.Min(entryZ, candidateActor.position.z - encounterStopDistance);
@@ -92,11 +119,16 @@ public sealed class TerrainBuilder
             var sideEntry = new Vector3(x, height, approachZ);
             var sideExit = new Vector3(x, height, exitZ);
             if (!Clear(entry, sideEntry) || !Clear(sideEntry, sideExit) || !Clear(sideExit, exit)) continue;
+            if (candidateActor == null)
+            {
+                route ??= new[] { entry, sideEntry, sideExit, exit };
+                continue;
+            }
             route = new[] { entry, sideEntry, sideExit, exit };
             actor = candidateActor;
             return true;
         }
-        return false;
+        return route != null;
     }
 
     private static bool TryWorldBounds(Transform root, out Bounds bounds)
@@ -114,10 +146,11 @@ public sealed class TerrainBuilder
     }
 
     internal Transform FindRoadsideNpc(TerrainPlaceRegistry registry, float routeX, float fromZ, float toZ,
-        ISet<string> resolved, out string encounterId)
+        float destinationZ, float stopDistance, ISet<string> resolved, out string encounterId)
     {
         encounterId = null;
         Transform nearest = null;
+        float nearestTriggerZ = float.PositiveInfinity;
         var segment = segments.Find(candidate => candidate.Registry == registry);
         if (segment == null) return null;
         foreach (var entry in chunkInstances)
@@ -133,9 +166,14 @@ public sealed class TerrainBuilder
                     !child.name.StartsWith(RoadsideEncounterPrefix, System.StringComparison.Ordinal) ||
                     Mathf.Abs(child.position.x - routeX) > RoadsideEncounterReach) continue;
                 float z = child.position.z;
-                if (z >= fromZ && z <= toZ && (nearest == null || z < nearest.position.z))
+                if (z < fromZ || z >= destinationZ) continue;
+                bool central = child.name.StartsWith(RoadsideEncounterPrefix + CentralRoadsideKey + "_",
+                    System.StringComparison.Ordinal);
+                float triggerZ = central ? Mathf.Max(fromZ, z - stopDistance) : z;
+                if (triggerZ <= toZ && triggerZ < nearestTriggerZ)
                 {
                     nearest = child;
+                    nearestTriggerZ = triggerZ;
                     encounterId = id;
                 }
             }
@@ -211,6 +249,7 @@ public sealed class TerrainBuilder
         if (chunkInstances.TryGetValue(globalChunkIndex, out GameObject loadedChunk) && loadedChunk != null)
             return true;
         chunkInstances.Remove(globalChunkIndex);
+        chunkMapPoints.Remove(globalChunkIndex);
 
         int localChunkIndex = globalChunkIndex - segment.FirstGlobalChunkIndex;
         GameObject chunk = new GameObject($"Chunk_{globalChunkIndex}");
@@ -233,16 +272,19 @@ public sealed class TerrainBuilder
                 foreach (Transform decoration in decorations)
                     if (decoration.name != "Decor_MineEdges") decoration.gameObject.SetActive(false);
         }
-        CreatePlaces(segment, localChunkIndex, chunk.transform, ground);
-        CreateMineRoadsideDecorations(segment, localChunkIndex, chunk.transform);
+        var mapPoints = new List<MapPoint>();
+        CreatePlaces(segment, localChunkIndex, chunk.transform, ground, mapPoints);
+        CreateMineRoadsideDecorations(segment, localChunkIndex, chunk.transform, mapPoints);
         foreach (var slot in segment.Facilities)
             if (slot.Chunk == localChunkIndex)
                 Debug.Log($"[장소 예정] {slot.Label} ({slot.Id}) · 청크 {globalChunkIndex + 1} · 로컬 X={slot.X:F1}, Z={slot.Z:F1} · {(slot.OptionalCandidate ? "주요 선택 후보" : "빈 자리 예약")} · 에셋/상호작용 연결 대기");
         chunkInstances.Add(globalChunkIndex, chunk);
+        chunkMapPoints.Add(globalChunkIndex, mapPoints);
         return true;
     }
 
-    private static void CreateMineRoadsideDecorations(TerrainSegment segment, int chunkIndex, Transform chunk)
+    private static void CreateMineRoadsideDecorations(TerrainSegment segment, int chunkIndex, Transform chunk,
+        List<MapPoint> mapPoints)
     {
         string groundId = segment.Data.groundIds?.ElementAtOrDefault(chunkIndex) ?? segment.Data.groundId;
         if (groundId != "mine_village_180" && groundId != "mine_passage_180") return;
@@ -262,7 +304,7 @@ public sealed class TerrainBuilder
         foreach (var slot in segment.Facilities.Where(slot => slot.Chunk == chunkIndex))
             occupied.Add(new Bounds(origin + new Vector3(slot.X, 1f, slot.Z), new Vector3(12f, 2f, 12f)));
 
-        // The central strip includes both walking and the widest collector formation.
+        // Decorations and flank NPCs stay clear of the walking and collector strip.
         const float corridorHalfWidth = 4.25f, preferredDecorationHalfWidth = 7.25f;
         const float placementHalfWidth = 10.5f, clearance = .75f;
         float chunkStart = origin.z + 6f;
@@ -290,11 +332,13 @@ public sealed class TerrainBuilder
         }
 
         float Roll(string key) => (float)MineChapterSettings.Roll(segment.RunSeed, chunkIndex, key);
-        bool Fits(Bounds bounds, float outerLimit)
+        bool Fits(Bounds bounds, float outerLimit, bool central)
         {
             if (bounds.min.z < origin.z + 6f || bounds.max.z > origin.z + segment.Data.chunkLength - 6f ||
-                bounds.min.x < origin.x - outerLimit || bounds.max.x > origin.x + outerLimit ||
-                bounds.min.x < origin.x + corridorHalfWidth && bounds.max.x > origin.x - corridorHalfWidth)
+                bounds.min.x < origin.x - outerLimit || bounds.max.x > origin.x + outerLimit)
+                return false;
+            float coreHalfWidth = central ? .65f : corridorHalfWidth;
+            if (bounds.min.x < origin.x + coreHalfWidth && bounds.max.x > origin.x - coreHalfWidth)
                 return false;
             return !occupied.Any(other => bounds.min.x < other.max.x + clearance &&
                 bounds.max.x > other.min.x - clearance && bounds.min.z < other.max.z + clearance &&
@@ -302,7 +346,8 @@ public sealed class TerrainBuilder
         }
 
         bool Place(IReadOnlyList<GameObject> prefabs, string key, IEnumerable<Vector3> candidates,
-            bool npc, HashSet<GameObject> used, float startZ, float endZ, float outerLimit = placementHalfWidth)
+            bool npc, HashSet<GameObject> used, float startZ, float endZ,
+            float outerLimit = placementHalfWidth, bool central = false)
         {
             if (prefabs == null) return false;
             var points = candidates.OrderBy(point => Roll(key + ":point:" +
@@ -319,16 +364,18 @@ public sealed class TerrainBuilder
                 {
                     float facing = point.x < origin.x ? 90f : -90f;
                     // Supplied appearance models face local -Z.
-                    Quaternion rotation = Quaternion.Euler(0f, npc ? facing + 180f : facing, 0f);
-                    Vector3 size = new Vector3(localBounds.size.z, localBounds.size.y, localBounds.size.x);
+                    Quaternion rotation = Quaternion.Euler(0f, central ? 0f : npc ? facing + 180f : facing, 0f);
+                    Vector3 size = central ? localBounds.size :
+                        new Vector3(localBounds.size.z, localBounds.size.y, localBounds.size.x);
                     var bounds = new Bounds(point + Vector3.up * localBounds.extents.y, size);
-                    if (bounds.min.z < startZ || bounds.max.z > endZ || !Fits(bounds, outerLimit)) continue;
+                    if (bounds.min.z < startZ || bounds.max.z > endZ || !Fits(bounds, outerLimit, central)) continue;
                     var offset = new Vector3(localBounds.center.x, localBounds.min.y, localBounds.center.z);
                     var instance = Object.Instantiate(prefab, point - rotation * offset, rotation, chunk);
                     bool betweenPlaces = npc && gaps.Any(gap =>
                         bounds.min.z >= gap.start && bounds.max.z <= gap.end);
                     string prefix = betweenPlaces ? RoadsideEncounterPrefix : npc ? "RoadsideNpc_" : "Roadside_";
                     instance.name = prefix + key + "_" + prefab.name;
+                    if (npc) mapPoints.Add(new MapPoint(instance.transform, MapPointKind.RoadsideNpc));
                     occupied.Add(bounds);
                     used.Add(prefab);
                     return true;
@@ -339,14 +386,28 @@ public sealed class TerrainBuilder
 
         var usedNpcs = new HashSet<GameObject>();
         int npcCount = 1 + Mathf.Min(1, (int)(Roll("roadside-npc:count") * 2));
+        int placedNpcs = 0;
+        foreach (var (startZ, endZ) in gaps.OrderByDescending(gap => gap.end - gap.start))
+        {
+            var points = new List<Vector3>();
+            for (float z = startZ + 2f; z <= endZ - 2f; z += 3f)
+            {
+                points.Add(new Vector3(origin.x - 1.65f, origin.y, z));
+                points.Add(new Vector3(origin.x + 1.65f, origin.y, z));
+            }
+            if (!Place(catalog.MineRoadsideNpcs, CentralRoadsideKey, points, true, usedNpcs,
+                startZ, endZ, central: true)) continue;
+            placedNpcs++;
+            break;
+        }
         var npcPoints = Candidates(chunkStart, chunkEnd);
         var sides = new[] { -1, 1 }.OrderBy(side => Roll("roadside-npc:side:" + side)).ToArray();
         foreach (int side in sides)
         {
-            Place(catalog.MineRoadsideNpcs, "npc:" + side,
+            if (placedNpcs >= npcCount) break;
+            if (Place(catalog.MineRoadsideNpcs, "npc:" + side,
                 npcPoints.Where(point => Mathf.Sign(point.x - origin.x) == side),
-                true, usedNpcs, chunkStart, chunkEnd);
-            if (usedNpcs.Count >= npcCount) break;
+                true, usedNpcs, chunkStart, chunkEnd)) placedNpcs++;
         }
 
         var usedDecorations = new HashSet<GameObject>();
@@ -375,6 +436,7 @@ public sealed class TerrainBuilder
         {
             GameObject chunk = chunkInstances[index];
             chunkInstances.Remove(index);
+            chunkMapPoints.Remove(index);
             if (chunk == null) continue;
             chunk.SetActive(false);
             Object.Destroy(chunk);
@@ -414,8 +476,13 @@ public sealed class TerrainBuilder
         TerrainSegment segment,
         int localChunkIndex,
         Transform chunkParent,
-        GameObject ground)
+        GameObject ground,
+        List<MapPoint> mapPoints)
     {
+        var shopVisuals = new HashSet<string>(segment.Data.places
+            .Where(place => place != null && place.storyLocationShop)
+            .Select(place => place.sharedStoryVisualId ?? place.placeId));
+
         foreach (PlaceData place in segment.Data.places)
         {
             if (place != null && place.originalChunkIndex == localChunkIndex && ground != null)
@@ -424,6 +491,9 @@ public sealed class TerrainBuilder
                 if (old != null) old.gameObject.SetActive(false);
             }
             if (place == null || place.chunkIndex != localChunkIndex) continue;
+            var markerKind = shopVisuals.Contains(place.sharedStoryVisualId ?? place.placeId)
+                ? MapPointKind.Shop
+                : MapPointKind.Place;
             if (place.storyActors != null)
             {
                 if (place.sharedStoryVisualId != null && place.placeId != place.sharedStoryVisualId) continue;
@@ -444,6 +514,7 @@ public sealed class TerrainBuilder
                     var model = Object.Instantiate(actor.prefab, socket);
                     model.transform.localRotation = Quaternion.Euler(0f, 180f, 0f) * model.transform.localRotation;
                 }
+                if (group.childCount > 0) mapPoints.Add(new MapPoint(group, markerKind));
                 continue;
             }
 
@@ -475,6 +546,7 @@ public sealed class TerrainBuilder
                     segment.Registry.GetWorldPosition(place),
                     Quaternion.Euler(place.rotation));
                 PositionActorSockets(segment, place, authoredPlace);
+                mapPoints.Add(new MapPoint(authoredPlace, markerKind));
                 continue;
             }
 
@@ -482,6 +554,7 @@ public sealed class TerrainBuilder
             GameObject instance = Object.Instantiate(placePrefab,
                 segment.Registry.GetWorldPosition(place), Quaternion.Euler(place.rotation), chunkParent);
             instance.name = $"Place_{place.placeId}_{place.prefabId}";
+            mapPoints.Add(new MapPoint(instance.transform, markerKind));
         }
     }
 

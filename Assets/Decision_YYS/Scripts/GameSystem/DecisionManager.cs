@@ -526,6 +526,7 @@ private void SetYellowInputInteractable(bool interactable)
         }
 
         currentScenarioPath = mainStory.chapterId + "/" + mainStory.episodeIds[episodeIndex];
+        MainMenuSoundManager.Instance?.SetDecisionChapter(mainStory.chapterId);
         PreloadNextTerrain();
         InitializeMineChapter();
         InitializeLearning();

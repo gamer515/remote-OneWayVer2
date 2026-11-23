@@ -58,14 +58,15 @@ public class EnvController : MonoBehaviour
     internal bool TryGetShortcutRoute(PlaceData place, int side, float height, float encounterStopDistance,
         out Vector3[] route, out Transform actor) =>
         terrainBuilder.TryGetShortcutRoute(PlaceRegistry, place, side, height, encounterStopDistance, out route, out actor);
-    internal Transform FindRoadsideNpc(float routeX, float fromZ, float toZ,
+    internal Transform FindRoadsideNpc(float routeX, float fromZ, float toZ, float destinationZ, float stopDistance,
         System.Collections.Generic.ISet<string> resolved, out string encounterId) =>
-        terrainBuilder.FindRoadsideNpc(PlaceRegistry, routeX, fromZ, toZ, resolved, out encounterId);
+        terrainBuilder.FindRoadsideNpc(PlaceRegistry, routeX, fromZ, toZ, destinationZ, stopDistance, resolved, out encounterId);
     public Vector3 TerrainOrigin => environment != null ? environment.transform.position : Vector3.zero;
 
     private TerrainRepository terrainRepository = new TerrainRepository();
     private readonly TerrainBuilder terrainBuilder = new TerrainBuilder();
     internal System.Collections.Generic.IReadOnlyList<TerrainBuilder.FacilityMarker> FacilityMarkers => terrainBuilder.FacilityMarkers;
+    internal IEnumerable<List<TerrainBuilder.MapPoint>> LoadedMapPoints => terrainBuilder.LoadedMapPoints;
     private readonly Dictionary<string, RegisteredTerrain> registeredTerrains =
         new Dictionary<string, RegisteredTerrain>();
 

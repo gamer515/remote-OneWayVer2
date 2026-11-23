@@ -201,8 +201,10 @@ public partial class DecisionManager
         float z = position.z;
         if (z <= roadsideWalkZ) return false;
         // Keep the scheduled location encounter if both would trigger at its stop.
-        float endZ = Mathf.Min(z, playerController.TargetPosition.z - .01f);
-        var actor = envController.FindRoadsideNpc(position.x, roadsideWalkZ, endZ, resolvedPlaceIds, out var id);
+        float destinationZ = playerController.TargetPosition.z;
+        float endZ = Mathf.Min(z, destinationZ - .01f);
+        var actor = envController.FindRoadsideNpc(position.x, roadsideWalkZ, endZ,
+            destinationZ, encounterStopDistance, resolvedPlaceIds, out var id);
         roadsideWalkZ = z;
         if (actor == null) return false;
 

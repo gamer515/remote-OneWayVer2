@@ -505,6 +505,32 @@ unity command run_script --caller plugin --skill unity-cli --file AgentScripts/K
 <p>Unity 6000.3.12f1 에디터 Play에서 메인 메뉴의 이어하기로 격리 저장을 열었다. 기존 Game View 레이캐스트와 조작 핸들러에 화면 좌표를 전달해 검증했다. Windows 독립 실행 빌드는 미검증이다. <a href="../Builds/H01Frame/Input-validation.log">검증 로그</a> · <a href="../Builds/H01Frame/After-720.png">720p 적용 화면</a></p>
 <p>원본 에디터의 플레이는 유지했다. 임시 검증 프로젝트 <code>Builds/H01Frame/Project/</code>, <code>H01FrameReview.template</code>, <code>H01FrameLaunch.template</code>와 격리 저장 <code>AfterSaves/</code>는 Git에서 제외하고 결과 확인 후 정리 대기로 둔다. 변경 전 씬 복사본은 <code>Temp/restore/H01Frame/DecisionScene.unity</code>에 있다.</p>
 </section>
+<hr><section id="scene-chapter-bgm">
+<h2>씬·챕터 배경음악</h2>
+<p>2026-11-24 · 기준 <code>e5369bce</code>. <a href="../Assets/Scenes/MainMenuScene.unity">MainMenuScene</a>에 세 음원을 연결하고 <a href="../Assets/MainMenu/MainMenuSceneScript/MainMenuSoundManager.cs">기존 BGM 매니저</a>의 AudioSource를 재사용했다. 메뉴에서는 <code>sea_theme_2</code>를 반복하고 로딩에서는 정지한다. <a href="../Assets/Decision_YYS/Scripts/GameSystem/DecisionManager.cs">DecisionManager</a>가 등록한 챕터가 <code>Chapter_1</code>일 때는 <code>cave_theme_1</code>, <code>cave_theme_2</code>를 끝날 때마다 같은 확률로 다시 고른다. 같은 챕터 통지는 재생을 유지한다. 전투와 다른 챕터의 오디오 소스 및 효과음에는 연결 변경이 없다.</p>
+<p>기존 <code>BGM_Volume</code>과 기본값 0.5를 사용했다. 슬라이더 최대에서 메뉴 / 갱도 1 / 갱도 2의 AudioSource 게인은 0.32 / 0.40 / 0.28이다. 원본 WAV 세 곡은 <code>Assets/MainMenu/Audio</code>에 추가했고 스트리밍으로 불러온다. Unity 6.3 <a href="https://docs.unity.com/en-us/engine/6000.3/manual/audio/reference/class-audio-clip">Audio Clip Import Settings</a>와 <a href="https://docs.unity.com/en-us/engine/6000.3/script-reference/unityengine/audiosource/isplaying">AudioSource.isPlaying</a>을 확인했다.</p>
+<p id="scene-chapter-bgm-checks">원본 에디터 Play에서 게임 저장 복사본으로 메뉴→무음 로딩→갱도, 챕터 유지, 음원 종료 2초 전부터 끝까지 재생한 뒤 다음 곡 시작, 다른 챕터 통지의 정지, 무음 로딩 후 메뉴 복귀를 확인했다. 메뉴 복귀 시 재생 매니저는 1개였다. 슬라이더 25%와 100%의 반영 및 기존 설정 키를 확인하고 테스트 후 값을 복원했다. 메인 메뉴 씬을 컴파일이 끝난 뒤 다시 열어 새 갱도 참조를 반영했다. 독립 실행 빌드 및 전투·해안의 전체 플레이는 미검증이다. <a href="../Builds/BgmReview/Play.log">Play 검증 로그</a></p>
+<p>임시 검증기 <code>Builds/BgmReview/SceneMusicReview.template</code>, 검증 저장 <code>Builds/BgmReview/Saves/</code>와 수정 전 소스 사본 <code>Builds/BgmReview/SourceBackup/</code>는 Git에서 제외하고 확인 후 정리 대기로 둔다.</p>
+</section>
+<hr><section id="minimap-loaded-markers">
+<h2>미니맵 · 실제 배치 기준 표시</h2>
+<p>2026-11-24 · <a href="../Assets/Decision_YYS/Scripts/GameSystem/Terrain/TerrainBuilder.cs">TerrainBuilder</a>가 실제 생성한 장소·상점·길가 NPC의 Transform을 청크와 함께 등록한다. 상점으로 분류된 실제 장소는 공유 장소 ID에서도 상점 마크 하나를 사용한다. <a href="../Assets/Decision_YYS/Scripts/Controller/EnvController.cs">EnvController</a>를 통해 읽은 <a href="../Assets/Decision_YYS/Scripts/Controller/Ui/JourneyMapMarkers.cs">JourneyMapMarkers</a>는 대상당 한 마크를 생성하고 현재 월드 좌표를 투영한다. 청크가 내려가면 대상과 마크를 함께 정리한다.</p>
+<p>시설 예정 데이터는 기존 지형 로직에서 유지하고 미니맵은 실제 상점까지의 거리만 안내한다. 장소 내부 NPC는 장소 마크에 포함된다. 플레이어, 징수원, 기존 경로 UI의 처리는 유지했다. <a href="../Assets/Scenes/DecisionScene.unity">DecisionScene</a>에서 미니맵의 미사용 장소 설정 참조를 제거했다. 기존 uGUI의 <code>UIBasicLayout.md</code> 앵커 동작을 확인했다.</p>
+<p id="minimap-loaded-verification">갱도 첫 청크의 상점·일반 장소·길가 NPC 좌표와 마크를 비교했다. 길가 NPC가 없는 전역 3번째 청크에는 해당 마크가 없었다. 스트리밍으로 첫 청크를 내리자 마크 5개가 사라지고, 재진입 후 같은 위치에 하나씩 돌아왔다. 세 종류가 함께 보이도록 캡처할 때만 카메라를 맞췄다. <a href="../Builds/MinimapReview/Play.log">런타임 검증 로그</a> · <a href="../Builds/MinimapReview/Minimap-detail.png">적용 화면</a></p>
+<p>원본 에디터에서 메인 메뉴의 이어하기로 확인했다. 임시 검증기 <code>Builds/MinimapReview/MinimapReview.template</code>과 격리 저장 <code>Builds/MinimapReview/Saves/</code>는 Git에서 제외했고 확인 후 정리 대기 상태다.</p>
+</section>
+<hr><section id="shortcut-npc-corner">
+<h2>샛길 NPC 조우 · 출구 근처 누락 수정</h2>
+<p>2026-11-24 · 원본 Unity의 일시정지된 MAIN-01에서 왼쪽 샛길 출구 Z=37.20, NPC Z=37.30을 확인했다. 기존 판정은 샛길 구간의 Z 범위로 잘랐기 때문에 이 NPC를 놓쳤다. <a href="../Assets/Decision_YYS/Scripts/GameSystem/Terrain/TerrainBuilder.cs">TerrainBuilder.cs</a>가 선택한 쪽의 선분과 양 끝점에서 수평 거리 1.6유닛 안에 있는 길가 NPC를 찾는다. 여러 장애물 없는 경로가 있으면 조우가 가능한 경로를 먼저 선택한다. 기존 이동·대화와 이용료·정산은 유지했다.</p>
+<p>수정된 판정을 원본 Play에서 읽어 온 같은 오브젝트에 적용했다. 왼편은 해당 NPC를 반환했고 기존 정지 거리 2유닛이 적용된 위치는 Z=35.30이었다. 오른편에는 조우 대상이 없었다. 원본 플레이를 일시정지 상태로 유지했으므로 실제 결제부터 대화까지 재플레이하지 않았다. Unity의 응답 파일과 C# 컴파일러로 별도 출력에 컴파일했고 오류는 0건이었다. <a href="../Builds/ShortcutReview/Play-route.txt">좌우 검증 결과</a> · <a href="../Builds/ShortcutReview/Compile.log">컴파일 로그</a></p>
+<p>임시 검증 출력은 Git에서 제외한 <code>Builds/ShortcutReview/</code>의 컴파일 응답 파일과 DLL, 경로 검증 로그다. 확인 후 정리 대기 상태다. Unity Pipeline의 <code>code-reload.md</code>를 확인했다.</p>
+</section>
+<hr><section id="central-roadside-npc">
+<h2>장소 사이 중앙 길가 NPC</h2>
+<p>2026-11-24 · 실제 장소 외곽 사이의 빈 구간에서 기존 1~2명 배치 한도 중 최대 한 명을 중앙선에서 좌우 1.65유닛 후보에 먼저 배치한다. 건물·시설과의 여유, NPC 외곽이 중앙선에 너무 가까운지, 기존 시드 선택을 검사한다. 정면으로 걸어오면 기존 조우 정지 거리에서 길가 인사와 선택지가 열린다. 장소 도착 우선순위와 일반 가장자리 배치 및 미니맵 분류를 유지한다.</p>
+<p>원본 Play의 실제 장소 외곽과 프리팹 크기로 계산한 결과, 1번 및 2번 청크에 중앙 NPC 후보가 하나씩 생겼고 배치 총수는 각각 1명, 2명이었다. 초과 거리, 장소 도착 우선, 같은 조우의 재발동 방지를 검사했다. 일시정지된 플레이는 유지했으며 수정판을 다시 실행해 직접 걸으며 대화가 뜨는지까지는 확인하지 않았다. Unity C# 컴파일 오류 0건. <a href="../Builds/CentralNpcReview/Runtime.log">검증 로그</a></p>
+<p>변경 파일은 <a href="../Assets/Decision_YYS/Scripts/GameSystem/Terrain/TerrainBuilder.cs">TerrainBuilder.cs</a>, <a href="../Assets/Decision_YYS/Scripts/Controller/EnvController.cs">EnvController.cs</a>, <a href="../Assets/Decision_YYS/Scripts/GameSystem/DecisionManager.Encounters.cs">DecisionManager.Encounters.cs</a>다. 임시 검증 코드와 출력은 Git에서 제외한 <code>Builds/CentralNpcReview/</code>에 보관했으며 확인 후 정리 대기 상태다.</p>
+</section>
 </body></html>
 
 
