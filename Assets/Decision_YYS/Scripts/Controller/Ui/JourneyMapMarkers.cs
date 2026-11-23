@@ -6,6 +6,10 @@ using UnityEngine;
 [DefaultExecutionOrder(100)]
 public sealed class JourneyMapMarkers : MonoBehaviour
 {
+    private const float ApproachDistance = 24f;
+    private const float CloudDuration = 1.7f;
+    private static readonly Color PlaceColor = new Color(.12f, .4f, .9f);
+    private static readonly Color ShopColor = new Color(.82f, .44f, .08f);
     [SerializeField] private Camera mapCamera;
     [SerializeField] private MineNpcPlacement placement;
     [SerializeField] private MineCollectorProcession collectors;
@@ -18,6 +22,9 @@ public sealed class JourneyMapMarkers : MonoBehaviour
     private EnvController environment;
     private TextMeshProUGUI nextShopText;
     private float nextScan;
+    private bool collectorNear;
+    private bool collectorReturning;
+    private float cloudStart = float.NegativeInfinity;
     private readonly List<Transform> actors=new List<Transform>();
     private void LateUpdate()
     {
@@ -36,10 +43,10 @@ public sealed class JourneyMapMarkers : MonoBehaviour
         foreach(var place in placement.Places)
         {
             var doors = placement.Doors(place);
-            Position("room:"+place.placeId,(doors.entrance+doors.exit)*.5f,new Color(.12f,.4f,.9f),true);
+            Position("room:"+place.placeId,(doors.entrance+doors.exit)*.5f,PlaceColor,MapSymbolGraphic.Symbol.Place);
         }
-        foreach(var actor in actors)if(actor!=null)Position("npc:"+actor.GetInstanceID(),actor.position,new Color(.25f,.95f,.68f),false);
-        if(player!=null)Position("player",player.transform.position,new Color(1,.72f,.2f),false);
+        foreach(var actor in actors)if(actor!=null)Position("npc:"+actor.GetInstanceID(),actor.position,new Color(.25f,.95f,.68f));
+        if(player!=null)Position("player",player.transform.position,new Color(1,.72f,.2f));
         UpdateFacilityMarkers();
         UpdateCollectors();
     }
@@ -47,12 +54,13 @@ public sealed class JourneyMapMarkers : MonoBehaviour
     private void UpdateCollectors()
     {
         bool visible = collectors != null && collectors.Count > 0 && collectors.Members[0].gameObject.activeInHierarchy;
-        Vector3 front = visible ? mapCamera.WorldToViewportPoint(collectors.Members[0].position) : Vector3.zero;
-        bool showCloud = visible && !collectors.IsReturning && front.z > 0 && front.y > 0 && front.y < 1;
-        warning.gameObject.SetActive(showCloud);
         warningText.gameObject.SetActive(visible);
         if (!visible)
         {
+            collectorNear = false;
+            cloudStart = float.NegativeInfinity;
+            warning.SetCollectorWarning(0f, false, Vector2.zero, 0f);
+            warning.gameObject.SetActive(false);
             foreach (var marker in markers)
                 if (marker.Key.StartsWith("collector:") && marker.Value.gameObject.activeSelf)
                     marker.Value.gameObject.SetActive(false);
@@ -62,13 +70,47 @@ public sealed class JourneyMapMarkers : MonoBehaviour
         float nearest = float.PositiveInfinity;
         foreach (var member in collectors.Members)
         {
-            Position("collector:" + member.GetInstanceID(), member.position, new Color(1,.25f,.35f), false);
+            Position("collector:" + member.GetInstanceID(), member.position, new Color(1,.25f,.35f),
+                MapSymbolGraphic.Symbol.Collector);
             if (player != null) nearest = Mathf.Min(nearest, Vector3.Distance(member.position, player.transform.position));
         }
 
-        if (showCloud) warning.SetWarningFront(front.y, true);
+        UpdateCollectorCloud(nearest);
         string phase = collectors.Finished ? "징수원 대기" : collectors.IsReturning ? "세금 추격 ↑" : "시민 분류 검사 ↓";
         warningText.text = float.IsFinite(nearest) ? $"{phase} / {nearest:F0}u" : phase;
+    }
+
+    private void UpdateCollectorCloud(float nearest)
+    {
+        Vector3 front = mapCamera.WorldToViewportPoint(collectors.Members[0].position);
+        bool frontVisible = front.z > 0f && front.x > 0f && front.x < 1f && front.y > 0f && front.y < 1f;
+        bool returning = collectors.IsReturning;
+        bool near = collectors.IsOnPatrol && frontVisible && nearest <= ApproachDistance + (collectorNear ? 2f : 0f);
+        float now = Time.unscaledTime;
+        if (near && (!collectorNear || returning != collectorReturning))
+            cloudStart = now;
+        collectorNear = near;
+        collectorReturning = returning;
+
+        float age = now - cloudStart;
+        float opacity = near && age < CloudDuration
+            ? Mathf.Clamp01(age / .18f) * (1f - Mathf.SmoothStep(0f, 1f, (age - .5f) / (CloudDuration - .5f)))
+            : 0f;
+        float offset = front.x > .53f ? -.16f : .16f;
+        var cloud = new Vector2(Mathf.Clamp(front.x + offset, .15f, .85f), Mathf.Clamp(front.y, .04f, .96f));
+        if (opacity > 0f && player != null)
+        {
+            Vector2 playerPoint = mapCamera.WorldToViewportPoint(player.transform.position);
+            if (Mathf.Abs(cloud.y - playerPoint.y) < .07f && Mathf.Abs(cloud.x - playerPoint.x) < .15f)
+            {
+                cloud.x = Mathf.Clamp(front.x - offset, .15f, .85f);
+                if (Mathf.Abs(cloud.x - playerPoint.x) < .15f)
+                    opacity = 0f;
+            }
+        }
+        bool showFront = frontVisible && !returning;
+        warning.SetCollectorWarning(front.y, showFront, cloud, opacity);
+        warning.gameObject.SetActive(showFront || opacity > 0f);
     }
     private void UpdateFacilityMarkers()
     {
@@ -84,7 +126,8 @@ public sealed class JourneyMapMarkers : MonoBehaviour
         }
         foreach (var facility in environment.FacilityMarkers)
             Position("facility:" + facility.Id, facility.Position,
-                facility.IsShop ? new Color(1f, .68f, .19f) : new Color(.28f, .76f, .92f), true, facility.Id == nearestShop);
+                facility.IsShop ? ShopColor : PlaceColor,
+                facility.IsShop ? MapSymbolGraphic.Symbol.Shop : MapSymbolGraphic.Symbol.Place, facility.Id == nearestShop);
         if (nextShopText == null && float.IsFinite(distance))
         {
             nextShopText = Instantiate(warningText, mapArea);
@@ -104,13 +147,15 @@ public sealed class JourneyMapMarkers : MonoBehaviour
         if (nextShopText.gameObject.activeSelf)
             nextShopText.text = distance < 1f ? "상점 예정지" : $"다음 상점 예정지 {Mathf.CeilToInt(distance)}u";
     }
-    private void Position(string id,Vector3 world,Color tint,bool building,bool pinToEdge = false)
+    private void Position(string id, Vector3 world, Color tint,
+        MapSymbolGraphic.Symbol symbol = MapSymbolGraphic.Symbol.Dot, bool pinToEdge = false)
     {
         if(!markers.TryGetValue(id,out var graphic))
         {
             var go=new GameObject(id,typeof(RectTransform),typeof(MapSymbolGraphic));go.transform.SetParent(mapArea,false);
-            graphic=go.GetComponent<MapSymbolGraphic>();graphic.raycastTarget=false;graphic.building=building;graphic.color=tint;
-            graphic.rectTransform.sizeDelta=Vector2.one*(building?markerSize*1.5f:markerSize);markers.Add(id,graphic);
+            graphic=go.GetComponent<MapSymbolGraphic>();graphic.raycastTarget=false;graphic.Shape=symbol;graphic.color=tint;
+            bool location = symbol == MapSymbolGraphic.Symbol.Place || symbol == MapSymbolGraphic.Symbol.Shop;
+            graphic.rectTransform.sizeDelta=Vector2.one*(location?markerSize*1.5f:markerSize);markers.Add(id,graphic);
         }
         Vector3 point=mapCamera.WorldToViewportPoint(world);
         if (pinToEdge)

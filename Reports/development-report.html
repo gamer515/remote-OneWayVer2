@@ -483,6 +483,28 @@ unity command run_script --caller plugin --skill unity-cli --file AgentScripts/K
 <h2>빌드·재현 파일</h2>
 <p>Windows 계측용 빌드는 오류 0건으로 완료했다. 두 계측기를 제거한 최종 제품 소스의 재컴파일도 오류 0건이었다. 제품 코드에 남는 변경은 로딩 컨트롤러의 이어하기 최소 시간 선택뿐이다. 제품명과 빌드 중 갱신된 폰트 아틀라스는 원복했고 원본 사용자 저장에는 쓰지 않았다. 계측 소스·메타 <code>Perf00BMeasurement.cs</code>, <code>Objects/Perf00BObjectAudit.cs</code>, 각 소스 템플릿과 <code>SourceBackup/</code>, <code>ProbeEdits.json</code>, <code>ProbeHashes.csv</code>, <code>Stage-Probe.ps1</code>, <code>Finish-Probe.ps1</code>, <code>Launch-Trial.ps1</code>, <code>Start-Run.ps1</code>, <code>Start-Capture.ps1</code>, <code>Summarize-Trials.ps1</code>는 Git에서 제외한 <code>Builds/Perf00B/</code>에 보존했고 정리 대기 상태다.</p>
 </section>
+<hr><section id="h01">
+<h1>H01 지도와 학습 자판기 외형</h1>
+<p>2026-11-24 · 기준 <code>ac2b9d09</code> · Windows Unity 6000.3.12f1 에디터 Play, URP 17.3.0. 격리한 같은 1회차 저장을 메인 메뉴에서 이어하기로 열고, Game View의 실제 1280×720과 1920×1080에서 확인했다.</p>
+<h2>변경 파일</h2>
+<ul>
+<li><a href="../Assets/Scenes/DecisionScene.unity">DecisionScene.unity</a>의 자판기를 축마다 기존의 90%로 줄이고 보이는 중심을 기준으로 위치를 보정했다. 기존 황동 재질로 얇은 외곽선을 만들었다. 네 버튼의 순서와 프리팹에 속한 앵커, 투입구, 배출 경로를 사용한다.</li>
+<li><a href="../Assets/Decision_YYS/Scripts/Controller/Ui/JourneyMapMarkers.cs">JourneyMapMarkers.cs</a>와 <a href="../Assets/Decision_YYS/Scripts/Controller/Ui/MapSymbolGraphic.cs">MapSymbolGraphic.cs</a>에서 일반 장소와 상점은 24, 징수원은 16 UI 단위로 표시하고 외곽선을 1.7 UI 단위로 통일했다. 파란 집, 주황 상점, 빨간 점으로 구분한다. 순찰이 24유닛 안으로 들어오면 선두 옆에 연보라 구름을 약 1.7초 표시한다. 시민 검사 경계선과 검사·추격 상태 표기를 사용한다.</li>
+</ul>
+<h2>전후 화면과 확인 결과</h2>
+<p><a href="../Builds/H01/Comparison-720.png">720p 전후 확대 비교</a> · <a href="../Builds/H01/Collector-720.png">징수원 접근 지도 확대</a> · <a href="../Builds/H01/Before-720.png">720p 전</a> · <a href="../Builds/H01/After-720.png">720p 후</a> · <a href="../Builds/H01/Before-1080.png">1080p 전</a> · <a href="../Builds/H01/After-1080.png">1080p 후</a> · <a href="../Builds/H01/Census-720.png">시민 검사 접근</a> · <a href="../Builds/H01/Chase-720.png">세금 추격 접근</a> · <a href="../Builds/H01/Outlet-720.png">책 배출구</a></p>
+<p>두 해상도에서 네 버튼의 화면 좌표를 Unity EventSystem으로 검사하고, 네 투입구의 화면 좌표에서 해당 계열만 맞는지 검사했다. 힘 버튼으로 책 한 권을 생성해 배출구 마지막 앵커에서 실제 집기·놓기 핸들러를 실행했다. 힘 코인을 화면 좌표로 끌어 넣어 기존 리필 정산을 거쳤다. 순찰 위치와 단계는 복사본에서 지정해 검사·추격 구름과 표식을 반복 검증했다. 수동 마우스 조작과 Windows 독립 실행 빌드 검증은 미실시다.</p>
+<p>런타임 점검 40개를 통과했다. 리필 1회차는 힘 코인 1개에 재고 3→6, 다음 리필은 2개에 6→9였다. <a href="../Builds/H01/After.log">실제 입력 및 표시 검증 로그</a>. 임시 Play 검증기 소스와 저장 복사본은 Git에서 제외된 <code>Builds/H01/</code>에 보관했다.</p>
+</section>
+<hr><section id="h01-dispenser-map-frame">
+<h2>H01 후속 · 지도와 자판기 금색 프레임</h2>
+<p>2026-11-24 · <a href="../Assets/Scenes/DecisionScene.unity">DecisionScene.unity</a>의 기존 자판기 프레임에 오른쪽 지도가 쓰는 <code>Frame_Face_384x520</code> 스프라이트를 연결했다. 두 프레임의 위쪽 앵커 위치는 −16, 높이는 490 UI 단위다. 자판기 프레임은 X=1107, 너비 408로 맞췄다. 같은 9슬라이스 테두리와 금색 모서리를 쓰며, 중앙 채움과 Raycast Target은 꺼져 있다. 자판기 모델 및 투입구, 버튼, 책 배출 앵커에는 변경이 없다.</p>
+<table id="h01-frame-validation"><tr><th>해상도</th><th>두 프레임 위 / 아래 화면 좌표 (원점은 좌하단)</th><th>조작 확인</th></tr>
+<tr><td>1920×1080</td><td>1064.000 / 574.001px, 좌우 차이 0px</td><td>4계열 버튼·투입구, 힘 책 배출·드래그, 힘 코인 실제 차감 및 리필 통과</td></tr>
+<tr><td>1280×720</td><td>709.334 / 382.667px, 좌우 차이 0px</td><td>동일 항목 통과</td></tr></table>
+<p>Unity 6000.3.12f1 에디터 Play에서 메인 메뉴의 이어하기로 격리 저장을 열었다. 기존 Game View 레이캐스트와 조작 핸들러에 화면 좌표를 전달해 검증했다. Windows 독립 실행 빌드는 미검증이다. <a href="../Builds/H01Frame/Input-validation.log">검증 로그</a> · <a href="../Builds/H01Frame/After-720.png">720p 적용 화면</a></p>
+<p>원본 에디터의 플레이는 유지했다. 임시 검증 프로젝트 <code>Builds/H01Frame/Project/</code>, <code>H01FrameReview.template</code>, <code>H01FrameLaunch.template</code>와 격리 저장 <code>AfterSaves/</code>는 Git에서 제외하고 결과 확인 후 정리 대기로 둔다. 변경 전 씬 복사본은 <code>Temp/restore/H01Frame/DecisionScene.unity</code>에 있다.</p>
+</section>
 </body></html>
 
 
