@@ -144,7 +144,7 @@ public partial class MainStoryUi
                 text.Append("<b>").Append((string)combo["name"]).Append("</b>  /  ")
                     .Append(length >= 3 ? $"같은 능력의 오름차순 연속 번호 {length}권" : "기존 발견")
                     .Append("  /  누적 지급 ").Append(station.ReadingComboPayouts((string)combo["id"])).AppendLine("회");
-                text.Append("  <b>콤보 추가 보상</b>  ").AppendLine(FormatGuideRewards(combo["reward"])).AppendLine();
+                text.Append("  <b>콤보 추가 보상</b>  ").AppendLine(FormatGuideRewards(MineLearningStation.ReadCoinReward(combo["reward"]))).AppendLine();
                 continue;
             }
             string type = (string)combo["type"] switch { "author" => "작가", "mainStat" => "주 능력", _ => "주제" };
@@ -165,7 +165,7 @@ public partial class MainStoryUi
                     .AppendLine(credits?.Contains(id) == true ? "완료" : "미완료");
                 text.Append("    독서 보상  ").AppendLine(FormatGuideRewards(station.ReadingChoiceRewards(id).ToArray()));
             }
-            text.Append("  <b>콤보 추가 보상</b>  ").AppendLine(FormatGuideRewards(combo["reward"])).AppendLine();
+            text.Append("  <b>콤보 추가 보상</b>  ").AppendLine(FormatGuideRewards(MineLearningStation.ReadCoinReward(combo["reward"]))).AppendLine();
         }
         comboGuideText.text = text.Length > 0 ? text.ToString() : "아직 발견한 콤보가 없습니다.";
         float width = comboGuideScroll.viewport.rect.width;
@@ -178,15 +178,14 @@ public partial class MainStoryUi
         content.sizeDelta = new Vector2(0f, comboGuideText.GetPreferredValues(comboGuideText.text, width, Mathf.Infinity).y + 18f);
     }
 
-    private static string FormatGuideRewards(params JToken[] rewards)
+    private static string FormatGuideRewards(params int[][] rewards)
     {
         if (rewards.Length == 0) return "없음";
         var amounts = new System.Collections.Generic.List<string>();
         for (int ability = 0; ability < MineLearningStation.AbilityKeys.Length; ability++)
         {
-            string key = MineLearningStation.AbilityKeys[ability];
-            int minimum = rewards.Min(reward => (int?)reward?[key] ?? 0);
-            int maximum = rewards.Max(reward => (int?)reward?[key] ?? 0);
+            int minimum = rewards.Min(reward => reward[ability]);
+            int maximum = rewards.Max(reward => reward[ability]);
             if (maximum <= 0) continue;
             string quantity = minimum == maximum ? $"+{maximum}" : $"{minimum}~{maximum}";
             amounts.Add($"{MineLearningStation.AbilityName(ability)} {quantity}");

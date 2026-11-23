@@ -99,8 +99,14 @@ public sealed partial class MineLearningStation
         var definition = authoredBooks?.FirstOrDefault(book => book.id == id);
         return definition != null ? ProductionAbility(definition) : Array.IndexOf(AbilityKeys, (string)readingBooks[id]["mainStat"]);
     }
-    internal IEnumerable<JToken> ReadingChoiceRewards(string id) =>
-        readingBooks[id]["choices"].Select(choice => choice["reward"]);
+    internal IEnumerable<int[]> ReadingChoiceRewards(string id) =>
+        readingBooks[id]["choices"].Select(choice => ReadChoiceCoins(id, choice["reward"]));
+
+    private static int[] ReadChoiceCoins(string bookId, JToken reward) =>
+        ReadCoinReward(reward, bookId == StrengthTutorialBook ? 1 : 2);
+
+    internal static int[] ReadCoinReward(JToken reward, int divisor = 1) =>
+        AbilityKeys.Select(key => ((int?)reward?[key] ?? 0) / divisor).ToArray();
 
     internal ReadingComboProgress FindReadingComboProgress(string id) =>
         progress.readingComboProgress.Find(entry => entry.id == id);
@@ -243,36 +249,33 @@ public sealed partial class MineLearningStation
         var book = PendingReading;
         if (book == null || ReadingResult != null || index < 0 || index >= book["choices"].Count()) return;
         var choice = book["choices"][index];
-        var amounts = new int[4];
-        int[] AddRewards(JToken reward)
+        string id = (string)book["bookId"];
+        var amounts = ReadChoiceCoins(id, choice["reward"]);
+        var combos = new List<LearningComboReward>();
+        void AddCombo(JObject combo)
         {
-            var added = new int[amounts.Length];
+            var bonus = ReadCoinReward(combo["reward"]);
             for (int i = 0; i < amounts.Length; i++)
-            {
-                added[i] = (int?)reward?[AbilityKeys[i]] ?? 0;
-                amounts[i] += added[i];
-            }
-            return added;
+                amounts[i] += bonus[i];
+            combos.Add(new LearningComboReward((string)combo["name"], bonus));
         }
 
-        string id = (string)book["bookId"];
         progress.pendingReading.RemoveAt(0);
         if (!progress.completedReading.Contains(id)) progress.completedReading.Add(id);
         if (!progress.mastered.Contains(id)) progress.mastered.Add(id);
         progress.successfulStudies++;
-        AddRewards(choice["reward"]);
-        var combos = new List<LearningComboReward>();
         foreach (var combo in id == StrengthTutorialBook ? Array.Empty<JObject>() : readingCombos)
         {
             if (IsAbilityCombo(combo) || !CreditReadingCombo(combo, id)) continue;
-            combos.Add(new LearningComboReward((string)combo["name"], AddRewards(combo["reward"])));
+            AddCombo(combo);
         }
         if (CompleteNumberComboChoice() is JObject numberCombo)
-            combos.Add(new LearningComboReward((string)numberCombo["name"], AddRewards(numberCombo["reward"])));
+            AddCombo(numberCombo);
         AwardCoins(amounts, combos);
+        string coins = string.Join(" / ", amounts.Select((quantity, i) => quantity > 0 ? AbilityName(i) + " +" + quantity : null)
+            .Where(label => label != null));
         progress.readingResult = (string)choice["result"] + "\n\n" +
-            string.Join(" / ", amounts.Select((quantity, i) => quantity > 0 ? AbilityName(i) + " +" + quantity : null)
-                .Where(label => label != null));
+            (coins.Length > 0 ? coins : "코인 획득 없음");
         var definition = id == StrengthTutorialBook ? null : authoredBooks.FirstOrDefault(entry => entry.id == id);
         if (!string.IsNullOrEmpty(definition?.skill) && definition.skillReward > 0)
         {
