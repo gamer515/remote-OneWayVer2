@@ -15,7 +15,9 @@ public partial class MainStoryUi
     private bool displayedPreview;
     private int displayedBookNumber;
     private MineLearningStation readingStation;
-    private GameObject comboGuideCanvas, comboGuidePanel, comboGuideToggle;
+    private GameObject comboGuideCanvas, comboGuidePanel;
+    private TextMeshProUGUI comboGuideTitle, comboGuideHint;
+    private bool showBookCatalogue;
     private UnityEngine.UI.ScrollRect comboGuideScroll;
     private TextMeshProUGUI comboGuideText;
     private int comboGuideInputFrame = -1, guideStudyCount = -1;
@@ -33,7 +35,7 @@ public partial class MainStoryUi
         int number = preview ? station.ReadingPreviewNumber : 0;
         if (preview) book = station.ReadingPreview;
         hideReadingForReward = available && !IsComboGuideOpen && result != null && HasLearningRewardPresentation;
-        UpdateComboGuide(station, available && book == null && result == null);
+        if (IsComboGuideOpen) UpdateComboGuide(station);
         if (IsComboGuideOpen || !available || (book == null && result == null) || hideReadingForReward)
         {
             if (readingPanel != null) readingPanel.SetActive(false);
@@ -120,22 +122,35 @@ public partial class MainStoryUi
         if (learningRewardView != null) Destroy(learningRewardView.transform.parent.gameObject);
     }
 
-    private void UpdateComboGuide(MineLearningStation station, bool canOpen)
+    internal void OpenStudyCodex(MineLearningStation station, bool bookCatalogue)
     {
-        if (comboGuideCanvas == null)
-        {
-            if (!canOpen || station.ReadingCombos.Count == 0) return;
-            BuildComboGuide();
-        }
-        comboGuideToggle.SetActive(canOpen && !IsComboGuideOpen);
-        if (!IsComboGuideOpen) return;
-        int studyCount = station.Progress.successfulStudies;
+        if (IsReadingOpen || IsComboGuideOpen) return;
+        if (comboGuideCanvas == null) BuildComboGuide();
+        showBookCatalogue = bookCatalogue;
+        comboGuideTitle.text = bookCatalogue ? "발견한 책" : "발견한 콤보";
+        comboGuideHint.text = bookCatalogue ? "지금까지 얻은 책" : "완성한 콤보와 추가 보상";
+        SetComboGuideOpen(true);
+        UpdateComboGuide(station);
+    }
+
+    private void UpdateComboGuide(MineLearningStation station)
+    {
+        int studyCount = showBookCatalogue ? station.Progress.discoveredBookIds.Count : station.Progress.successfulStudies;
         if (guideStudyCount == studyCount) return;
         guideStudyCount = studyCount;
 
         string[] colors = { "#2557A8", "#AA3538", "#845800", "#15746C" };
         var text = new StringBuilder();
-        foreach (var combo in station.ReadingCombos)
+        if (showBookCatalogue)
+        {
+            foreach (var book in station.DiscoveredBooks)
+            {
+                text.Append("<b>").Append((string)book["parodyTitle"]).Append("</b>");
+                if ((string)book["author"] is { Length: > 0 } author) text.Append("  /  ").Append(author);
+                text.AppendLine();
+            }
+        }
+        foreach (var combo in showBookCatalogue ? station.ReadingCombos.Take(0) : station.ReadingCombos)
         {
             if (station.ReadingComboPayouts((string)combo["id"]) <= 0) continue;
             if (MineLearningStation.IsAbilityCombo(combo))
@@ -167,7 +182,8 @@ public partial class MainStoryUi
             }
             text.Append("  <b>콤보 추가 보상</b>  ").AppendLine(FormatGuideRewards(MineLearningStation.ReadCoinReward(combo["reward"]))).AppendLine();
         }
-        comboGuideText.text = text.Length > 0 ? text.ToString() : "아직 발견한 콤보가 없습니다.";
+        comboGuideText.text = text.Length > 0 ? text.ToString() :
+            showBookCatalogue ? "아직 발견한 책이 없습니다." : "아직 발견한 콤보가 없습니다.";
         float width = comboGuideScroll.viewport.rect.width;
         if (width <= 0f)
         {
@@ -197,7 +213,6 @@ public partial class MainStoryUi
     {
         comboGuideInputFrame = Time.frameCount;
         comboGuidePanel.SetActive(open);
-        comboGuideToggle.SetActive(!open);
         if (open)
         {
             guideStudyCount = -1;
@@ -217,7 +232,6 @@ public partial class MainStoryUi
         scaler.referenceResolution = new Vector2(1920, 1080);
         scaler.matchWidthOrHeight = .5f;
         root.gameObject.AddComponent<UnityEngine.UI.GraphicRaycaster>();
-        comboGuideToggle = ComboGuideButton(root, "콤보 안내", new Vector2(.435f, .065f), new Vector2(.545f, .102f), true);
 
         var shade = ReadingRect(root, "ComboGuideModal", Vector2.zero, Vector2.one);
         comboGuidePanel = shade.gameObject;
@@ -225,11 +239,11 @@ public partial class MainStoryUi
         var body = ReadingPage(shade, "ComboGuidePage", .20f, .80f);
         body.anchorMin = new Vector2(.20f, .12f);
         body.anchorMax = new Vector2(.80f, .88f);
-        var title = ReadingText(body, "ComboGuideTitle", 38f, new Vector2(.05f, .88f), new Vector2(.75f, .96f));
+        var title = comboGuideTitle = ReadingText(body, "ComboGuideTitle", 38f, new Vector2(.05f, .88f), new Vector2(.75f, .96f));
         title.text = "콤보 안내";
-        var rewardHint = ReadingText(body, "ComboGuideRewardHint", 22f, new Vector2(.05f, .825f), new Vector2(.75f, .875f));
+        var rewardHint = comboGuideHint = ReadingText(body, "ComboGuideRewardHint", 22f, new Vector2(.05f, .825f), new Vector2(.75f, .875f));
         rewardHint.text = "독서 보상은 선택지별 최소~최대치입니다.";
-        ComboGuideButton(body, "닫기", new Vector2(.80f, .87f), new Vector2(.95f, .96f), false);
+        AddCloseCodexButton(body);
 
         var viewport = ReadingRect(body, "ComboGuideViewport", new Vector2(.05f, .06f), new Vector2(.95f, .81f));
         viewport.gameObject.AddComponent<UnityEngine.UI.Image>().color = new Color(1f, 1f, 1f, 0f);
@@ -248,18 +262,17 @@ public partial class MainStoryUi
         comboGuidePanel.SetActive(false);
     }
 
-    private GameObject ComboGuideButton(RectTransform parent, string text, Vector2 min, Vector2 max, bool open)
+    private void AddCloseCodexButton(RectTransform parent)
     {
-        var rect = ReadingRect(parent, open ? "OpenComboGuide" : "CloseComboGuide", min, max);
+        var rect = ReadingRect(parent, "CloseComboGuide", new Vector2(.80f, .87f), new Vector2(.95f, .96f));
         var image = rect.gameObject.AddComponent<UnityEngine.UI.Image>();
         image.color = new Color(.83f, .70f, .49f);
         var button = rect.gameObject.AddComponent<UnityEngine.UI.Button>();
         button.targetGraphic = image;
-        button.onClick.AddListener(() => SetComboGuideOpen(open));
+        button.onClick.AddListener(() => SetComboGuideOpen(false));
         var label = ReadingText(rect, "Label", 23f, Vector2.zero, Vector2.one);
-        label.text = text;
+        label.text = "닫기";
         label.alignment = TextAlignmentOptions.Center;
-        return rect.gameObject;
     }
 
     private static RectTransform ReadingRect(Transform parent, string name, Vector2 min, Vector2 max)

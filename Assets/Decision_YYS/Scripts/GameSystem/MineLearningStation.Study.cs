@@ -54,7 +54,7 @@ public sealed partial class MineLearningStation
     public int ProductionQueueLimit => Capacity.waiting + (UsesStudyRules ? extraProductionQueueSlots : 0);
     public int LooseBookStorageLimit => Mathf.Max(Capacity.simultaneous, looseBookStorageLimit);
     private bool CanDeliverStudyBook => progress.active.All(job => job.onBoard) &&
-        progress.active.Count(job => !IsReadingPlacement(job) && !job.comboStudy) < LooseBookStorageLimit;
+        progress.active.Count(job => !IsReadingPlacement(job) && !IsStoredBook(job) && !job.comboStudy) < LooseBookStorageLimit;
     public string StudyResult { get; private set; }
     public bool StudyResultSucceeded { get; private set; }
     public float StudyResultUntil { get; private set; }
@@ -145,6 +145,7 @@ public sealed partial class MineLearningStation
             PrepareStrengthTutorial(tutorial);
             progress.active.Add(tutorial);
         }
+        RestoreBookshelf();
     }
 
     private bool RefreshDay()
@@ -234,7 +235,53 @@ public sealed partial class MineLearningStation
         return true;
     }
 
-    internal const int ShelfComboId = -1;
+    internal const int BookshelfCompartments = 6;
+    internal const int BookshelfSlots = BookshelfCompartments * 3;
+    private const int LegacyShelfBoard = 3, SingleBookShelfBoard = 4, BookshelfBoard = 5;
+
+    internal static bool IsStoredBook(MineLearningJob job) =>
+        job.boardIndex is LegacyShelfBoard or SingleBookShelfBoard or BookshelfBoard;
+
+    internal static int BookshelfSlot(MineLearningJob job)
+    {
+        int maxSlot = job.boardIndex switch
+        {
+            LegacyShelfBoard => 4,
+            SingleBookShelfBoard => BookshelfCompartments - 1,
+            _ => BookshelfSlots - 1
+        };
+        return Mathf.Clamp(Mathf.RoundToInt(job.boardU * maxSlot), 0, maxSlot);
+    }
+
+    private void RestoreBookshelf()
+    {
+        progress.discoveredBookIds ??= new List<string>();
+        bool changed = false;
+        foreach (var job in progress.active.Where(job => !job.comboStudy &&
+                     job.boardIndex is LegacyShelfBoard or SingleBookShelfBoard))
+        {
+            job.boardU = BookshelfSlot(job) / (BookshelfSlots - 1f);
+            job.boardIndex = BookshelfBoard;
+            changed = true;
+        }
+        foreach (string id in progress.active.Concat(progress.queued).Concat(progress.stored)
+                     .Select(job => job.bookId).Concat(progress.completedReading).Concat(progress.mastered)
+                     .Concat(progress.pendingReading))
+            changed |= DiscoverBook(id);
+        if (changed) save?.Invoke();
+    }
+
+    internal bool CanStoreBook(MineLearningJob book, int slot) => CanMoveBooks && !book.comboStudy &&
+        (uint)slot < BookshelfSlots && progress.active.Contains(book) &&
+        !progress.active.Any(job => job != book && IsStoredBook(job) && BookshelfSlot(job) == slot);
+
+    internal bool TryStoreBook(MineLearningJob book, int slot)
+    {
+        if (!CanStoreBook(book, slot)) return false;
+        RememberPlacement(book, slot / (BookshelfSlots - 1f), .5f, BookshelfBoard);
+        return true;
+    }
+
     internal IEnumerable<IGrouping<int, MineLearningJob>> BoardStacks() => progress.active
         .Where(job => job.stackOrder > 0).OrderBy(job => job.stackOrder).GroupBy(job => job.stackId);
 
@@ -266,9 +313,8 @@ public sealed partial class MineLearningStation
         if (book.stackYaw == 0f) book.stackYaw = Mathf.Lerp(-10f, 10f, Mathf.Repeat(order * .618034f, 1f));
     }
 
-    internal MineLearningJob[] ComboSubmission(int stackId) => stackId == ShelfComboId
-        ? progress.active.Where(job => job.boardIndex == 3).OrderBy(job => job.boardU).ToArray()
-        : progress.active.Where(job => job.stackOrder > 0 && job.stackId == stackId)
+    internal MineLearningJob[] ComboSubmission(int stackId) => progress.active
+        .Where(job => job.stackOrder > 0 && job.stackId == stackId)
             .OrderBy(job => job.stackOrder).ToArray();
 
     internal bool CanSubmitCombo(MineLearningJob[] batch)
@@ -296,7 +342,7 @@ public sealed partial class MineLearningStation
     }
 
     internal static bool IsQueuedComboBook(MineLearningJob job) =>
-        job.comboStudy && (job.stackOrder > 0 || job.boardIndex == 3);
+        job.comboStudy && (job.stackOrder > 0 || job.boardIndex == LegacyShelfBoard);
 
     internal MineLearningJob[] NextComboWave()
     {
@@ -334,6 +380,7 @@ public sealed partial class MineLearningStation
                 if (progress.producing.generationRemaining <= 0)
                 {
                     PrepareStrengthTutorial(progress.producing);
+                    DiscoverBook(progress.producing.bookId);
                     progress.queued.Add(progress.producing);
                     progress.producing = null;
                     enteredQueue = changed = true;

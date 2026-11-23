@@ -93,6 +93,18 @@ public sealed partial class MineLearningStation
         ReadingPreviewNumber = 0;
     }
     internal IReadOnlyList<JObject> ReadingCombos => readingCombos;
+    internal IEnumerable<JObject> DiscoveredBooks => progress.discoveredBookIds
+        .Where(readingBooks.ContainsKey).Select(id => readingBooks[id])
+        .GroupBy(book => (string)book["parodyTitle"]).Select(titles => titles.First());
+
+    private bool DiscoverBook(string id)
+    {
+        if (string.IsNullOrEmpty(id)) return false;
+        if (previousBookIds.TryGetValue(id, out string current)) id = current;
+        if (!readingBooks.ContainsKey(id) || progress.discoveredBookIds.Contains(id)) return false;
+        progress.discoveredBookIds.Add(id);
+        return true;
+    }
     internal string ReadingTitle(string id) => (string)readingBooks[id]["parodyTitle"];
     internal int ReadingAbility(string id)
     {

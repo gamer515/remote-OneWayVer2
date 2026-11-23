@@ -800,4 +800,25 @@ a:focus-visible{outline:2px solid #cfe8fb;outline-offset:3px}
 <p><a href="work-history.html#remaining">기존 미작업 기록과 필요한 에셋 보기</a></p></section>
 <section id="inspector-current"><h2>수정 위치</h2>
 <p><a href="usage-guide.html#inspector-current">Unity Inspector 수정 위치</a> · <a href="usage-guide.html#content-authoring">콘텐츠 엑셀 편집 방법</a></p></section>
+<section id="study-bookshelf-codices"><h2>2026-11-23 L04 눕힌 책장과 발견 도감</h2>
+<p>흰 보드 오른쪽의 나무 책장에 보관 6칸과 발견한 책·발견한 콤보 도감책 2권을 배치했다. 일반 책은 끌어 넣고 꺼내며 도감책은 짧게 눌러 연다. 책장에 빈 곳이 없으면 책이 원래 자리로 돌아간다.</p>
+<p>구형 선반 저장의 위치만 새 보관 칸으로 이관한다. 책별 번호와 남은 학습 시간은 유지한다. 보드 묶음 학습과 미리 읽기에는 기존 입력을 사용한다. 공용 3D 책에 능력별 색, 제목·문양, 번호를 표시한다.</p>
+<p>메인 메뉴에서 별도 테스트 저장으로 들어가 보관·꺼내기, 만석 드래그 취소, 두 도감, 구형 선반 책 복원, 3·4·5번 묶음 제출을 확인했다.</p>
+<h3>참고 이미지에 맞춘 책장 배치와 금장 책등</h3>
+<table><thead><tr><th>단계</th><th>완료 내용</th></tr></thead><tbody>
+<tr><td>외형·위치</td><td>흰 보드 오른쪽 테두리 가까이에 2열 4단 책장을 배치했다. 나무 프레임과 어두운 안쪽 판을 적용하고 금장 책등이 카메라를 향하도록 기울였다.</td></tr>
+<tr><td>보관·도감</td><td>일반 보관 6칸에 각 3권을 나란히 두도록 했다. 기존 저장의 각 칸은 새 책장 같은 칸 가운데 자리로 이어지고, 위쪽 두 칸은 도감용으로 사용한다.</td></tr>
+<tr><td>확인</td><td>Unity 컴파일, 메인 메뉴 이어하기로 저장한 책 번호 복원, 보드로 꺼내기와 다시 넣기, 두 도감 열기, 최종 Game 화면을 확인했다.</td></tr>
+</tbody></table>
+<p>별도 임시 검증 코드는 없다.</p>
+<h3>CounterBookshelf 프리팹 적용</h3>
+<p>첨부 패키지에서 <a href="../../Assets/CounterBookshelf/CounterBookshelf.prefab">CounterBookshelf 프리팹</a>, Cabinet 메시, 월넛 재질과 텍스처를 가져왔다. 흰 보드 오른쪽의 기존 범위에 앞면이 위로 오게 배치하고, 프리팹의 칸에 맞춰 책과 도감 위치를 조정했다.</p>
+<p>Unity 컴파일을 통과했다. 메인 메뉴에서 테스트 저장을 이어서 보관 책 복원, 꺼내기와 다시 넣기, 두 도감 열기와 월넛 재질 표시를 확인했다. 별도 임시 검증 코드는 없다.</p>
+<h3>책장 호버와 꺼낼 수 있는 도감책</h3>
+<p>책장 위치를 유지하고 보관 책은 호버 시 제목과 번호를, 도감책은 도감 이름을 표시한다. 발견한 책은 보라색, 발견한 콤보는 상아색이다. 도감책은 짧게 클릭하면 열리고, 흰 보드로 끌어 꺼내거나 책장으로 돌려놓을 수 있다. 보드 밖에 놓으면 드래그 시작 위치로 돌아가고, 재진입 시 도감책은 책장에 놓인다.</p>
+<p>Unity 컴파일과 별도 런타임 인스턴스에서 일반 책 제목·번호, 두 도감책 호버·꺼내기·열기·반납·잘못된 드롭 복귀를 확인했다. 진행 중인 회차는 재시작하지 않았다. 별도 임시 검증 코드는 없다.</p>
+<h3>현재 책장 위치를 씬 기본값으로 저장</h3>
+<p>현재 배치의 위치 (6.53864, −7.25350, −3.24840), 회전 (90°, 0°, 0°), 스케일 (1.93377, 3.30519, 1)을 DecisionScene에 저장했다. 게임이 씬을 열 때 이 값으로 책장을 생성한다. Unity 컴파일과 같은 값으로 두 차례 생성되는 것을 확인했다. 진행 중 회차를 유지해 메인 메뉴의 새 게임·이어하기는 다시 실행하지 않았다. 임시 검증 코드는 없다.</p>
+<p>후속 참조 사진에 표시된 Cabinet 메시의 로컬 위치 (0.08, −0.028, 0)를 CounterBookshelf 프리팹에 적용했다. 보관 슬롯과 도감은 Cabinet의 좌표계를 사용한다. 별도 테스트 저장으로 메인 메뉴의 새 게임과 이어하기 모두에서 메시와 슬롯이 같은 위치로 생성되는 것을 확인했다. 임시 검증 코드는 없다.</p>
+</section>
 </main><script>const oldSections = new Set(["mine-facility-layout-nov08","five-minute-day-nov08","tax-catalog-nov08","open-mine-calendar-nov08","encounter-panel-nov08","chapter-modules-nov08","payment-latest","dispenser-latest","npc-hero-latest","choice-depth-latest","layout-combat-latest","learning-plan","coastal-module-plan","place-types-plan","story-management","structure","screens","expansion","verification","cleanup"]); const id = location.hash.slice(1); if (oldSections.has(id)) location.replace("work-history.html#" + id);</script></body></html>

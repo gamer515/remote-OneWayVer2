@@ -7,7 +7,7 @@ using UnityEngine.InputSystem;
 #endif
 
 /// <summary>Displays the existing learning jobs on the supplied 3D dispenser; owns no economy or timers.</summary>
-public sealed class LearningDispenserView : MonoBehaviour
+public sealed partial class LearningDispenserView : MonoBehaviour
 {
     [SerializeField] private MineLearningStation station;
     [SerializeField] private Transform queueBottom, dynamicRoot;
@@ -22,9 +22,6 @@ public sealed class LearningDispenserView : MonoBehaviour
     [SerializeField] private TMPro.TMP_Text bookHoverLabel;
     [SerializeField] private TMPro.TextMeshProUGUI studyNotice;
     [SerializeField] private Transform studentHead;
-    [SerializeField] private Transform comboShelfPrefab;
-    [SerializeField] private Vector3 comboShelfLocalEuler = new Vector3(-30f, 0f, 0f);
-    [SerializeField] private Vector3 comboShelfLocalPosition = new Vector3(1.10763788f, -4.51f, -.57f);
     [SerializeField] private float studyNoticeVerticalOffset = -16f;
     [SerializeField] private float studyMeterVerticalOffset = -12f;
     [SerializeField] private RectTransform learningMeter, learningFill;
@@ -69,17 +66,7 @@ public sealed class LearningDispenserView : MonoBehaviour
     private Transform[][] stockModels;
     private Bounds[] dispenserHoverBounds;
     private JourneyCoinSupplyController coinSupply;
-    private Transform[] shelfSlots;
-    private Button shelfSubmit;
     private readonly Dictionary<int, Button> stackSubmitButtons = new();
-    private Transform comboShelf;
-    private bool draggingShelf;
-    private Plane shelfDragPlane;
-    private Vector3 shelfGrabOffset;
-    private float shelfDragLift;
-    private Vector3 shelfDragOrigin;
-    private const float ShelfHeldLift = .22f;
-    private const float ShelfItemClearance = .10f;
     private Coroutine pickup;
     private readonly HashSet<MineLearningJob> settlingBooks = new HashSet<MineLearningJob>();
     private MineLearningJob carriedBook;
@@ -96,7 +83,7 @@ public sealed class LearningDispenserView : MonoBehaviour
         coinSupply = supply;
         if (supply != null)
         {
-            supply.BoardShelf = comboShelf;
+            supply.BoardShelf = bookshelf;
             supply.BooksOnBoard = BookBoardOccupants;
         }
     }
@@ -107,15 +94,21 @@ public sealed class LearningDispenserView : MonoBehaviour
             if (pair.Value != null && pair.Value.gameObject.activeInHierarchy && pair.Value != draggedBook &&
                 pair.Key.onBoard && pair.Key.boardIndex < 2)
                 yield return pair.Value;
+        foreach (var codex in CodicesOnBoard())
+            yield return codex;
     }
 
-    private IEnumerable<Bounds> ShelfObstacles() => BookBoardOccupants()
-        .Concat(coinSupply?.BoardCoins ?? Enumerable.Empty<Transform>()).Select(BoardItemDrop.ItemBounds);
+    private IEnumerable<Transform> CodicesOnBoard()
+    {
+        for (int i = 0; i < codexBooks.Length; i++)
+            if (codexOnBoard[i] && (!draggingCodex || pressedCodex != i) && codexBooks[i] != null)
+                yield return codexBooks[i];
+    }
 
     private IEnumerable<Bounds> ShelfBounds()
     {
-        if (comboShelf != null && comboShelf.gameObject.activeInHierarchy)
-            yield return BoardItemDrop.ItemBounds(comboShelf);
+        if (bookshelf != null && bookshelf.gameObject.activeInHierarchy)
+            yield return bookshelfBounds;
     }
 
     private void Awake()
@@ -127,12 +120,12 @@ public sealed class LearningDispenserView : MonoBehaviour
     {
         bool reading = station != null &&
             (station.ReadingPreview != null || station.PendingReading != null || station.ReadingResult != null);
-        bool canInteract = station?.CanMoveBooks == true && !reading;
+        bool canInteract = station?.CanMoveBooks == true && !reading && studyCodexUi?.IsComboGuideInputBlocked != true;
         if (!canInteract)
         {
             pressedBook = null;
             CancelBookDrag();
-            CancelShelfDrag();
+            CancelCodexPointer();
             if (reading && station.CanMoveBooks)
             {
                 if (bookHoverLabel != null) bookHoverLabel.gameObject.SetActive(false);
@@ -147,7 +140,7 @@ public sealed class LearningDispenserView : MonoBehaviour
         {
             pressedBook = null;
             CancelBookDrag();
-            CancelShelfDrag();
+            CancelCodexPointer();
             HideStudentStats();
             return;
         }
@@ -164,17 +157,16 @@ public sealed class LearningDispenserView : MonoBehaviour
 
     private void HandleBookPointer(Vector2 position, bool down, bool held, bool up)
     {
+        if (HandleCodexPointer(position, down, held, up)) return;
         if (down)
         {
-            if (HitsComboButton(shelfSubmit, position) ||
-                stackSubmitButtons.Values.Any(button => HitsComboButton(button, position))) return;
+            if (stackSubmitButtons.Values.Any(button => HitsComboButton(button, position))) return;
             if (viewCamera != null && TryFindBook(viewCamera.ScreenPointToRay(position), out var job, out _))
             {
                 pressedBook = job;
                 bookPressPoint = position;
                 bookPressTime = Time.unscaledTime;
             }
-            else BeginShelfDrag(position);
         }
         if (pressedBook != null)
         {
@@ -187,13 +179,6 @@ public sealed class LearningDispenserView : MonoBehaviour
                 else if (up && !moved && Time.unscaledTime - bookPressTime <= BookPreviewMaxPress)
                     station.TryOpenReadingPreview(job);
             }
-        }
-        if (draggingShelf)
-        {
-            if (up) EndShelfDrag(position);
-            else if (held) MoveShelfDrag(position);
-            else CancelShelfDrag();
-            return;
         }
         if(held && IsDraggingBook) MoveBookDrag(position);
         if(up && IsDraggingBook) EndBookDrag(position);
@@ -328,9 +313,14 @@ public sealed class LearningDispenserView : MonoBehaviour
                 return;
             }
         }
-        if (!IsDraggingBook && TryFindBook(viewCamera.ScreenPointToRay(screenPoint), out var job, out _))
+        if (!IsDraggingBook && !draggingCodex && CodexUnderPointer(screenPoint) is int codex && codex >= 0)
         {
-            SetHover(station.GetBookHoverText(job), screenPoint);
+            SetHover(CodexTitles[codex], screenPoint, keepOnScreen: true);
+            return;
+        }
+        if (!IsDraggingBook && !draggingCodex && TryFindBook(viewCamera.ScreenPointToRay(screenPoint), out var job, out _))
+        {
+            SetHover(station.GetBookHoverText(job), screenPoint, keepOnScreen: MineLearningStation.IsStoredBook(job));
             return;
         }
         if (!IsDraggingBook && station?.UsesStudyRules == true && refillAreas != null)
@@ -409,9 +399,16 @@ public sealed class LearningDispenserView : MonoBehaviour
     public bool EndBookDrag(Vector2 screenPosition)
     {
         if(!IsDraggingBook) return false;
-        bool stacked = TryFindBook(viewCamera.ScreenPointToRay(screenPosition), out var target, out _, draggedBook) &&
+        Ray ray = viewCamera.ScreenPointToRay(screenPosition);
+        bool overShelf = bookshelf != null && bookshelfBounds.IntersectRay(ray);
+        if (overShelf && !TryStoreDraggedBook(screenPosition))
+        {
+            CancelBookDrag();
+            return false;
+        }
+        bool stacked = !overShelf && TryFindBook(ray, out var target, out _, draggedBook) &&
             station.TryStackBook(draggedJob, target);
-        if (stacked || !draggedJob.started && TryPlaceOnShelf(screenPosition))
+        if (stacked || overShelf)
         {
             draggedJob.held = false;
             draggedJob = null;
@@ -421,7 +418,7 @@ public sealed class LearningDispenserView : MonoBehaviour
         var surface = FindBookDragBoard(screenPosition, out var hit);
         float lift = BoardItemDrop.PointerLift(viewCamera, screenPosition, bookGrabY);
         if (surface == null || !BoardItemDrop.TryFindClearPosition(surface, draggedBook, hit, lift,
-                ShelfBounds(), out var position))
+                ShelfBounds().Concat(CodicesOnBoard().Select(BoardItemDrop.ItemBounds)), out var position))
         {
             CancelBookDrag();
             return false;
@@ -447,8 +444,8 @@ public sealed class LearningDispenserView : MonoBehaviour
     private void OnDisable()
     {
         pressedBook = null;
+        CancelCodexPointer();
         CancelBookDrag();
-        CancelShelfDrag();
         HideStudentStats();
         if (studyNoticeBackdrop != null) studyNoticeBackdrop.gameObject.SetActive(false);
         if (foregroundStudyNotice != null && studyNotice != null) studyNotice.color = originalStudyNoticeColor;
@@ -470,14 +467,9 @@ public sealed class LearningDispenserView : MonoBehaviour
     private void OnDestroy()
     {
         if (studyNoticeBackdrop != null) studyNoticeBackdrop.DisposeNoticeOverlay();
-    }
-
-    private Collider FindBoard(Vector2 screen, Transform item, out Vector3 hit)
-    {
-        hit = default;
-        if (station?.CanMoveBooks != true || viewCamera == null) return null;
-        Ray ray = viewCamera.ScreenPointToRay(screen);
-        return BoardItemDrop.FindSurface(ray, viewCamera, screen, item, bookBoard, studyGrid, out hit);
+        if (bookshelf != null) Destroy(bookshelf.gameObject);
+        foreach (var codex in codexBooks)
+            if (codex != null) Destroy(codex.gameObject);
     }
 
     private Collider FindBookDragBoard(Vector2 screen, out Vector3 hit)
@@ -530,7 +522,7 @@ public sealed class LearningDispenserView : MonoBehaviour
             UpdateStudyControls();
             UpdateStudyNotice();
         }
-        UpdateShelf();
+        UpdateBookshelf();
         UpdateStudyResult();
         UpdateLearningMeter(progress);
         int tileCount = station.UsesStudyRules ? 0 : progress.queued.Count;
@@ -563,11 +555,10 @@ public sealed class LearningDispenserView : MonoBehaviour
             }
             book.gameObject.SetActive(true);
             if (job.stackOrder > 0) continue;
-            if (job.boardIndex == 3 && shelfSlots != null && shelfSlots.Length > 0)
+            if (MineLearningStation.IsStoredBook(job) && bookshelfSlots != null)
             {
-                var slot = shelfSlots[Mathf.RoundToInt(job.boardU * (shelfSlots.Length - 1))];
-                book.SetPositionAndRotation(slot.position, slot.rotation);
-                book.localScale *= .65f;
+                book.localScale = Vector3.Scale(book.localScale, ShelvedBookScale);
+                PlaceBookshelfBook(book, bookshelfSlots[MineLearningStation.BookshelfSlot(job)]);
                 continue;
             }
             if (job.onBoard && job.boardIndex == 2 && PositionBookInHands(book))
@@ -642,6 +633,15 @@ public sealed class LearningDispenserView : MonoBehaviour
         BoardRange(surface, baseModel, out var min, out var max);
         var center = new Vector3(Mathf.Lerp(min.x, max.x, first.boardU), surface.bounds.max.y,
             Mathf.Lerp(min.z, max.z, first.boardV));
+        if (surface == bookBoard && bookshelf != null)
+        {
+            var footprint = BoardItemDrop.ItemBounds(baseModel);
+            float clearance = footprint.extents.x + .04f;
+            if (center.x + clearance >= bookshelfBounds.min.x &&
+                center.z + footprint.extents.z >= bookshelfBounds.min.z &&
+                center.z - footprint.extents.z <= bookshelfBounds.max.z)
+                center.x = Mathf.Min(center.x, bookshelfBounds.min.x - clearance);
+        }
         float height = center.y;
         foreach (var job in stack)
         {
@@ -713,109 +713,6 @@ public sealed class LearningDispenserView : MonoBehaviour
             tick.rectTransform.sizeDelta = new Vector2(slot < occupied ? 12f : 8f, 2f);
             tick.color = slot < occupied ? new Color(.97f, .78f, .45f) : new Color(.71f, .62f, .51f, .65f);
         }
-    }
-
-    private void BeginShelfDrag(Vector2 point)
-    {
-        if (station?.CanMoveBooks != true || comboShelf == null || viewCamera == null ||
-            (shelfSubmit != null && shelfSubmit.isActiveAndEnabled &&
-             RectTransformUtility.RectangleContainsScreenPoint(shelfSubmit.GetComponent<RectTransform>(), point)))
-            return;
-
-        Ray ray = viewCamera.ScreenPointToRay(point);
-        if (!BoardItemDrop.ItemBounds(comboShelf).IntersectRay(ray)) return;
-
-        shelfDragPlane = new Plane(Vector3.up, comboShelf.position);
-        if (!shelfDragPlane.Raycast(ray, out float distance)) return;
-        shelfGrabOffset = comboShelf.position - ray.GetPoint(distance);
-        var surface = FindBoard(point, comboShelf, out _);
-        shelfDragLift = surface == null ? 0f :
-            Mathf.Max(0f, BoardItemDrop.ItemBounds(comboShelf).min.y - surface.bounds.max.y);
-        shelfDragOrigin = comboShelf.position;
-        draggingShelf = true;
-        MoveShelfDrag(point);
-        if (bookHoverLabel != null) bookHoverLabel.gameObject.SetActive(false);
-        if (bookHoverBackground != null) bookHoverBackground.gameObject.SetActive(false);
-        HideStudentStats();
-    }
-
-    private void MoveShelfDrag(Vector2 point)
-    {
-        Ray ray = viewCamera.ScreenPointToRay(point);
-        if (!shelfDragPlane.Raycast(ray, out float distance)) return;
-        var surface = FindBoard(point, comboShelf, out _);
-        if (surface == null) return;
-
-        Vector3 target = ray.GetPoint(distance) + shelfGrabOffset;
-        Vector3 position = BoardItemDrop.PositionAbove(surface, comboShelf, target, shelfDragLift + ShelfHeldLift);
-        Bounds footprint = BoardItemDrop.ItemBounds(comboShelf);
-        footprint.center += position - comboShelf.position;
-        float bottom = footprint.min.y;
-        foreach (var obstacle in ShelfObstacles())
-            if (footprint.min.x < obstacle.max.x && footprint.max.x > obstacle.min.x &&
-                footprint.min.z < obstacle.max.z && footprint.max.z > obstacle.min.z)
-                bottom = Mathf.Max(bottom, obstacle.max.y + ShelfItemClearance);
-        comboShelf.position = position + Vector3.up * (bottom - footprint.min.y);
-    }
-
-    private void EndShelfDrag(Vector2 point)
-    {
-        var surface = FindBoard(point, comboShelf, out _);
-        Ray ray = viewCamera.ScreenPointToRay(point);
-        if (surface != null && shelfDragPlane.Raycast(ray, out float distance) &&
-            BoardItemDrop.TryFindClearPosition(surface, comboShelf, ray.GetPoint(distance) + shelfGrabOffset,
-                shelfDragLift, ShelfObstacles(), out var position))
-        {
-            comboShelf.position = position;
-            draggingShelf = false;
-        }
-        else CancelShelfDrag();
-    }
-
-    private void CancelShelfDrag()
-    {
-        if (!draggingShelf) return;
-        if (comboShelf != null) comboShelf.position = shelfDragOrigin;
-        draggingShelf = false;
-    }
-
-    private bool TryPlaceOnShelf(Vector2 point)
-    {
-        if (shelfSlots == null) return false;
-        for (int i = 0; i < shelfSlots.Length; i++)
-        {
-            if (Vector2.Distance(viewCamera.WorldToScreenPoint(shelfSlots[i].position), point) > Screen.height * .022f ||
-                station.Progress.active.Any(job => job != draggedJob && job.boardIndex == 3 &&
-                    Mathf.RoundToInt(job.boardU * (shelfSlots.Length - 1)) == i)) continue;
-            station.RememberPlacement(draggedJob, (float)i / (shelfSlots.Length - 1), .5f, 3);
-            return true;
-        }
-        return false;
-    }
-
-    private void UpdateShelf()
-    {
-        if (!station.UsesStudyRules || comboShelfPrefab == null || bookBoard == null || overlayRoot == null) return;
-        if (comboShelf == null)
-        {
-            comboShelf = Instantiate(comboShelfPrefab, dynamicRoot);
-            comboShelf.name = "StudyComboShelf";
-            comboShelf.localRotation = Quaternion.Euler(comboShelfLocalEuler);
-            comboShelf.localScale *= .65f;
-            comboShelf.localPosition = comboShelfLocalPosition;
-            if (comboShelf.TryGetComponent<BoxCollider>(out var shelfCollider))
-                shelfCollider.isTrigger = false;
-            if (coinSupply != null) coinSupply.BoardShelf = comboShelf;
-            shelfSlots = comboShelf.Cast<Transform>().Where(part => part.name.StartsWith("BookPosition_"))
-                .OrderBy(part => part.name).ToArray();
-            shelfSubmit = CreateComboButton("SubmitStudyCombo", MineLearningStation.ShelfComboId, 120f);
-        }
-        RectTransformUtility.ScreenPointToLocalPointInRectangle(overlayRoot, viewCamera.WorldToScreenPoint(comboShelf.position),
-            null, out var point);
-        shelfSubmit.GetComponent<RectTransform>().anchoredPosition = point + Vector2.down * 36;
-        var batch = station.ComboSubmission(MineLearningStation.ShelfComboId);
-        shelfSubmit.gameObject.SetActive(batch.Length > 0 && !station.HasComboStudy);
-        shelfSubmit.interactable = CanUseComboButton(batch);
     }
 
     private Button CreateComboButton(string name, int stackId, float width)
@@ -1041,6 +938,7 @@ public sealed class LearningDispenserView : MonoBehaviour
             }
             shape.center = localBounds.center;
             shape.size = localBounds.size;
+            AddBookCoverDetails(book, job, localBounds);
             books.Add(job, book);
         }
         book.localScale = prefab.transform.localScale * scale;

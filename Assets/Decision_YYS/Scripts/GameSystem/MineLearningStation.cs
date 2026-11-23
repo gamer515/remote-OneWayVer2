@@ -66,6 +66,7 @@ public readonly struct LearningComboReward
     public List<string> comboSuccesses = new List<string>();
     public List<string> pendingReading = new List<string>();
     public List<string> completedReading = new List<string>();
+    public List<string> discoveredBookIds = new List<string>();
     public List<string> claimedReadingCombos = new List<string>();
     public List<ReadingComboProgress> readingComboProgress = new List<ReadingComboProgress>();
     public string readingResult;
