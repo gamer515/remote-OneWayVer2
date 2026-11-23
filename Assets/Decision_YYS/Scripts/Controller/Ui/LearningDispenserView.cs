@@ -43,9 +43,13 @@ public sealed class LearningDispenserView : MonoBehaviour
     private readonly List<MineLearningJob> finished = new List<MineLearningJob>();
     private MineLearningJob draggedJob;
     private Transform draggedBook;
+    private MineLearningJob pressedBook;
+    private Vector2 bookPressPoint;
+    private float bookPressTime;
+    private const float BookDragDistanceSquared = 36f;
+    private const float BookPreviewMaxPress = .35f;
     private Vector3 dragOrigin;
     private float bookGrabY;
-    private Vector2 bookGrabPoint;
     private Collider bookDragBoard;
     private readonly List<Image> queueTicks = new List<Image>();
     private Quaternion dragRotation;
@@ -120,16 +124,27 @@ public sealed class LearningDispenserView : MonoBehaviour
 
     private void Update()
     {
-        if ((IsDraggingBook || draggingShelf) && station?.CanMoveBooks != true)
+        bool reading = station != null &&
+            (station.ReadingPreview != null || station.PendingReading != null || station.ReadingResult != null);
+        bool canInteract = station?.CanMoveBooks == true && !reading;
+        if (!canInteract)
         {
+            pressedBook = null;
             CancelBookDrag();
             CancelShelfDrag();
-            return;
+            if (reading && station.CanMoveBooks)
+            {
+                if (bookHoverLabel != null) bookHoverLabel.gameObject.SetActive(false);
+                if (bookHoverBackground != null) bookHoverBackground.gameObject.SetActive(false);
+                HideStudentStats();
+                return;
+            }
         }
 #if ENABLE_INPUT_SYSTEM
         var pointer=Pointer.current;
         if (pointer == null)
         {
+            pressedBook = null;
             CancelBookDrag();
             CancelShelfDrag();
             HideStudentStats();
@@ -141,7 +156,35 @@ public sealed class LearningDispenserView : MonoBehaviour
         Vector2 position=Input.mousePosition;
         bool down=Input.GetMouseButtonDown(0), held=Input.GetMouseButton(0), up=Input.GetMouseButtonUp(0);
 #endif
-        if (down && !BeginBookDrag(position)) BeginShelfDrag(position);
+        if (canInteract) HandleBookPointer(position, down, held, up);
+        ShowHoveredBook(position);
+        UpdateStudentStats(position);
+    }
+
+    private void HandleBookPointer(Vector2 position, bool down, bool held, bool up)
+    {
+        if (down)
+        {
+            if (viewCamera != null && TryFindBook(viewCamera.ScreenPointToRay(position), out var job, out _))
+            {
+                pressedBook = job;
+                bookPressPoint = position;
+                bookPressTime = Time.unscaledTime;
+            }
+            else BeginShelfDrag(position);
+        }
+        if (pressedBook != null)
+        {
+            bool moved = (position - bookPressPoint).sqrMagnitude >= BookDragDistanceSquared;
+            if (moved || up || !held)
+            {
+                var job = pressedBook;
+                pressedBook = null;
+                if (moved && books.TryGetValue(job, out var book)) BeginBookDrag(job, book, bookPressPoint);
+                else if (up && !moved && Time.unscaledTime - bookPressTime <= BookPreviewMaxPress)
+                    station.TryOpenReadingPreview(job);
+            }
+        }
         if (draggingShelf)
         {
             if (up) EndShelfDrag(position);
@@ -151,8 +194,6 @@ public sealed class LearningDispenserView : MonoBehaviour
         }
         if(held && IsDraggingBook) MoveBookDrag(position);
         if(up && IsDraggingBook) EndBookDrag(position);
-        ShowHoveredBook(position);
-        UpdateStudentStats(position);
     }
 
     private void UpdateStudentStats(Vector2 position)
@@ -180,7 +221,7 @@ public sealed class LearningDispenserView : MonoBehaviour
             $"<color=#91BFFF>힘 {coins[0]}</color><pos=122><color=#FFAEAE>속도 {coins[1]}</color>\n" +
             $"<color=#FFDA83>지능 {coins[2]}</color><pos=122><color=#88DDD4>매력 {coins[3]}</color>\n" +
             $"<color=#E9C885>성공 {progress.successfulStudies}<pos=122>오늘 {remaining}/{limit}\n" +
-            $"대기 {progress.queued.Count}/{station.Capacity.waiting}</color>";
+            $"대기 {progress.queued.Count}/{station.ProductionQueueLimit}</color>";
         RectTransformUtility.ScreenPointToLocalPointInRectangle(overlayRoot,
             viewCamera.WorldToScreenPoint(studentHead.position), null, out var point);
         studentStatsPanel.rectTransform.anchoredPosition = point + new Vector2(48, -62);
@@ -230,32 +271,31 @@ public sealed class LearningDispenserView : MonoBehaviour
         return studentRenderers.Any(renderer => renderer != null && renderer.isVisible && renderer.bounds.IntersectRay(ray));
     }
 
-    public bool BeginBookDrag(Vector2 screenPosition)
+    private void BeginBookDrag(MineLearningJob job, Transform book, Vector2 screenPosition)
     {
-        if(IsDraggingBook || station == null || !station.CanMoveBooks || viewCamera == null || bookBoard == null) return false;
-        Ray ray=viewCamera.ScreenPointToRay(screenPosition);
-        if (!TryFindBook(ray, out draggedJob, out draggedBook, draggableOnly: true)) return false;
+        if (IsDraggingBook || book == null || !book.gameObject.activeInHierarchy || bookBoard == null ||
+            !station.CanMoveBooks || job.held || job.comboStudy || job.transit > 0 ||
+            !station.Progress.active.Contains(job)) return;
+        draggedJob = job;
+        draggedBook = book;
         dragOrigin = draggedBook.position;
         dragRotation = draggedBook.rotation;
-        bookGrabPoint = screenPosition;
         bookGrabY = screenPosition.y;
         bookDragBoard = draggedJob.onBoard && draggedJob.boardIndex == 1 && studyGrid != null
             ? studyGrid : bookBoard;
         BoardItemDrop.Hold(draggedBook.GetComponent<Rigidbody>());
         draggedBook.rotation = Quaternion.identity;
         draggedJob.held = true;
-        return true;
     }
 
-    private bool TryFindBook(Ray ray, out MineLearningJob job, out Transform book, bool draggableOnly = false)
+    private bool TryFindBook(Ray ray, out MineLearningJob job, out Transform book)
     {
         job = null;
         book = null;
         float nearest = float.PositiveInfinity;
         foreach(var pair in books)
         {
-            if (pair.Value == null || !pair.Value.gameObject.activeInHierarchy || (draggableOnly &&
-                (pair.Key.held || pair.Key.comboStudy || pair.Key.transit > 0 || !station.Progress.active.Contains(pair.Key)))) continue;
+            if (pair.Value == null || !pair.Value.gameObject.activeInHierarchy) continue;
             var renderers=pair.Value.GetComponentsInChildren<Renderer>();
             if(renderers.Length==0) continue;
             Bounds bounds=renderers[0].bounds;
@@ -356,7 +396,7 @@ public sealed class LearningDispenserView : MonoBehaviour
 
     public void MoveBookDrag(Vector2 screenPosition)
     {
-        if (!IsDraggingBook || (screenPosition - bookGrabPoint).sqrMagnitude < 36f) return;
+        if (!IsDraggingBook) return;
         var surface = FindBookDragBoard(screenPosition, out var hit);
         if (surface != null)
             draggedBook.position = BoardItemDrop.PositionAbove(surface, draggedBook, hit,
@@ -366,11 +406,6 @@ public sealed class LearningDispenserView : MonoBehaviour
     public bool EndBookDrag(Vector2 screenPosition)
     {
         if(!IsDraggingBook) return false;
-        if ((screenPosition - bookGrabPoint).sqrMagnitude < 36f)
-        {
-            CancelBookDrag();
-            return false;
-        }
         if (!draggedJob.started && TryPlaceOnShelf(screenPosition))
         {
             draggedJob.held = false;
@@ -406,6 +441,7 @@ public sealed class LearningDispenserView : MonoBehaviour
     }
     private void OnDisable()
     {
+        pressedBook = null;
         CancelBookDrag();
         CancelShelfDrag();
         HideStudentStats();
@@ -539,7 +575,7 @@ public sealed class LearningDispenserView : MonoBehaviour
             float t=job.transit>0?Mathf.Clamp01(1-job.transit/station.DeliverySeconds):1;
             float path=t*(outletPath.Length-1);int segment=Mathf.Min((int)path,outletPath.Length-2);
             Vector3 start = station.UsesStudyRules && segment == 0
-                ? StudyQueuePosition(0, station.Capacity.waiting) : outletPath[segment].position;
+                ? StudyQueuePosition(0, station.ProductionQueueLimit) : outletPath[segment].position;
             Vector3 position=Vector3.Lerp(start,outletPath[segment+1].position,path-segment);
             if(job.transit<=0 && !station.UsesStudyRules)position+=dynamicRoot.TransformVector(activeStep*i);
             book.SetPositionAndRotation(position,transform.rotation);
@@ -557,10 +593,11 @@ public sealed class LearningDispenserView : MonoBehaviour
             foreach (var tick in queueTicks) tick.gameObject.SetActive(false);
             return;
         }
-        int queueCapacity = station.Capacity.waiting;
+        int queueCapacity = station.ProductionQueueLimit;
         int rows = Mathf.Max(queueCapacity, progress.queued.Count);
         for (int i = 0; i < progress.queued.Count; i++)
-            ShowBook(progress.queued[i], .60f).SetPositionAndRotation(StudyQueuePosition(i, rows), queueBottom.rotation);
+            ShowBook(progress.queued[i], .60f * Mathf.Min(1f, 8f / rows))
+                .SetPositionAndRotation(StudyQueuePosition(i, rows), queueBottom.rotation);
         if (progress.producing != null)
             ShowBook(progress.producing, .78f).SetPositionAndRotation(queueBottom.TransformPoint(generationSlotOffset), queueBottom.rotation);
         UpdateStudyQueueTicks(queueCapacity, rows, progress.queued.Count);

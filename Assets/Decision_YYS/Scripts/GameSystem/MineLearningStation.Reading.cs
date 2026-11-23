@@ -14,6 +14,20 @@ public sealed partial class MineLearningStation
     private const string StrengthTutorialBook = "strength_basic";
     private JObject[] readingCombos = Array.Empty<JObject>();
     private bool readingDeferred;
+    internal JObject ReadingPreview { get; private set; }
+
+    internal bool TryOpenReadingPreview(MineLearningJob job)
+    {
+        if (!CanMoveBooks || job == null || job == progress.producing || job.started || job.held ||
+            job.comboStudy || job.transit > 0 || PendingReading != null || ReadingResult != null ||
+            (!progress.active.Contains(job) && !progress.queued.Contains(job)) ||
+            !readingBooks.TryGetValue(job.bookId ?? "", out var book))
+            return false;
+        ReadingPreview = book;
+        return true;
+    }
+
+    internal void CloseReadingPreview() => ReadingPreview = null;
     internal IReadOnlyList<JObject> ReadingCombos => readingCombos;
     internal string ReadingTitle(string id) => (string)readingBooks[id]["parodyTitle"];
     internal int ReadingAbility(string id) => Array.IndexOf(AbilityKeys, (string)readingBooks[id]["mainStat"]);

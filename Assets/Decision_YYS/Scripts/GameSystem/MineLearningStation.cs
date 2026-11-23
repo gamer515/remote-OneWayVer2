@@ -183,6 +183,7 @@ public sealed partial class MineLearningStation : MonoBehaviour
         Action<int[], IReadOnlyList<LearningComboReward>> reward, Action persist)
     {
         progress=state; seed=runSeed; wallet=getWallet; charge=spend; grant=reward; save=persist;paused=studyPaused=false;notice=null;
+        CloseReadingPreview();
         readingBooks[StrengthTutorialBook] = ReadContent("Reading/StrengthTutorial");
         progress.active ??= new List<MineLearningJob>();
         progress.queued ??= new List<MineLearningJob>();
@@ -231,10 +232,9 @@ public sealed partial class MineLearningStation : MonoBehaviour
     private bool FillSlots()
     {
         bool changed=false;
-        while(progress.active.Count<Capacity.simultaneous && progress.queued.Count>0)
+        while (progress.queued.Count > 0 &&
+            (study != null ? CanDeliverStudyBook : progress.active.Count < Capacity.simultaneous))
         {
-            // An uncollected book owns the physical outlet, including while it is travelling or held.
-            if (study != null && progress.active.Any(book => !book.onBoard)) break;
             var job=progress.queued[0]; progress.queued.RemoveAt(0); job.transit=DeliverySeconds; progress.active.Add(job); changed=true;
         }
         return changed;

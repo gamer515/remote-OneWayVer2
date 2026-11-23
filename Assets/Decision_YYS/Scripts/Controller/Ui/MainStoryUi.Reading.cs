@@ -12,6 +12,7 @@ public partial class MainStoryUi
     private UnityEngine.UI.Button[] readingButtons;
     private JObject displayedBook;
     private string displayedResult;
+    private bool displayedPreview;
     private MineLearningStation readingStation;
     private GameObject comboGuideCanvas, comboGuidePanel, comboGuideToggle;
     private UnityEngine.UI.ScrollRect comboGuideScroll;
@@ -26,6 +27,9 @@ public partial class MainStoryUi
     {
         var book = station.PendingReading;
         string result = station.ReadingResult;
+        if (!available || IsComboGuideOpen || book != null || result != null) station.CloseReadingPreview();
+        bool preview = station.ReadingPreview != null;
+        if (preview) book = station.ReadingPreview;
         hideReadingForReward = available && !IsComboGuideOpen && result != null && HasLearningRewardPresentation;
         UpdateComboGuide(station, available && book == null && result == null);
         if (IsComboGuideOpen || !available || (book == null && result == null) || hideReadingForReward)
@@ -36,19 +40,20 @@ public partial class MainStoryUi
         readingStation = station;
         if (readingPanel == null) BuildReading();
         readingPanel.SetActive(true);
-        if (displayedBook == book && displayedResult == result) return;
+        if (displayedBook == book && displayedResult == result && displayedPreview == preview) return;
         displayedBook = book;
         displayedResult = result;
+        displayedPreview = preview;
         readingTitle.text = result == null ? (string)book["parodyTitle"] : "독서 결과";
         readingBody.text = result ?? ((string)book["story"] + "\n\n" + (string)book["question"]);
         var choices = book?["choices"] as JArray;
         for (int i = 0; i < readingButtons.Length; i++)
         {
-            bool showChoice = result == null && choices != null && i < choices.Count;
-            readingButtons[i].gameObject.SetActive(showChoice || result != null && i == 0);
+            bool showChoice = !preview && result == null && choices != null && i < choices.Count;
+            readingButtons[i].gameObject.SetActive(showChoice || (preview || result != null) && i == 0);
             if (showChoice) readingLabels[i].text = (string)choices[i]["text"];
         }
-        if (result != null) readingLabels[0].text = "닫기";
+        if (preview || result != null) readingLabels[0].text = "닫기";
     }
 
     private void BuildReading()
@@ -88,7 +93,8 @@ public partial class MainStoryUi
             int choice = i;
             button.onClick.AddListener(() =>
             {
-                if (readingStation.ReadingResult != null) readingStation.CloseReadingResult();
+                if (displayedPreview) readingStation.CloseReadingPreview();
+                else if (readingStation.ReadingResult != null) readingStation.CloseReadingResult();
                 else readingStation.SelectReadingChoice(choice);
                 ShowReading(readingStation, true);
             });

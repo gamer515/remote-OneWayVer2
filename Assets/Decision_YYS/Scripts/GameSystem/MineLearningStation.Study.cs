@@ -45,9 +45,16 @@ public sealed partial class MineLearningStation
     }
 
     private StudyRules study;
+    [Header("Book production and storage")]
+    [SerializeField, Min(0)] private int extraProductionQueueSlots = 5;
+    [SerializeField, Min(1)] private int looseBookStorageLimit = 8;
     private float studyDaySeconds;
     private float nextStudySave;
     public bool UsesStudyRules => study != null;
+    public int ProductionQueueLimit => Capacity.waiting + (UsesStudyRules ? extraProductionQueueSlots : 0);
+    public int LooseBookStorageLimit => Mathf.Max(Capacity.simultaneous, looseBookStorageLimit);
+    private bool CanDeliverStudyBook => progress.active.All(job => job.onBoard) &&
+        progress.active.Count(job => !IsReadingPlacement(job) && !job.comboStudy) < LooseBookStorageLimit;
     public string StudyResult { get; private set; }
     public bool StudyResultSucceeded { get; private set; }
     public float StudyResultUntil { get; private set; }
@@ -60,7 +67,7 @@ public sealed partial class MineLearningStation
         study.refillBase + (progress?.refills?[ability] ?? 0) * study.refillIncrease;
     public bool HasComboStudy => progress.active.Any(job => job.comboStudy);
     public bool CanBeginStudySession => CanStudyBooks && CurrentStudy == null &&
-        progress.pendingReading.Count == 0;
+        progress.pendingReading.Count == 0 && ReadingPreview == null;
 
     private MineLearningJob CurrentStudy => progress.active.Find(job => job.started && IsReadingPlacement(job)) ??
         progress.active.Find(IsReadingPlacement);
@@ -189,10 +196,9 @@ public sealed partial class MineLearningStation
     {
         if (progress.producing != null) return Explain("다른 책을 만들고 있습니다.");
         if (Stock(ability) <= 0) return Explain("책이 없습니다. 해당 능력 코인을 투입구에 넣으세요.");
-        var capacity = Capacity;
-        bool outletAvailable = progress.active.Count < capacity.simultaneous && progress.active.All(job => job.onBoard);
-        if (progress.queued.Count >= capacity.waiting && !(capacity.waiting == 0 && outletAvailable))
-            return Explain("학습 대기열이 가득 찼습니다.");
+        int queueLimit = ProductionQueueLimit;
+        if (progress.queued.Count >= queueLimit && !(queueLimit == 0 && CanDeliverStudyBook))
+            return Explain("생성 대기열이 가득 찼습니다.");
 
         var amounts = wallet();
         var available = authoredBooks.Where(entry => entry.ability == ability && CanRead(entry, amounts)).ToArray();
@@ -318,7 +324,7 @@ public sealed partial class MineLearningStation
                 i++;
             }
             // Give a newly completed book a rendered frame in the queue before delivery starts.
-            if (!enteredQueue) changed |= FillSlots();
+            if (!enteredQueue && ReadingPreview == null) changed |= FillSlots();
         }
         if (Time.unscaledTime >= nextStudySave)
         {
