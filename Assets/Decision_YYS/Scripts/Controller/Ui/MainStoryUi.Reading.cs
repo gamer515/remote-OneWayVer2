@@ -93,6 +93,7 @@ public partial class MainStoryUi
             var image = row.gameObject.AddComponent<UnityEngine.UI.Image>();
             image.color = new Color(.83f, .70f, .49f);
             var button = row.gameObject.AddComponent<UnityEngine.UI.Button>();
+            UiInteractionAudio.Bind(button);
             button.targetGraphic = image;
             var colors = button.colors;
             colors.highlightedColor = new Color(1f, .91f, .73f);
@@ -268,6 +269,7 @@ public partial class MainStoryUi
         var image = rect.gameObject.AddComponent<UnityEngine.UI.Image>();
         image.color = new Color(.83f, .70f, .49f);
         var button = rect.gameObject.AddComponent<UnityEngine.UI.Button>();
+        UiInteractionAudio.Bind(button);
         button.targetGraphic = image;
         button.onClick.AddListener(() => SetComboGuideOpen(false));
         var label = ReadingText(rect, "Label", 23f, Vector2.zero, Vector2.one);

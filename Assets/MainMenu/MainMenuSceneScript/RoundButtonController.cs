@@ -8,6 +8,8 @@ public class RoundButtonController : MonoBehaviour
     public void Setup(RoundData data, BiographyController controller)
     {
         btnText.text = $"{data.roundNumber}round ({data.playDate})";
-        GetComponent<UnityEngine.UI.Button>().onClick.AddListener(() => controller.ShowDetail(data));
+        var button = GetComponent<UnityEngine.UI.Button>();
+        button.onClick.AddListener(() => controller.ShowDetail(data));
+        UiInteractionAudio.Bind(button);
     }
 }

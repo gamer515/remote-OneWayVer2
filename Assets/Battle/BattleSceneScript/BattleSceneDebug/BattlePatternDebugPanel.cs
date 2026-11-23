@@ -114,6 +114,7 @@ public static class BattlePatternDebugPanel
 
         // 버튼 변수를 먼저 선언한 다음 클릭 동작을 등록한다.
         var button = go.GetComponent<Button>();
+        UiInteractionAudio.Bind(button);
         button.targetGraphic = background;
         button.navigation = new Navigation
         {

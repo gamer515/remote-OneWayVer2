@@ -734,6 +734,7 @@ public sealed partial class LearningDispenserView : MonoBehaviour
         label.rectTransform.anchorMax = Vector2.one;
         label.rectTransform.offsetMin = label.rectTransform.offsetMax = Vector2.zero;
         button.onClick.AddListener(() => SubmitCombo(stackId));
+        UiInteractionAudio.Bind(button);
         return button;
     }
 

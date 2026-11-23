@@ -39,6 +39,7 @@ public sealed class MineChapterActivityView : MonoBehaviour
             br.anchorMax = br.anchorMin + new Vector2(0.45f, 0.17f); br.offsetMin = br.offsetMax = Vector2.zero;
             go.GetComponent<UnityEngine.UI.Image>().color = new Color(0.13f, 0.25f, 0.30f);
             buttons[i] = go.GetComponent<UnityEngine.UI.Button>(); buttons[i].onClick.AddListener(() => selected?.Invoke(slot));
+            UiInteractionAudio.Bind(buttons[i]);
             var caption = new GameObject("Label", typeof(RectTransform), typeof(TextMeshProUGUI)); caption.transform.SetParent(go.transform, false);
             var cr = (RectTransform)caption.transform; cr.anchorMin = Vector2.zero; cr.anchorMax = Vector2.one; cr.offsetMin = cr.offsetMax = Vector2.zero;
             var tmp = caption.GetComponent<TextMeshProUGUI>(); tmp.font = font; tmp.fontSize = 18; tmp.alignment = TextAlignmentOptions.Center; tmp.raycastTarget = false;

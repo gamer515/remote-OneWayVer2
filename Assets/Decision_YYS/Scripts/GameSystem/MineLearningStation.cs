@@ -207,7 +207,14 @@ public sealed partial class MineLearningStation : MonoBehaviour
             status.fontSize = 19;
             status.color = new Color(.24f, .15f, .08f);
         }
-        for(int i=0;i<abilityButtons.Length;i++) { int ability=i; abilityButtons[i].onClick.RemoveAllListeners(); abilityButtons[i].onClick.AddListener(()=>Request(ability)); }
+        for (int i = 0; i < abilityButtons.Length; i++)
+        {
+            int ability = i;
+            var button = abilityButtons[i];
+            button.onClick.RemoveAllListeners();
+            button.onClick.AddListener(() => Request(ability));
+            UiInteractionAudio.Bind(button);
+        }
         bookTemplate.gameObject.SetActive(false); Rebuild();
         bool numberedBooks = false;
         foreach (var job in progress.active.Concat(progress.queued)

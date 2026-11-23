@@ -503,6 +503,7 @@ public sealed class LocalStoryTestPanel : MonoBehaviour
     {
         var r=Rect(label,parent); Place(r,x,y,w,h); var image=r.gameObject.AddComponent<Image>(); image.color=new Color(0.25f,0.23f,0.17f);
         var button=r.gameObject.AddComponent<Button>(); button.targetGraphic=image; button.onClick.AddListener(action);
+        UiInteractionAudio.Bind(button);
         var t=Text(r,label,8,0,w-16,h,27); t.alignment=TextAlignmentOptions.Center;
         return button;
     }

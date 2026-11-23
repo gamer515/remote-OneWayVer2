@@ -531,6 +531,13 @@ unity command run_script --caller plugin --skill unity-cli --file AgentScripts/K
 <p>원본 Play의 실제 장소 외곽과 프리팹 크기로 계산한 결과, 1번 및 2번 청크에 중앙 NPC 후보가 하나씩 생겼고 배치 총수는 각각 1명, 2명이었다. 초과 거리, 장소 도착 우선, 같은 조우의 재발동 방지를 검사했다. 일시정지된 플레이는 유지했으며 수정판을 다시 실행해 직접 걸으며 대화가 뜨는지까지는 확인하지 않았다. Unity C# 컴파일 오류 0건. <a href="../Builds/CentralNpcReview/Runtime.log">검증 로그</a></p>
 <p>변경 파일은 <a href="../Assets/Decision_YYS/Scripts/GameSystem/Terrain/TerrainBuilder.cs">TerrainBuilder.cs</a>, <a href="../Assets/Decision_YYS/Scripts/Controller/EnvController.cs">EnvController.cs</a>, <a href="../Assets/Decision_YYS/Scripts/GameSystem/DecisionManager.Encounters.cs">DecisionManager.Encounters.cs</a>다. 임시 검증 코드와 출력은 Git에서 제외한 <code>Builds/CentralNpcReview/</code>에 보관했으며 확인 후 정리 대기 상태다.</p>
 </section>
+<hr><section id="ui-gear-audio">
+<h2>UI 버튼과 기어 조작음</h2>
+<p>2026-11-24 · <a href="../Assets/Decision_YYS/Scripts/Controller/Ui/UiInteractionAudio.cs">UiInteractionAudio.cs</a>에서 기존 Unity Button의 <code>onClick</code>과 동적으로 생성되는 버튼을 연결한다. 자판기는 초기화 후 효과음 리스너를 한 번 연결한다. <a href="../Assets/AiAsset/JourneyMapKit/Scripts/JourneyBoardInput.cs">JourneyBoardInput.cs</a>는 사용 가능한 노란 버튼의 입력 확정 시 UI 클릭음을, 드래그 중 선택이 바뀐 수만큼 래칫음을 호출한다. 한 프레임에 여러 칸을 지나면 0.08초 간격으로 구분해 재생한다. 보드 코인·책 입력 경로에는 리스너를 추가하지 않았다.</p>
+<p>첨부 클립 <code>sfxmint-ui-click-82</code>와 <code>freesound_community-single_ratchet-03-97604</code>는 <code>Assets/Decision_YYS/Resources/Audio/UiControls</code>에 추가했다. 코인 효과음이 이미 읽던 <code>BGM_Volume</code> 값을 사용하며 두 조작음의 출력 계수는 0.6이다.</p>
+<p id="ui-gear-audio-checks">원본 Unity 에디터에서 메인 메뉴부터 이어하기로 진입해 입력 검사 16건을 통과했다. 자판기 재고 감소와 클릭 리스너 1개, 노란 버튼의 잠금·확정, 기어 정지와 한 칸·세 칸 이동, 기어 조작 후 확정, 코인 배출·집기·드래그의 기존 효과음, 음소거를 확인했다. 기존 저장은 분리했고 설정값은 복원했다. 버튼이 이벤트를 보내는 기준은 Unity uGUI의 <code>Button.cs</code>를 확인했다. <a href="../Builds/UiSoundReview/Play.log">검증 로그</a></p>
+<p>임시 검증기 <code>Builds/UiSoundReview/UiSoundReview.template</code>과 격리 저장 <code>Builds/UiSoundReview/Saves/</code>는 Git에서 제외했으며 확인 후 정리 대기 상태다.</p>
+</section>
 </body></html>
 
 
