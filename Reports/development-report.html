@@ -328,7 +328,75 @@ unity command run_script --caller plugin --skill unity-cli --file AgentScripts/K
 <p>제작·재현 도구 <code>AssetBuild/ThreeFingersTaxCollection/TaxCollectionAuthoring.cs</code>, <code>TaxCollectionPlayCheck.cs</code>, <code>TaxCollectionDelivery.cs</code>, <code>BuildDelivery.cjs</code>는 보존한다. 저울 코인 높이는 접시 Floor 메시의 실제 윗면을 기준으로 정렬했고, 운반 궤적은 저울 상단을 넘도록 조정했다. 메인 에디터는 MainMenuScene을 유지했다. Unity 컴파일 실패 없음·현재 콘솔 오류 0건을 확인했다.</p>
 <p><strong>2026-11-22 에셋 정리 확인.</strong> 첨부 패키지 59개 항목의 파일 내용과 GUID가 프로젝트에 있는 원본과 일치해 기존 <code>Assets/ThreeFingersTaxCollection/</code>을 사용한다. Unity에서 두 리그와 미리보기 씬의 컨트롤러·클립 참조를 확인했다. 두 리그의 누락 스크립트·재질은 0건이며, 이번 확인에서는 미리보기 재생과 게임 연결 작업을 수행하지 않았다. 추가 임시 코드는 없다.</p>
 <p id="tax-cleanup">임시 검증 복제 프로젝트 <code>AssetBuild/ThreeFingersTaxCollection/ValidationProject/</code>와 실행 로그 <code>output/ThreeFingersTaxCollection/validation.log</code>는 실행 종료·절대 경로·재분석 지점 유무 확인 후 기존 정리 요청 범위에서 삭제했다. 원본 소스, 재현 도구, 클립, 패키지, 프레임 캡처와 검증 결과는 보존한다. 삭제 대기 임시 코드는 없다. <a href="../output/ThreeFingersTaxCollection/cleanup.json">정리 기록</a></p>
-</section></body></html>
+</section>
+<hr><section id="perf-00">
+<h1>PERF-00 · Windows 플레이어 성능 기준선</h1>
+<p>2026-11-24 (Asia/Seoul). 실제 측정 기준은 <code>fearture/merge_progect</code>의 <code>7485923b56b3f1a94bfeb97bc410b4ecfd8b0e80</code>이다. 시작 당시 HEAD가 요청 커밋과 일치했고 작업 트리는 깨끗했다. Unity 6000.3.12f1, URP 17.3.0. 노트북에 접근할 수 없어 아래 값은 데스크톱 기준선이다. 노트북 합격 목표는 1280×720 일반 플레이 평균 60fps 이상, 프레임 시간 p95 20ms 이하이다.</p>
+
+<h2>측정 계획과 실행 환경</h2>
+<table>
+<tr><th>구분</th><th>방법과 실제 조건</th></tr>
+<tr><td>일반 빌드 기준값</td><td>Windows x64 Mono 비개발 빌드, 창 클라이언트 1280×720, 전경 유지. PresentMon 2.6.0으로 주 스왑체인의 Present 간격, 1초마다 Working Set과 Private Bytes 수집. Unity 에디터는 백그라운드에 열려 있었다.</td></tr>
+<tr><td>병목 진단</td><td>Windows x64 Development, Deep Profiling 해제. 같은 창 크기와 그래픽 설정에서 Unity Profiler 파일 기록. Windows 방화벽 예외 설정 변경 없이 로컬 파일을 수집했다.</td></tr>
+<tr><td>하드웨어</td><td>Windows 10 Home 19045 데스크톱, Core i5-10400(6코어/12스레드), RAM 약 16GiB, NVIDIA GeForce GTX 1660 SUPER. 두 Player 로그에서 실제 렌더러 GTX 1660 SUPER, D3D12 기능 수준 12.1, 드라이버 32.0.16.1088, VRAM 5,966MB 확인.</td></tr>
+<tr><td>화면 및 전원</td><td>데스크톱 1920×1080, Windows 보고 주사율 143Hz. AC 온라인, 배터리 없음, Windows 균형 조정 전원 계획. PC 품질 인덱스 1, VSync 0, 별도 프레임 제한 미검출. PresentMon의 실제 SyncInterval은 0. 표의 FPS는 앱 제출률이다.</td></tr>
+<tr><td>저장 격리</td><td>제품명만 잠시 OneWayPerf00으로 바꿔 테스트 전용 LocalLow 저장을 만들었다. 첫 일반 빌드는 빈 테스트 저장에서, Development는 원본에서 복사한 Run_01에서 시작했다. 전투 재현에서는 전용 복사본에 보스 대기 상태만 만들었다. 원본에서 복사한 20개 파일의 SHA-256은 작업 후 원본과 모두 일치했다. 제품명과 빌드가 갱신한 폰트 아틀라스는 원복했다.</td></tr>
+</table>
+
+<h2>Windows 일반 빌드 · 비교 기준값</h2>
+<table>
+<tr><th>구간</th><th>표본</th><th>평균 FPS</th><th>p95 / p99 (ms)</th><th>≥100ms / 최대(ms)</th><th>GPU 활성 p95 (ms)</th><th>Working Set / Private 최대 (MiB)</th></tr>
+<tr><td>갱도 정위치 1</td><td>60.01초 · 15,469</td><td>257.78</td><td>5.090 / 6.234</td><td>1 / 176.484</td><td>3.362</td><td>1088.5 / 1958.0</td></tr>
+<tr><td>갱도 정위치 2</td><td>59.99초 · 15,642</td><td>260.73</td><td>4.864 / 5.694</td><td>0 / 13.673</td><td>3.316</td><td>1090.0 / 1958.8</td></tr>
+<tr><td>갱도 정위치 3</td><td>60.00초 · 15,848</td><td>264.13</td><td>4.772 / 5.758</td><td>0 / 17.469</td><td>3.313</td><td>1090.5 / 1960.1</td></tr>
+<tr><td>1회차 세금 준비 및 코인 드래그</td><td>59.98초 · 15,790</td><td>263.25</td><td>4.807 / 6.193</td><td>0 / 17.886</td><td>3.294</td><td>1091.8 / 1960.2</td></tr>
+<tr><td>2회차 일반세 직접 납부 및 갱도 초반 이동</td><td>59.99초 · 14,699</td><td>245.01</td><td>5.446 / 6.864</td><td>0 / 46.021</td><td>3.376</td><td>1110.9 / 1995.9</td></tr>
+<tr><td>메뉴 → 로딩 → 보스 전투 혼합</td><td>44.99초 · 36,525</td><td>811.90</td><td>1.856 / 2.205</td><td>3 / 343.436</td><td>1.257</td><td>877.3 / 1656.3</td></tr>
+</table>
+<p>평균 FPS는 유효 Present 수를 간격의 합(초)으로 나눴다. p95·p99는 nearest-rank. 정위치 3회는 첫 진입 직후를 제외하고 같은 자리에서 기록했으며 게임 시간과 징수원 순찰은 흘렀다. 전경은 정위치와 2회차 세금 및 전투 표본에서 각 60/60 또는 45/45, 1회차 세금 준비는 57/60이었다. 전투 수치는 메뉴와 로딩을 포함한 혼합 표본이며, 전투만의 기준값은 미측정이다. 정위치 1에서 176.484ms였던 프레임의 GPU 활성 시간은 3.481ms였다. 해당 프레임에 대응하는 CPU 마커는 확보하지 못했다.</p>
+
+<h2>첫 진입과 반복 로딩</h2>
+<table>
+<tr><th>전환</th><th>실측</th><th>측정 경계</th></tr>
+<tr><td>첫 일반 Player에서 메인 메뉴 → LoadingScene → 갱도</td><td>약 4.0초 (3.75~4.02초)</td><td>시작 클릭 함수 호출·반환 시각 범위부터 갱도 초기화 로그까지. OS 디스크 캐시를 비우지 않았다.</td></tr>
+<tr><td>앱을 다시 켜고 동일 1회차 이어하기</td><td>약 3.7초 (3.64~3.74초)</td><td>같은 경계. 저장된 갱도 위치와 일반세 상황이 복원됐다. 같은 프로세스에서의 반복 전환 시간은 미측정.</td></tr>
+<tr><td>보스 전투와 메뉴 복귀, 2회차 재진입</td><td>화면과 결과 로그로 경로 확인</td><td>각 씬 전환의 별도 클릭·로그 시각은 미측정. 보스 대기 플래그를 넣은 테스트 체크포인트의 복원으로 진입했다.</td></tr>
+</table>
+<p>두 갱도 진입 시간에는 메뉴 효과, 로딩 화면, 초기화가 들어간다. 첫 진입의 해당 QPC 구간에서 주 스왑체인 Present 5,349건, p95 1.196ms, p99 2.220ms, 100ms 이상 1건(108.545ms)을 기록했다. 최종 픽셀이나 첫 입력 가능 시점까지 잰 값은 아니다. 최초 프로세스의 Gemma 패키지 전체 SHA-256 사전 점검은 별도로 16.94초였고, 시작을 누르기 전에 끝났다.</p>
+
+<h2>Development · Unity Profiler에서 확인한 시작 비용</h2>
+<table>
+<tr><th>시점</th><th>CPU 및 GC</th><th>Unity 리소스 카운터</th></tr>
+<tr><td>초기화 표본</td><td>6,547.782ms 시작 마커 안에서 Initialize Graphics 2,082.010ms, Application.WaitForAsyncOperationToComplete 1,569.640ms, Loading Global Managers 1,062.866ms. 상·하위 마커가 겹치므로 합산하지 않는다.</td><td>카운터 준비 전이라 비교에서 제외</td></tr>
+<tr><td>첫 메인 메뉴 렌더링</td><td>CPU 618.867ms. FinishFrameRendering 455.064ms, URP RenderTotal 311.006ms, PlayerUpdateCanvases 104.467ms. GC 할당 42,534,961B(40.56MiB).</td><td>Texture 111 · RenderTexture 11 · Material 91. Unity Total Used 427.4MiB, Total Reserved 532.6MiB.</td></tr>
+</table>
+<p>로컬 Unity 원본 캡처 40,757,332바이트를 보존했다. 이 방식으로 다시 읽을 때 유효 프레임이 3개만 노출돼 시작 마커와 첫 메뉴 카운터만 확정했다. 갱도 이동, 배출·학습, 코인 효과, 세금 및 전투의 프레임별 GC·리소스 수와 캡처 간 증가는 미측정이다. Development 첫 프레임 타이밍은 Release의 플레이 기준표에 합산하지 않았다.</p>
+
+<h2>실제 플레이 확인 범위</h2>
+<table>
+<tr><th>구간</th><th>확인한 결과</th><th>남은 측정</th></tr>
+<tr><td>메뉴·로딩·이어하기</td><td>일반 첫 진입과 1회차·2회차 앱 재시작 후 이어하기. Development에서 원본 복사본으로 진입.</td><td>노트북의 디스크 캐시가 찬 조건 및 재부팅 직후 조건 비교, 전환별 반복 표본.</td></tr>
+<tr><td>갱도·청크·샛길·길가</td><td>일반 빌드에서 첫 갱도 전진과 장소 NPC 대화·요구 수행. 샛길 선택지 표시까지 확인.</td><td>청크 경계 통과 타임스탬프, 샛길 실제 이동과 길가 NPC 조우 표본.</td></tr>
+<tr><td>책과 학습·코인 효과</td><td>Development에서 생성 큐 및 배출구, 보드로 힘 책 드래그, 첫 독서 완료와 결과, 힘 +1 팝업·중앙 효과와 착지 코인 확인. 별도 배출 책 미리 읽기도 열었다.</td><td>책장 배치 성공 및 그 구간의 프레임, 일반 책·콤보에 대한 반복 표본.</td></tr>
+<tr><td>일반세 납부와 회수</td><td>1회차에는 출력·드래그까지만 확인. 2회차에는 징수원 고지에 따라 힘 4와 지능 1을 보드로 옮겨 직접 정산. 잔여 HUD [1, 2, 8, 4]와 보드의 납부 코인 제거, 징수 누적 5 및 갱도 복귀 확인.</td><td>손 애니메이션 전체 재생 시각과 저울 준비 후 납부 회수의 별도 표본.</td></tr>
+<tr><td>전투·연속 회차·재시작</td><td>보스 체크포인트로 3DBattleScene 진입, 공격·피격, 패배 후 메뉴 복귀, 실제 Run_02 생성, 앱 재시작 뒤 같은 2회차 초반 복원. 전투 진입 로그에 읽을 수 없는 Mesh0.001과 BossFootGrounding.Initialize의 IndexOutOfRangeException이 있었다. 전투 입력과 메뉴 복귀는 진행됐다.</td><td>자연 진행으로 보스 진입, 후반 청크까지 진행한 동일 회차 재실행, 장시간 회차 누적과 메모리 추세. 전투 예외의 비용은 분리하지 못했다.</td></tr>
+</table>
+
+<h2>노트북 재현 절차</h2>
+<ol>
+<li>측정 커밋·Unity·URP를 고정한다. 노트북의 전원 연결 여부, Windows 전력 모드, 내장·외장 GPU와 실제 렌더러, RAM, 화면 주사율을 기록한다. 창 1280×720, 품질 인덱스 1, VSync 0, 외부 FPS 제한 해제를 맞추고 백그라운드 앱 상태를 표본마다 같게 둔다.</li>
+<li>게임 종료 후 초반·청크 경계 전·납부 전·보스 전·후반 회차의 저장 복사본을 별도 테스트 저장 경로에 둔다. 첫 진입에는 빈 저장을 사용한다. 각 표본 전 같은 체크포인트와 시드를 복원하고 대상 구간을 미리 한 차례 실행해 워밍업한다. 부팅 직후 첫 진입과 앱 재시작 뒤 이어하기는 따로 재현하고 입력·LoadingScene·목적지 초기화·첫 입력 가능 시각을 각각 기록한다.</li>
+<li>비개발 빌드에서 같은 갱도 루트를 60초씩 3회 반복한다. 전진·경계·샛길·길가 NPC의 시작 시점을 기록한다. 책 배출·드래그·보관·학습, 보상과 납부, 보스와 메뉴 복귀는 별도 표본으로 라벨링한다. 현재 제공한 PresentMon 수집 스크립트로 프레임과 메모리를 기록하고 전경 여부 및 누락 표본을 확인한다.</li>
+<li>같은 복사본으로 Development에서 Profiler의 CPU Timeline, Memory, Rendering을 열고 목표 구간 직전부터 짧은 캡처를 나눠 저장한다. 각 캡처가 실제 플레이 구간의 유효 프레임을 담았는지 먼저 확인한다. GC Allocated In Frame, Texture·RenderTextures·Material Count와 느린 프레임의 스레드 마커를 저장한다. 연속 회차 도달 후 안정 표본과 같은 회차를 살린 앱 재시작 표본을 따로 비교한다.</li>
+</ol>
+
+<h2>다음 수정 한 가지</h2>
+<p>갱도 이어하기에서 로딩 진행 표시가 시작되기 전의 <strong>고정 2초 대기</strong>를 줄이는 것을 먼저 시험한다. 현재 씬은 async 로드를 바로 시작하지만 2초가 지난 뒤에야 진행 막대가 움직이고, 막대가 끝나야 씬 활성화를 허용한다. 일반 빌드에서 재시작 이어하기는 약 3.7초였다. 이어하기에만 대기를 줄이고 같은 저장으로 클릭→첫 입력 가능 시간과 p95를 전후 비교한다. 이 변경은 이번 기준선에는 적용하지 않았다. <a href="../Assets/Scenes/LoadingScene.unity">LoadingScene 설정</a> · <a href="../Assets/Loading/Scripts/LoadingScreenController.cs">활성화 흐름</a></p>
+
+<p>측정 도구 문서 <a href="https://github.com/GameTechDev/PresentMon/blob/main/README-ConsoleApplication.md">PresentMon 콘솔</a> · <a href="https://docs.unity3d.com/6000.0/Documentation/Manual/profiler-command-line-arguments.html">Unity Profiler 실행 인수</a>.</p>
+<p>로컬 근거는 Git에서 제외된 <code>Builds/Perf00</code>에 있다. <a href="../Builds/Perf00/release-idle-summary.csv">정위치 표본 요약</a> · <a href="../Builds/Perf00/release-tax-run2-1.csv">2회차 납부 PresentMon</a> · <a href="../Builds/Perf00/release-battle-1.csv">전투 혼합 PresentMon</a> · <a href="../Builds/Perf00/release-first-markers.txt">첫 진입 이벤트</a> · <a href="../Builds/Perf00/release-first.csv">첫 진입 PresentMon</a> · <a href="../Builds/Perf00/release-resume-markers.txt">1회차 이어하기</a> · <a href="../Builds/Perf00/dev-journey-unity.csv">Unity 카운터</a> · <a href="../Builds/Perf00/dev-journey-unity.csv.markers.txt">Unity CPU 마커</a> · <a href="../Builds/Perf00/dev-journey.raw">Profiler 원본</a></p>
+</section>
+</body></html>
 
 
 
