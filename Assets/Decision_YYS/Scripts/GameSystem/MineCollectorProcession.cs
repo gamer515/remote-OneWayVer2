@@ -27,9 +27,9 @@ public sealed class MineCollectorProcession : MonoBehaviour
     [SerializeField] private float modelYawOffset = 180f;
     [SerializeField, Min(.5f)] private float dialogueClearance = 1.5f;
     private Transform[] members;
-    private MineChapterProgress progress;
+    private MineCollectorProgress progress;
     private Vector3 origin;
-    private float chunkStart, chunkEnd, preparationZ;
+    private float chunkStart, chunkEnd, preparationZ, chaseEnd;
     private float firstPassSpeed, firstPassSeconds, npcWaitMin, npcWaitMax;
     private int routeSeed;
     private const int PatrolVersion = 5;
@@ -42,22 +42,24 @@ public sealed class MineCollectorProcession : MonoBehaviour
     public bool IsOnPatrol => progress?.taxPatrolActive == true && !Finished;
     public bool IsReturning => progress?.collectorReturning == true;
     public bool IsVisible => IsOnPatrol;
+    internal MineCollectorProgress State => progress;
+    internal List<MineCollectorProcession> Patrols { get; } = new();
+    internal Color PatrolColor => Color.HSVToRGB(Mathf.Repeat(.08f + progress.collectorDay * .618034f, 1f), .74f, .92f);
     public IReadOnlyList<Transform> Members => members ?? Array.Empty<Transform>();
     public string CurrentPhase => progress == null ? "NotStarted" : ((Phase)progress.collectorPhase).ToString();
     public int ChunkNumber => progress.collectorChunkIndex + 1;
     public int InspectionMinimum => patrolSettings.MinimumCoins(progress.collectorChunkIndex);
-    public bool CanMeet(Vector3 point) => IsOnPatrol && point.z >= chunkStart && point.z < chunkEnd &&
-        (IsReturning ? !progress.collectorChaseClosed && progress.HasTaxInvoice : !progress.collectorPassedPlayer);
+    public bool CanMeet(Vector3 point) => IsOnPatrol &&
+        (IsReturning ? point.z < chaseEnd && !progress.collectorChaseClosed && progress.HasTaxInvoice :
+            point.z >= chunkStart && point.z < chunkEnd && !progress.collectorPassedPlayer);
 
-    public bool RecordPlayerEscape(float z, bool clearedShortcutChase = false)
+    public bool RecordPlayerEscape(bool clearedShortcutChase)
     {
-        if (!IsOnPatrol || progress.collectorChaseClosed ||
-            (!IsAtEscapeBoundary(z) && (!clearedShortcutChase || !IsReturning || !progress.HasTaxInvoice))) return false;
+        if (!IsOnPatrol || progress.collectorChaseClosed || !clearedShortcutChase ||
+            !IsReturning || !progress.HasTaxInvoice) return false;
         progress.collectorChaseClosed = true;
         return true;
     }
-
-    internal bool IsAtEscapeBoundary(float z) => z >= chunkEnd;
 
     internal bool IsBesidePursuers(Vector3 point, float reach) =>
         IsReturning && CanMeet(point) && MemberInRange(point, reach) == null &&
@@ -91,13 +93,35 @@ public sealed class MineCollectorProcession : MonoBehaviour
         }
     }
 
-    public void Initialize(GameObject prefab, MineChapterProgress state, Vector3 start, float length, int seed,
+    internal MineCollectorProcession CreatePatrol(int day)
+    {
+        var root = new GameObject($"CollectorPatrol_Day{day + 1}");
+        root.transform.SetParent(transform, false);
+        var patrol = root.AddComponent<MineCollectorProcession>();
+        patrol.minimumCount = minimumCount;
+        patrol.maximumCount = maximumCount;
+        patrol.spacing = spacing;
+        patrol.gatheringDistance = gatheringDistance;
+        patrol.entranceOvershoot = entranceOvershoot;
+        patrol.entranceBuffer = entranceBuffer;
+        patrol.rowWaitSeconds = rowWaitSeconds;
+        patrol.arrivalSpeed = arrivalSpeed;
+        patrol.marchSpeed = marchSpeed;
+        patrol.stops = stops;
+        patrol.modelYawOffset = modelYawOffset;
+        patrol.dialogueClearance = dialogueClearance;
+        Patrols.Add(patrol);
+        return patrol;
+    }
+
+    public void Initialize(GameObject prefab, MineCollectorProgress state, Vector3 start, float length, int seed,
         float firstPassSeconds = 0, float minimumNpcWait = 0, float maximumNpcWait = 0,
         IEnumerable<Vector3> npcPositions = null, IEnumerable<(Vector3 entrance, Vector3 exit)> placedDoors = null,
-        MineCollectorPatrolSettings settings = null)
+        MineCollectorPatrolSettings settings = null, float? pursuitEnd = null, float? spawnZ = null)
     {
         if (prefab == null) throw new InvalidOperationException("징수원 모델이 필요합니다.");
         origin = start; progress = state;
+        chaseEnd = pursuitEnd ?? start.z + length;
         patrolSettings = settings ?? new MineCollectorPatrolSettings();
         this.firstPassSeconds = firstPassSeconds;
         authoredDoors = placedDoors?.OrderBy(door => door.entrance.z).Select(door => (door.entrance.z, door.exit.z)).ToArray();
@@ -114,19 +138,20 @@ public sealed class MineCollectorProcession : MonoBehaviour
             .ToLookup(point => Enumerable.Range(0, midpoints.Length)
                 .OrderBy(index => Mathf.Abs(midpoints[index] - point.z)).First());
         npcTargets = Enumerable.Range(0, authoredDoors.Length).Select(index => targets[index].ToArray()).ToArray();
-        float endZ = (state.taxPatrolActive || state.collectorOpeningCompleted) && state.collectorRouteEndZ > start.z
+        float endZ = state.collectorRouteEndZ > start.z
             ? state.collectorRouteEndZ : start.z + length;
         bool legacy = state.collectorRouteVersion < PatrolVersion;
         bool legacyInspectionDone = state.taxPatrolActive && (state.collectorPassedPlayer || !state.HasTaxInvoice);
-        if (state.collectorRouteVersion < 4)
+        if (spawnZ.HasValue || state.collectorRouteVersion < 4)
         {
             if (state.collectorCount == 0)
                 state.collectorCount = new System.Random(seed).Next(minimumCount, Mathf.Max(minimumCount, maximumCount) + 1);
-            BeginRoute(start.z, endZ, 0);
-            state.collectorPassedPlayer = legacyInspectionDone;
+            float startZ = spawnZ.HasValue ? state.collectorRouteStartZ : start.z;
+            BeginRoute(startZ, endZ, state.collectorChunkIndex, spawnZ);
+            if (!spawnZ.HasValue) state.collectorPassedPlayer = legacyInspectionDone;
         }
         else ConfigureRoute(state.collectorRouteStartZ > start.z ? state.collectorRouteStartZ : start.z, endZ);
-        if (legacy)
+        if (legacy && !spawnZ.HasValue)
         {
             state.collectorRouteVersion = PatrolVersion;
             state.collectorChunkIndex = Mathf.Max(0, Mathf.RoundToInt((chunkStart - start.z) / Mathf.Max(.01f, chunkEnd - chunkStart)));
@@ -134,6 +159,7 @@ public sealed class MineCollectorProcession : MonoBehaviour
             state.collectorPassedPlayer = legacyInspectionDone;
             state.collectorChaseClosed = legacyInspectionDone;
         }
+        state.collectorRouteVersion = PatrolVersion;
         if (Finished && !IsReturning && state.taxPatrolActive) BeginReturn();
         if (members != null) return;
         members = new Transform[state.collectorCount];
@@ -143,36 +169,42 @@ public sealed class MineCollectorProcession : MonoBehaviour
             members[i].name = "Collector_" + (i + 1);
             foreach (var script in members[i].GetComponentsInChildren<MonoBehaviour>()) script.enabled = false;
             foreach (var animator in members[i].GetComponentsInChildren<Animator>()) animator.enabled = false;
-            members[i].SetPositionAndRotation(Desired(i), Heading());
+            Vector3 position = state.collectorPositions?.Length == members.Length ? state.collectorPositions[i] : Desired(i);
+            members[i].SetPositionAndRotation(position, Heading());
         }
+        ApplyPatrolColor();
+        SaveMemberPositions();
     }
     private void ConfigureRoute(float startZ, float endZ)
     {
         chunkStart = startZ;
         chunkEnd = endZ;
+        float entryZ = progress.collectorEntryZ > startZ ? progress.collectorEntryZ : endZ;
         var route = Enumerable.Range(0, authoredDoors.Length)
-            .Where(index => authoredDoors[index].entrance >= startZ && authoredDoors[index].exit <= endZ)
+            .Where(index => authoredDoors[index].entrance >= startZ && authoredDoors[index].exit <= entryZ)
             .ToArray();
         routeDoors = route.Select(index => authoredDoors[index]).ToArray();
         routeNpcTargets = route.Select(index => npcTargets[index]).ToArray();
         preparationZ = routeDoors.Length > 0 ? Mathf.Max(chunkStart, routeDoors[0].entrance - gatheringDistance) : chunkStart;
         float tail = (progress.collectorCount - 1) * spacing;
         float formationTravel = 2f * routeDoors.Length * new Vector2(tail, tail * .5f).magnitude;
-        firstPassSpeed = firstPassSeconds > 0 ? (chunkEnd - preparationZ + formationTravel) / firstPassSeconds : arrivalSpeed;
+        firstPassSpeed = firstPassSeconds > 0 ? (entryZ - preparationZ + formationTravel) / firstPassSeconds : arrivalSpeed;
     }
 
-    public void BeginRoute(float startZ, float endZ, int chunkIndex)
+    public void BeginRoute(float startZ, float endZ, int chunkIndex, float? spawnZ = null)
     {
+        if (spawnZ.HasValue) progress.collectorEntryZ = spawnZ.Value;
         ConfigureRoute(startZ, endZ);
         progress.collectorRouteStartZ = chunkStart;
         progress.collectorRouteEndZ = chunkEnd;
         progress.collectorChunkIndex = chunkIndex;
         progress.collectorChaseClosed = false;
         progress.shortcutPursuitInvoiceId = null;
-        progress.collectorZ = chunkEnd;
+        progress.collectorZ = spawnZ ?? chunkEnd;
         progress.collectorReturning = false;
         progress.collectorPhase = (int)(routeDoors.Length == 0 ? Phase.Arrival : Phase.RowMarch);
-        progress.collectorStop = routeDoors.Length - 1;
+        progress.collectorStop = Array.FindLastIndex(routeDoors, door => door.exit <= progress.collectorZ);
+        if (progress.collectorStop < 0) progress.collectorPhase = (int)Phase.Arrival;
         progress.collectorPassedPlayer = false;
         progress.collectorWait = progress.collectorNpcPause = 0;
         progress.collectorNpcPauseIndex = progress.collectorNpcWitnessIndex = 0;
@@ -190,7 +222,7 @@ public sealed class MineCollectorProcession : MonoBehaviour
         float z = progress.collectorZ - (row ? 0 : Direction * index * spacing);
         return new Vector3(origin.x + x, origin.y, z);
     }
-    public void Tick(float seconds, float waitSeconds = -1f, bool skipNpcStops = false)
+    public void Tick(float seconds, float waitSeconds = -1f, bool skipNpcStops = false, float elapsedSeconds = 0f)
     {
         if (progress == null || members == null) return;
         if (waitSeconds < 0) waitSeconds = seconds;
@@ -233,12 +265,17 @@ public sealed class MineCollectorProcession : MonoBehaviour
                         nextStop < routeDoors.Length ? routeDoors[nextStop].entrance - entranceBuffer : chunkEnd))
                     : Mathf.Min(progress.collectorZ, Mathf.Max(currentDoor.entrance - clearance,
                         nextStop >= 0 ? routeDoors[nextStop].exit + entranceBuffer : preparationZ));
-                if (IsReturning || skipNpcStops || !TryPauseAtNpc(exit, speed * seconds))
+                if (IsReturning || skipNpcStops || !TryPauseAtNpc(exit, speed * seconds, elapsedSeconds))
                     MoveLeader(exit, speed, seconds, Phase.FormRow);
                 break;
             case Phase.Leave:
                 if (IsReturning)
-                    MoveLeader(chunkEnd, speed, seconds, Phase.Finished);
+                {
+                    // Active pursuers remain at the boss entrance and can catch a returning player.
+                    float limit = chaseEnd - entranceBuffer;
+                    MoveLeader(limit, speed, seconds,
+                        progress.collectorChaseClosed || !progress.HasTaxInvoice ? Phase.Finished : Phase.Leave);
+                }
                 else
                 {
                     float turnaround = chunkStart - entranceOvershoot;
@@ -267,6 +304,7 @@ public sealed class MineCollectorProcession : MonoBehaviour
             foreach (var member in members) member.rotation = Heading();
             progress.collectorPhase = (int)Phase.March;
         }
+        SaveMemberPositions();
     }
 
     private void BeginReturn()
@@ -276,7 +314,7 @@ public sealed class MineCollectorProcession : MonoBehaviour
         progress.collectorNpcPause = 0;
         foreach (var member in Members) member.rotation = Heading();
     }
-    private bool TryPauseAtNpc(float exit, float travel)
+    private bool TryPauseAtNpc(float exit, float travel, float elapsedSeconds)
     {
         if (npcWaitMax <= 0) return false;
         int stop = progress.collectorStop;
@@ -292,7 +330,7 @@ public sealed class MineCollectorProcession : MonoBehaviour
             progress.collectorZ = z;
             progress.collectorNpcPauseIndex = stop + 1;
             progress.collectorNpcPause = Mathf.Lerp(npcWaitMin, npcWaitMax,
-                (float)MineChapterSettings.Roll(routeSeed, Mathf.FloorToInt(progress.elapsedSeconds), $"collector:{stop}:{actor}"));
+                (float)MineChapterSettings.Roll(routeSeed, Mathf.FloorToInt(elapsedSeconds), $"collector:{stop}:{actor}"));
             return true;
         }
         return false;
@@ -369,6 +407,35 @@ public sealed class MineCollectorProcession : MonoBehaviour
         for (int i = 0; i < dialoguePoses.Length; i++)
             members[i].SetPositionAndRotation(dialoguePoses[i].position, dialoguePoses[i].rotation);
         dialoguePoses = null;
+    }
+
+    private void SaveMemberPositions()
+    {
+        if (progress.collectorPositions?.Length != Count) progress.collectorPositions = new Vector3[Count];
+        for (int i = 0; i < Count; i++) progress.collectorPositions[i] = members[i].position;
+    }
+
+    private void ApplyPatrolColor()
+    {
+        var properties = new MaterialPropertyBlock();
+        foreach (var member in members)
+        foreach (var renderer in member.GetComponentsInChildren<Renderer>())
+        {
+            var materials = renderer.sharedMaterials;
+            for (int i = 0; i < materials.Length; i++)
+            {
+                var material = materials[i];
+                if (material == null) continue;
+                string property = material.HasProperty("_BaseColor") ? "_BaseColor" : "_Color";
+                if (!material.HasProperty(property)) continue;
+                var tint = material.GetColor(property);
+                var color = Color.Lerp(tint, PatrolColor, .55f);
+                color.a = tint.a;
+                renderer.GetPropertyBlock(properties, i);
+                properties.SetColor(property, color);
+                renderer.SetPropertyBlock(properties, i);
+            }
+        }
     }
 
     private static float FlatDistanceSquared(Vector3 a, Vector3 b) =>

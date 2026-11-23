@@ -96,55 +96,116 @@ public partial class DecisionManager
     private int TaxDay => mineRules?.dayCycle is ChapterDayCycle cycle
         ? cycle.DayIndex(mine.elapsedSeconds) : 0;
 
-    private void UpdateTaxSchedule()
-    {
-        if (taxRules == null || mineRules.dayCycle == null) return;
-        int defeated = saveService.DefeatedTaxBosses;
-        int interval = taxRules.Interval(defeated);
-        mine.taxScheduleTier = taxRules.Tier(defeated);
-        if (mine.nextTaxDay > 0 && mine.taxScheduleInterval == interval) return;
-        int nextDay = TaxDay + interval;
-        if (mine.nextTaxDay > 0 && interval < mine.taxScheduleInterval)
-            nextDay = Mathf.Min(nextDay, mine.nextTaxDay);
-        mine.taxScheduleInterval = interval;
-        mine.nextTaxDay = nextDay;
-    }
+    private MineCollectorProgress ActiveTaxPatrol => mineCollectors?.State;
 
-    private void TickTaxSchedule(float daylight)
+    private void RestoreCollectorPatrols()
     {
-        if (taxRules == null || mineCollectors == null || mineRules.dayCycle == null) return;
-        UpdateTaxSchedule();
-        if (mine.taxPatrolActive && mineCollectors.Finished)
+        if (taxRules == null || mineCollectorGroup == null) return;
+        mine.collectorPatrols ??= new();
+        if (mine.collectorScheduleVersion == 0)
         {
+            int previousDay = mine.HasTaxInvoice ? mine.taxInvoice.day :
+                Mathf.Clamp(mine.nextTaxDay - mine.taxScheduleInterval, 0, TaxDay);
+            bool hadPatrol = mine.taxPatrolActive || mine.collectorOpeningCompleted;
+            if (mine.taxPatrolActive)
+            {
+                var legacy = JsonUtility.FromJson<MineCollectorProgress>(JsonUtility.ToJson(mine));
+                legacy.collectorDay = previousDay;
+                if (legacy.HasTaxInvoice) legacy.taxInvoice.EnsureId();
+                else if (!legacy.collectorChaseClosed) legacy.taxInvoice = AnnounceMineTax(previousDay);
+                mine.collectorPatrols.Add(legacy);
+            }
             mine.taxPatrolActive = false;
-            mine.collectorOpeningCompleted = true;
             mine.taxInvoice = null;
-            mineCollectors.SetVisible(false);
-            SaveGuideCheckpoint();
+            mine.nextTaxDay = hadPatrol ? previousDay + 1 : TaxDay;
+            mine.collectorScheduleVersion = 1;
         }
-        if (mine.taxPatrolActive && !mine.collectorChaseClosed && !mine.HasTaxInvoice)
-        {
-            // A checkpoint can deserialize a missing invoice as an object with no lines.
-            AnnounceMineTax(Mathf.Max(0, mine.nextTaxDay - mine.taxScheduleInterval));
-            if (mine.HasTaxInvoice) SaveGuideCheckpoint();
-        }
-        bool due = TaxDay >= mine.nextTaxDay;
-        if (daylight < 1f || mine.taxPatrolActive || (!due && mine.collectorOpeningCompleted)) return;
-        if (envController.LoadedChunkEndZ == null) return;
-        var registry = envController.PlaceRegistry;
-        float firstChunkZ = registry.GetChunkWorldPosition(0).z;
-        float length = registry.GetChunkWorldPosition(1).z - firstChunkZ;
-        int lastChunk = Mathf.Max(0, Mathf.RoundToInt((envController.CurrentTerrainEndZ - firstChunkZ) / length) - 1);
-        int chunk = Mathf.Clamp(Mathf.FloorToInt((playerController.CurrentPosition.z - firstChunkZ) / length), 0, lastChunk);
-        if (!mine.HasTaxInvoice) AnnounceMineTax(TaxDay);
-        mine.nextTaxDay = TaxDay + mine.taxScheduleInterval;
-        mine.taxPatrolActive = true;
-        mineCollectors.BeginRoute(registry.GetChunkWorldPosition(chunk).z, registry.GetChunkWorldPosition(chunk + 1).z, chunk);
-        SaveGuideCheckpoint();
+        foreach (var patrol in mine.collectorPatrols)
+            if (!patrol.collectorPending && patrol.taxPatrolActive &&
+                !mineCollectorGroup.Patrols.Any(instance => instance.State == patrol))
+                SpawnCollectorPatrol(patrol, startNew: false);
     }
 
-    private void AnnounceMineTax(int day) =>
-        mine.taxInvoice = taxRules.Announce(session.RunSeed, day, mine.taxScheduleTier, statContainer.stats,
+    private void TickTaxSchedule()
+    {
+        var terrain = envController.MineCollectorTerrain;
+        if (taxRules == null || mineCollectorGroup == null || mineRules.dayCycle == null || terrain == null) return;
+        bool changed = false;
+        var instances = mineCollectorGroup.Patrols;
+        for (int i = instances.Count - 1; i >= 0; i--)
+        {
+            var patrol = instances[i];
+            if (!patrol.Finished || patrol == mineCollectors) continue;
+            mine.collectorPatrols.Remove(patrol.State);
+            instances.RemoveAt(i);
+            patrol.SetVisible(false);
+            Destroy(patrol.gameObject);
+            changed = true;
+        }
+
+        if (TaxDay >= mine.nextTaxDay)
+        {
+            // Mark the day as handled even in the boss area so leaving it never spawns a late patrol.
+            mine.nextTaxDay = TaxDay + 1;
+            changed = true;
+            if (TryPlanCollectorSpawn(terrain, playerController.CurrentPosition.z, out var state))
+            {
+                state.collectorDay = TaxDay;
+                state.taxInvoice = AnnounceMineTax(TaxDay);
+                mine.collectorPatrols.Add(state);
+            }
+        }
+        if (playerController.CurrentPosition.z < terrain.EndZ)
+            foreach (var state in mine.collectorPatrols)
+            {
+                if (!state.collectorPending || !envController.IsTerrainChunkLoaded(state.collectorGlobalChunk)) continue;
+                if (SpawnCollectorPatrol(state, startNew: true) == null) continue;
+                state.collectorPending = false;
+                changed = true;
+            }
+        if (changed) SaveGuideCheckpoint();
+    }
+
+    internal static bool TryPlanCollectorSpawn(EnvController.RegisteredTerrain terrain, float playerZ,
+        float leadDistance, out MineCollectorProgress state)
+    {
+        state = null;
+        var registry = terrain.Registry;
+        float origin = registry.GetChunkWorldPosition(0).z;
+        if (playerZ < origin || playerZ >= terrain.EndZ) return false;
+        float chunkLength = registry.GetChunkWorldPosition(1).z - origin;
+        int current = Mathf.Clamp(Mathf.FloorToInt((playerZ - origin) / chunkLength), 0, terrain.ChunkCount - 1);
+        for (int chunk = current; chunk < Mathf.Min(current + 2, terrain.ChunkCount); chunk++)
+        {
+            float start = registry.GetChunkWorldPosition(chunk).z;
+            float end = registry.GetChunkWorldPosition(chunk + 1).z;
+            // Use the entry lane or the clearing just beyond an actual authored facility.
+            float spawn = terrain.Data.places
+                .Where(place => place.chunkIndex == chunk && place.authoredLocationId != null)
+                .Select(place => registry.GetWorldPosition(place).z + place.storyLocationDepth.y + 2f)
+                .Append(start + 6f)
+                .Where(z => z >= playerZ + leadDistance && z >= start + 2f && z <= end - 6f)
+                .DefaultIfEmpty(float.PositiveInfinity).Min();
+            if (!float.IsFinite(spawn)) continue;
+            state = new MineCollectorProgress
+            {
+                collectorPending = true, taxPatrolActive = true,
+                collectorChunkIndex = chunk, collectorGlobalChunk = terrain.FirstChunk + chunk,
+                collectorRouteStartZ = start, collectorRouteEndZ = end, collectorZ = spawn
+            };
+            return true;
+        }
+        return false;
+    }
+
+    private bool TryPlanCollectorSpawn(EnvController.RegisteredTerrain terrain, float playerZ, out MineCollectorProgress state)
+    {
+        float lead = mineRules.collectorPatrol?.spawnLeadDistance ?? 25f;
+        return TryPlanCollectorSpawn(terrain, playerZ, Mathf.Clamp(lead, 20f, 30f), out state);
+    }
+
+    private MineTaxInvoice AnnounceMineTax(int day) =>
+        taxRules.Announce(session.RunSeed, day, taxRules.Tier(saveService.DefeatedTaxBosses), statContainer.stats,
             ChapterContentCatalog.ChapterFolder(mine.taxChapterId) == "Chapter_01");
 
     private static string DescribeTaxCost(int[] cost) =>
@@ -198,7 +259,7 @@ public partial class DecisionManager
 
     private void CommitCitizenTax(int ability, bool boardPaid = false)
     {
-        if (!collectingTax || mine.collectorReturning || mine.collectorPassedPlayer) return;
+        if (!collectingTax || ActiveTaxPatrol is not { collectorReturning: false, collectorPassedPlayer: false }) return;
         var cost = new int[4];
         cost[ability] = 1;
         if (!AbilityPayment.TryPay(statContainer.stats, cost, out var after))
@@ -222,7 +283,7 @@ public partial class DecisionManager
 
     private void ShowMineTax(string feedback = null)
     {
-        var quote = new MineTaxBill(mine.taxInvoice, mine.taxArrears);
+        var quote = new MineTaxBill(ActiveTaxPatrol?.taxInvoice, mine.taxArrears);
         OpenTaxScalePreparation(quote.Current);
         string notice = DescribeTaxNotice(quote);
         var fixedCost = quote.FixedCost();
@@ -294,7 +355,7 @@ public partial class DecisionManager
 
     private void ChooseAlternateTaxCoin(MineTaxBill bill)
     {
-        if (mine.collectorChaseClosed || !ReferenceEquals(mine.taxInvoice, bill.Current)) return;
+        if (ActiveTaxPatrol is not { collectorChaseClosed: false } || !ReferenceEquals(ActiveTaxPatrol.taxInvoice, bill.Current)) return;
         var candidates = AlternateTaxAbilities(bill, statContainer.stats, out int amount);
         if (candidates.Length == 0)
         {
@@ -315,7 +376,7 @@ public partial class DecisionManager
 
     private void BeginTaxPayment(MineTaxBill bill)
     {
-        if (mine.collectorChaseClosed || !ReferenceEquals(mine.taxInvoice, bill.Current)) return;
+        if (ActiveTaxPatrol is not { collectorChaseClosed: false } || !ReferenceEquals(ActiveTaxPatrol.taxInvoice, bill.Current)) return;
         var cost = bill.FixedCost();
         var wallet = statContainer.stats;
         if (!bill.CanAllocate(wallet, cost, 0, bill.Mixed))
@@ -329,7 +390,7 @@ public partial class DecisionManager
 
     private void ChooseTaxCoin(MineTaxBill bill, int[] cost, int singleIndex, int mixed, string feedback = null)
     {
-        if (!ReferenceEquals(bill.Current, mine.taxInvoice)) return;
+        if (!ReferenceEquals(bill.Current, ActiveTaxPatrol?.taxInvoice)) return;
         ShowAllocatedTaxNotice(bill, cost, bill.RemainingFlexible(singleIndex, mixed));
         var single = bill.SingleLines.ElementAtOrDefault(singleIndex);
         int amount = single?.coins ?? 1;
@@ -374,8 +435,8 @@ public partial class DecisionManager
 
     private void CommitTaxPayment(int[] cost, bool boardPaid = false, int alternateAbility = -1)
     {
-        if (mine.collectorChaseClosed || !mine.HasTaxInvoice) return;
-        var invoice = mine.taxInvoice;
+        if (ActiveTaxPatrol is not { collectorChaseClosed: false, HasTaxInvoice: true } state) return;
+        var invoice = state.taxInvoice;
         var wallet = statContainer.stats;
         if (alternateAbility >= 0 &&
             (!AlternateTaxAbilities(new MineTaxBill(invoice, mine.taxArrears), wallet, out int amount).Contains(alternateAbility) ||
@@ -391,7 +452,7 @@ public partial class DecisionManager
         }
         if (!boardPaid && TryBeginBoardPayment(cost, () =>
         {
-            if (ReferenceEquals(mine.taxInvoice, invoice)) CommitTaxPayment(cost, true, alternateAbility);
+            if (ReferenceEquals(ActiveTaxPatrol?.taxInvoice, invoice)) CommitTaxPayment(cost, true, alternateAbility);
         }, () => ShowMineTax(), collectorPayment: true, useTaxPan: taxScaleView != null)) return;
         statContainer.SetStats(after);
         guideProgress.committedStats = after;

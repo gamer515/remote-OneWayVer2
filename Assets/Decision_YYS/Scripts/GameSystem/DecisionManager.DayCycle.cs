@@ -71,10 +71,10 @@ public partial class DecisionManager
         float position = Mathf.Repeat(mine.elapsedSeconds, cycle.DayLength);
         bool taxCountdown = taxRules != null && mine.nextTaxDay > 0;
         int remaining = taxCountdown
-            ? (mine.taxPatrolActive && mine.HasTaxInvoice ? 0 : Mathf.Max(0, mine.nextTaxDay - day))
+            ? (mine.collectorPatrols?.Exists(patrol => patrol.HasTaxInvoice && !patrol.collectorChaseClosed) == true
+                ? 0 : Mathf.Max(0, mine.nextTaxDay - day))
             : Mathf.CeilToInt(cycle.DayLength - position);
-        bool night = position >= cycle.daySeconds + cycle.duskSeconds &&
-                     position < cycle.DayLength - cycle.dawnSeconds;
+        bool night = position >= cycle.daySeconds + cycle.duskSeconds;
         if (lastCalendarDay == day && lastCalendarRemaining == remaining && lastCalendarNight == night) return;
         if (!DateTime.TryParseExact(calendarStartDate, "yyyy-MM-dd", CultureInfo.InvariantCulture,
                 DateTimeStyles.None, out var start))

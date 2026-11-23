@@ -47,10 +47,14 @@ public sealed class TerrainBuilder
     private readonly List<TerrainSegment> segments = new List<TerrainSegment>();
     private readonly Dictionary<int, GameObject> chunkInstances = new Dictionary<int, GameObject>();
     private readonly Dictionary<int, List<MapPoint>> chunkMapPoints = new Dictionary<int, List<MapPoint>>();
+    private readonly Dictionary<int, Rect> chunkMapBounds = new();
     private readonly Dictionary<string, TerrainFacilityPlan.History> facilityHistory = new Dictionary<string, TerrainFacilityPlan.History>();
     private readonly List<FacilityMarker> facilityMarkers = new List<FacilityMarker>();
     internal IReadOnlyList<FacilityMarker> FacilityMarkers => facilityMarkers;
     internal IEnumerable<List<MapPoint>> LoadedMapPoints => chunkMapPoints.Values;
+    internal bool TryGetMapBounds(int chunkIndex, out Rect bounds) => chunkMapBounds.TryGetValue(chunkIndex, out bounds);
+    internal bool IsChunkLoaded(int index) =>
+        chunkInstances.TryGetValue(index, out var chunk) && chunk != null && chunk.activeInHierarchy;
     internal bool HasChapter(string chapterId) => facilityHistory.ContainsKey(chapterId);
 
     internal BossPreviewIdle FindBossPreview(TerrainPlaceRegistry registry)
@@ -259,6 +263,7 @@ public sealed class TerrainBuilder
             return true;
         chunkInstances.Remove(globalChunkIndex);
         chunkMapPoints.Remove(globalChunkIndex);
+        chunkMapBounds.Remove(globalChunkIndex);
 
         int localChunkIndex = globalChunkIndex - segment.FirstGlobalChunkIndex;
         GameObject chunk = new GameObject($"Chunk_{globalChunkIndex}");
@@ -266,6 +271,8 @@ public sealed class TerrainBuilder
         chunk.transform.localPosition = Vector3.zero;
 
         GameObject ground = CreateGround(segment, localChunkIndex, chunk.transform);
+        if (ground != null && TryGetGroundMapBounds(ground, segment.Registry, localChunkIndex, out var bounds))
+            chunkMapBounds.Add(globalChunkIndex, bounds);
         if (ground != null) segment.RoomLayouts?[localChunkIndex]?.Apply(ground.transform);
         if (ground != null && segment.Data.places.Any(place => place.storyActors != null))
             foreach (Transform child in ground.transform)
@@ -290,6 +297,27 @@ public sealed class TerrainBuilder
         chunkInstances.Add(globalChunkIndex, chunk);
         chunkMapPoints.Add(globalChunkIndex, mapPoints);
         return true;
+    }
+
+    private static bool TryGetGroundMapBounds(GameObject ground, TerrainPlaceRegistry registry,
+        int chunkIndex, out Rect bounds)
+    {
+        // The floor mesh defines the covered map area. Walls and props can extend beyond it.
+        foreach (var renderer in ground.GetComponentsInChildren<MeshRenderer>())
+        {
+            var floor = renderer.transform.parent?.parent;
+            if (floor == null || !(floor.name.StartsWith("Map_Ground_", System.StringComparison.Ordinal) ||
+                floor.name.StartsWith("Map_SandRoad_", System.StringComparison.Ordinal))) continue;
+
+            var surface = renderer.bounds;
+            float start = Mathf.Max(surface.min.z, registry.GetChunkWorldPosition(chunkIndex).z);
+            float end = Mathf.Min(surface.max.z, registry.GetChunkWorldPosition(chunkIndex + 1).z);
+            if (surface.size.x <= 0f || end <= start) continue;
+            bounds = Rect.MinMaxRect(surface.min.x, start, surface.max.x, end);
+            return true;
+        }
+        bounds = default;
+        return false;
     }
 
     private static void CreateMineRoadsideDecorations(TerrainSegment segment, int chunkIndex, Transform chunk,
@@ -446,6 +474,7 @@ public sealed class TerrainBuilder
             GameObject chunk = chunkInstances[index];
             chunkInstances.Remove(index);
             chunkMapPoints.Remove(index);
+            chunkMapBounds.Remove(index);
             if (chunk == null) continue;
             chunk.SetActive(false);
             Object.Destroy(chunk);

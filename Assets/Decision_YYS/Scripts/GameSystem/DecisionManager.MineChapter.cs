@@ -16,6 +16,7 @@ public partial class DecisionManager
     private MineChapterActivityView mineView;
     private string lastMinePlace;
     [SerializeField] private GameObject mineCollectorPrefab;
+    private MineCollectorProcession mineCollectorGroup;
     private MineCollectorProcession mineCollectors;
     private bool collectingTax;
     private float mineSaveAt;
@@ -33,9 +34,9 @@ public partial class DecisionManager
     {
         var chapter = currentOmnibus.chapters[chapterIndex];
         if (string.IsNullOrEmpty(chapter.rulesDocument) ||
-            chapter.rulesEpisodes != null && !chapter.rulesEpisodes.Contains(chapter.episodeIds[episodeIndex]))
+            chapter.rulesEpisodes != null && !chapter.rulesEpisodes.Contains(chapter.episodeIds[episodeIndex]) && !IsMineBossEpisode)
         {
-            mineCollectors?.SetVisible(false);
+            ClearCollectorPatrols();
             StopChapterSky();
             mineRules = null;
             taxRules = null;
@@ -50,6 +51,8 @@ public partial class DecisionManager
         {
             mine.taxChapterId = chapter.chapterId;
             mine.nextTaxDay = 0;
+            mine.collectorScheduleVersion = 0;
+            mine.collectorPatrols?.Clear();
             mine.taxPatrolActive = false;
             mine.collectorOpeningCompleted = false;
             mine.collectorReturning = false;
@@ -58,7 +61,6 @@ public partial class DecisionManager
             mine.collectorRouteVersion = 0;
         }
         taxRules = ChapterTaxSettings.Load(ChapterContentCatalog.ChapterFolder(chapter.chapterId));
-        UpdateTaxSchedule();
         StartChapterSky();
         UpdateChapterSky(mineRules.dayCycle?.Daylight(mine.elapsedSeconds) ?? 1f);
         UpdateChapterCalendar();
@@ -74,27 +76,49 @@ public partial class DecisionManager
         }
         SyncAbilityWallet();
         guideProgress.committedStats ??= statContainer.stats;
-        mineCollectors ??= FindFirstObjectByType<MineCollectorProcession>();
-        var origin = envController.PlaceRegistry.GetChunkWorldPosition(0);
-        var npcPositions = envController.TerrainData.places
+        mineCollectorGroup ??= FindFirstObjectByType<MineCollectorProcession>();
+        RestoreCollectorPatrols();
+    }
+
+    private MineCollectorProcession SpawnCollectorPatrol(MineCollectorProgress state, bool startNew)
+    {
+        var terrain = envController.MineCollectorTerrain;
+        if (terrain == null || mineCollectorGroup == null) return null;
+        var registry = terrain.Registry;
+        var origin = registry.GetChunkWorldPosition(0);
+        var npcPositions = terrain.Data.places
             .Where(place => !string.IsNullOrEmpty(place.characterId))
             .SelectMany(place => place.storyActors?.Length > 0
-                ? place.storyActors.Select(actor => envController.PlaceRegistry.GetWorldPosition(place) + actor.position)
+                ? place.storyActors.Select(actor => registry.GetWorldPosition(place) + actor.position)
                 : (place.actorPositions ?? new[] { place.position })
-                    .Select(position => envController.PlaceRegistry.GetChunkWorldPosition(place.chunkIndex) + position));
+                    .Select(position => registry.GetChunkWorldPosition(place.chunkIndex) + position));
         var placement = envController.NpcPlacement;
-        var authoredPlaces = envController.TerrainData.places.Where(place => place.authoredLocationId != null).ToArray();
+        var authoredPlaces = terrain.Data.places.Where(place => place.authoredLocationId != null).ToArray();
         var doors = authoredPlaces.Length > 0 ? authoredPlaces.Select(place =>
         {
-            var center = envController.PlaceRegistry.GetWorldPosition(place);
+            var center = registry.GetWorldPosition(place);
             return (center + Vector3.forward * place.storyLocationDepth.x,
                 center + Vector3.forward * place.storyLocationDepth.y);
         }) : mine.variedRoomLayout && placement != null ? placement.Places.Select(placement.Doors) : null;
-        float patrolLength = (envController.LoadedChunkEndZ ?? envController.CurrentTerrainEndZ) - origin.z;
-        mineCollectors?.Initialize(mineCollectorPrefab, mine, origin,
-            patrolLength, session.RunSeed, mineRules.collectorArrivalSeconds,
-            mineRules.collectorNpcWaitMin, mineRules.collectorNpcWaitMax, npcPositions, doors, mineRules.collectorPatrol);
-        mineCollectors?.SetVisible(mineCollectors.IsVisible);
+        var patrol = mineCollectorGroup.CreatePatrol(state.collectorDay);
+        patrol.Initialize(mineCollectorPrefab, state, origin, terrain.EndZ - origin.z,
+            unchecked(session.RunSeed * 397 ^ state.collectorDay), mineRules.collectorArrivalSeconds,
+            mineRules.collectorNpcWaitMin, mineRules.collectorNpcWaitMax, npcPositions, doors,
+            mineRules.collectorPatrol, terrain.EndZ, startNew ? state.collectorZ : null);
+        patrol.SetVisible(patrol.IsVisible);
+        return patrol;
+    }
+
+    private void ClearCollectorPatrols()
+    {
+        if (mineCollectorGroup == null) return;
+        foreach (var patrol in mineCollectorGroup.Patrols)
+        {
+            patrol.SetVisible(false);
+            Destroy(patrol.gameObject);
+        }
+        mineCollectorGroup.Patrols.Clear();
+        mineCollectors = null;
     }
 
     private string MineOpeningPath(string place, string fallback)
@@ -225,8 +249,7 @@ public partial class DecisionManager
 #else
                 if (!labor && Input.GetKeyDown(KeyCode.Space)) mine.racePresses++;
 #endif
-                var collector = labor && mine.taxPatrolActive && mineCollectors?.Finished == false
-                    ? mineCollectors.NearestMember(playerController.CurrentPosition) : null;
+                var collector = labor ? NearestActiveCollector(playerController.CurrentPosition) : null;
                 string distance = collector != null
                     ? $"\n징수원 거리 {Vector3.Distance(collector.position, playerController.CurrentPosition):F1}u" : "";
                 mineView.Show(labor ? $"요구사항 수행 중 / {mine.activityRemaining:F1}초\n이동과 능력 성장 중지{distance}" :
@@ -261,45 +284,19 @@ public partial class DecisionManager
     {
         if (mine == null || playerController == null || finalBattleRequested) return;
         mine.elapsedSeconds += Time.deltaTime;
-        if (Time.unscaledTime >= mineSaveAt) { mineSaveAt = Time.unscaledTime + 1; SaveGuideCheckpoint(); }
         float daylight = mineRules.dayCycle?.Daylight(mine.elapsedSeconds) ?? 1f;
-        TickTaxSchedule(daylight);
+        TickTaxSchedule();
         UpdateChapterSky(daylight);
         UpdateChapterCalendar();
-        if (!collectingTax && mine.taxPatrolActive &&
-            mineCollectors is { Finished: false } procession)
-        {
-            var position = playerController.CurrentPosition;
-            RecordMineCollectorEscape(procession, position);
-            bool canOpenDialogue = CanOpenCollectorDialogue();
-            bool canSuspendNpcPayment = npcBoardPaymentCost != null && journeyCoinSupply?.HasBoardPayment == true;
-            // Keep a return contact in range while a reading or payment presentation owns the view.
-            var nearby = (canOpenDialogue || npcPaymentRoot != null || procession.IsReturning) && procession.CanMeet(position)
-                ? procession.MemberInRange(position, mineRules.encounterDistance) : null;
-            if (nearby == null)
-            {
-                procession.Tick(Time.deltaTime, skipNpcStops: mineLaborInProgress);
-                if ((canOpenDialogue || canSuspendNpcPayment) && procession.CanMeet(position))
-                    nearby = procession.MemberInRange(position, mineRules.encounterDistance);
-            }
-            if (nearby != null && (canOpenDialogue || canSuspendNpcPayment))
-            {
-                if (canSuspendNpcPayment) SuspendNpcPaymentForCollector();
-                ResolveCollectorContact(nearby);
-                return;
-            }
-            if (canOpenDialogue)
-            {
-                var witnessCollector = procession.NearestMember(position);
-                if (witnessCollector != null) TryBeginMineWitness(witnessCollector);
-            }
-        }
-        if (!collectingTax && journeyCoinSupply?.HasBoardPayment != true)
+        if (TickCollectorPatrols()) return;
+        if (Time.unscaledTime >= mineSaveAt) { mineSaveAt = Time.unscaledTime + 1; SaveGuideCheckpoint(); }
+        if (!collectingTax && journeyCoinSupply?.HasBoardPayment != true && !IsMineBossEpisode)
         {
             if (mine.resting)
             {
                 mine.fatigue = Mathf.Max(0, mine.fatigue - mineRules.recoveryPerSecond * Time.deltaTime);
-                string distance = mine.taxPatrolActive ? $"\n징수원 거리 {Mathf.Abs(playerController.CurrentPosition.z - mine.collectorZ):F1}" : "";
+                var nearest = NearestActiveCollector(playerController.CurrentPosition);
+                string distance = nearest != null ? $"\n징수원 거리 {Mathf.Abs(playerController.CurrentPosition.z - nearest.position.z):F1}" : "";
                 mineView.Show($"강제 휴식 / 피로 {mine.fatigue:F0}{distance}");
                 if (mine.fatigue <= mineRules.fatigueResume) FinishMineRest();
             }
@@ -319,6 +316,60 @@ public partial class DecisionManager
         }
     }
 
+    private Transform NearestActiveCollector(Vector3 position) => mineCollectorGroup?.Patrols
+        .Where(patrol => patrol.IsOnPatrol).Select(patrol => patrol.NearestMember(position))
+        .Where(member => member != null).OrderBy(member => (member.position - position).sqrMagnitude).FirstOrDefault();
+
+    private bool TickCollectorPatrols()
+    {
+        var terrain = envController.MineCollectorTerrain;
+        if (mineCollectorGroup == null || terrain == null) return false;
+        var position = playerController.CurrentPosition;
+        bool regularArea = position.z >= terrain.Registry.GetChunkWorldPosition(0).z && position.z < terrain.EndZ;
+        bool bossInteraction = IsMineBossEpisode && Authored?.nodeId is BossEntry or BossChoices or BossStudy;
+        bool canOpen = regularArea && !bossInteraction && !collectingTax && CanOpenCollectorDialogue();
+        bool canSuspend = regularArea && !bossInteraction && !collectingTax &&
+            npcBoardPaymentCost != null && journeyCoinSupply?.HasBoardPayment == true;
+        bool progressingShortcut = !collectingTax && packShortcutWalking && position.z > shortcutLastZ;
+        if (packShortcutWalking) shortcutLastZ = position.z;
+        Transform contact = null;
+        MineCollectorProcession contactPatrol = null;
+        float contactDistance = float.PositiveInfinity;
+        foreach (var patrol in mineCollectorGroup.Patrols)
+        {
+            if (!patrol.IsOnPatrol || patrol == mineCollectors) continue;
+            RecordMineCollectorEscape(patrol, position, progressingShortcut);
+            var nearby = regularArea && (canOpen || canSuspend || patrol.IsReturning) && patrol.CanMeet(position)
+                ? patrol.MemberInRange(position, mineRules.encounterDistance) : null;
+            if (nearby == null)
+            {
+                patrol.Tick(Time.deltaTime, skipNpcStops: mineLaborInProgress, elapsedSeconds: mine.elapsedSeconds);
+                if ((canOpen || canSuspend) && patrol.CanMeet(position))
+                    nearby = patrol.MemberInRange(position, mineRules.encounterDistance);
+            }
+            if (nearby == null || (!canOpen && !canSuspend)) continue;
+            float distance = (nearby.position - position).sqrMagnitude;
+            if (distance >= contactDistance) continue;
+            contact = nearby;
+            contactPatrol = patrol;
+            contactDistance = distance;
+        }
+        if (contactPatrol != null)
+        {
+            if (canSuspend) SuspendNpcPaymentForCollector();
+            mineCollectors = contactPatrol;
+            ResolveCollectorContact(contact);
+            return true;
+        }
+        if (canOpen)
+            foreach (var patrol in mineCollectorGroup.Patrols)
+            {
+                if (!patrol.IsOnPatrol || patrol.NearestMember(position) is not Transform witnessCollector) continue;
+                if (TryBeginMineWitness(patrol, witnessCollector)) return true;
+            }
+        return false;
+    }
+
     private void FinishMineRest()
     {
         mine.resting = false;
@@ -331,7 +382,7 @@ public partial class DecisionManager
         learningStation?.RecoverStudyAfterRest(skippedToCalendarDay);
         if (skippedToCalendarDay.HasValue)
         {
-            TickTaxSchedule(1f);
+            TickTaxSchedule();
             UpdateChapterSky(1f);
             UpdateChapterCalendar();
         }
@@ -368,7 +419,7 @@ public partial class DecisionManager
         BeginCollectorDialogue(collector);
         if (mineCollectors.IsReturning)
         {
-            mine.shortcutPursuitInvoiceId = null;
+            ActiveTaxPatrol.shortcutPursuitInvoiceId = null;
             ShowMineTax();
             return;
         }
@@ -382,25 +433,28 @@ public partial class DecisionManager
         FinishCollectorDialogue();
     }
 
-    private void TryBeginMineWitness(Transform collector)
+    private bool TryBeginMineWitness(MineCollectorProcession patrol, Transform collector)
     {
-        if (mine.collectorNpcPause <= 0 ||
-            (mine.collectorNpcPauseIndex == mine.collectorNpcWitnessIndex &&
-             mine.collectorNpcActorIndex == mine.collectorNpcWitnessActor) ||
-            mineCollectors.CurrentNpcPosition is not Vector3 point ||
-            Vector3.Distance(playerController.CurrentPosition, point) > mineRules.encounterDistance) return;
+        var state = patrol.State;
+        if (state.collectorNpcPause <= 0 ||
+            (state.collectorNpcPauseIndex == state.collectorNpcWitnessIndex &&
+             state.collectorNpcActorIndex == state.collectorNpcWitnessActor) ||
+            patrol.CurrentNpcPosition is not Vector3 point ||
+            Vector3.Distance(playerController.CurrentPosition, point) > mineRules.encounterDistance) return false;
         var actor = Array.Find(FindObjectsByType<Transform>(FindObjectsInactive.Exclude, FindObjectsSortMode.None),
             target => target.name.StartsWith(MineActorSocketPrefix, StringComparison.Ordinal) &&
                       (target.position - point).sqrMagnitude < .001f);
-        if (actor == null) return;
+        if (actor == null) return false;
 
+        mineCollectors = patrol;
         BeginCollectorDialogue(collector, actor);
         taxWitness = actor;
-        mine.collectorNpcWitnessIndex = mine.collectorNpcPauseIndex;
-        mine.collectorNpcWitnessActor = mine.collectorNpcActorIndex;
+        state.collectorNpcWitnessIndex = state.collectorNpcPauseIndex;
+        state.collectorNpcWitnessActor = state.collectorNpcActorIndex;
         taxWitnessStep = 1;
         presentationController.ShowInteraction("너도 세금을 걷어 간다. 세금을 내라.", "징수원");
         SetYellowInputInteractable(true);
+        return true;
     }
     private void ShowTaxChoices(string message, string[] choices, Action<int> selected)
     {
@@ -448,9 +502,9 @@ public partial class DecisionManager
 
     private void CloseSettledMineTax()
     {
-        mine.collectorChaseClosed = true;
-        mine.taxInvoice = null;
-        mine.shortcutPursuitInvoiceId = null;
+        ActiveTaxPatrol.collectorChaseClosed = true;
+        ActiveTaxPatrol.taxInvoice = null;
+        ActiveTaxPatrol.shortcutPursuitInvoiceId = null;
         mine.taxArrears?.Clear();
     }
 
@@ -464,7 +518,8 @@ public partial class DecisionManager
         journeyBoardInput?.SetChoiceCount(0);
         presentationController.ExitChoice();
         collectingTax = false;
-        mineCollectors.RestoreDialoguePositions();
+        mineCollectors?.RestoreDialoguePositions();
+        mineCollectors = null;
         mineView.Hide(); currentState = beforeTax;
         if (currentState == StoryState.MovingToEncounter && !mine.resting) playerController.ResumeMovement();
         SetYellowInputInteractable(currentState == StoryState.Exploring || currentState == StoryState.ShowingStory || currentState == StoryState.WaitingForChoice);
@@ -529,8 +584,6 @@ public partial class DecisionManager
         }
         else BeginWalkStep();
     }
-    private void LateUpdate() => mineCollectors?.SetVisible(mine != null && mineCollectors.IsVisible);
-
     private void BeginInsufficientPaymentDuel(Dialogue card)
     {
         if (mine == null || duelMiniGame == null) return;

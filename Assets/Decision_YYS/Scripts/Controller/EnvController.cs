@@ -32,11 +32,13 @@ public class EnvController : MonoBehaviour
         public string roomSourceGroundId;
     }
 
-    private sealed class RegisteredTerrain
+    internal sealed class RegisteredTerrain
     {
         public TerrainData Data;
         public TerrainPlaceRegistry Registry;
         public float EndZ;
+        public int FirstChunk;
+        public int ChunkCount;
     }
 
     [FormerlySerializedAs("terrain")]
@@ -68,6 +70,11 @@ public class EnvController : MonoBehaviour
     private readonly TerrainBuilder terrainBuilder = new TerrainBuilder();
     internal System.Collections.Generic.IReadOnlyList<TerrainBuilder.FacilityMarker> FacilityMarkers => terrainBuilder.FacilityMarkers;
     internal IEnumerable<List<TerrainBuilder.MapPoint>> LoadedMapPoints => terrainBuilder.LoadedMapPoints;
+    internal bool TryGetCurrentMapBounds(out Rect bounds) =>
+        terrainBuilder.TryGetMapBounds(terrainStreamingController?.CurrentChunkIndex ?? -1, out bounds);
+    internal RegisteredTerrain MineCollectorTerrain =>
+        registeredTerrains.TryGetValue(MineAuthoredStory.Episode + "/Terrain", out var terrain) ? terrain : null;
+    internal bool IsTerrainChunkLoaded(int index) => terrainBuilder.IsChunkLoaded(index);
     private readonly Dictionary<string, RegisteredTerrain> registeredTerrains =
         new Dictionary<string, RegisteredTerrain>();
 
@@ -171,7 +178,9 @@ public class EnvController : MonoBehaviour
         {
             Data = terrainData,
             Registry = registry,
-            EndZ = segmentEndZ
+            EndZ = segmentEndZ,
+            FirstChunk = nextGlobalChunkIndex,
+            ChunkCount = chunkCount
         });
 
         nextGlobalChunkIndex += chunkCount;

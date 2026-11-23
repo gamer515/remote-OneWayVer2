@@ -4,33 +4,36 @@ using UnityEngine;
 
 public partial class DecisionManager
 {
-    private void RecordMineCollectorEscape(MineCollectorProcession procession, Vector3 position)
+    private void ResetShortcutPursuits()
     {
-        bool advancingInShortcut = packShortcutWalking && position.z > shortcutLastZ;
-        if (packShortcutWalking) shortcutLastZ = position.z;
+        if (mine?.collectorPatrols == null) return;
+        foreach (var state in mine.collectorPatrols) state.shortcutPursuitInvoiceId = null;
+    }
+
+    private void RecordMineCollectorEscape(MineCollectorProcession procession, Vector3 position, bool advancingInShortcut)
+    {
+        var state = procession.State;
         bool shortcutEscape = false;
-        if (advancingInShortcut && procession.IsReturning && !mine.collectorChaseClosed && mine.HasTaxInvoice)
+        if (advancingInShortcut && procession.IsReturning && !state.collectorChaseClosed && state.HasTaxInvoice)
         {
             bool inLane = Mathf.Abs(position.x - shortcutLaneX) < .6f &&
                 position.z >= shortcutLaneStartZ - .05f && position.z <= shortcutLaneEndZ + .05f;
             if (inLane)
             {
-                string id = mine.taxInvoice.EnsureId();
+                string id = state.taxInvoice.EnsureId();
                 float reach = mineRules.encounterDistance;
-                if (procession.IsBesidePursuers(position, reach)) mine.shortcutPursuitInvoiceId = id;
-                shortcutEscape = procession.IsAtEscapeBoundary(position.z) ||
-                    (mine.shortcutPursuitInvoiceId == id && procession.IsAheadOfPursuers(position, reach));
+                if (procession.IsBesidePursuers(position, reach)) state.shortcutPursuitInvoiceId = id;
+                shortcutEscape = state.shortcutPursuitInvoiceId == id && procession.IsAheadOfPursuers(position, reach);
             }
         }
-        if (!procession.RecordPlayerEscape(position.z, shortcutEscape)) return;
-        if (shortcutEscape) CarryMissedMineTax();
-        mine.shortcutPursuitInvoiceId = null;
+        if (!procession.RecordPlayerEscape(shortcutEscape)) return;
+        CarryMissedMineTax(state.taxInvoice);
+        state.shortcutPursuitInvoiceId = null;
         SaveGuideCheckpoint();
     }
 
-    private void CarryMissedMineTax()
+    private void CarryMissedMineTax(MineTaxInvoice invoice)
     {
-        var invoice = mine.taxInvoice;
         if (invoice == null || taxRules == null) return;
         string id = invoice.EnsureId();
         var arrears = mine.taxArrears ??= new List<MineTaxArrear>();

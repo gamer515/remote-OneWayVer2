@@ -609,6 +609,29 @@ unity command run_script --caller plugin --skill unity-cli --file AgentScripts/K
 <p>2026-11-24 · <a href="../Assets/MainMenu/MainMenuSceneScript/MainMenuController.cs">MainMenuController.cs</a>에서 메뉴가 열리거나 포커스를 되찾을 때 커서를 표시하고 잠금을 푼다. 메뉴에 있는 동안 늦게 잠금이나 숨김이 적용돼도 같은 프레임 끝에 복구한다.</p>
 <p>Unity 컴파일 오류 0건. 격리 저장으로 실제 MainMenuScene을 재생하고 강제로 숨기고 잠근 커서가 Esc 없이 복구되는 것을 확인했다. 버튼 위치의 UI 레이캐스트와 모의 클릭으로 갱도 진입을 확인했고, 기존 씬 전환 서비스로 메뉴에 돌아온 뒤에도 커서가 표시되고 잠기지 않았다. 물리 마우스와 Windows 일반 빌드는 이번 검증에 포함하지 않았다. <a href="../Builds/MenuCursorReview/Verification.log">Play 검증 로그</a></p>
 </section>
+<hr><section id="minimap-chunk-bounds">
+<h2>미니맵 카메라 청크 경계 제한</h2>
+<p>2026-11-24 · 기준 커밋 <code>721ad42e</code>. 오른쪽 미니맵은 씬에 설정된 약 23° 기울기를 사용한다. 카메라 시야가 청크 끝 너머로 나가지 않도록 지면 투영을 기준으로 제한한다.</p>
+<table><tr><th>단계</th><th>확인 방법</th></tr>
+<tr><td>청크 경계와 카메라 보정</td><td>일반 청크 입구와 끝, 다음 청크로 들어가는 순간, 보스 청크 끝에서 카메라 시야의 바닥 투영을 실제 경계와 대조한다.</td></tr>
+<tr><td>표식과 화면 확인</td><td>720p와 1080p에서 표식의 화면 좌표를 렌더 텍스처에 표시된 좌표와 대조하고 보스 청크 끝 화면을 남긴다.</td></tr></table>
+<p><a href="../Assets/Decision_YYS/Scripts/GameSystem/Terrain/TerrainBuilder.cs">TerrainBuilder.cs</a>에서 생성된 바닥 메시의 월드 경계와 청크 구간을 교차시켜 미니맵용 영역을 저장하고 청크 회수 시 제거한다. <a href="../Assets/Decision_YYS/Scripts/GameSystem/Terrain/TerrainStreamingController.cs">TerrainStreamingController.cs</a>, <a href="../Assets/Decision_YYS/Scripts/Controller/EnvController.cs">EnvController.cs</a>, <a href="../Assets/Decision_YYS/Scripts/GameSystem/DecisionManager.cs">DecisionManager.cs</a>의 기존 지형 연결로 현재 청크를 전달한다. <a href="../Assets/Decision_YYS/Scripts/Controller/RoadViewCameraController.cs">RoadViewCameraController.cs</a>는 렌더 텍스처 비율과 원래 카메라 각도로 화면의 두 축을 지면에 투영한다. 이 투영 범위가 청크 안에 들어오도록 확대와 이동 범위를 정한다. 절두체 앞쪽에서 바닥이나 벽이 잘리는 것을 막기 위해 카메라를 시선과 평행하게 배치한다. 표식은 기존 카메라 투영을 사용한다.</p>
+<p>Unity Play의 격리 저장에서 1280×720과 1920×1080으로 일반 청크 입구·끝, 청크 전환, 보스 청크 끝을 확인했다. 화면 네 모서리의 지면 교점이 각 청크에 포함됐고 카메라 각도는 23°였다. 일반 청크 입구의 플레이어 표식을 화면에 유지하도록 전방 오프셋의 상한도 보정했다. 플레이어·상점·장소·길가 NPC 표식은 두 해상도에서 렌더 텍스처의 투영 좌표와 0.5px 미만으로 일치했다. 보스 청크의 직교 반높이는 약 9.77로 줄어 지면 기준 50유닛 범위를 표시한다. Windows 일반 빌드와 수동 플레이는 검증하지 않았다. <a href="../Builds/MapBoundsReview/AngledBossMinimap-detail.png">기존 각도로 본 보스 청크 끝</a> · <a href="../Builds/MapBoundsReview/AngledPlay.log">좌표 검증 로그</a></p>
+<p>임시 검증기 <code>Builds/MapBoundsReview/ReviewAngledMapBounds.cs</code>와 격리 저장은 Git에서 제외했고 정리 대기 상태다.</p>
+</section>
+<hr><section id="mine-daily-collector-patrols">
+<h2>갱도 3분 하루와 일일 징수원</h2>
+<p>2026-11-24 · 기준 <code>721ad42e</code>. 낮은 완전한 낮 75초와 일몰 15초, 밤은 완전한 밤 75초와 새벽 15초다. 기존 기본값 300초로 저장된 날짜와 진행 비율은 180초 기준으로 환산한다. 적용 데이터는 <a href="../Assets/StreamingAssets/ContentAuthoring/Rules.xlsx">Rules.xlsx</a>와 <a href="../Assets/Decision_YYS/Resources/Chapters/Chapter_01/Rules.json">Rules.json</a>이다.</p>
+<table><tr><th>단계</th><th>확인 방법</th></tr>
+<tr><td>달력·학습</td><td>90초 밤 시작, 180초 날짜 변경, 전환 조도와 학습량 초기화를 확인한다.</td></tr>
+<tr><td>등장·추격</td><td>일반 청크 경계를 오가고, 현재 청크에 자리가 없을 때 다음 청크의 예약을 확인한다. 보스 입구에서 추격을 멈추고 일반 청크로 돌아온다.</td></tr>
+<tr><td>이어하기</td><td>격리 저장의 미납 고지서와 정산 완료 상태를 메인 메뉴에서 다시 불러온다.</td></tr></table>
+<p><a href="../Assets/Decision_YYS/Scripts/GameSystem/MineChapterRules.cs">MineChapterRules.cs</a>, <a href="../Assets/Decision_YYS/Scripts/GameSystem/DecisionManager.MineChapter.cs">DecisionManager.MineChapter.cs</a>, <a href="../Assets/Decision_YYS/Scripts/GameSystem/DecisionManager.Taxes.cs">DecisionManager.Taxes.cs</a>에서 날짜별 징수원 상태와 고지서, 생성 예약을 기존 체크포인트에 저장한다. 현재 및 다음 일반 청크의 입구나 시설 옆 후보 중 25유닛 이상 앞의 가장 가까운 지점을 사용한다. <a href="../Assets/Decision_YYS/Scripts/Controller/EnvController.cs">EnvController.cs</a>와 <a href="../Assets/Decision_YYS/Scripts/GameSystem/Terrain/TerrainBuilder.cs">TerrainBuilder.cs</a>에서 등록된 일반 갱도와 청크 로드 상태를 읽는다. <a href="../Assets/Decision_YYS/Scripts/GameSystem/MineCollectorProcession.cs">MineCollectorProcession.cs</a>는 청크와 별도로 이동하며 보스 입구 1.5유닛 밖에서 대기한다. <a href="../Assets/Decision_YYS/Scripts/Controller/Ui/JourneyMapMarkers.cs">JourneyMapMarkers.cs</a>는 무리별 색으로 표식을 표시하고 끝난 무리의 표식을 회수한다.</p>
+<p><a href="../Assets/Decision_YYS/Scripts/GameSystem/DecisionManager.DayCycle.cs">DecisionManager.DayCycle.cs</a>에서 달력의 90초 단위 낮·밤을 표시한다. <a href="../Assets/Decision_YYS/Scripts/GameSystem/DecisionManager.TaxArrears.cs">DecisionManager.TaxArrears.cs</a>, <a href="../Assets/Decision_YYS/Scripts/GameSystem/DecisionManager.Encounters.cs">DecisionManager.Encounters.cs</a>와 <a href="../Assets/Decision_YYS/Scripts/GameSystem/DecisionManager.StoryPack.Shortcut.cs">DecisionManager.StoryPack.Shortcut.cs</a>에서 샛길로 실제 지나친 추격자별로 이월 여부를 판단한다. 기준세와 일반세의 기존 정산·회수 경로를 사용한다.</p>
+<p>Unity 6000.3.12f1 Play에서 격리 저장으로 징수원 추격이 첫 경계의 Z 178.3에서 189.1까지 이동하는 것을 확인했다. 둘째 청크에 다른 색과 새 고지서로 한 번 등장했고, 다음 청크가 미로드된 경우 예약과 고지서 ID를 먼저 저장한 뒤 로드 시 한 번 생성했다. 보스 구역에서 날짜가 바뀌어도 새 무리가 나오지 않았으며, 이미 추격 중인 징수원은 입구 바깥에서 대기하고 일반 청크로 돌아왔을 때 같은 고지서를 열었다.</p>
+<p>기존 정산 콜백을 두 번 호출해 한 번만 차감되는지 확인했다. Play 종료 후 이어하기에서 두 미납 무리와 각 위치·고지서 ID가 복원됐고 완료된 고지서는 다시 열리지 않았다. 이전 300초 설정의 단일 징수원 저장에서도 날짜·기존 위치·고지서 ID가 이전됐다. 샛길 위치를 재현해 실제 추격자를 앞질렀을 때만 기존 25% 올림 벌금으로 한 번 이월되는 것을 확인했다. 낮·밤 보간, 날짜 및 학습량은 게임 시계를 경계값으로 이동해 검증했다. Windows 일반 빌드, 보드의 물리 코인 조작과 회수 애니메이션은 이번 검증에 포함하지 않았다. <a href="../Builds/DailyCollectorReview/Play.log">Play 검증 로그</a></p>
+<p>임시 검증 스크립트 <code>Builds/DailyCollectorReview/ReviewDailyCollectors.cs</code>와 격리 저장은 Git에서 제외했고 정리 대기 상태다.</p>
+</section>
 </body></html>
 
 

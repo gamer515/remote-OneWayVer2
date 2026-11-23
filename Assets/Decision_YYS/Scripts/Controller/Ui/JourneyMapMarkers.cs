@@ -20,11 +20,14 @@ public sealed class JourneyMapMarkers : MonoBehaviour
     private readonly Dictionary<Transform, MapSymbolGraphic> worldMarkers = new();
     private readonly HashSet<Transform> loadedTargets = new();
     private readonly List<Transform> removedTargets = new();
+    private readonly HashSet<string> liveCollectorMarkers = new();
+    private readonly List<string> removedCollectorMarkers = new();
     private Player player;
     private EnvController environment;
     private TextMeshProUGUI nextShopText;
     private bool collectorNear;
     private bool collectorReturning;
+    private MineCollectorProcession warningPatrol;
     private float cloudStart = float.NegativeInfinity;
     private void LateUpdate()
     {
@@ -83,42 +86,60 @@ public sealed class JourneyMapMarkers : MonoBehaviour
 
     private void UpdateCollectors()
     {
-        bool visible = collectors != null && collectors.Count > 0 && collectors.Members[0].gameObject.activeInHierarchy;
-        warningText.gameObject.SetActive(visible);
-        if (!visible)
+        liveCollectorMarkers.Clear();
+        float nearest = float.PositiveInfinity;
+        MineCollectorProcession nearestPatrol = null;
+        if (collectors != null)
+            foreach (var patrol in collectors.Patrols)
+            {
+                if (!patrol.IsVisible) continue;
+                foreach (var member in patrol.Members)
+                {
+                    string id = "collector:" + member.GetInstanceID();
+                    liveCollectorMarkers.Add(id);
+                    Position(id, member.position, patrol.PatrolColor, MapSymbolGraphic.Symbol.Collector);
+                    float distance = player != null ? Vector3.Distance(member.position, player.transform.position) : 0f;
+                    if (distance >= nearest) continue;
+                    nearest = distance;
+                    nearestPatrol = patrol;
+                }
+            }
+        removedCollectorMarkers.Clear();
+        foreach (var marker in markers)
+            if (marker.Key.StartsWith("collector:") && !liveCollectorMarkers.Contains(marker.Key))
+                removedCollectorMarkers.Add(marker.Key);
+        foreach (string id in removedCollectorMarkers)
+        {
+            Destroy(markers[id].gameObject);
+            markers.Remove(id);
+        }
+
+        warningText.gameObject.SetActive(nearestPatrol != null);
+        if (nearestPatrol == null)
         {
             collectorNear = false;
+            warningPatrol = null;
             cloudStart = float.NegativeInfinity;
             warning.SetCollectorWarning(0f, false, Vector2.zero, 0f);
             warning.gameObject.SetActive(false);
-            foreach (var marker in markers)
-                if (marker.Key.StartsWith("collector:") && marker.Value.gameObject.activeSelf)
-                    marker.Value.gameObject.SetActive(false);
             return;
         }
 
-        float nearest = float.PositiveInfinity;
-        foreach (var member in collectors.Members)
-        {
-            Position("collector:" + member.GetInstanceID(), member.position, new Color(1,.25f,.35f),
-                MapSymbolGraphic.Symbol.Collector);
-            if (player != null) nearest = Mathf.Min(nearest, Vector3.Distance(member.position, player.transform.position));
-        }
-
-        UpdateCollectorCloud(nearest);
-        string phase = collectors.Finished ? "징수원 대기" : collectors.IsReturning ? "세금 추격 ↑" : "시민 분류 검사 ↓";
+        UpdateCollectorCloud(nearestPatrol, nearest);
+        string phase = nearestPatrol.IsReturning ? "세금 추격 ↑" : "시민 분류 검사 ↓";
         warningText.text = float.IsFinite(nearest) ? $"{phase} / {nearest:F0}u" : phase;
     }
 
-    private void UpdateCollectorCloud(float nearest)
+    private void UpdateCollectorCloud(MineCollectorProcession patrol, float nearest)
     {
-        Vector3 front = mapCamera.WorldToViewportPoint(collectors.Members[0].position);
+        Vector3 front = mapCamera.WorldToViewportPoint(patrol.Members[0].position);
         bool frontVisible = front.z > 0f && front.x > 0f && front.x < 1f && front.y > 0f && front.y < 1f;
-        bool returning = collectors.IsReturning;
-        bool near = collectors.IsOnPatrol && frontVisible && nearest <= ApproachDistance + (collectorNear ? 2f : 0f);
+        bool returning = patrol.IsReturning;
+        bool near = frontVisible && nearest <= ApproachDistance + (collectorNear ? 2f : 0f);
         float now = Time.unscaledTime;
-        if (near && (!collectorNear || returning != collectorReturning))
+        if (near && (!collectorNear || returning != collectorReturning || patrol != warningPatrol))
             cloudStart = now;
+        warningPatrol = patrol;
         collectorNear = near;
         collectorReturning = returning;
 

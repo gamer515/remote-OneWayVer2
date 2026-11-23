@@ -290,7 +290,8 @@ public partial class DecisionManager : MonoBehaviour
             chapterIndex == 0 && !startData.SavedPlayerPosition.HasValue;
         roadViewCameraController.Initialize(
             startData.Player.transform,
-            useInitialCameraPosition);
+            useInitialCameraPosition,
+            envController);
 
         if (loadedProgress.interactionPhase == SaveManager.CoastEndingPhase)
         {

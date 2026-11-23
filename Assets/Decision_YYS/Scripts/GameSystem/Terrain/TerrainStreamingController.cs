@@ -11,6 +11,7 @@ public sealed class TerrainStreamingController
     private readonly float terrainOriginZ;
     private readonly int loadRadius;
     private int currentChunkIndex = int.MinValue;
+    internal int CurrentChunkIndex => currentChunkIndex;
     private readonly System.Collections.Generic.List<float> chunkStarts = new System.Collections.Generic.List<float>();
 
     public void RegisterSegment(float originZ, float length, int count)

@@ -165,7 +165,7 @@ public partial class DecisionManager
 
     private void ReturnFromShortcutOffer(string notice = null)
     {
-        if (mine != null) mine.shortcutPursuitInvoiceId = null;
+        ResetShortcutPursuits();
         Authored.storyPackShortcutSide = 0;
         ShowPackLines(null, PackRoot);
         uiController.SetStoryNotice(notice);
@@ -249,7 +249,7 @@ public partial class DecisionManager
         }
         else
         {
-            if (mine != null) mine.shortcutPursuitInvoiceId = null;
+            ResetShortcutPursuits();
             Authored.storyPackShortcutSide = 0;
             if (IsPackMain)
             {
