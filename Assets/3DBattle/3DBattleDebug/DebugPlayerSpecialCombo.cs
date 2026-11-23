@@ -5,11 +5,17 @@ namespace OneWay.Battle3D
     [DisallowMultipleComponent]
     public sealed class DebugPlayerSpecialCombo : MonoBehaviour
     {
-        [Header("Gauge (no UI)")]
+        [Header("Energy")]
         [Tooltip("Testing mode: the effective gauge stays full, even after a special combo.")]
         public bool alwaysFullGauge = true;
         [Min(1)] public float maxGauge = 100;
         [Min(0)] public float currentGauge = 100;
+        [Range(0, 100), Tooltip("Energy at battle start, as a percentage of maximum.")]
+        public float startingEnergyPercent = 50;
+        [Range(1, 100), Tooltip("Paid once when the special combo's first dash begins.")]
+        public float specialCostPercent = 50;
+        [Range(0, 100)] public float attackHitEnergyPercent = 5;
+        [Range(0, 100)] public float parryEnergyPercent = 25;
         [Header("After the fourth normal attack")]
         [Min(.01f), Tooltip("Hold recognition time. A click never advances normal attacks automatically.")]
         public float holdRecognitionSeconds = .2f;
@@ -47,11 +53,21 @@ namespace OneWay.Battle3D
 
         public float Gauge => alwaysFullGauge ? Mathf.Max(1, maxGauge) : Mathf.Clamp(currentGauge, 0, Mathf.Max(1,maxGauge));
         public float Gauge01 => Gauge / Mathf.Max(1,maxGauge);
-        public bool Ready => Gauge >= Mathf.Max(1,maxGauge) - .001f;
+        public float SpecialCost => Mathf.Max(1, maxGauge) * Mathf.Clamp(specialCostPercent, 1, 100) / 100f;
+        public bool Ready => Gauge + .00001f >= SpecialCost;
+        void Awake() => ResetGauge();
+        public void ResetGauge() => currentGauge = Mathf.Max(1, maxGauge) * (alwaysFullGauge ? 1 : Mathf.Clamp01(startingEnergyPercent / 100f));
+        public void ChargeFromAttackHit() => AddPercent(attackHitEnergyPercent);
+        public void ChargeFromParry() => AddPercent(parryEnergyPercent);
+        void AddPercent(float percent)
+        {
+            if (!isActiveAndEnabled || alwaysFullGauge || GetComponent<BattlePlayerHealth>()?.IsAlive == false) return;
+            currentGauge = Mathf.Min(Mathf.Max(1, maxGauge), Gauge + Mathf.Max(1, maxGauge) * Mathf.Clamp01(percent / 100f));
+        }
         public bool TryConsume()
         {
             if (!Ready) return false;
-            if (!alwaysFullGauge) currentGauge = 0;
+            if (!alwaysFullGauge) currentGauge = Mathf.Max(0, Gauge - SpecialCost);
             return true;
         }
         void OnValidate()

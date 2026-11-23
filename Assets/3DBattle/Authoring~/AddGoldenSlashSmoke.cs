@@ -1,7 +1,7 @@
 using System;using UnityEngine;using UnityEditor;
 public static class AddGoldenSlashSmoke{
 public static string Run(){if(Application.isPlaying)throw new Exception("Edit mode required");const string dir="Assets/3DBattle/Boss2/";
-var mat=new Material(AssetDatabase.LoadAssetAtPath<Material>("Assets/3DBattle/Effects/Dust/QuarryDust.mat"));mat.name="B2 Golden Smoke";mat.SetColor("_BaseColor",new Color(2.8f,1.25f,.16f,1));AssetDatabase.CreateAsset(mat,dir+"B2GoldenSmoke.mat");
+var mat=new Material(BattleCharacterAssetPaths.Load<Material>("Assets/3DBattle/Effects/Dust/QuarryDust.mat"));mat.name="B2 Golden Smoke";mat.SetColor("_BaseColor",new Color(2.8f,1.25f,.16f,1));AssetDatabase.CreateAsset(mat,dir+"B2GoldenSmoke.mat");
 var root=PrefabUtility.LoadPrefabContents(dir+"B2WhiteSlash.prefab");
 try{if(root.transform.Find("Golden Smoke")!=null)throw new Exception("Smoke already exists");var go=new GameObject("Golden Smoke");go.transform.SetParent(root.transform,false);var ps=go.AddComponent<ParticleSystem>();ps.Stop(true,ParticleSystemStopBehavior.StopEmittingAndClear);
 var main=ps.main;main.duration=3;main.loop=true;main.playOnAwake=true;main.simulationSpace=ParticleSystemSimulationSpace.World;main.scalingMode=ParticleSystemScalingMode.Hierarchy;main.startLifetime=new ParticleSystem.MinMaxCurve(.6f,.95f);main.startSize=new ParticleSystem.MinMaxCurve(.10f,.23f);main.startSpeed=new ParticleSystem.MinMaxCurve(.015f,.045f);main.startRotation=new ParticleSystem.MinMaxCurve(0,Mathf.PI*2);main.startColor=Color.white;main.maxParticles=350;main.cullingMode=ParticleSystemCullingMode.AlwaysSimulate;

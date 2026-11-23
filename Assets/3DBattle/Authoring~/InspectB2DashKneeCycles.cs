@@ -9,11 +9,11 @@ public static class InspectB2DashKneeCycles
  public static object Run()
  {
   const string folder="Assets/3DBattle/Boss2/BossAnim/Approach/";
-  var g=UnityEngine.Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(folder+"B2_ApproachDash_Preview.prefab"));
+  var g=UnityEngine.Object.Instantiate(BattleCharacterAssetPaths.Load<GameObject>(folder+"B2_ApproachDash_Preview.prefab"));
   g.transform.SetPositionAndRotation(Vector3.zero,Quaternion.identity);g.transform.localScale=Vector3.one;g.GetComponent<Animator>().enabled=false;
   try
   {
-   var clip=AssetDatabase.LoadAssetAtPath<AnimationClip>(folder+"B2_ApproachDash_InPlace.anim");
+   var clip=BattleCharacterAssetPaths.Load<AnimationClip>(folder+"B2_ApproachDash_InPlace.anim");
    var b=g.GetComponentsInChildren<Transform>().ToDictionary(t=>t.name,t=>t);
    var samples=new List<object>();
    for(int f=0;f<=89;f++)

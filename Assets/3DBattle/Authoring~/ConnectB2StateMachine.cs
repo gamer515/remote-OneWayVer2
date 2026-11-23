@@ -9,7 +9,7 @@ using OneWay.Battle3D;
 public static class ConnectB2StateMachine
 {
  const string Folder="Assets/3DBattle/Boss2/BossAnim/StateMachine";
- static AnimationClip Clip(string name)=>AssetDatabase.LoadAssetAtPath<AnimationClip>(Folder+"/"+name+".anim");
+ static AnimationClip Clip(string name)=>BattleCharacterAssetPaths.Load<AnimationClip>(Folder+"/"+name+".anim");
  public static object Run()
  {
   if(Application.isPlaying)throw new Exception("Edit mode required");
@@ -17,10 +17,10 @@ public static class ConnectB2StateMachine
   var animator=boss.animator;var old=(AnimatorController)animator.runtimeAnimatorController;
   string[] attackNames={"PowerSlash","DoubleCombo","WeaponCombo","Skill03"};
   var attackClips=attackNames.ToDictionary(n=>n,n=>(AnimationClip)old.layers[0].stateMachine.states.Single(s=>s.state.name==n).state.motion);
-  string path=Folder+"/B2_Combat.controller";var controller=AssetDatabase.LoadAssetAtPath<AnimatorController>(path);
+  string path=Folder+"/B2_Combat.controller";var controller=BattleCharacterAssetPaths.Load<AnimatorController>(path);
   if(!controller)controller=AnimatorController.CreateAnimatorControllerAtPath(path);
   var sm=controller.layers[0].stateMachine;
-  var clips=new Dictionary<string,AnimationClip>{{"Idle",Clip("B2_Idle_02")},{"Run",Clip("B2_Run")},{"HitReaction",Clip("B2_HitReaction")},{"Dead",Clip("B2_Death")},{"PhaseRecovery",Clip("B2_PhaseRecovery")},{"ApproachDash",AssetDatabase.LoadAssetAtPath<AnimationClip>("Assets/3DBattle/Boss2/BossAnim/Approach/B2_ApproachDash_InPlace.anim")}};
+  var clips=new Dictionary<string,AnimationClip>{{"Idle",Clip("B2_Idle_02")},{"Run",Clip("B2_Run")},{"HitReaction",Clip("B2_HitReaction")},{"Dead",Clip("B2_Death")},{"PhaseRecovery",Clip("B2_PhaseRecovery")},{"ApproachDash",BattleCharacterAssetPaths.Load<AnimationClip>("Assets/3DBattle/Boss2/Runtime/Animations/B2_ApproachDash_InPlace.anim")}};
   foreach(var pair in attackClips)clips[pair.Key]=pair.Value;
   foreach(var pair in clips)
   {
@@ -36,14 +36,14 @@ public static class ConnectB2StateMachine
   Undo.RecordObjects(new UnityEngine.Object[]{boss,animator,combat,hit},"Connect B2 combat states");
   combat.animator=animator;combat.movement=boss.GetComponent<B2AttackStepMovement>();combat.battle=boss.GetComponentInParent<Battle3DSceneController>();
   combat.idleClip=clips["Idle"];combat.runClip=clips["Run"];combat.approachClip=clips["ApproachDash"];combat.hitClip=clips["HitReaction"];combat.phaseClip=clips["PhaseRecovery"];combat.deathClip=clips["Dead"];
-  var travel=AssetDatabase.LoadAssetAtPath<AnimationClip>("Assets/3DBattle/Boss2/BossAnim/Approach/B2_ApproachDash_Travel.anim");
+  var travel=BattleCharacterAssetPaths.Load<AnimationClip>("Assets/3DBattle/Boss2/BossAnim/Approach/B2_ApproachDash_Travel.anim");
   combat.approachDistance=AnimationUtility.GetEditorCurve(travel,EditorCurveBinding.FloatCurve("",typeof(Transform),"m_LocalPosition.z"));
   // Widen the blade's narrow edge to the visible slash, without extending its blade length.
   hit.weapon=blade;hit.localCenter=new Vector3(0,0,.003f);hit.localSize=new Vector3(.006f,.0012f,.013f);hit.enabled=true;
   var patterns=new List<BossWeaponAttackPattern>();
   foreach(var name in attackNames)
   {
-   string p=Folder+"/B2_"+name+".asset";var attack=AssetDatabase.LoadAssetAtPath<BossWeaponAttackPattern>(p);
+   string p=Folder+"/B2_"+name+".asset";var attack=BattleCharacterAssetPaths.Load<BossWeaponAttackPattern>(p);
    if(!attack){attack=ScriptableObject.CreateInstance<BossWeaponAttackPattern>();AssetDatabase.CreateAsset(attack,p);}
    attack.name="B2_"+name;attack.displayName="B2 "+name;attack.clip=clips[name];attack.animationState="Base Layer."+name;
    attack.damage=20;attack.recoverySeconds=0;attack.independentStrikes=true;

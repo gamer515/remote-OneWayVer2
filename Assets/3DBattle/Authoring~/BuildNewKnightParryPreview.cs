@@ -16,7 +16,7 @@ public static class BuildNewKnightParryPreview
   var template=GameObject.Find("Running Knight Preview");var root=UnityEngine.Object.Instantiate(template);root.name=name;Undo.RegisterCreatedObjectUndo(root,"Create shield parry preview");root.transform.SetPositionAndRotation(Vector3.zero,Quaternion.identity);
   var a=root.GetComponentInChildren<Animator>();a.enabled=false;a.runtimeAnimatorController.animationClips[0].SampleAnimation(a.gameObject,0);
   string path="Assets/3DBattle/NewPlayer/Meshy_AI_KnightCharacter_rigge_Sword_Parry_Backward_.fbx";
-  var source=AssetDatabase.LoadAllAssetsAtPath(path).OfType<AnimationClip>().First(c=>!c.name.StartsWith("__preview__"));
+  var source=BattleCharacterAssetPaths.LoadAll(path).OfType<AnimationClip>().First(c=>!c.name.StartsWith("__preview__"));
   var clip=new AnimationClip{name="NewKnight_ShieldParry_Preview",frameRate=60};
   float hold=.35f,blend=.25f,duration=source.length+hold+blend;int frames=Mathf.CeilToInt(duration*60);
   foreach(var binding in AnimationUtility.GetCurveBindings(source))

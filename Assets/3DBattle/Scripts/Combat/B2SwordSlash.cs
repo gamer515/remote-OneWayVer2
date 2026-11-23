@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace OneWay.Battle3D
@@ -34,12 +33,23 @@ namespace OneWay.Battle3D
         public int EmittedCount { get; private set; }
         public float BossHeight => body != null && body.sharedMesh != null
             ? body.sharedMesh.bounds.size.y * Mathf.Abs(body.transform.lossyScale.y) : 1f;
-        readonly List<GameObject> active = new List<GameObject>();
+        BattleEffectPool stationaryPool, flyingPool;
+        GameObject cachedBasisPrefab;
+        Quaternion cachedBasis;
+        Vector3 cachedGripOffset;
         Animator animator;
         bool samplingSkill03, skill03SlashPending, hasBladeSample;
         Vector3 previousBladeDirection, accumulatedSwingNormal;
 
         void Awake() => animator = GetComponent<Animator>();
+        void Start() => PreparePools();
+        void PreparePools()
+        {
+            if (stationarySlashPrefab && (stationaryPool == null || stationaryPool.Prefab != stationarySlashPrefab))
+            { stationaryPool?.Dispose(); stationaryPool = new BattleEffectPool(stationarySlashPrefab, transform, BattleEffectPool.Kind.Particles, 2, 4); }
+            if (slashPrefab && (flyingPool == null || flyingPool.Prefab != slashPrefab))
+            { flyingPool?.Dispose(); flyingPool = new BattleEffectPool(slashPrefab, transform, BattleEffectPool.Kind.FlyingSlash, 4, 8); }
+        }
 
         // Animation events can arrive before the final bone pose is applied.
         // Sample and emit in LateUpdate so the effect uses the visible sword pose.
@@ -82,10 +92,13 @@ namespace OneWay.Battle3D
             EmitSlash(prefab, rotation, radial, true);
         }
 
-        static Quaternion SlashMeshBasis(GameObject prefab)
+        Quaternion SlashMeshBasis(GameObject prefab)
         {
+            if (cachedBasisPrefab == prefab) return cachedBasis;
+            cachedBasisPrefab = prefab; cachedBasis = Quaternion.identity; cachedGripOffset = Vector3.zero;
             var core = prefab.GetComponentInChildren<ParticleSystem>();
             if (core == null) return Quaternion.identity;
+            cachedGripOffset = prefab.transform.InverseTransformPoint(core.transform.position);
             var main = core.main;
             Vector3 angles = main.startRotation3D
                 ? new Vector3(main.startRotationX.constant, main.startRotationY.constant, main.startRotationZ.constant)
@@ -93,8 +106,9 @@ namespace OneWay.Battle3D
             Quaternion meshRotation = Quaternion.Inverse(prefab.transform.rotation) * core.transform.rotation *
                 Quaternion.Euler(angles * Mathf.Rad2Deg);
             // The Golden Slash mesh lies in XY; its curved outer edge faces (-X, +Y).
-            return Quaternion.LookRotation(meshRotation * new Vector3(-1, 1, 0).normalized,
+            cachedBasis = Quaternion.LookRotation(meshRotation * new Vector3(-1, 1, 0).normalized,
                 meshRotation * Vector3.forward);
+            return cachedBasis;
         }
 
         // Called by each authored strike event.
@@ -114,38 +128,32 @@ namespace OneWay.Battle3D
             float scale = BossHeight * heightMultiplier;
             if (alignCoreToGrip)
             {
-                var core = prefab.GetComponentInChildren<ParticleSystem>();
-                if (core != null) origin -= rotation * (prefab.transform.InverseTransformPoint(core.transform.position) * scale);
+                SlashMeshBasis(prefab);
+                origin -= rotation * (cachedGripOffset * scale);
             }
-            var slash = Instantiate(prefab, origin, rotation);
+            PreparePools();
+            var slash = (useStationarySlash ? stationaryPool : flyingPool).Rent(origin, rotation).Effect;
             slash.name = useStationarySlash ? "B2 Stationary Golden Slash" : "B2 Flying Golden Slash";
             slash.transform.localScale = Vector3.one * scale;
-            var trails = slash.GetComponent<B2SlashTrailLayout>();
+            var trails = slash.Trails;
             if (trails != null)
                 trails.ApplyLengths(topTrailLength, upperMiddleTrailLength, centerTrailLength,
                     lowerMiddleTrailLength, bottomTrailLength);
             if (useStationarySlash)
             {
                 float duration = Mathf.Max(.05f, stationaryDuration);
-                foreach (var particles in slash.GetComponentsInChildren<ParticleSystem>())
-                {
-                    var main = particles.main;
-                    main.simulationSpeed = .5f / duration;
-                    particles.Play(false);
-                }
-                Destroy(slash, duration + .05f);
+                slash.Activate(); slash.FitSwing(duration);
+                slash.ReleaseAfter(duration + .05f);
             }
-            else slash.AddComponent<B2SlashFlight>().Initialize(travelDirection, travelSpeed, lifetime, launchDelay);
-            active.RemoveAll(g => g == null);
-            active.Add(slash);
+            else { slash.Activate(); slash.Flight.Initialize(travelDirection, travelSpeed, lifetime, launchDelay); }
             EmittedCount++;
         }
         void OnDisable()
         {
             skill03SlashPending = samplingSkill03 = hasBladeSample = false;
             accumulatedSwingNormal = Vector3.zero;
-            foreach (var g in active) if (g != null) Destroy(g);
-            active.Clear();
+            stationaryPool?.ReleaseAll(); flyingPool?.ReleaseAll();
         }
+        void OnDestroy() { stationaryPool?.Dispose(); flyingPool?.Dispose(); }
     }
 }

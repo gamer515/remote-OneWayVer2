@@ -18,7 +18,7 @@ public static class BuildNewKnightAttackPreviews
   var report=new List<object>();
   for(int i=0;i<paths.Length;i++)
   {
-   var source=AssetDatabase.LoadAllAssetsAtPath(paths[i]).OfType<AnimationClip>().First(c=>!c.name.StartsWith("__preview__"));
+   var source=BattleCharacterAssetPaths.LoadAll(paths[i]).OfType<AnimationClip>().First(c=>!c.name.StartsWith("__preview__"));
    var root=UnityEngine.Object.Instantiate(template,group.transform);root.name=string.Format("Attack {0:00} - {1}",i+1,source.name);root.transform.SetPositionAndRotation(group.transform.position+template.transform.right*(i%3*4f)+template.transform.forward*(i/3*4f),template.transform.rotation);
    var a=root.GetComponentInChildren<Animator>();a.enabled=false;a.runtimeAnimatorController.animationClips[0].SampleAnimation(a.gameObject,0);
    int missing=AnimationUtility.GetCurveBindings(source).Count(b=>a.transform.Find(b.path)==null);if(missing!=0)throw new Exception(source.name+" missing paths: "+missing);

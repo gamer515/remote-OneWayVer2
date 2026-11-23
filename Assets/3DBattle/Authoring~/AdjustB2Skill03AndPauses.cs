@@ -13,7 +13,7 @@ public static class AdjustB2Skill03AndPauses
  static Vector3 Facing(GameObject g)=>Vector3.ProjectOnPlane(Bone(g,"headfront").position-Bone(g,"Head").position,Vector3.up).normalized;
  static AnimationClip SaveClip(AnimationClip clip,string path)
  {
-  var saved=AssetDatabase.LoadAssetAtPath<AnimationClip>(path);
+  var saved=BattleCharacterAssetPaths.Load<AnimationClip>(path);
   if(saved){Undo.RecordObject(saved,"Adjust B2 motion");EditorUtility.CopySerialized(clip,saved);UnityEngine.Object.DestroyImmediate(clip);EditorUtility.SetDirty(saved);return saved;}
   AssetDatabase.CreateAsset(clip,path);return clip;
  }
@@ -30,10 +30,10 @@ public static class AdjustB2Skill03AndPauses
   var skill=sm.states.Single(s=>s.state.name=="Skill03").state;var clip=(AnimationClip)skill.motion;
   if(!AssetDatabase.IsValidFolder(Folder+"Backups"))AssetDatabase.CreateFolder(Folder.TrimEnd('/'),"Backups");
   string backupPath=Folder+"Backups/B2_Skill03_BeforeHorizontalSword.anim";
-  if(!AssetDatabase.LoadAssetAtPath<AnimationClip>(backupPath)&&!AssetDatabase.CopyAsset(AssetDatabase.GetAssetPath(clip),backupPath))throw new Exception("Cannot back up Skill03");
+  if(!BattleCharacterAssetPaths.Load<AnimationClip>(backupPath)&&!AssetDatabase.CopyAsset(AssetDatabase.GetAssetPath(clip),backupPath))throw new Exception("Cannot back up Skill03");
   string controllerBackup=Folder+"Backups/B2_CrispSequence_BeforePauses.controller";
-  if(!AssetDatabase.LoadAssetAtPath<AnimatorController>(controllerBackup)&&!AssetDatabase.CopyAsset(AssetDatabase.GetAssetPath(controller),controllerBackup))throw new Exception("Cannot back up controller");
-  var original=AssetDatabase.LoadAssetAtPath<AnimationClip>(backupPath);var sourceClip=combo.motions.attacks[4].clip;
+  if(!BattleCharacterAssetPaths.Load<AnimatorController>(controllerBackup)&&!AssetDatabase.CopyAsset(AssetDatabase.GetAssetPath(controller),controllerBackup))throw new Exception("Cannot back up controller");
+  var original=BattleCharacterAssetPaths.Load<AnimationClip>(backupPath);var sourceClip=combo.motions.attacks[4].clip;
   int end=Mathf.RoundToInt(original.length*30f);int prefix=Mathf.RoundToInt((original.length-sourceClip.length)*30f);
   float attackEnd=combo.motions.attacks[4].sourceChainFrame;
   var p=UnityEngine.Object.Instantiate(combo.GetComponentInChildren<Animator>().gameObject);var b=UnityEngine.Object.Instantiate(animator.gameObject);

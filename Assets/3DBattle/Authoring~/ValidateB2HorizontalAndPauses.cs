@@ -10,9 +10,9 @@ public static class ValidateB2HorizontalAndPauses
  public static object Run()
  {
   const string folder="Assets/3DBattle/Boss2/BossAnim/Crisp/";
-  var controller=AssetDatabase.LoadAssetAtPath<AnimatorController>(folder+"B2_CrispSequence.controller");
-  var clip=AssetDatabase.LoadAssetAtPath<AnimationClip>(folder+"B2_Skill03_FromPlayer.anim");
-  var backup=AssetDatabase.LoadAssetAtPath<AnimationClip>(folder+"Backups/B2_Skill03_BeforeHorizontalSword.anim");
+  var controller=BattleCharacterAssetPaths.Load<AnimatorController>(folder+"B2_CrispSequence.controller");
+  var clip=BattleCharacterAssetPaths.Load<AnimationClip>(folder+"B2_Skill03_FromPlayer.anim");
+  var backup=BattleCharacterAssetPaths.Load<AnimationClip>(folder+"Backups/B2_Skill03_BeforeHorizontalSword.anim");
   float maxOtherCurveError=0,maxPausePoseError=0,maxPitch=0;
   foreach(var binding in AnimationUtility.GetCurveBindings(backup))
   {
@@ -43,7 +43,7 @@ public static class ValidateB2HorizontalAndPauses
   }
   finally{UnityEngine.Object.DestroyImmediate(pose);}
   if(maxOtherCurveError>.0001f||maxPausePoseError>.0001f||maxPitch>3)throw new Exception("Pose validation failed: "+maxOtherCurveError+", "+maxPausePoseError+", "+maxPitch);
-  var asset=AssetDatabase.LoadAssetAtPath<GameObject>(AssetDatabase.GetAssetPath(PrefabUtility.GetCorrespondingObjectFromSource(sceneAnimator.gameObject)));
+  var asset=BattleCharacterAssetPaths.Load<GameObject>(AssetDatabase.GetAssetPath(PrefabUtility.GetCorrespondingObjectFromSource(sceneAnimator.gameObject)));
   var test=UnityEngine.Object.Instantiate(asset);var order=new List<string>();var seconds=new Dictionary<string,float>();string previous="";float firstSkillUnblendedFrame=-1;
   try
   {

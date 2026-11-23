@@ -20,7 +20,7 @@ public static class InspectB2ApproachRig
    var sword=copy.GetComponentsInChildren<Transform>(true).Single(t=>t.name=="B2 Holy Sword");
    var hand=copy.GetComponentsInChildren<Transform>(true).Single(t=>t.name=="RightHand");
    var source=AssetDatabase.FindAssets("t:Model",new[]{"Assets/3DBattle/Boss2/BossAnim"}).Select(AssetDatabase.GUIDToAssetPath).Single(p=>p.Contains("01a1bf98"));
-   var clip=AssetDatabase.LoadAllAssetsAtPath(source).OfType<AnimationClip>().First(c=>!c.name.StartsWith("__preview__"));
+   var clip=BattleCharacterAssetPaths.LoadAll(source).OfType<AnimationClip>().First(c=>!c.name.StartsWith("__preview__"));
    return Newtonsoft.Json.JsonConvert.SerializeObject(new{source,clip=clip.name,length=clip.length,fps=clip.frameRate,bossScale=boss.transform.lossyScale.ToString(),bones=bones.Select(b=>new{b.name,b.parent,pos=b.pos.ToString("F4"),rot=b.rot.ToString("F2")}),swordMountRotation=(Quaternion.Inverse(hand.rotation)*sword.rotation).eulerAngles.ToString(),swordScale=sword.lossyScale.ToString("F3"),swordBounds=sword.GetComponent<MeshFilter>().sharedMesh.bounds.ToString("F5")});
   }
   finally{UnityEngine.Object.DestroyImmediate(copy);}

@@ -24,13 +24,13 @@ public static class BuildB2CrispMotions
  static float Map(Vector2[] knots,float frame)
  {for(int i=1;i<knots.Length;i++)if(frame<=knots[i].x)return Mathf.Lerp(knots[i-1].y,knots[i].y,Mathf.InverseLerp(knots[i-1].x,knots[i].x,frame));return knots.Last().y;}
  static float EventFrame(Vector2[] knots,float source){for(int i=1;i<knots.Length;i++)if(source<=knots[i].y&&knots[i].y>knots[i-1].y)return Mathf.Lerp(knots[i-1].x,knots[i].x,Mathf.InverseLerp(knots[i-1].y,knots[i].y,source));return knots.Last().x;}
- static void Save(UnityEngine.Object obj,string path){var old=AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(path);if(old){EditorUtility.CopySerialized(obj,old);UnityEngine.Object.DestroyImmediate(obj);}else AssetDatabase.CreateAsset(obj,path);}
+ static void Save(UnityEngine.Object obj,string path){var old=BattleCharacterAssetPaths.Load<UnityEngine.Object>(path);if(old){EditorUtility.CopySerialized(obj,old);UnityEngine.Object.DestroyImmediate(obj);}else AssetDatabase.CreateAsset(obj,path);}
  public static object Run()
  {
   if(Application.isPlaying)throw new Exception("Edit mode required");
   if(!AssetDatabase.IsValidFolder(Folder))AssetDatabase.CreateFolder("Assets/3DBattle/Boss2/BossAnim","Crisp");
   var sceneAnimator=UnityEngine.Object.FindObjectsByType<Animator>(FindObjectsInactive.Include,FindObjectsSortMode.None).Single(a=>a.name.Contains("Heavy_Hammer")&&a.gameObject.activeInHierarchy);
-  var targetAsset=AssetDatabase.LoadAssetAtPath<GameObject>(AssetDatabase.GetAssetPath(PrefabUtility.GetCorrespondingObjectFromSource(sceneAnimator.gameObject)));
+  var targetAsset=BattleCharacterAssetPaths.Load<GameObject>(AssetDatabase.GetAssetPath(PrefabUtility.GetCorrespondingObjectFromSource(sceneAnimator.gameObject)));
   var paths=AssetDatabase.FindAssets("t:Model",new[]{"Assets/3DBattle/Boss2/BossAnim"}).Select(AssetDatabase.GUIDToAssetPath).OrderBy(x=>x).ToArray();
   Vector2[][] maps={new[]{new Vector2(0,0),new Vector2(16,20),new Vector2(19,24),new Vector2(21,24),new Vector2(26,32),new Vector2(29,32),new Vector2(42,65),new Vector2(54,89)},new[]{new Vector2(0,0),new Vector2(9,13),new Vector2(11,13),new Vector2(17,25),new Vector2(19,25),new Vector2(25,31),new Vector2(30,41),new Vector2(32,41),new Vector2(43,60),new Vector2(58,85)},new[]{new Vector2(0,0),new Vector2(9,12),new Vector2(11,12),new Vector2(17,25),new Vector2(20,25),new Vector2(26,35),new Vector2(28,35),new Vector2(34,45),new Vector2(37,45),new Vector2(44,59),new Vector2(46,59),new Vector2(52,72),new Vector2(55,72),new Vector2(69,110)}};
   float[][] strikes={new[]{28f},new[]{20f,35f},new[]{20f,40f,65f}};
@@ -38,7 +38,7 @@ public static class BuildB2CrispMotions
   var reports=new List<object>();
   for(int index=0;index<3;index++)
   {
-   var source=UnityEngine.Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(paths[index]));var target=UnityEngine.Object.Instantiate(targetAsset);
+   var source=UnityEngine.Object.Instantiate(BattleCharacterAssetPaths.Load<GameObject>(paths[index]));var target=UnityEngine.Object.Instantiate(targetAsset);
    try
    {
     foreach(var a in source.GetComponentsInChildren<Animator>())a.enabled=false;foreach(var a in target.GetComponentsInChildren<Animator>())a.enabled=false;
@@ -48,7 +48,7 @@ public static class BuildB2CrispMotions
     // Restore target bone offsets from its actual skin bind matrices, not the imported first animation pose.
     foreach(var t in dst){var rest=targetRest[Canon(t.name)];t.SetPositionAndRotation(rest.GetColumn(3),rest.rotation);}
     var positions=dst.Select(t=>t.localPosition).ToArray();var scales=dst.Select(t=>t.localScale).ToArray();
-    var sourceClip=AssetDatabase.LoadAllAssetsAtPath(paths[index]).OfType<AnimationClip>().First(c=>!c.name.StartsWith("__preview__"));
+    var sourceClip=BattleCharacterAssetPaths.LoadAll(paths[index]).OfType<AnimationClip>().First(c=>!c.name.StartsWith("__preview__"));
     sourceClip.SampleAnimation(source,0);var startHips=src["Hips"].position;
     var hips=dst.Single(t=>t.name=="Hips");var bindHips=(Vector3)targetRest["Hips"].GetColumn(3);
     // Keep every attack facing the same direction and remove unintended floor travel.

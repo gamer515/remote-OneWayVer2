@@ -18,7 +18,7 @@ public static class CompressChargedSlash
   if(EditorApplication.isPlaying)throw new Exception("Stop play first");
   var c=UnityEngine.Object.FindFirstObjectByType<NewPlayerAttackCombo>();var set=c.motions;var m=set.attacks[1];var old=m.clip;
   const string path="Assets/3DBattle/NewPlayer/PlayableAttacks/NewPlayer_Attack02_Compressed.anim";
-  if(AssetDatabase.LoadAssetAtPath<AnimationClip>(path)!=null)throw new Exception("Already compressed");
+  if(BattleCharacterAssetPaths.Load<AnimationClip>(path)!=null)throw new Exception("Already compressed");
   if(Mathf.Abs(m.Frames-94)>.01f)throw new Exception("Unexpected source duration");
   var controller=c.GetComponent<BattlePlayerController>().animator.runtimeAnimatorController as AnimatorController;if(controller==null)throw new Exception("Controller missing");
   System.IO.File.WriteAllText("Assets/3DBattle/Authoring~/AttackSetBeforeChargedCompression.json",EditorJsonUtility.ToJson(set,true));

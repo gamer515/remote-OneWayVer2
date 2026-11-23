@@ -23,7 +23,7 @@ public static class ReplaceB2VanishWithDust
  }
  public static object Inspect()
  {
-  var dust=AssetDatabase.LoadAssetAtPath<GameObject>(Source);
+  var dust=BattleCharacterAssetPaths.Load<GameObject>(Source);
   var p=GameObject.Find(Preview).GetComponent<B2RetreatVanishPreview>();
   return new{scene=p.gameObject.scene.path,position=p.transform.position.ToString(),p.smokeStart,p.smokeEnd,p.hideAt,scale=dust.transform.localScale.ToString(),B1References=UnityEngine.Object.FindObjectsByType<BossJumpMotionDebug>(FindObjectsInactive.Include,FindObjectsSortMode.None).Select(j=>AssetDatabase.GetAssetPath(j.jumpDustPrefab)).ToArray(),systems=dust.GetComponentsInChildren<ParticleSystem>(true).Select(s=>new{s.name,sizeMin=s.main.startSize.constantMin,sizeMax=s.main.startSize.constantMax,speedMin=s.main.startSpeed.constantMin,speedMax=s.main.startSpeed.constantMax,color=s.main.startColor.colorMax.ToString(),material=AssetDatabase.GetAssetPath(s.GetComponent<ParticleSystemRenderer>().sharedMaterial)}).ToArray()};
  }
@@ -76,12 +76,12 @@ public static class ReplaceB2VanishWithDust
   var sceneObject=GameObject.Find(Preview);if(!sceneObject||sceneObject.scene.path!="Assets/Scenes/3DBattleScene.unity")throw new Exception("Preview not found in expected scene");
   string sourceMat="Assets/3DBattle/Effects/Dust/QuarryDust.mat";
   string before=Hash(Source),beforeMat=Hash(sourceMat);
-  var material=AssetDatabase.LoadAssetAtPath<Material>(Folder+"B2_VanishDust_PaleGold.mat");
-  var copy=new Material(AssetDatabase.LoadAssetAtPath<Material>(sourceMat));copy.name="B2 Vanish Dust Yellow Gold";
+  var material=BattleCharacterAssetPaths.Load<Material>(Folder+"B2_VanishDust_PaleGold.mat");
+  var copy=new Material(BattleCharacterAssetPaths.Load<Material>(sourceMat));copy.name="B2 Vanish Dust Yellow Gold";
   copy.SetColor("_BaseColor",new Color(1,.92f,.38f,1));copy.SetColor("_Color",new Color(1,.92f,.38f,1));
   if(material){EditorUtility.CopySerialized(copy,material);UnityEngine.Object.DestroyImmediate(copy);EditorUtility.SetDirty(material);}
   else{material=copy;AssetDatabase.CreateAsset(material,Folder+"B2_VanishDust_PaleGold.mat");}
-  var dust=AssetDatabase.LoadAssetAtPath<GameObject>(Source);
+  var dust=BattleCharacterAssetPaths.Load<GameObject>(Source);
   string path=Folder+"B2_RetreatVanish_Preview.prefab";var prefab=PrefabUtility.LoadPrefabContents(path);
   try{Replace(prefab.GetComponent<B2RetreatVanishPreview>(),dust,material);PrefabUtility.SaveAsPrefabAsset(prefab,path);}
   finally{PrefabUtility.UnloadPrefabContents(prefab);}

@@ -3,9 +3,9 @@ public static class PlaceCathedralAltar{
 static Bounds BoundsOf(GameObject g){var rs=g.GetComponentsInChildren<Renderer>();var b=rs[0].bounds;foreach(var r in rs)b.Encapsulate(r.bounds);return b;}
 static GameObject Model(string token,Transform parent,string name,float widthOrHeight,bool height){
  var path=Directory.GetFiles("Assets/3DBattle/Boss2/Cathedral","*"+token+"*.fbx",SearchOption.AllDirectories).Single().Replace('\\','/');var holder=new GameObject(name);holder.transform.SetParent(parent,false);
- var model=(GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>(path));model.transform.SetParent(holder.transform,false);
+ var model=(GameObject)PrefabUtility.InstantiatePrefab(BattleCharacterAssetPaths.Load<GameObject>(path));model.transform.SetParent(holder.transform,false);
  var b=BoundsOf(holder);holder.transform.localScale*=widthOrHeight/(height?b.size.y:b.size.x);holder.transform.rotation=Quaternion.Euler(0,90,0);
- string matPath="Assets/3DBattle/Boss2/Cathedral/StageAssets/"+name+".mat";var mat=new Material(Shader.Find("Universal Render Pipeline/Lit")){name=name};mat.SetTexture("_BaseMap",AssetDatabase.LoadAssetAtPath<Texture2D>(Path.ChangeExtension(path,".png")));mat.SetColor("_BaseColor",Color.white);mat.SetFloat("_Metallic",.1f);mat.SetFloat("_Smoothness",.35f);AssetDatabase.CreateAsset(mat,matPath);
+ string matPath="Assets/3DBattle/Boss2/Cathedral/StageAssets/"+name+".mat";var mat=new Material(Shader.Find("Universal Render Pipeline/Lit")){name=name};mat.SetTexture("_BaseMap",BattleCharacterAssetPaths.Load<Texture2D>(Path.ChangeExtension(path,".png")));mat.SetColor("_BaseColor",Color.white);mat.SetFloat("_Metallic",.1f);mat.SetFloat("_Smoothness",.35f);AssetDatabase.CreateAsset(mat,matPath);
  foreach(var r in holder.GetComponentsInChildren<Renderer>()){r.sharedMaterial=mat;r.shadowCastingMode=UnityEngine.Rendering.ShadowCastingMode.Off;}
  return holder;
 }

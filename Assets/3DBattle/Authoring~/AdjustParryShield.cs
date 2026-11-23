@@ -30,7 +30,7 @@ public static class AdjustParryShield
  public static object Verify()
  {
   var live=GameObject.Find("New Knight Parry Preview");var root=UnityEngine.Object.Instantiate(live);var a=root.GetComponentInChildren<Animator>();a.enabled=false;
-  var clip=AssetDatabase.LoadAssetAtPath<AnimationClip>(Path);var source=AssetDatabase.LoadAssetAtPath<AnimationClip>("Assets/3DBattle/NewPlayer/Converted/NewKnight_ShieldParry_BeforeArmAdjustment.anim");var hand=Find(root,"LeftHand");var shield=Find(root,"Shield4");float min=90,max=0,lower=100;int changed=0;
+  var clip=BattleCharacterAssetPaths.Load<AnimationClip>(Path);var source=BattleCharacterAssetPaths.Load<AnimationClip>("Assets/3DBattle/NewPlayer/Converted/NewKnight_ShieldParry_BeforeArmAdjustment.anim");var hand=Find(root,"LeftHand");var shield=Find(root,"Shield4");float min=90,max=0,lower=100;int changed=0;
   try{for(int i=0;i<=120;i++){float time=clip.length*i/120;source.SampleAnimation(a.gameObject,time);float y=hand.position.y;clip.SampleAnimation(a.gameObject,time);lower=Mathf.Min(lower,y-hand.position.y);float angle=Mathf.Acos(Mathf.Clamp01(Mathf.Abs(Vector3.Dot(shield.right,Vector3.up))))*Mathf.Rad2Deg;min=Mathf.Min(min,angle);max=Mathf.Max(max,angle);}
    foreach(var b in AnimationUtility.GetCurveBindings(source)){if((b.path.EndsWith("LeftHand")||b.path.EndsWith("LeftLowerArm"))&&b.propertyName.StartsWith("m_LocalRotation"))continue;var before=AnimationUtility.GetEditorCurve(source,b);var after=AnimationUtility.GetEditorCurve(clip,b);for(int i=0;i<40;i++)if(Mathf.Abs(before.Evaluate(clip.length*i/39)-after.Evaluate(clip.length*i/39))>.00001f){changed++;break;}}
    return new{minimumAngle=min,maximumAngle=max,minimumHandLowering=lower,unrelatedCurvesChanged=changed,scale=shield.localScale.ToString(),frames=121};
@@ -39,10 +39,10 @@ public static class AdjustParryShield
  public static object Run()
  {
   if(Application.isPlaying)throw new Exception("Stop play first");
-  var live=GameObject.Find("New Knight Parry Preview");var clip=AssetDatabase.LoadAssetAtPath<AnimationClip>(Path);
+  var live=GameObject.Find("New Knight Parry Preview");var clip=BattleCharacterAssetPaths.Load<AnimationClip>(Path);
   const string backup="Assets/3DBattle/NewPlayer/Converted/NewKnight_ShieldParry_BeforeArmAdjustment.anim";
-  if(AssetDatabase.LoadAssetAtPath<AnimationClip>(backup)==null)AssetDatabase.CopyAsset(Path,backup);
-  var source=AssetDatabase.LoadAssetAtPath<AnimationClip>(backup);var root=UnityEngine.Object.Instantiate(live);root.transform.SetPositionAndRotation(Vector3.zero,Quaternion.identity);
+  if(BattleCharacterAssetPaths.Load<AnimationClip>(backup)==null)AssetDatabase.CopyAsset(Path,backup);
+  var source=BattleCharacterAssetPaths.Load<AnimationClip>(backup);var root=UnityEngine.Object.Instantiate(live);root.transform.SetPositionAndRotation(Vector3.zero,Quaternion.identity);
   var a=root.GetComponentInChildren<Animator>();a.enabled=false;var arm=Find(root,"LeftLowerArm");var hand=Find(root,"LeftHand");var shield=Find(root,"Shield4");var skin=root.GetComponentInChildren<SkinnedMeshRenderer>();var bounds=shield.GetComponent<MeshFilter>().sharedMesh.bounds;
   float best=float.MaxValue,bestAngle=0,bestDrop=0;var results=new List<object>();
   try{

@@ -33,7 +33,7 @@ public static class BuildB2StateMotions
  static Vector3 Pos(Matrix4x4 m)=>m.GetColumn(3);
  static void Save(AnimationClip c,string path)
  {
-  var old=AssetDatabase.LoadAssetAtPath<AnimationClip>(path);
+  var old=BattleCharacterAssetPaths.Load<AnimationClip>(path);
   if(old){EditorUtility.CopySerialized(c,old);EditorUtility.SetDirty(old);UnityEngine.Object.DestroyImmediate(c);}else AssetDatabase.CreateAsset(c,path);
  }
  static void SafeModel(GameObject g)
@@ -93,16 +93,16 @@ public static class BuildB2StateMotions
    var dst=Bones(target);var tr=Rest(target);
    var joints=target.GetComponentsInChildren<Transform>(true).Where(t=>tr.ContainsKey(Canon(t.name))&&t.IsChildOf(dst["Hips"])&&t!=dst["B2 Holy Sword"]&&!t.name.Contains("Sword")).ToArray();
    // Bind-pose matrices are authoritative; imported first animation frames are not bind poses.
-   var grip=AssetDatabase.LoadAssetAtPath<AnimationClip>("Assets/3DBattle/Boss2/BossAnim/Crisp/B2_PowerSlash_Crisp.anim");grip.SampleAnimation(target,0);
+   var grip=BattleCharacterAssetPaths.Load<AnimationClip>("Assets/3DBattle/Boss2/Runtime/Animations/B2_PowerSlash_Crisp.anim");grip.SampleAnimation(target,0);
    var fingers=joints.Where(t=>t.name.StartsWith("Right")&&(t.name.Contains("Thumb")||t.name.Contains("Middle"))).ToDictionary(t=>t,t=>t.localRotation);
    foreach(var t in joints)t.SetPositionAndRotation(Pos(tr[Canon(t.name)]),tr[Canon(t.name)].rotation);
    var restPose=new Pose(joints);
    for(int index=0;index<keys.Length;index++)
    {
-    var path=paths.Single(p=>p.Contains(keys[index]));var srcGo=UnityEngine.Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(path));SafeModel(srcGo);
+    var path=paths.Single(p=>p.Contains(keys[index]));var srcGo=UnityEngine.Object.Instantiate(BattleCharacterAssetPaths.Load<GameObject>(path));SafeModel(srcGo);
     try
     {
-     var src=Bones(srcGo);var sr=Rest(srcGo);var sourceClip=AssetDatabase.LoadAllAssetsAtPath(path).OfType<AnimationClip>().First(c=>!c.name.StartsWith("__preview__"));
+     var src=Bones(srcGo);var sr=Rest(srcGo);var sourceClip=BattleCharacterAssetPaths.LoadAll(path).OfType<AnimationClip>().First(c=>!c.name.StartsWith("__preview__"));
      sourceClip.SampleAnimation(srcGo,index==4?sourceClip.length:0);
      var forward=Vector3.ProjectOnPlane(src["headfront"].position-src["Head"].position,Vector3.up).normalized;
      var heading=forward.sqrMagnitude>.001f?Quaternion.FromToRotation(forward,Vector3.forward):Quaternion.identity;
@@ -127,7 +127,7 @@ public static class BuildB2StateMotions
     }
     finally{UnityEngine.Object.DestroyImmediate(srcGo);}
    }
-   var idle=AssetDatabase.LoadAssetAtPath<AnimationClip>(Folder+"/B2_Idle_02.anim");var axe=AssetDatabase.LoadAssetAtPath<AnimationClip>(Folder+"/B2_Axe_Stance.anim");
+   var idle=BattleCharacterAssetPaths.Load<AnimationClip>(Folder+"/B2_Idle_02.anim");var axe=BattleCharacterAssetPaths.Load<AnimationClip>(Folder+"/B2_Axe_Stance.anim");
    idle.SampleAnimation(target,0);var standing=new Pose(joints);
    axe.SampleAnimation(target,0);var fallen=new Pose(joints);
    axe.SampleAnimation(target,axe.length);var recovered=new Pose(joints);

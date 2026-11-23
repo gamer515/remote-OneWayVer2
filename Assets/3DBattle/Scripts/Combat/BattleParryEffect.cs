@@ -17,9 +17,15 @@ namespace OneWay.Battle3D
         public bool TryParry(float damage)
         {
             if (!CanParry(damage)) return false;
-            GetComponent<NewPlayerLocomotion>()?.OnSuccessfulParry();
-            PlaySuccessEffect();
+            NotifySuccess();
             return true;
+        }
+        // Scripted parry sequences use the same reward without duplicating their own movement.
+        public void NotifySuccess(bool applyKnockback = true)
+        {
+            if (applyKnockback) GetComponent<NewPlayerLocomotion>()?.OnSuccessfulParry();
+            GetComponent<DebugPlayerSpecialCombo>()?.ChargeFromParry();
+            PlaySuccessEffect();
         }
         public void PlaySuccessEffect()
         {

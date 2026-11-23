@@ -8,10 +8,10 @@ public static class ValidateB2ApproachDash
  public static object Run()
  {
   const string folder="Assets/3DBattle/Boss2/BossAnim/Approach/";
-  var clip=AssetDatabase.LoadAssetAtPath<AnimationClip>(folder+"B2_ApproachDash.anim");
-  var inPlace=AssetDatabase.LoadAssetAtPath<AnimationClip>(folder+"B2_ApproachDash_InPlace.anim");
-  var travel=AssetDatabase.LoadAssetAtPath<AnimationClip>(folder+"B2_ApproachDash_Travel.anim");
-  var prefab=AssetDatabase.LoadAssetAtPath<GameObject>(folder+"B2_ApproachDash_Preview.prefab");
+  var clip=BattleCharacterAssetPaths.Load<AnimationClip>(folder+"B2_ApproachDash.anim");
+  var inPlace=BattleCharacterAssetPaths.Load<AnimationClip>(folder+"B2_ApproachDash_InPlace.anim");
+  var travel=BattleCharacterAssetPaths.Load<AnimationClip>(folder+"B2_ApproachDash_Travel.anim");
+  var prefab=BattleCharacterAssetPaths.Load<GameObject>(folder+"B2_ApproachDash_Preview.prefab");
   var model=UnityEngine.Object.Instantiate(prefab);model.transform.SetPositionAndRotation(Vector3.zero,Quaternion.identity);model.transform.localScale=Vector3.one;
   var animator=model.GetComponent<Animator>();animator.enabled=false;
   var collisions=new List<GameObject>();var meshes=new List<Mesh>();

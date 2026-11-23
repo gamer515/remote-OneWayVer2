@@ -19,7 +19,7 @@ public static class ApplyNewPlayerFists
    if(modified.Add(mesh))
    {
     string path=AssetDatabase.GetAssetPath(mesh),backup=path.Replace(".asset","_BeforeRightFist.asset");
-    if(AssetDatabase.LoadAssetAtPath<Mesh>(backup)==null)AssetDatabase.CopyAsset(path,backup);
+    if(BattleCharacterAssetPaths.Load<Mesh>(backup)==null)AssetDatabase.CopyAsset(path,backup);
     changed=NewPlayerRightFist.Apply(skin);EditorUtility.SetDirty(mesh);
     var ws=mesh.boneWeights;var now=mesh.vertices;
     int left=Array.FindIndex(skin.bones,b=>b.name=="LeftHand");

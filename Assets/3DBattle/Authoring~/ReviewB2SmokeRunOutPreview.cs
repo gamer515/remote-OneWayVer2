@@ -12,7 +12,7 @@ public static class ReviewB2SmokeRunOutPreview
  public static object Run()
  {
   var scene=EditorSceneManager.NewPreviewScene();
-  var prefab=AssetDatabase.LoadAssetAtPath<GameObject>("Assets/3DBattle/Boss2/PhasePreview/B2_SmokeRunOut_Preview.prefab");
+  var prefab=BattleCharacterAssetPaths.Load<GameObject>("Assets/3DBattle/Boss2/PhasePreview/B2_SmokeRunOut_Preview.prefab");
   var root=(GameObject)PrefabUtility.InstantiatePrefab(prefab,scene);
   var driver=root.GetComponent<B2SmokeRunOutPreview>();
   var cg=new GameObject("Review camera");UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(cg,scene);

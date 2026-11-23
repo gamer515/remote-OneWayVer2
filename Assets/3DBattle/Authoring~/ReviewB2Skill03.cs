@@ -17,7 +17,7 @@ public static class ReviewB2Skill03
    for(int row=0;row<paths.Length;row++)
    {
     var model=UnityEngine.Object.Instantiate(UnityEngine.Object.FindObjectsByType<Animator>(FindObjectsInactive.Include,FindObjectsSortMode.None).Single(a=>a.name.Contains("Heavy_Hammer")&&a.gameObject.activeInHierarchy).gameObject);
-    model.transform.SetPositionAndRotation(Vector3.zero,Quaternion.identity);model.transform.localScale=Vector3.one;var clip=AssetDatabase.LoadAssetAtPath<AnimationClip>(paths[row]);
+    model.transform.SetPositionAndRotation(Vector3.zero,Quaternion.identity);model.transform.localScale=Vector3.one;var clip=BattleCharacterAssetPaths.Load<AnimationClip>(paths[row]);
     var baked=new List<Mesh>();
     try
     {

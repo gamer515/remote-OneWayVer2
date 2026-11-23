@@ -18,7 +18,7 @@ public static class BuildB2SmokeRunOutPreview
   var boss=GameObject.Find("Battle3D/Stages/B2/Boss").GetComponent<B2CombatController>();
   var originalController=boss.animator.runtimeAnimatorController;
   var sourceCloud=GameObject.Find("B2 - Smoke Flying Slash Preview").GetComponent<B2SmokeSlashPreview>();
-  var sourceModel=AssetDatabase.LoadAssetAtPath<GameObject>(Folder+"B2_RetreatVanish_Preview.prefab").GetComponent<B2RetreatVanishPreview>().model;
+  var sourceModel=BattleCharacterAssetPaths.Load<GameObject>(Folder+"B2_RetreatVanish_Preview.prefab").GetComponent<B2RetreatVanishPreview>().model;
   var root=new GameObject(Name);
   var driver=root.AddComponent<B2SmokeRunOutPreview>();
   var moving=new GameObject("Run Out Motion");moving.transform.SetParent(root.transform,false);

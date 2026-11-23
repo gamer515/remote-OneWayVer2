@@ -16,7 +16,7 @@ public static class SetupBossPhaseTwo
         var scene = SceneManager.GetActiveScene();
         if (scene.name != "3DBattleDebugScene") throw new Exception("Expected debug scene");
         var boss = UnityEngine.Object.FindFirstObjectByType<BattleBoss>();
-        var source = AssetDatabase.LoadAssetAtPath<BossWeaponAttackPattern>(Folder + "B1_Attack8.asset");
+        var source = BattleCharacterAssetPaths.Load<BossWeaponAttackPattern>(Folder + "B1_Attack8.asset");
         var clip = new AnimationClip { name = "Skill_02_Phase2_TenSpins", frameRate = 30 };
         var bindings = AnimationUtility.GetCurveBindings(source.clip);
         const string hips = "target_character/Hips";
@@ -58,11 +58,11 @@ public static class SetupBossPhaseTwo
             AnimationUtility.SetEditorCurve(clip,binding,curve);
         }
         clip.EnsureQuaternionContinuity();
-        string clipPath="Assets/3DBattle/Boss1/Skill_02_Phase2_TenSpins.anim";
-        var saved=AssetDatabase.LoadAssetAtPath<AnimationClip>(clipPath);
+        string clipPath="Assets/3DBattle/Boss1/Runtime/Animations/Skill_02_Phase2_TenSpins.anim";
+        var saved=BattleCharacterAssetPaths.Load<AnimationClip>(clipPath);
         if(saved==null){AssetDatabase.CreateAsset(clip,clipPath);saved=clip;} else {EditorUtility.CopySerialized(clip,saved);UnityEngine.Object.DestroyImmediate(clip);}
         var settings=AnimationUtility.GetAnimationClipSettings(saved);settings.loopTime=false;AnimationUtility.SetAnimationClipSettings(saved,settings);
-        var attack=AssetDatabase.LoadAssetAtPath<BossWeaponAttackPattern>(Folder+"B1_Phase2_Attack8.asset");
+        var attack=BattleCharacterAssetPaths.Load<BossWeaponAttackPattern>(Folder+"B1_Phase2_Attack8.asset");
         if(attack==null){attack=ScriptableObject.CreateInstance<BossWeaponAttackPattern>();AssetDatabase.CreateAsset(attack,Folder+"B1_Phase2_Attack8.asset");}
         attack.displayName="페이즈 2 진입 전용 · 8번 10회전";
         attack.clip=saved;attack.animationState="Base Layer.Skill_02_Phase2_TenSpins";

@@ -41,6 +41,7 @@ namespace OneWay.Battle3D
             ((IsActive && !InPreparation && SequenceIndex == 3 && jumpGateOpened) || (!IsActive && specialWindowRemaining > 0));
         DebugPlayerSpecialCombo specialRules;
         bool attackHeld, jumpGateOpened, specialInterrupted, pendingNormalPress;
+        bool specialEnergyPending;
         float attackHeldSeconds, specialWindowRemaining;
         bool attackDashPlanned;
         DebugPlayerCombatFeel feel;
@@ -138,6 +139,12 @@ namespace OneWay.Battle3D
         }
         void Begin(NewPlayerAttackSet.Motion motion, bool preparation)
         {
+            // The transition into the special is free. Pay only at the first actual dash.
+            if (!preparation && IsSpecialCombo && SequenceIndex == 4 && specialEnergyPending)
+            {
+                if (SpecialRules == null || !SpecialRules.TryConsume()) { CancelSpecial(); return; }
+                specialEnergyPending = false;
+            }
             // Refresh on the actual Skill 03 start, including the middle of the combo.
             // Queue time and preparation time must not lock in an outdated camera heading.
             if (!preparation && AttackIndex == 4)
@@ -162,7 +169,7 @@ namespace OneWay.Battle3D
         {
             if (!CanEnterSpecial || !attackHeld || attackHeldSeconds + .00001f < SpecialRules.holdRecognitionSeconds ||
                 settlingJump || (locomotion != null && (locomotion.DefenseMode || locomotion.Rolling || locomotion.Parrying || locomotion.KnockedBack))) return false;
-            if (!SpecialRules.TryConsume()) return false;
+            specialEnergyPending = true;
             bool fromJump = IsActive;
             IsActive = IsSpecialCombo = true;
             specialInterrupted = pendingNormalPress = Queued = jumpGateOpened = false;
@@ -491,6 +498,7 @@ namespace OneWay.Battle3D
                 player.boss.TakeDamage(player.normalDamage);
                 if (player.boss.Health < healthBefore)
                 {
+                    SpecialRules?.ChargeFromAttackHit();
                     GetComponent<BattleSwordSlashEffect>()?.PlayHitFlash(player.boss);
                     CombatFeel?.OnHit(AttackIndex);
                 }
@@ -501,6 +509,7 @@ namespace OneWay.Battle3D
         }
         void Finish(bool blendToIdle = false)
         {
+            specialEnergyPending = false;
             IsSpecialCombo = IsHoldingFinisher = FinisherCommitted = false;
             FinisherHoldElapsed = 0;
             specialInterrupted = jumpGateOpened = pendingNormalPress = false;

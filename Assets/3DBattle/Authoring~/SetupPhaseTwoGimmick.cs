@@ -23,7 +23,7 @@ public static class SetupPhaseTwoGimmick
         var gimmick=boss.GetComponent<BossPhaseTwoGimmick>();if(!gimmick)gimmick=Undo.AddComponent<BossPhaseTwoGimmick>(boss.gameObject);
         Undo.RecordObject(gimmick,"Configure phase two parry");Undo.RecordObject(phase,"Debug-only entry attack");
         string path=Folder+"B1_Phase2_ParryAttack.asset";
-        var pattern=AssetDatabase.LoadAssetAtPath<BossWeaponAttackPattern>(path);
+        var pattern=BattleCharacterAssetPaths.Load<BossWeaponAttackPattern>(path);
         if(!pattern){pattern=UnityEngine.Object.Instantiate(phase.entryAttack);AssetDatabase.CreateAsset(pattern,path);}
         phase.entryAttack=pattern;
         var clip=pattern.clip;var bindings=AnimationUtility.GetCurveBindings(clip);
@@ -64,7 +64,7 @@ public static class SetupPhaseTwoGimmick
         }
         finally {UnityEngine.Object.DestroyImmediate(sampleRoot.gameObject);}
         gimmick.guardClip=battle.player.GetComponent<NewPlayerLocomotion>().parryClip;
-        gimmick.hitClip=AssetDatabase.LoadAssetAtPath<AnimationClip>("Assets/3DBattle/NewPlayer/Converted/NewKnight_Hit_Preview.anim");
+        gimmick.hitClip=BattleCharacterAssetPaths.Load<AnimationClip>("Assets/3DBattle/NewPlayer/Runtime/Animations/NewKnight_Hit_Preview.anim");
         var animator=battle.player.animator;
         var missing=AnimationUtility.GetCurveBindings(gimmick.hitClip).Where(b=>b.path!="" && animator.transform.Find(b.path)==null).Select(b=>b.path).Distinct().ToArray();
         if(missing.Length>0)throw new Exception("Hit animation binding mismatch: "+string.Join(",",missing));

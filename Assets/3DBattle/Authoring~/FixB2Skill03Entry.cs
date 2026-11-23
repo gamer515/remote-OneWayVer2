@@ -10,7 +10,7 @@ public static class FixB2Skill03Entry
  public static object Run()
  {
   if(Application.isPlaying)throw new Exception("Edit mode required");
-  var controller=AssetDatabase.LoadAssetAtPath<AnimatorController>("Assets/3DBattle/Boss2/BossAnim/Crisp/B2_CrispSequence.controller");
+  var controller=BattleCharacterAssetPaths.Load<AnimatorController>("Assets/3DBattle/Boss2/BossAnim/Crisp/B2_CrispSequence.controller");
   var state=controller.layers[0].stateMachine.states.Single(s=>s.state.name=="Skill03").state;
   var clip=(AnimationClip)state.motion;
   var combo=UnityEngine.Object.FindObjectsByType<NewPlayerAttackCombo>(FindObjectsInactive.Include,FindObjectsSortMode.None).Single(x=>x.gameObject.activeInHierarchy);

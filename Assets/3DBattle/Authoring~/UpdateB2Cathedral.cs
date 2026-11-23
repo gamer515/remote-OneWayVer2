@@ -11,7 +11,7 @@ public static class UpdateB2Cathedral{
  for(int i=0;i<5;i++){
   var path=Directory.GetFiles(folder,"*-"+(i+1)+"-removebg-preview.png").Single().Replace('\\','/');
   AssetDatabase.ImportAsset(path);var importer=(TextureImporter)AssetImporter.GetAtPath(path);importer.alphaSource=TextureImporterAlphaSource.FromInput;importer.alphaIsTransparency=true;importer.wrapMode=TextureWrapMode.Clamp;importer.SaveAndReimport();
-  var mat=AssetDatabase.LoadAssetAtPath<Material>(folder+"StageAssets/"+mats[i]+".mat");Undo.RecordObject(mat,"Use background removed cathedral texture");mat.SetTexture("_BaseMap",AssetDatabase.LoadAssetAtPath<Texture2D>(path));mat.SetFloat("_AlphaClip",1);mat.SetFloat("_Cutoff",.3f);mat.EnableKeyword("_ALPHATEST_ON");mat.SetOverrideTag("RenderType","TransparentCutout");mat.renderQueue=2450;EditorUtility.SetDirty(mat);
+  var mat=BattleCharacterAssetPaths.Load<Material>(folder+"StageAssets/"+mats[i]+".mat");Undo.RecordObject(mat,"Use background removed cathedral texture");mat.SetTexture("_BaseMap",BattleCharacterAssetPaths.Load<Texture2D>(path));mat.SetFloat("_AlphaClip",1);mat.SetFloat("_Cutoff",.3f);mat.EnableKeyword("_ALPHATEST_ON");mat.SetOverrideTag("RenderType","TransparentCutout");mat.renderQueue=2450;EditorUtility.SetDirty(mat);
  }
  for(int i=0;i<walls.Length;i++)if(Vector3.Distance(before[i].center,walls[i].bounds.center)>.001f||Vector3.Distance(before[i].size,walls[i].bounds.size)>.001f)throw new Exception("Boundary changed");
  AssetDatabase.SaveAssets();EditorSceneManager.MarkSceneDirty(b2.gameObject.scene);EditorSceneManager.SaveScene(b2.gameObject.scene);Selection.activeGameObject=root.gameObject;

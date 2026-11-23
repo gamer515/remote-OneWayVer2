@@ -17,10 +17,10 @@ public static class BuildNewKnightHitPreview
   var a=root.GetComponentInChildren<Animator>();a.enabled=false;a.runtimeAnimatorController.animationClips[0].SampleAnimation(a.gameObject,0);
   var skin=root.GetComponentInChildren<SkinnedMeshRenderer>();var bones=skin.bones.OrderBy(t=>AnimationUtility.CalculateTransformPath(t,a.transform).Split('/').Length).ToArray();
   string path="Assets/3DBattle/NewPlayer/Meshy_AI_KnightCharacter_rigge_hit.fbx";
-  var source=UnityEngine.Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(path));source.hideFlags=HideFlags.HideAndDontSave;source.transform.SetPositionAndRotation(Vector3.zero,Quaternion.identity);source.transform.localScale=a.transform.localScale;
+  var source=UnityEngine.Object.Instantiate(BattleCharacterAssetPaths.Load<GameObject>(path));source.hideFlags=HideFlags.HideAndDontSave;source.transform.SetPositionAndRotation(Vector3.zero,Quaternion.identity);source.transform.localScale=a.transform.localScale;
   try
   {
-   var ss=source.GetComponentInChildren<SkinnedMeshRenderer>();var sc=AssetDatabase.LoadAllAssetsAtPath(path).OfType<AnimationClip>().First(c=>!c.name.StartsWith("__preview__"));
+   var ss=source.GetComponentInChildren<SkinnedMeshRenderer>();var sc=BattleCharacterAssetPaths.LoadAll(path).OfType<AnimationClip>().First(c=>!c.name.StartsWith("__preview__"));
    var sb=ss.bones.Select((b,i)=>new{b.name,m=ss.transform.localToWorldMatrix*ss.sharedMesh.bindposes[i].inverse}).ToDictionary(x=>x.name,x=>x.m);
    var db=skin.bones.Select((b,i)=>new{b.name,m=skin.transform.localToWorldMatrix*skin.sharedMesh.bindposes[i].inverse}).ToDictionary(x=>x.name,x=>x.m);var sourceBones=ss.bones.ToDictionary(b=>b.name);
    var map=new Dictionary<string,string>{{"Hips","Hips"},{"Chest","Spine02"},{"UpperChest","Spine"},{"Neck","neck"},{"Head","Head"}};

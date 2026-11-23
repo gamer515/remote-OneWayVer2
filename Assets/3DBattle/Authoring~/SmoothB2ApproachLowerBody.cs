@@ -57,12 +57,12 @@ public static class SmoothB2ApproachLowerBody
   var windows=Resources.FindObjectsOfTypeAll<EditorWindow>().Where(w=>w.GetType().Name=="AnimationWindow").ToArray();
   foreach(var window in windows)window.Close();
   if(!AssetDatabase.IsValidFolder(Folder+"Backups"))AssetDatabase.CreateFolder(Folder.TrimEnd('/'),"Backups");
-  if(!AssetDatabase.LoadAssetAtPath<AnimationClip>(Backup))AssetDatabase.CopyAsset(Folder+"B2_ApproachDash.anim",Backup);
-  if(!AssetDatabase.LoadAssetAtPath<AnimationClip>(Folder+"Backups/B2_ApproachDash_InPlace_BeforeLowerBodySmoothing.anim"))AssetDatabase.CopyAsset(Folder+"B2_ApproachDash_InPlace.anim",Folder+"Backups/B2_ApproachDash_InPlace_BeforeLowerBodySmoothing.anim");
-  var original=AssetDatabase.LoadAssetAtPath<AnimationClip>(Backup);
-  var full=AssetDatabase.LoadAssetAtPath<AnimationClip>(Folder+"B2_ApproachDash.anim");
-  var inPlace=AssetDatabase.LoadAssetAtPath<AnimationClip>(Folder+"B2_ApproachDash_InPlace.anim");
-  var go=UnityEngine.Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(Folder+"B2_ApproachDash_Preview.prefab"));
+  if(!BattleCharacterAssetPaths.Load<AnimationClip>(Backup))AssetDatabase.CopyAsset(Folder+"B2_ApproachDash.anim",Backup);
+  if(!BattleCharacterAssetPaths.Load<AnimationClip>(Folder+"Backups/B2_ApproachDash_InPlace_BeforeLowerBodySmoothing.anim"))AssetDatabase.CopyAsset(Folder+"B2_ApproachDash_InPlace.anim",Folder+"Backups/B2_ApproachDash_InPlace_BeforeLowerBodySmoothing.anim");
+  var original=BattleCharacterAssetPaths.Load<AnimationClip>(Backup);
+  var full=BattleCharacterAssetPaths.Load<AnimationClip>(Folder+"B2_ApproachDash.anim");
+  var inPlace=BattleCharacterAssetPaths.Load<AnimationClip>(Folder+"B2_ApproachDash_InPlace.anim");
+  var go=UnityEngine.Object.Instantiate(BattleCharacterAssetPaths.Load<GameObject>(Folder+"B2_ApproachDash_Preview.prefab"));
   go.transform.SetPositionAndRotation(Vector3.zero,Quaternion.identity);go.transform.localScale=Vector3.one;go.GetComponent<Animator>().enabled=false;
   try
   {

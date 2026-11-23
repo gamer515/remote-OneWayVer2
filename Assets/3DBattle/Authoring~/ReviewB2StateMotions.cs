@@ -9,9 +9,9 @@ public static class ReviewB2StateMotions
  const string Folder="Assets/3DBattle/Boss2/BossAnim/Approach/";
  public static object Run()
  {
-  var prefab=AssetDatabase.LoadAssetAtPath<GameObject>(Folder+"B2_ApproachDash_Preview.prefab");
+  var prefab=BattleCharacterAssetPaths.Load<GameObject>(Folder+"B2_ApproachDash_Preview.prefab");
   var model=UnityEngine.Object.Instantiate(prefab);model.transform.SetPositionAndRotation(Vector3.zero,Quaternion.identity);model.transform.localScale=Vector3.one;model.GetComponent<Animator>().enabled=false;
-  var clip=AssetDatabase.LoadAssetAtPath<AnimationClip>(Folder+"B2_ApproachDash_InPlace.anim");
+  var clip=BattleCharacterAssetPaths.Load<AnimationClip>(Folder+"B2_ApproachDash_InPlace.anim");
   var cameraGo=new GameObject("B2 approach review camera");var camera=cameraGo.AddComponent<Camera>();camera.clearFlags=CameraClearFlags.SolidColor;camera.backgroundColor=new Color(.15f,.16f,.19f);camera.orthographic=true;camera.orthographicSize=1.55f;camera.nearClipPlane=.01f;camera.farClipPlane=100;camera.cullingMask=1<<30;
   int width=330,height=360;
   var atlas=new Texture2D(width*6,height*5,TextureFormat.RGB24,false);var tile=new Texture2D(width,height,TextureFormat.RGB24,false);var rt=new RenderTexture(width,height,24);camera.targetTexture=rt;var old=RenderTexture.active;
@@ -31,7 +31,7 @@ public static class ReviewB2StateMotions
    var frames=new List<object>();var renderFrames=new[]{0f,10f,20f,30f,55f,89f};
    for(int row=0;row<5;row++)for(int col=0;col<6;col++)
    {
-    var stateNames=new[]{"B2_PhaseRecovery","B2_Death","B2_HitReaction","B2_Run","B2_Idle_02"}; clip=AssetDatabase.LoadAssetAtPath<AnimationClip>("Assets/3DBattle/Boss2/BossAnim/StateMachine/"+stateNames[row]+".anim"); float sampleTime=row==0 ? new[]{0f,12f,24f,80f,165f,230f}[col]/30f : col/5f*clip.length; clip.SampleAnimation(model,sampleTime);
+    var stateNames=new[]{"B2_PhaseRecovery","B2_Death","B2_HitReaction","B2_Run","B2_Idle_02"}; clip=BattleCharacterAssetPaths.Load<AnimationClip>("Assets/3DBattle/Boss2/BossAnim/StateMachine/"+stateNames[row]+".anim"); float sampleTime=row==0 ? new[]{0f,12f,24f,80f,165f,230f}[col]/30f : col/5f*clip.length; clip.SampleAnimation(model,sampleTime);
     for(int i=0;i<skins.Length;i++)skins[i].BakeMesh(outputs[i]);
     var focus=new Vector3(0,.83f,-.20f);
     camera.transform.position=focus+(new Vector3(4.2f,2.0f,6.0f));camera.transform.LookAt(focus);

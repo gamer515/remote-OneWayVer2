@@ -12,8 +12,8 @@ public static class TrimAttackPreviews
   foreach(var item in new[]{new {name="Skill_03",frame=33,root="Attack 05 - Skill_03",correct=true},new{name="Weapon_Combo_1",frame=44,root="Attack 06 - Weapon_Combo_1",correct=false}})
   {
    string sourcePath=AssetDatabase.FindAssets("t:Model",new[]{"Assets/3DBattle/NewPlayer/Attack"}).Select(AssetDatabase.GUIDToAssetPath).Single(p=>p.EndsWith("_"+item.name+".fbx"));
-   var source=AssetDatabase.LoadAllAssetsAtPath(sourcePath).OfType<AnimationClip>().First(c=>!c.name.StartsWith("__preview__"));
-   var clip=AssetDatabase.LoadAssetAtPath<AnimationClip>("Assets/3DBattle/NewPlayer/Attack/Previews/NewKnight_"+item.name+"_Preview.anim");
+   var source=BattleCharacterAssetPaths.LoadAll(sourcePath).OfType<AnimationClip>().First(c=>!c.name.StartsWith("__preview__"));
+   var clip=BattleCharacterAssetPaths.Load<AnimationClip>("Assets/3DBattle/NewPlayer/Attack/Previews/NewKnight_"+item.name+"_Preview.anim");
    var live=GameObject.Find(item.root);var clone=UnityEngine.Object.Instantiate(live);clone.transform.SetPositionAndRotation(Vector3.zero,Quaternion.identity);var a=clone.GetComponentInChildren<Animator>();a.enabled=false;
    try{
     float start=item.frame/source.frameRate,duration=source.length-start;Undo.RecordObject(clip,"Trim attack preview");clip.ClearCurves();

@@ -14,7 +14,7 @@ namespace OneWay.Battle3D
             properties = new MaterialPropertyBlock();
             Apply(0);
         }
-        public void Initialize(float seconds) { duration = Mathf.Max(.01f, seconds); }
+        public void Initialize(float seconds) { duration = Mathf.Max(.01f, seconds); age = 0; Apply(0); }
         void Update()
         {
             age += Time.deltaTime;

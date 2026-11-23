@@ -65,22 +65,44 @@ namespace OneWay.Battle3D
         Renderer[] renderers;
         bool[] rendererEnabled;
         Material[][] originals, transparent;
+        struct FadeColour
+        {
+            public bool hasBase, hasColor;
+            public Color baseColor, color;
+        }
+        static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
+        static readonly int ColorId = Shader.PropertyToID("_Color");
+        FadeColour[][] fadeColours;
+        bool[] usingTransparent;
+        float lastOpacity = -1;
         bool savedSwordEnabled, captured, collisionsRestored, runSettled;
         Vector3 retreatFrom, retreatTo;
         float phaseTime, nextShotTime;
         uint sequence;
         int contactSequence;
+        BattleEffectPool smokePool, projectilePool;
+
+        void Start() => PreparePools();
+        void PreparePools()
+        {
+            if (smokePrefab && (smokePool == null || smokePool.Prefab != smokePrefab.gameObject))
+            { smokePool?.Dispose(); smokePool = new BattleEffectPool(smokePrefab.gameObject, transform, BattleEffectPool.Kind.Smoke, 8, 8); }
+            if (slashPrefab && (projectilePool == null || projectilePool.Prefab != slashPrefab))
+            { projectilePool?.Dispose(); projectilePool = new BattleEffectPool(slashPrefab, transform, BattleEffectPool.Kind.PhaseSlash, 8, 12); }
+        }
 
         public bool Begin(BattlePlayerHealth player)
         {
             if (IsRunning || !player || !player.IsAlive || !smokePrefab || !slashPrefab || emissionPoints.Length != 8 || !arenaCenter) return false;
             foreach (var point in emissionPoints) if (!point) return false;
             Cancel(); boss = GetComponent<BattleBoss>(); target = player;
+            PreparePools();
             if (!combat) combat = GetComponent<B2CombatController>();
             colliders = GetComponentsInChildren<Collider>(); collisionEnabled = new bool[colliders.Length];
             for (int i = 0; i < colliders.Length; i++) { collisionEnabled[i] = colliders[i].enabled; colliders[i].enabled = false; }
             renderers = combat.animator.GetComponentsInChildren<Renderer>(); rendererEnabled = new bool[renderers.Length];
             originals = new Material[renderers.Length][]; transparent = new Material[renderers.Length][];
+            fadeColours = new FadeColour[renderers.Length][]; usingTransparent = new bool[renderers.Length]; lastOpacity = -1;
             for (int i = 0; i < renderers.Length; i++) { rendererEnabled[i] = renderers[i].enabled; originals[i] = renderers[i].sharedMaterials; }
             savedSwordEnabled = swordEffect && swordEffect.enabled; if (swordEffect) swordEffect.enabled = false;
             captured = true; collisionsRestored = runSettled = false; sequence++; contactSequence = 0;
@@ -104,7 +126,7 @@ namespace OneWay.Battle3D
             for (int i = projectiles.Count - 1; i >= 0; i--)
             {
                 var shot = projectiles[i]; if (shot) shot.Advance(delta);
-                if (!shot || shot.Complete) { if (shot) Destroy(shot.gameObject); projectiles.RemoveAt(i); }
+                if (!shot || shot.Complete) { if (shot) shot.GetComponent<BattlePooledEffect>().Release(); projectiles.RemoveAt(i); }
             }
             float smokeAlpha = CurrentPhase == Phase.ClearingSmoke ? 1 - Mathf.Clamp01(phaseTime / smokeFadeSeconds) : 1;
             if (CurrentPhase == Phase.RunOut) smokeAlpha = 1 - Mathf.Clamp01((phaseTime - .6f) / 1.2f);
@@ -166,11 +188,11 @@ namespace OneWay.Battle3D
             int location = Random.Range(0, emissionPoints.Length);
             SlashStyle style = NextSlashStyle();
             Vector3 origin = emissionPoints[location].position + Vector3.up * GetSlashHeight(style);
-            var go = Instantiate(slashPrefab, origin, Quaternion.identity); go.name = "B2 Phase Slash " + (ShotsEmitted + 1);
+            var go = projectilePool.Rent(origin, Quaternion.identity).Effect; go.name = "B2 Phase Slash " + (ShotsEmitted + 1);
             go.transform.localScale = Vector3.one * slashScale;
-            var layout = go.GetComponent<B2SlashTrailLayout>();
+            var layout = go.Trails;
             if (layout && swordEffect) layout.ApplyLengths(swordEffect.topTrailLength, swordEffect.upperMiddleTrailLength, swordEffect.centerTrailLength, swordEffect.lowerMiddleTrailLength, swordEffect.bottomTrailLength);
-            var shot = go.AddComponent<B2PhaseSlashProjectile>(); shot.Initialize(this, target, ShotsEmitted, style);
+            go.Activate(); var shot = go.Projectile; shot.Initialize(this, target, ShotsEmitted, style);
             projectiles.Add(shot); ShotLocations.Add(location); ShotStyles.Add(style); ShotsEmitted++;
         }
 
@@ -229,10 +251,11 @@ namespace OneWay.Battle3D
         }
         void SpawnCloud(Vector3 position, Quaternion rotation)
         {
-            var cloud = Instantiate(smokePrefab, position, rotation); cloud.name = "B2 Phase Gold Smoke"; clouds.Add(cloud);
+            var effect = smokePool.Rent(position, rotation).Effect;
+            effect.name = "B2 Phase Gold Smoke"; effect.Activate(false); clouds.Add(effect.Cloud);
         }
         void Change(Phase next) { CurrentPhase = next; phaseTime = 0; }
-        void ClearClouds() { foreach (var cloud in clouds) if (cloud) Destroy(cloud.gameObject); clouds.Clear(); }
+        void ClearClouds() { smokePool?.ReleaseAll(); clouds.Clear(); }
         void RestoreCollisions()
         {
             if (!captured) return;
@@ -243,14 +266,22 @@ namespace OneWay.Battle3D
         {
             if (!captured) return;
             alpha = Mathf.Clamp01(alpha);
+            if (alpha == lastOpacity) return;
+            lastOpacity = alpha;
             for (int i = 0; i < renderers.Length; i++)
             {
                 var renderer = renderers[i]; if (!renderer) continue;
-                renderer.enabled = rendererEnabled[i] && alpha > 0;
-                if (alpha <= 0 || alpha >= 1) { renderer.sharedMaterials = originals[i]; continue; }
+                bool visible = rendererEnabled[i] && alpha > 0;
+                if (renderer.enabled != visible) renderer.enabled = visible;
+                if (alpha <= 0 || alpha >= 1)
+                {
+                    if (usingTransparent[i]) { renderer.sharedMaterials = originals[i]; usingTransparent[i] = false; }
+                    continue;
+                }
                 if (transparent[i] == null)
                 {
                     transparent[i] = new Material[originals[i].Length];
+                    fadeColours[i] = new FadeColour[originals[i].Length];
                     for (int j = 0; j < originals[i].Length; j++)
                     {
                         var source = originals[i][j]; if (!source) continue;
@@ -260,26 +291,35 @@ namespace OneWay.Battle3D
                         mat.EnableKeyword("_SURFACE_TYPE_TRANSPARENT"); mat.DisableKeyword("_ALPHAPREMULTIPLY_ON");
                         mat.SetOverrideTag("RenderType", "Transparent"); mat.renderQueue = 2990; mat.SetShaderPassEnabled("ShadowCaster", false);
                         transparent[i][j] = mat;
+                        fadeColours[i][j] = new FadeColour {
+                            hasBase = source.HasProperty(BaseColorId), hasColor = source.HasProperty(ColorId),
+                            baseColor = source.HasProperty(BaseColorId) ? source.GetColor(BaseColorId) : Color.white,
+                            color = source.HasProperty(ColorId) ? source.GetColor(ColorId) : Color.white
+                        };
                     }
                 }
                 for (int j = 0; j < transparent[i].Length; j++) if (transparent[i][j])
-                    foreach (var property in new[] { "_BaseColor", "_Color" }) if (transparent[i][j].HasProperty(property))
-                    { var color = originals[i][j].GetColor(property); color.a *= alpha; transparent[i][j].SetColor(property, color); }
-                renderer.sharedMaterials = transparent[i];
+                {
+                    var cached = fadeColours[i][j];
+                    if (cached.hasBase) { var c = cached.baseColor; c.a *= alpha; transparent[i][j].SetColor(BaseColorId, c); }
+                    if (cached.hasColor) { var c = cached.color; c.a *= alpha; transparent[i][j].SetColor(ColorId, c); }
+                }
+                if (!usingTransparent[i]) { renderer.sharedMaterials = transparent[i]; usingTransparent[i] = true; }
             }
         }
         void Release()
         {
-            ClearClouds(); foreach (var shot in projectiles) if (shot) Destroy(shot.gameObject); projectiles.Clear();
+            ClearClouds(); projectilePool?.ReleaseAll(); projectiles.Clear();
             if (!captured) return;
             SetOpacity(1); RestoreCollisions();
             if (swordEffect) swordEffect.enabled = savedSwordEnabled;
             foreach (var materials in transparent) if (materials != null) foreach (var material in materials) if (material) Destroy(material);
             captured = false; originals = transparent = null;
+            fadeColours = null; usingTransparent = null; lastOpacity = -1;
         }
         void Finish() { Release(); Completed = true; Change(Phase.Finished); }
         public void Cancel() { Release(); Completed = false; Change(Phase.Inactive); }
         void OnDisable() => Cancel();
-        void OnDestroy() => Cancel();
+        void OnDestroy() { Cancel(); smokePool?.Dispose(); projectilePool?.Dispose(); }
     }
 }

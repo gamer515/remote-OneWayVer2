@@ -39,7 +39,7 @@ public static class BuildNewPlayerMotionPreviews
    var oldAnimator=root.GetComponentInChildren<Animator>();var controller=oldAnimator.runtimeAnimatorController;var output=controller.animationClips[0];
    UnityEngine.Object.DestroyImmediate(oldAnimator.gameObject);root.transform.SetPositionAndRotation(Vector3.zero,Quaternion.identity);
    string path="Assets/3DBattle/NewPlayer/Meshy_AI_KnightCharacter_rigge_"+(roll?"Run_Jump_and_Roll":"Female_Crouch_Pick_Fr")+".fbx";
-   var model=UnityEngine.Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(path),root.transform);model.name="Knight Model";model.transform.localScale=Vector3.one*(2f/1.4f);
+   var model=UnityEngine.Object.Instantiate(BattleCharacterAssetPaths.Load<GameObject>(path),root.transform);model.name="Knight Model";model.transform.localScale=Vector3.one*(2f/1.4f);
    var animator=model.GetComponent<Animator>();if(animator==null)animator=model.AddComponent<Animator>();animator.enabled=false;
    var skin=model.GetComponentInChildren<SkinnedMeshRenderer>();var mesh=UnityEngine.Object.Instantiate(skin.sharedMesh);var verts=mesh.vertices;var tris=mesh.triangles;var groups=new[]{new List<int>(),new List<int>(),new List<int>()};
    for(int i=0;i<tris.Length;i+=3){var cs=new[]{verts[tris[i]],verts[tris[i+1]],verts[tris[i+2]]};var c=(cs[0]+cs[1]+cs[2])/3;int mat=Mathf.Abs(c.x)>.605f?2:c.y<.19f?1:0;if(mat==0&&cs.Min(v=>Mathf.Abs(v.x))>.58f&&cs.Max(v=>Mathf.Abs(v.x))>.61f)mat=2;if(mat==1&&cs.Max(v=>v.y)>.205f)mat=0;groups[mat].AddRange(new[]{tris[i],tris[i+1],tris[i+2]});}
@@ -54,7 +54,7 @@ public static class BuildNewPlayerMotionPreviews
     var offset=newBind.inverse*oldBind*Matrix4x4.TRS(gear.transform.localPosition,gear.transform.localRotation,gear.transform.localScale);
     var copy=UnityEngine.Object.Instantiate(gear.gameObject,bone);copy.name=gearName;copy.transform.localPosition=offset.GetColumn(3);copy.transform.localRotation=offset.rotation;copy.transform.localScale=offset.lossyScale;
    }
-   var sourceClip=AssetDatabase.LoadAllAssetsAtPath(path).OfType<AnimationClip>().First(c=>!c.name.StartsWith("__preview__"));
+   var sourceClip=BattleCharacterAssetPaths.LoadAll(path).OfType<AnimationClip>().First(c=>!c.name.StartsWith("__preview__"));
    var bones=model.GetComponentsInChildren<Transform>().Where(t=>t!=model.transform&&!t.GetComponent<Renderer>()&&t.name!="Helmet3"&&t.name!="ShoulderPads").ToArray();
    float begin=roll?56/30f:0;float motionDuration=(roll?sourceClip.length:2f)-begin;float duration=motionDuration+(roll?.5f:1f);int frames=Mathf.CeilToInt(duration*60);var poses=new List<Pose>();
    var hip=skin.bones.First(b=>b.name=="Hips");sourceClip.SampleAnimation(model,begin);Vector3 first=hip.position;
@@ -123,8 +123,8 @@ public static class BuildNewPlayerMotionPreviews
    var skin=model.GetComponentInChildren<SkinnedMeshRenderer>();var bones=skin.bones.OrderBy(t=>AnimationUtility.CalculateTransformPath(t,model.transform).Split('/').Length).ToArray();
    var idle=Capture(bones);
    string sourcePath="Assets/3DBattle/NewPlayer/Meshy_AI_KnightCharacter_rigge_"+(roll?"Run_Jump_and_Roll":"Female_Crouch_Pick_Fr")+".fbx";
-   var src=UnityEngine.Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(sourcePath));src.hideFlags=HideFlags.HideAndDontSave;
-   var sourceSkin=src.GetComponentInChildren<SkinnedMeshRenderer>();var sourceClip=AssetDatabase.LoadAllAssetsAtPath(sourcePath).OfType<AnimationClip>().First(c=>!c.name.StartsWith("__preview__"));
+   var src=UnityEngine.Object.Instantiate(BattleCharacterAssetPaths.Load<GameObject>(sourcePath));src.hideFlags=HideFlags.HideAndDontSave;
+   var sourceSkin=src.GetComponentInChildren<SkinnedMeshRenderer>();var sourceClip=BattleCharacterAssetPaths.LoadAll(sourcePath).OfType<AnimationClip>().First(c=>!c.name.StartsWith("__preview__"));
    var srcBones=sourceSkin.bones.ToDictionary(b=>b.name);
    var srcBind=sourceSkin.bones.Select((b,i)=>new{b.name,m=sourceSkin.transform.localToWorldMatrix*sourceSkin.sharedMesh.bindposes[i].inverse}).ToDictionary(x=>x.name,x=>x.m);
    var dstBind=skin.bones.Select((b,i)=>new{b.name,m=skin.transform.localToWorldMatrix*skin.sharedMesh.bindposes[i].inverse}).ToDictionary(x=>x.name,x=>x.m);

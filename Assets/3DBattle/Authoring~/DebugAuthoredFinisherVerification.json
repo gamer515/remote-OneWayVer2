@@ -2,23 +2,53 @@
   "pose": {
     "passed": true,
     "holdSeconds": 0.8,
-    "stablePoseSeconds": 0.65,
-    "windupSeconds": 0.15,
-    "bodyTurnDegrees": 88.88841,
-    "chestTwistDegrees": -20.8949089,
-    "pulledBodyTurnDegrees": 98.89567,
-    "pulledChestTwistDegrees": -21.37308,
-    "leftLeadDuringPreparation": 0.6437988,
+    "stablePoseSeconds": 0.8,
+    "bodyTurnDegrees": 98.89671,
+    "chestTwistDegrees": -15.006587,
+    "uprightSwordAngle": 13.4010468,
+    "pulledBodyTurnDegrees": 98.89671,
+    "pulledChestTwistDegrees": -15.006587,
+    "leftLeadDuringPreparation": 0.643859863,
     "leadingLeftStep": 0.159729,
     "leadingStepAlongStance": 0.219211787,
-    "passingRightFootLift": 0.125289366,
-    "rightLeadAtImpact": 0.840026855,
-    "pelvisDrop": 0.199881673,
-    "swordPullDegrees": 31.92578,
-    "maxFootDrift": 0.0001227742,
-    "commitPositionChange": 0.000105996332,
-    "commitRotationChange": 0.0,
+    "pullbackReferenceError": 0.0,
+    "passingRightFootLift": 0.125161693,
+    "rightLeadAtImpact": 0.8399658,
+    "pelvisDrop": 0.0,
+    "swordPullDegrees": 0.0,
+    "maxFootDrift": 0.0,
+    "commitPositionChange": 0.0006093934,
+    "commitRotationChange": 0.403482378,
     "productionOptOutPreserved": true
+  },
+  "frame29": {
+    "passed": true,
+    "guardRotationError": 0.0,
+    "guardPositionError": 0.0,
+    "swordReferenceError": 0.0,
+    "untouchedCurves": 223,
+    "untouchedCurveError": 0.0,
+    "twoHandGripError": 6.172751E-07,
+    "requestedWrist": "(0.3503, 1.4306, -0.2382)",
+    "fittedWrist": "(0.3186, 1.4332, -0.3173)",
+    "swordDirection": "(-0.6612, 0.6763, 0.3247)",
+    "changedRotationCurves": 24,
+    "lowerBodyAndBoneLengthsPreserved": true,
+    "connectsToExistingCutAtFrame": 31
+  },
+  "referenceMatch": {
+    "passed": true,
+    "upperRotationError": 0.0,
+    "lowerRotationError": 0.0,
+    "upperPositionError": 0.0,
+    "lowerPositionError": 0.0,
+    "holdPositionDrift": 0.0,
+    "holdRotationDrift": 0.0,
+    "holdSeconds": 0.8,
+    "changed": [
+      "Assets/3DBattle/3DBattleDebug/Finisher/DebugFinisher_RetreatRush.anim",
+      "Assets/3DBattle/3DBattleDebug/Finisher/DebugFinisher_Preparation.anim"
+    ]
   },
   "timingAndFootworkPreserved": true,
   "combo": {
@@ -92,33 +122,56 @@
       }
     ]
   },
-  "torsoBefore": {
-    "torsoVertexCount": 73,
-    "results": [
+  "helmetClearance": {
+    "stages": [
+      {
+        "stage": "settle-into-ready",
+        "maxSwordPenetration": 0.0,
+        "worstSword": 0.0,
+        "maxForearmPenetration": 0.0,
+        "maxArmPenetration": 0.131848812,
+        "worstArm": 0.4225,
+        "arm": "LeftUpper"
+      },
       {
         "stage": "ready-pull",
-        "maxLeftForearmPenetration": 0.0241808537,
-        "worstArm": 0.435833335,
-        "maxLeftHandPenetration": 0.0,
-        "worstHand": 0.0
+        "maxSwordPenetration": 0.0,
+        "worstSword": 0.0,
+        "maxForearmPenetration": 0.0,
+        "maxArmPenetration": 0.0273207184,
+        "worstArm": 0.433333337,
+        "arm": "RightUpper"
       },
       {
         "stage": "left-step",
-        "maxLeftForearmPenetration": 0.0,
-        "worstArm": 0.0,
-        "maxLeftHandPenetration": 0.0,
-        "worstHand": 0.0
+        "maxSwordPenetration": 0.0,
+        "worstSword": 0.0,
+        "maxForearmPenetration": 0.0,
+        "maxArmPenetration": 0.131888956,
+        "worstArm": 26.0,
+        "arm": "LeftUpper"
       },
       {
         "stage": "right-step-cut",
-        "maxLeftForearmPenetration": 0.07394554,
-        "worstArm": 30.4,
-        "maxLeftHandPenetration": 0.0,
-        "worstHand": 0.0
+        "maxSwordPenetration": 0.0,
+        "worstSword": 0.0,
+        "maxForearmPenetration": 0.0567130931,
+        "maxArmPenetration": 0.145540833,
+        "worstArm": 31.6833324,
+        "arm": "LeftUpper"
+      },
+      {
+        "stage": "recovery",
+        "maxSwordPenetration": 0.0,
+        "worstSword": 0.0,
+        "maxForearmPenetration": 0.0,
+        "maxArmPenetration": 0.07807502,
+        "worstArm": 44.525,
+        "arm": "RightUpper"
       }
     ]
   },
-  "torsoAfter": {
+  "torsoClearance": {
     "torsoVertexCount": 73,
     "results": [
       {
@@ -144,54 +197,5 @@
       }
     ]
   },
-  "helmet": {
-    "stages": [
-      {
-        "stage": "settle-into-ready",
-        "maxSwordPenetration": 0.0,
-        "worstSword": 0.0,
-        "maxForearmPenetration": 0.0,
-        "maxArmPenetration": 0.13167122,
-        "worstArm": 0.238333344,
-        "arm": "LeftUpper"
-      },
-      {
-        "stage": "ready-pull",
-        "maxSwordPenetration": 0.0,
-        "worstSword": 0.0,
-        "maxForearmPenetration": 0.0,
-        "maxArmPenetration": 0.115752637,
-        "worstArm": 0.5833334,
-        "arm": "LeftUpper"
-      },
-      {
-        "stage": "left-step",
-        "maxSwordPenetration": 0.0,
-        "worstSword": 0.0,
-        "maxForearmPenetration": 0.0,
-        "maxArmPenetration": 0.115688562,
-        "worstArm": 26.025,
-        "arm": "LeftUpper"
-      },
-      {
-        "stage": "right-step-cut",
-        "maxSwordPenetration": 0.0,
-        "worstSword": 0.0,
-        "maxForearmPenetration": 0.0567130931,
-        "maxArmPenetration": 0.145540833,
-        "worstArm": 31.6833324,
-        "arm": "LeftUpper"
-      },
-      {
-        "stage": "recovery",
-        "maxSwordPenetration": 0.0,
-        "worstSword": 0.0,
-        "maxForearmPenetration": 0.0,
-        "maxArmPenetration": 0.07807502,
-        "worstArm": 44.525,
-        "arm": "RightUpper"
-      }
-    ]
-  },
-  "productionAssetsUnchanged": true
+  "restoredBeforeDiagonalRevision": true
 }

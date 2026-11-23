@@ -9,13 +9,15 @@ using UnityEditor.SceneManagement;
 using UnityEngine.SceneManagement;
 using OneWay.Battle3D;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
+// Rebuild the approved guard with SetDebugFinisherFrame20Guard.Apply, then ApplyFrame29Pullback.
 // Reproducible authoring tool. Originals and the production player's controller are never edited.
 public static class BuildDebugAuthoredFinisher
 {
  const string Folder="Assets/3DBattle/3DBattleDebug/Finisher";
- const string Original="Assets/3DBattle/NewPlayer/PlayableAttacks/NewPlayer_Attack01.anim";
- const string Controller="Assets/3DBattle/NewPlayer/PlayableAttacks/NewPlayerAttackCombo.controller";
+ const string Original="Assets/3DBattle/NewPlayer/Runtime/Animations/NewPlayer_Attack01.anim";
+ const string Controller="Assets/3DBattle/NewPlayer/Runtime/Animator/NewPlayerAttackCombo.controller";
  const float ReadyTime=13f/30f, Windup=.15f;
  const float StanceTurn=33.8967f;
  static readonly string[] Names={"Armature","Hips","Chest","UpperChest","Neck","Head","LeftShoulder","LeftUpperArm","LeftLowerArm","LeftHand","RightShoulder","RightUpperArm","RightLowerArm","RightHand","LeftUpperLeg","LeftLowerLeg","LeftFoot","LeftToes","RightUpperLeg","RightLowerLeg","RightFoot","RightToes","Sword"};
@@ -35,7 +37,7 @@ public static class BuildDebugAuthoredFinisher
    root.GetComponent<Animator>().enabled=false;
    map=root.GetComponentsInChildren<Transform>(true).GroupBy(t=>t.name).ToDictionary(g=>g.Key,g=>g.First());
    bones=Names.Where(map.ContainsKey).Select(n=>map[n]).ToArray();
-   source=AssetDatabase.LoadAssetAtPath<AnimationClip>(Original);
+   source=BattleCharacterAssetPaths.Load<AnimationClip>(Original);
    source.SampleAnimation(root,104f/30f); leftFoot=map["LeftFoot"].rotation;rightFoot=map["RightFoot"].rotation;
    leftToe=map["LeftToes"].localRotation;rightToe=map["RightToes"].localRotation;
    source.SampleAnimation(root,26f/30f);
@@ -88,6 +90,14 @@ public static class BuildDebugAuthoredFinisher
      helmetProbe,helmetProbe.transform.position,helmetProbe.transform.rotation,out var away,out float depth))break;
     wrist=rh.position+away*(depth+.025f);
    }
+  }
+  public void MatchHands(Vector3 wrist,Quaternion swordRotation)
+  {
+   // Author with a small helmet clearance margin so interpolated poses stay clear too.
+   // Only this temporary rig changes; no helmet transform or mesh is saved to the clip.
+   var scale=helmetProbe.transform.localScale;
+   try{helmetProbe.transform.localScale=scale*1.025f;Hands(wrist,swordRotation);}
+   finally{helmetProbe.transform.localScale=scale;}
   }
   static readonly Vector3 LeadLeft=new Vector3(-.22f,.135f,.26f),TrailRight=new Vector3(.22f,.129f,-.22f);
   static readonly Vector3 LeftPlant=new Vector3(-.18f,.135f,.48f),LeftAfterPass=new Vector3(-.20f,.135f,-.32f),RightPlant=new Vector3(.20f,.129f,.52f);
@@ -177,7 +187,7 @@ public static class BuildDebugAuthoredFinisher
  static AnimationClip Bake(Rig r,string name,float duration,Action<float> sample)
  {
   string path=Folder+"/"+name+".anim";
-  var clip=AssetDatabase.LoadAssetAtPath<AnimationClip>(path);
+  var clip=BattleCharacterAssetPaths.Load<AnimationClip>(path);
   if(clip==null){clip=new AnimationClip();clip.name=name;AssetDatabase.CreateAsset(clip,path);}
   else {var empty=new AnimationClip();EditorUtility.CopySerialized(empty,clip);UnityEngine.Object.DestroyImmediate(empty);clip.name=name;}
   // Preserve all source bindings (including scale and armor), trimming to the authored duration.
@@ -208,6 +218,59 @@ public static class BuildDebugAuthoredFinisher
  }
  public static string Build()=>BuildInternal(true);
  public static string UpdateRightSideGuard()=>BuildInternal(false);
+ public static string ApplyFrame29Pullback()
+ {
+  var c=Player();var live=c.GetComponent<BattlePlayerController>().animator;
+  var reference=JObject.Parse(File.ReadAllText("Assets/3DBattle/Authoring~/DebugFinisherFrame29Reference.json"));
+  foreach(var w in Resources.FindObjectsOfTypeAll<AnimationWindow>()){w.playing=false;w.recording=false;w.previewing=false;}
+  if(AnimationMode.InAnimationMode())AnimationMode.StopAnimationMode();
+  var clip=c.motions.attacks[0].clip;var original=UnityEngine.Object.Instantiate(clip);
+  string[] arms={"LeftUpperArm","LeftLowerArm","LeftHand","RightUpperArm","RightLowerArm","RightHand"};
+  try {using(var r=new Rig(live)){
+   // Read the requested sword pose on a temporary rig. Never transfer the accidentally
+   // translated elbow/foot into the clip: IK below rotates the original-length bones.
+   foreach(var b in reference["bones"]){string path=(string)b["path"];if(string.IsNullOrEmpty(path))continue;var bone=r.root.transform.Find(path);if(bone==null)continue;
+    var p=b["localPosition"].ToObject<float[]>();var q=b["localRotation"].ToObject<float[]>();bone.localPosition=new Vector3(p[0],p[1],p[2]);bone.localRotation=new Quaternion(q[0],q[1],q[2],q[3]);}
+   var requestedWrist=r.map["RightHand"].position;var requestedSword=r.map["Sword"].rotation;
+   original.SampleAnimation(r.root,29f/30f);r.MatchHands(requestedWrist,requestedSword);
+   var targetWrist=r.map["RightHand"].position;var targetSword=r.map["Sword"].rotation;
+   original.SampleAnimation(r.root,26f/30f);var start=r.Capture();var startWrist=r.map["RightHand"].position;var startSword=r.map["Sword"].rotation;
+   original.SampleAnimation(r.root,31f/30f);var endWrist=r.map["RightHand"].position;var endSword=r.map["Sword"].rotation;
+   var tracks=arms.ToDictionary(n=>n,n=>Enumerable.Range(0,4).Select(_=>new List<Keyframe>()).ToArray());
+   for(int i=0;i<=40;i++){
+    float frame=26+i*.125f;original.SampleAnimation(r.root,frame/30f);
+    var before=arms.ToDictionary(n=>n,n=>r.map[n].localRotation);
+    float t=frame<=29?Smooth((frame-26)/3):Smooth((frame-29)/2);
+    var wrist=frame<=29?Vector3.Lerp(startWrist,targetWrist,t):Vector3.Lerp(targetWrist,endWrist,t);
+    var sword=frame<=29?Quaternion.Slerp(startSword,targetSword,t):Quaternion.Slerp(targetSword,endSword,t);
+    r.MatchHands(wrist,sword);
+    float weight=frame<=29?Smooth(frame-26):1-Smooth((frame-29)/2);
+    foreach(string n in arms){var q=Quaternion.Slerp(before[n],r.map[n].localRotation,weight);
+     var prev=i==0?before[n]:new Quaternion(tracks[n][0][i-1].value,tracks[n][1][i-1].value,tracks[n][2][i-1].value,tracks[n][3][i-1].value);
+     if(Quaternion.Dot(q,prev)<0)q=new Quaternion(-q.x,-q.y,-q.z,-q.w);
+     for(int k=0;k<4;k++)tracks[n][k].Add(new Keyframe(frame/30f,q[k]));
+    }
+   }
+   var bindings=new List<EditorCurveBinding>();var curves=new List<AnimationCurve>();
+   foreach(string n in arms)for(int k=0;k<4;k++){
+    var b=EditorCurveBinding.FloatCurve(AnimationUtility.CalculateTransformPath(r.map[n],r.root.transform),typeof(Transform),"m_LocalRotation."+"xyzw"[k]);
+    var old=AnimationUtility.GetEditorCurve(original,b);var keys=old.keys.Where(x=>x.time<26f/30f-.000001f||x.time>31f/30f+.000001f).Concat(tracks[n][k]).OrderBy(x=>x.time).ToArray();
+    var curve=new AnimationCurve(keys){preWrapMode=old.preWrapMode,postWrapMode=old.postWrapMode};
+    for(int j=0;j<curve.length;j++)if(curve.keys[j].time>=26f/30f-.000001f&&curve.keys[j].time<=31f/30f+.000001f){AnimationUtility.SetKeyLeftTangentMode(curve,j,AnimationUtility.TangentMode.Linear);AnimationUtility.SetKeyRightTangentMode(curve,j,AnimationUtility.TangentMode.Linear);}
+    bindings.Add(b);curves.Add(curve);
+   }
+   Undo.RecordObject(clip,"Pull sword back at frame 29");AnimationUtility.SetEditorCurves(clip,bindings.ToArray(),curves.ToArray());EditorUtility.SetDirty(clip);AssetDatabase.SaveAssetIfDirty(clip);
+   clip.SampleAnimation(r.root,26f/30f);var after=r.Capture();float guardRotationError=r.bones.Select((b,i)=>Quaternion.Angle(start.q[i],after.q[i])).Max();float guardPositionError=r.bones.Select((b,i)=>Vector3.Distance(start.p[i],after.p[i])).Max();
+   var currentCurves=AnimationUtility.GetCurveBindings(clip).ToDictionary(b=>b,b=>AnimationUtility.GetEditorCurve(clip,b));
+   int untouchedCurves=0;float untouchedCurveError=0;
+   foreach(var b in AnimationUtility.GetCurveBindings(original).Where(b=>!bindings.Contains(b))){var old=AnimationUtility.GetEditorCurve(original,b);var current=currentCurves[b];untouchedCurves++;foreach(var key in old.keys)untouchedCurveError=Mathf.Max(untouchedCurveError,Mathf.Abs(key.value-current.Evaluate(key.time)));}
+   clip.SampleAnimation(r.root,29f/30f);float swordReferenceError=Quaternion.Angle(requestedSword,r.map["Sword"].rotation);
+   float rightGripError=Vector3.Distance(r.map["RightHand"].TransformPoint(r.rightGrip),r.map["LeftHand"].TransformPoint(r.leftGrip)+r.map["Sword"].forward*.16f);
+   if(guardRotationError>.1f||guardPositionError>.001f||swordReferenceError>.1f||untouchedCurveError>.001f)throw new Exception("Pullback validation failed");
+   var result=JsonConvert.SerializeObject(new{passed=true,guardRotationError,guardPositionError,swordReferenceError,untouchedCurves,untouchedCurveError,twoHandGripError=rightGripError,requestedWrist=requestedWrist.ToString("F4"),fittedWrist=r.map["RightHand"].position.ToString("F4"),swordDirection=r.map["Sword"].forward.ToString("F4"),changedRotationCurves=bindings.Count,lowerBodyAndBoneLengthsPreserved=true,connectsToExistingCutAtFrame=31},Formatting.Indented);
+   File.WriteAllText("Assets/3DBattle/Authoring~/DebugFinisherFrame29Verification.json",result);return result;
+  }}finally{UnityEngine.Object.DestroyImmediate(original);}
+ }
  public static string UpdateTorsoDistribution()
  {
   var live=Player().GetComponent<BattlePlayerController>().animator;
@@ -245,8 +308,8 @@ public static class BuildDebugAuthoredFinisher
   }
   if(!configure)return JsonConvert.SerializeObject(new{updated=new[]{AssetDatabase.GetAssetPath(prep),AssetDatabase.GetAssetPath(attack)},scene=c.gameObject.scene.path,settingsPreserved=true});
   string controllerPath=Folder+"/DebugFinisher.controller";
-  if(AssetDatabase.LoadAssetAtPath<AnimatorController>(controllerPath)==null&&!AssetDatabase.CopyAsset(Controller,controllerPath))throw new Exception("Controller copy failed");
-  var controller=AssetDatabase.LoadAssetAtPath<AnimatorController>(controllerPath);
+  if(BattleCharacterAssetPaths.Load<AnimatorController>(controllerPath)==null&&!AssetDatabase.CopyAsset(Controller,controllerPath))throw new Exception("Controller copy failed");
+  var controller=BattleCharacterAssetPaths.Load<AnimatorController>(controllerPath);
   var sm=controller.layers[0].stateMachine;
   foreach(var clip in new[]{prep,attack}){var s=sm.states.Select(x=>x.state).FirstOrDefault(s=>s.name==clip.name);if(s==null)s=sm.AddState(clip.name);s.motion=clip;s.writeDefaultValues=true;EditorUtility.SetDirty(s);}
   EditorUtility.SetDirty(controller);AssetDatabase.SaveAssetIfDirty(controller);
@@ -267,6 +330,13 @@ public static class BuildDebugAuthoredFinisher
  }
  public static string Review()=>RenderReview(new Vector3(4,2.2f,3),"DebugAuthoredFinisherReview.png");
  public static string ReviewRear()=>RenderReview(new Vector3(4,2.2f,-3),"DebugAuthoredFinisherRear.png");
+ public static string PreviewFrame29()
+ {
+  var c=Player();Selection.activeGameObject=c.GetComponent<BattlePlayerController>().animator.gameObject;
+  var w=Resources.FindObjectsOfTypeAll<AnimationWindow>().FirstOrDefault()??EditorWindow.GetWindow<AnimationWindow>();
+  w.playing=false;w.recording=false;w.animationClip=c.motions.attacks[0].clip;w.previewing=true;w.frame=29;w.Repaint();SceneView.RepaintAll();
+  return JsonConvert.SerializeObject(new{clip=w.animationClip.name,w.frame,w.previewing,w.recording});
+ }
  static string RenderReview(Vector3 view,string filename)
  {
   var c=Player();var live=c.GetComponent<BattlePlayerController>().animator;

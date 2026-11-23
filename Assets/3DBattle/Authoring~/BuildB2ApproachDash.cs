@@ -41,7 +41,7 @@ public static class BuildB2ApproachDash
  static float Smooth(float a,float b,float f)=>Mathf.SmoothStep(0,1,Mathf.InverseLerp(a,b,f));
  static void Save(UnityEngine.Object obj,string path)
  {
-  var old=AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(path);
+  var old=BattleCharacterAssetPaths.Load<UnityEngine.Object>(path);
   if(old){EditorUtility.CopySerialized(obj,old);UnityEngine.Object.DestroyImmediate(obj);EditorUtility.SetDirty(old);}
   else AssetDatabase.CreateAsset(obj,path);
  }
@@ -71,8 +71,8 @@ public static class BuildB2ApproachDash
   var boss=GameObject.Find("Battle3D/Stages/B2/Boss");
   var sceneAnimator=boss.GetComponentsInChildren<Animator>(true).Single(a=>a.name.Contains("Heavy_Hammer"));
   string sourcePath=AssetDatabase.FindAssets("t:Model",new[]{"Assets/3DBattle/Boss2/BossAnim"}).Select(AssetDatabase.GUIDToAssetPath).Single(p=>p.Contains("01a1bf98"));
-  var sourceClip=AssetDatabase.LoadAllAssetsAtPath(sourcePath).OfType<AnimationClip>().First(c=>!c.name.StartsWith("__preview__"));
-  var source=UnityEngine.Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(sourcePath));
+  var sourceClip=BattleCharacterAssetPaths.LoadAll(sourcePath).OfType<AnimationClip>().First(c=>!c.name.StartsWith("__preview__"));
+  var source=UnityEngine.Object.Instantiate(BattleCharacterAssetPaths.Load<GameObject>(sourcePath));
   var target=UnityEngine.Object.Instantiate(sceneAnimator.gameObject);
   var curves=new Dictionary<string,AnimationCurve[]>();
   var travelX=new AnimationCurve();var travelZ=new AnimationCurve();
@@ -89,7 +89,7 @@ public static class BuildB2ApproachDash
    var joints=target.GetComponentsInChildren<Transform>(true).Where(t=>src.ContainsKey(Canon(t.name))&&tr.ContainsKey(Canon(t.name))&&t!=target.transform&&t.name!="target_character"&&t.name!="output_unwrapped").ToArray();
    var sword=dst["B2 Holy Sword"];var hand=dst["RightHand"];
    Quaternion swordMount=Quaternion.Inverse(hand.rotation)*sword.rotation;
-   var gripPose=AssetDatabase.LoadAssetAtPath<AnimationClip>("Assets/3DBattle/Boss2/BossAnim/Crisp/B2_PowerSlash_Crisp.anim");
+   var gripPose=BattleCharacterAssetPaths.Load<AnimationClip>("Assets/3DBattle/Boss2/Runtime/Animations/B2_PowerSlash_Crisp.anim");
    gripPose.SampleAnimation(target,0);
    var fingerRotations=joints.Where(t=>Canon(t.name).Contains("Thumb")||Canon(t.name).Contains("Middle")).ToDictionary(t=>t,t=>t.localRotation);
    foreach(var t in joints)t.SetPositionAndRotation(Pos(tr[Canon(t.name)]),tr[Canon(t.name)].rotation);
@@ -167,10 +167,10 @@ public static class BuildB2ApproachDash
    Save(travelClip,Folder+"/B2_ApproachDash_Travel.anim");
    // The animation window and an isolated scene preview use the full-travel clip.
    string controllerPath=Folder+"/B2_ApproachDash_Preview.controller";
-   var controller=AssetDatabase.LoadAssetAtPath<AnimatorController>(controllerPath)??AnimatorController.CreateAnimatorControllerAtPath(controllerPath);
+   var controller=BattleCharacterAssetPaths.Load<AnimatorController>(controllerPath)??AnimatorController.CreateAnimatorControllerAtPath(controllerPath);
    var sm=controller.layers[0].stateMachine;
    var state=sm.states.Select(s=>s.state).FirstOrDefault(s=>s.name=="ApproachDash")??sm.AddState("ApproachDash");
-   state.motion=AssetDatabase.LoadAssetAtPath<AnimationClip>(Folder+"/B2_ApproachDash.anim");sm.defaultState=state;
+   state.motion=BattleCharacterAssetPaths.Load<AnimationClip>(Folder+"/B2_ApproachDash.anim");sm.defaultState=state;
    var transition=state.transitions.FirstOrDefault()??state.AddTransition(state);
    transition.hasExitTime=true;transition.exitTime=1.35f;transition.duration=0;transition.hasFixedDuration=true;transition.canTransitionToSelf=true;
    var oldPreview=UnityEngine.Object.FindObjectsByType<Animator>(FindObjectsInactive.Include,FindObjectsSortMode.None).FirstOrDefault(a=>a.name==PreviewName);

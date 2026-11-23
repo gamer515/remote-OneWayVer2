@@ -9,10 +9,14 @@ namespace OneWay.Battle3D
         public RectTransform fill;
         public RectTransform damageFill;
         public Text valueText;
+        public DebugPlayerSpecialCombo energy;
+        public BattlePlayerVitalsGraphic vitals;
         readonly BattleHealthBarMotion motion = new BattleHealthBarMotion();
         float lastMaximum;
+        Text lastValueText;
+        double displayedCurrent = double.NaN, displayedMaximum = double.NaN;
 
-        void OnEnable() { motion.Reset(); Refresh(); }
+        void OnEnable() { motion.Reset(); lastValueText = null; Refresh(); }
         void LateUpdate() => Tick(Time.unscaledDeltaTime);
         public void Refresh() => Tick(0);
 
@@ -25,7 +29,19 @@ namespace OneWay.Battle3D
             if (maximum != lastMaximum || !Application.isPlaying) motion.Reset();
             lastMaximum = maximum;
             motion.Update(ratio, deltaTime, fill, damageFill);
-            if (valueText != null) valueText.text = $"{current:0}/{maximum:0}";
+            if (vitals != null) vitals.SetValues(motion.Displayed, motion.DamageEdge, energy != null ? energy.Gauge01 : 0);
+            // Keep animating the bars even when the rounded numeric label is unchanged.
+            if (valueText != null && valueText.isActiveAndEnabled)
+            {
+                double roundedCurrent = System.Math.Round(current, 0, System.MidpointRounding.AwayFromZero);
+                double roundedMaximum = System.Math.Round(maximum, 0, System.MidpointRounding.AwayFromZero);
+                if (lastValueText != valueText || displayedCurrent != roundedCurrent || displayedMaximum != roundedMaximum)
+                {
+                    valueText.text = $"{current:0}/{maximum:0}";
+                    lastValueText = valueText; displayedCurrent = roundedCurrent; displayedMaximum = roundedMaximum;
+                }
+            }
+            else lastValueText = null;
         }
     }
 }

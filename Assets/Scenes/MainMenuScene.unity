@@ -300,6 +300,7 @@ GameObject:
   - component: {fileID: 26750621}
   - component: {fileID: 26750620}
   - component: {fileID: 26750619}
+  - component: {fileID: 26750622}
   m_Layer: 5
   m_Name: StartButton
   m_TagString: Untagged
@@ -347,7 +348,7 @@ MonoBehaviour:
     m_SelectOnDown: {fileID: 0}
     m_SelectOnLeft: {fileID: 0}
     m_SelectOnRight: {fileID: 0}
-  m_Transition: 1
+  m_Transition: 0
   m_Colors:
     m_NormalColor: {r: 1, g: 1, b: 1, a: 1}
     m_HighlightedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
@@ -422,6 +423,25 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 26750617}
   m_CullTransparentMesh: 1
+--- !u!114 &26750622
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 26750617}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 89f178df2265da94ebf593e61d3fb786, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MainMenuButtonFeedback
+  visual: {fileID: 381073275}
+  hoverScale: 1.03
+  pressedScale: 0.94
+  pressOffset: {x: 0, y: -3}
+  pressedBrightness: 0.85
+  pressDuration: 0.08
+  releaseDuration: 0.12
 --- !u!1 &60547982
 GameObject:
   m_ObjectHideFlags: 0
@@ -2039,13 +2059,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_RaycastTarget: 1
+  m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: -8120735030545266574, guid: f66ac5616e7e5ba4d916645f57680e0a, type: 3}
+  m_Sprite: {fileID: 3400171846277707309, guid: dd1d952a7fcc8444498f8a2e27484f86, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -3508,13 +3528,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_RaycastTarget: 1
+  m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: -7303927487630695837, guid: be0e58f8dc9713d44b6a5685b1bba12b, type: 3}
+  m_Sprite: {fileID: -6777141677617918245, guid: 4df4c7d56b5216d49963e6a4f07c7f9b, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -3544,6 +3564,7 @@ GameObject:
   - component: {fileID: 816243443}
   - component: {fileID: 816243442}
   - component: {fileID: 816243441}
+  - component: {fileID: 816243444}
   m_Layer: 5
   m_Name: QuitButton
   m_TagString: Untagged
@@ -3591,7 +3612,7 @@ MonoBehaviour:
     m_SelectOnDown: {fileID: 0}
     m_SelectOnLeft: {fileID: 0}
     m_SelectOnRight: {fileID: 0}
-  m_Transition: 1
+  m_Transition: 0
   m_Colors:
     m_NormalColor: {r: 1, g: 1, b: 1, a: 1}
     m_HighlightedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
@@ -3666,6 +3687,25 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 816243439}
   m_CullTransparentMesh: 1
+--- !u!114 &816243444
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 816243439}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 89f178df2265da94ebf593e61d3fb786, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MainMenuButtonFeedback
+  visual: {fileID: 754762684}
+  hoverScale: 1.03
+  pressedScale: 0.94
+  pressOffset: {x: 0, y: -3}
+  pressedBrightness: 0.85
+  pressDuration: 0.08
+  releaseDuration: 0.12
 --- !u!1 &851587328
 GameObject:
   m_ObjectHideFlags: 0
@@ -5816,7 +5856,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 530608978e5330a49a567d0e6a60f166, type: 3}
+  m_Sprite: {fileID: 21300000, guid: fdc0623d4d615c342a7f362a763c33d9, type: 3}
   m_Type: 0
   m_PreserveAspect: 1
   m_FillCenter: 1
@@ -9585,7 +9625,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: 0.7310807, z: -0, w: 0.68229103}
   m_LocalPosition: {x: -1.3815057, y: 1.6130817, z: -9.554343}
-  m_LocalScale: {x: 0.63550603, y: 0.63550603, z: 0.63550603}
+  m_LocalScale: {x: 0.95325905, y: 0.95325905, z: 0.95325905}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 6880067807216202144}

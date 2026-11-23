@@ -20,7 +20,7 @@ public static class BuildRunningKnight
   var originalBody=player.GetComponentsInChildren<SkinnedMeshRenderer>(true).First(r=>r.name=="Knight");
   string path="Assets/3DBattle/Meshy_AI_KnightCharacter_rigge_Running.fbx";
   var root=new GameObject("Running Knight Preview");Undo.RegisterCreatedObjectUndo(root,"Create running knight");
-  var model=(GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>(path),root.transform);
+  var model=(GameObject)PrefabUtility.InstantiatePrefab(BattleCharacterAssetPaths.Load<GameObject>(path),root.transform);
   PrefabUtility.UnpackPrefabInstance(model,PrefabUnpackMode.Completely,InteractionMode.AutomatedAction);
   model.name="Knight Model";
   var skin=model.GetComponentInChildren<SkinnedMeshRenderer>();
@@ -64,7 +64,7 @@ public static class BuildRunningKnight
   float width=Vector3.Distance(left.position,right.position)*1.55f;
   equip(oldPads,chest,(left.position+right.position)*.5f+Vector3.up*.025f,new Vector3(width,.18f,.36f),"ShoulderPads");
   UnityEngine.Object.DestroyImmediate(baked);
-  var sourceClip=AssetDatabase.LoadAllAssetsAtPath(path).OfType<AnimationClip>().First(c=>!c.name.StartsWith("__preview__"));
+  var sourceClip=BattleCharacterAssetPaths.LoadAll(path).OfType<AnimationClip>().First(c=>!c.name.StartsWith("__preview__"));
   var clip=UnityEngine.Object.Instantiate(sourceClip);clip.name="RunningKnight_Run_Loop";
   var settings=AnimationUtility.GetAnimationClipSettings(clip);settings.loopTime=true;settings.loopBlend=true;AnimationUtility.SetAnimationClipSettings(clip,settings);
   AssetDatabase.CreateAsset(clip,Folder+"/RunningKnight_Run_Loop.anim");

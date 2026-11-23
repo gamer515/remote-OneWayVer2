@@ -6,16 +6,16 @@ using OneWay.Battle3D;
 
 public static class RetimePhaseTwoSpins
 {
-    const string ClipPath="Assets/3DBattle/Boss1/Skill_02_Phase2_TenSpins.anim";
+    const string ClipPath="Assets/3DBattle/Boss1/Runtime/Animations/Skill_02_Phase2_TenSpins.anim";
     const string BackupPath="Assets/3DBattle/Boss1/Skill_02_Phase2_TenSpins_BeforeSpeedRamp.anim";
     public static object Run()
     {
         if(Application.isPlaying)throw new Exception("Stop play mode first");
-        if(AssetDatabase.LoadAssetAtPath<AnimationClip>(BackupPath)==null)
+        if(BattleCharacterAssetPaths.Load<AnimationClip>(BackupPath)==null)
             if(!AssetDatabase.CopyAsset(ClipPath,BackupPath))throw new Exception("Backup failed");
-        var source=AssetDatabase.LoadAssetAtPath<AnimationClip>(BackupPath);
-        var destination=AssetDatabase.LoadAssetAtPath<AnimationClip>(ClipPath);
-        var attack=AssetDatabase.LoadAssetAtPath<BossWeaponAttackPattern>("Assets/3DBattle/Settings/B1_Phase2_Attack8.asset");
+        var source=BattleCharacterAssetPaths.Load<AnimationClip>(BackupPath);
+        var destination=BattleCharacterAssetPaths.Load<AnimationClip>(ClipPath);
+        var attack=BattleCharacterAssetPaths.Load<BossWeaponAttackPattern>("Assets/3DBattle/Settings/B1_Phase2_Attack8.asset");
         var bindings=AnimationUtility.GetCurveBindings(source);
         var curves=bindings.Select(b=>AnimationUtility.GetEditorCurve(source,b)).ToArray();
         var rotation=new[]{"x","y","z","w"}.Select(s=>Array.FindIndex(bindings,b=>b.path=="target_character/Hips"&&b.propertyName=="m_LocalRotation."+s)).ToArray();

@@ -17002,7 +17002,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &222689351
 RectTransform:
   m_ObjectHideFlags: 0
@@ -17989,6 +17989,85 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1100009153}
   m_LocalEulerAnglesHint: {x: -0.00003333304, y: 126.640945, z: -0.000021649481}
+--- !u!1 &343693291
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 343693292}
+  - component: {fileID: 343693294}
+  - component: {fileID: 343693293}
+  m_Layer: 0
+  m_Name: Player Vitals - Health and Energy
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &343693292
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 343693291}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1942702212}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 24, y: -24}
+  m_SizeDelta: {x: 420, y: 64}
+  m_Pivot: {x: 0, y: 1}
+--- !u!114 &343693293
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 343693291}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a40375b971cf0bb43b193d99cc189bfa, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::OneWay.Battle3D.BattlePlayerVitalsGraphic
+  m_Material: {fileID: 0}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_RaycastTarget: 0
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  health: 1
+  damage: 1
+  energy: 0.5
+  healthBottom: {r: 0.035, g: 0.52, b: 0.23, a: 1}
+  healthTop: {r: 0.13, g: 0.77, b: 0.37, a: 1}
+  energyBlue: {r: 0.035, g: 0.09, b: 0.78, a: 1}
+  energySky: {r: 0.32, g: 0.84, b: 1, a: 1}
+  energyWhite: {r: 0.96, g: 0.99, b: 1, a: 1}
+  copperMetal: {r: 0.64, g: 0.32, b: 0.15, a: 1}
+  silverMetal: {r: 0.61, g: 0.65, b: 0.71, a: 1}
+  goldMetal: {r: 0.93, g: 0.64, b: 0.15, a: 1}
+  silverGlow: {r: 1, g: 1, b: 1, a: 1}
+  goldInnerGlow: {r: 1, g: 1, b: 1, a: 1}
+  goldOuterGlow: {r: 1, g: 0.78, b: 0.055, a: 1}
+--- !u!222 &343693294
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 343693291}
+  m_CullTransparentMesh: 1
 --- !u!1 &345122964
 GameObject:
   m_ObjectHideFlags: 0
@@ -35758,7 +35837,7 @@ Transform:
   m_GameObject: {fileID: 576066940}
   serializedVersion: 2
   m_LocalRotation: {x: 0.15174869, y: 0, z: 0, w: 0.9884191}
-  m_LocalPosition: {x: 7.5, y: 4.6, z: -9.54}
+  m_LocalPosition: {x: -30, y: 4.6, z: -9.44}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -36164,7 +36243,7 @@ MonoBehaviour:
   - {fileID: 1041090392}
   - {fileID: 1499490704}
   - {fileID: 1706959351}
-  selectedStageIndex: 2
+  selectedStageIndex: 1
 --- !u!114 &647668772
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -47373,7 +47452,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::OneWay.Battle3D.BattleCombatFeedback
   player: {fileID: 1427528299}
-  boss: {fileID: 8263074}
+  boss: {fileID: 531563505}
   rangeRing: {fileID: 1487959053}
   attackLine: {fileID: 940688518}
   chargeRing: {fileID: 1739742757}
@@ -66370,7 +66449,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &1041090391
 Transform:
   m_ObjectHideFlags: 0
@@ -93383,8 +93462,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1427528290}
   serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0.7071068, z: -0, w: 0.7071068}
-  m_LocalPosition: {x: 7.5, y: 0, z: 0}
+  m_LocalRotation: {x: -0, y: 0.7071068, z: -0, w: 0.7071068}
+  m_LocalPosition: {x: -30, y: 0, z: 0.1}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -93544,7 +93623,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f9371714ed1aab04497b3377b568bcc8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::OneWay.Battle3D.BattlePlayerController
-  boss: {fileID: 8263074}
+  boss: {fileID: 531563505}
   viewCamera: {fileID: 576066942}
   feedback: {fileID: 737704082}
   shield: {fileID: 89718049}
@@ -93579,13 +93658,22 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ff9b896e49c584c40b39912c23bc0798, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::OneWay.Battle3D.DebugPlayerSpecialCombo
-  alwaysFullGauge: 1
+  alwaysFullGauge: 0
   maxGauge: 100
-  currentGauge: 100
+  currentGauge: 50
+  startingEnergyPercent: 50
+  specialCostPercent: 50
+  attackHitEnergyPercent: 5
+  parryEnergyPercent: 25
   holdRecognitionSeconds: 0.2
   specialEntryWindow: 0.3
-  finisherHoldSeconds: 0.5
+  finisherHoldSeconds: 0.8
   finisherPoseFrame: 26
+  finisherPreparation: {fileID: 7400000, guid: 134e77e6cc06aad4ea4487a6b206c02a, type: 2}
+  finisherReadyTime: 0.43333334
+  finisherWindupSeconds: 0.15
+  finisherDashStartFrame: 29
+  finisherDashEndFrame: 34
   cancelBlendSeconds: 0.12
 --- !u!114 &1427528301
 MonoBehaviour:
@@ -93604,16 +93692,18 @@ MonoBehaviour:
     segments:
     - endFrame: 13
       seconds: 0.18
-    - endFrame: 27
+    - endFrame: 26
       seconds: 0.11
-    - endFrame: 30
-      seconds: 0.08
-    - endFrame: 33
-      seconds: 0.07
+    - endFrame: 29
+      seconds: 0.09
+    - endFrame: 34
+      seconds: 0.12
+    - endFrame: 43
+      seconds: 0.1
     - endFrame: 86
       seconds: 0.16
     - endFrame: 0
-      seconds: 0.22
+      seconds: 0.18
     stepDistance: 0
   - label: 02 - Upward slash
     segments:
@@ -94657,7 +94747,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &1499490703
 Transform:
   m_ObjectHideFlags: 0
@@ -108826,6 +108916,7 @@ RectTransform:
   m_LocalScale: {x: 0, y: 0, z: 0}
   m_ConstrainProportionsScale: 0
   m_Children:
+  - {fileID: 343693292}
   - {fileID: 222689351}
   - {fileID: 540437990}
   m_Father: {fileID: 647668770}
@@ -108851,6 +108942,8 @@ MonoBehaviour:
   fill: {fileID: 939073837}
   damageFill: {fileID: 632452370}
   valueText: {fileID: 171251758}
+  energy: {fileID: 1427528300}
+  vitals: {fileID: 343693293}
 --- !u!114 &1942702214
 MonoBehaviour:
   m_ObjectHideFlags: 0

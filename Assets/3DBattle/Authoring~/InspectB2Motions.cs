@@ -16,8 +16,8 @@ public static class InspectB2Motions
   {
    for(int row=0;row<paths.Length;row++)
    {
-    var model=UnityEngine.Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(paths[row]));
-    var clip=AssetDatabase.LoadAllAssetsAtPath(paths[row]).OfType<AnimationClip>().First(c=>!c.name.StartsWith("__preview__"));
+    var model=UnityEngine.Object.Instantiate(BattleCharacterAssetPaths.Load<GameObject>(paths[row]));
+    var clip=BattleCharacterAssetPaths.LoadAll(paths[row]).OfType<AnimationClip>().First(c=>!c.name.StartsWith("__preview__"));
     var baked=new List<Mesh>();
     try
     {

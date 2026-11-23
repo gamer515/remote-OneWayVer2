@@ -11,7 +11,7 @@ public static class ConnectB2Skill03Slash
   var emitter=UnityEngine.Object.FindObjectsByType<B2SwordSlash>(FindObjectsInactive.Include,FindObjectsSortMode.None).Single(e=>e.gameObject.activeInHierarchy);
   Undo.RecordObject(emitter,"Align Skill03 slash to blade");
   emitter.swordBlade=emitter.GetComponentsInChildren<Transform>().Single(t=>t.name=="B2 Holy Sword");
-  var clip=AssetDatabase.LoadAssetAtPath<AnimationClip>("Assets/3DBattle/Boss2/BossAnim/Crisp/B2_Skill03_FromPlayer.anim");
+  var clip=BattleCharacterAssetPaths.Load<AnimationClip>("Assets/3DBattle/Boss2/Runtime/Animations/B2_Skill03_FromPlayer.anim");
   var events=AnimationUtility.GetAnimationEvents(clip);int changed=0;
   foreach(var e in events)if(e.functionName=="EmitB2SwordSlash"||e.functionName=="EmitB2Skill03Slash"){e.functionName="EmitB2Skill03Slash";changed++;}
   if(changed!=1)throw new Exception("Unexpected Skill03 event count: "+changed);

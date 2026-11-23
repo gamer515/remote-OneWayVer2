@@ -27,7 +27,7 @@ public static class BuildBattleDebugScene {
  cameraRoot.GetComponent<Camera>().clearFlags=CameraClearFlags.SolidColor;cameraRoot.GetComponent<Camera>().backgroundColor=new Color(.14f,.16f,.19f);
  foreach(var wall in b1.boundary.walls){var r=wall.GetComponent<Renderer>();if(r!=null)r.enabled=false;wall.enabled=true;}
  var floor=b1.transform.Find("Arena").GetComponent<Renderer>();string matPath="Assets/3DBattle/3DBattleDebug/DebugFloor.mat";
- var mat=AssetDatabase.LoadAssetAtPath<Material>(matPath);if(mat==null){mat=new Material(Shader.Find("Universal Render Pipeline/Lit"));mat.SetColor("_BaseColor",new Color(.32f,.34f,.37f));mat.SetFloat("_Smoothness",0);AssetDatabase.CreateAsset(mat,matPath);}floor.sharedMaterial=mat;
+ var mat=BattleCharacterAssetPaths.Load<Material>(matPath);if(mat==null){mat=new Material(Shader.Find("Universal Render Pipeline/Lit"));mat.SetColor("_BaseColor",new Color(.32f,.34f,.37f));mat.SetFloat("_Smoothness",0);AssetDatabase.CreateAsset(mat,matPath);}floor.sharedMaterial=mat;
  var bootstrap=root.AddComponent<BattleDebugBootstrap>();bootstrap.battle=battle;
  battle.SelectStage(1);
  // Keep the initial player capsule inside the copied left boundary.

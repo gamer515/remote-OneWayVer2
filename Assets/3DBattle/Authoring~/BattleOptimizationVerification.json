@@ -1,0 +1,101 @@
+{
+  "date": "2026-11-23",
+  "scope": "Assets/3DBattle only; no scene asset edits",
+  "compilationErrors": 0,
+  "hud": {
+    "verticesBefore": 613,
+    "verticesAfter": 349,
+    "trianglesBefore": 383,
+    "trianglesAfter": 239,
+    "benchmarkIterations": 240,
+    "beforeMilliseconds": 98.2205,
+    "afterMilliseconds": 40.5245,
+    "benchmarkScope": "Isolated editor HUD mesh generation, not whole-game frame rate",
+    "gcBytes": "Not reported: this Unity runtime returned zero even for a known allocation probe",
+    "tiersAndGradientVisuallyCompared": true,
+    "valuesZeroToFull": true,
+    "scratchBuffersReused": true,
+    "resizeAndColourCacheInvalidation": true
+  },
+  "runtime": {
+    "result": [
+      "Player: 20 slash/hit pairs reuse prewarmed objects; stale handles and timed return checked",
+      "B2 stationary/flying effects reuse objects; 0.2 s delay, speed and travel lifetime survive reuse",
+      "Two full phases: eight clouds/shots, 3.6 s first launch, 1 s intervals, all shots expire before smoke clears, boss/material/collider restoration",
+      "Reused projectile: one hit only, independent next hit, parry, roll, launch-time aim, no homing, cancellation"
+    ],
+    "phaseRounds": [
+      {
+        "round": 0,
+        "launches": [
+          3.64999771,
+          4.64999962,
+          5.60000324,
+          6.600007,
+          7.600011,
+          8.600015,
+          9.6000185,
+          10.6000223
+        ],
+        "locations": [
+          6,
+          3,
+          7,
+          3,
+          0,
+          0,
+          7,
+          7
+        ],
+        "styles": [
+          "Diagonal",
+          "Vertical",
+          "Horizontal",
+          "Horizontal",
+          "Vertical",
+          "Diagonal",
+          "Vertical",
+          "Horizontal"
+        ]
+      },
+      {
+        "round": 1,
+        "launches": [
+          3.64999771,
+          4.64999962,
+          5.60000324,
+          6.600007,
+          7.600011,
+          8.600015,
+          9.6000185,
+          10.6000223
+        ],
+        "locations": [
+          6,
+          2,
+          2,
+          6,
+          2,
+          5,
+          7,
+          2
+        ],
+        "styles": [
+          "Vertical",
+          "Horizontal",
+          "Diagonal",
+          "Horizontal",
+          "Diagonal",
+          "Vertical",
+          "Diagonal",
+          "Vertical"
+        ]
+      }
+    ],
+    "playerCreated": 4,
+    "flashCreated": 4,
+    "smokeCreated": 8,
+    "phaseCreated": 8,
+    "errors": 0
+  }
+}

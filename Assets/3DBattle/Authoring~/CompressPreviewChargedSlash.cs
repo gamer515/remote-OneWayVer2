@@ -21,7 +21,7 @@ public static class CompressPreviewChargedSlash
   var old=controller.animationClips.Single();
   if(Mathf.Abs(old.length*30-115)>.01f)throw new Exception("Unexpected preview length");
   const string path="Assets/3DBattle/NewPlayer/Attack/Recovery20/NewKnight_Charged_Upward_Slash_Return20_Compressed.anim";
-  if(AssetDatabase.LoadAssetAtPath<AnimationClip>(path)!=null)throw new Exception("Already exists");
+  if(BattleCharacterAssetPaths.Load<AnimationClip>(path)!=null)throw new Exception("Already exists");
   var bindings=AnimationUtility.GetCurveBindings(old);var curves=bindings.Select(b=>AnimationUtility.GetEditorCurve(old,b)).ToArray();
   var clip=new AnimationClip{name="NewKnight_Charged_Upward_Slash_Return20_Compressed",frameRate=30,wrapMode=old.wrapMode};
   AnimationUtility.SetEditorCurves(clip,bindings,curves.Select(x=>Retime(x,30)).ToArray());
@@ -35,7 +35,7 @@ public static class CompressPreviewChargedSlash
   var backup=ScriptableObject.CreateInstance<NewPlayerAttackSet>();
   EditorJsonUtility.FromJsonOverwrite(System.IO.File.ReadAllText("Assets/3DBattle/Authoring~/AttackSetBeforeChargedCompression.json"),backup);
   var restored=backup.attacks[1];
-  restored.clip=AssetDatabase.LoadAssetAtPath<AnimationClip>("Assets/3DBattle/NewPlayer/PlayableAttacks/NewPlayer_Attack02.anim");
+  restored.clip=BattleCharacterAssetPaths.Load<AnimationClip>("Assets/3DBattle/NewPlayer/Runtime/Animations/NewPlayer_Attack02.anim");
   if(Mathf.Abs(restored.Frames-94)>.01f||Mathf.Abs(restored.chainFrame-21)>.01f)throw new Exception("Backup invalid");
   var liveController=c.GetComponent<BattlePlayerController>().animator.runtimeAnimatorController as AnimatorController;
   var wrong=set.attacks[1].clip;

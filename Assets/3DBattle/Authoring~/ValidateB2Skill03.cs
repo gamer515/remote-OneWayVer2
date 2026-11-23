@@ -13,7 +13,7 @@ public static class ValidateB2Skill03
   if(Application.isPlaying)throw new Exception("Edit mode required");
   var animator=UnityEngine.Object.FindObjectsByType<Animator>(FindObjectsInactive.Include,FindObjectsSortMode.None).Single(a=>a.name.Contains("Heavy_Hammer")&&a.gameObject.activeInHierarchy);
   var controller=(AnimatorController)animator.runtimeAnimatorController;
-  var clip=AssetDatabase.LoadAssetAtPath<AnimationClip>("Assets/3DBattle/Boss2/BossAnim/Crisp/B2_Skill03_FromPlayer.anim");
+  var clip=BattleCharacterAssetPaths.Load<AnimationClip>("Assets/3DBattle/Boss2/Runtime/Animations/B2_Skill03_FromPlayer.anim");
   var combo=UnityEngine.Object.FindObjectsByType<NewPlayerAttackCombo>(FindObjectsInactive.Include,FindObjectsSortMode.None).Single(x=>x.gameObject.activeInHierarchy);
   int entryFrames=Mathf.RoundToInt((clip.length-combo.motions.attacks[4].clip.length)*30f);
   float strikeFrame=combo.motions.attacks[4].damageWindows[0].x+entryFrames;
@@ -22,7 +22,7 @@ public static class ValidateB2Skill03
   int missing=bindings.Count(b=>b.path!=""&&!animator.transform.Find(b.path));
   if(missing>0)throw new Exception("Missing target curves: "+missing);
   foreach(var b in bindings)foreach(var k in AnimationUtility.GetEditorCurve(clip,b).keys)if(float.IsNaN(k.value)||float.IsInfinity(k.value))throw new Exception("Invalid curve "+b.path);
-  var modelAsset=AssetDatabase.LoadAssetAtPath<GameObject>(AssetDatabase.GetAssetPath(PrefabUtility.GetCorrespondingObjectFromSource(animator.gameObject)));
+  var modelAsset=BattleCharacterAssetPaths.Load<GameObject>(AssetDatabase.GetAssetPath(PrefabUtility.GetCorrespondingObjectFromSource(animator.gameObject)));
   var test=UnityEngine.Object.Instantiate(modelAsset);
   var visited=new HashSet<string>();var order=new List<string>();string previous="";float firstUnblendedFrame=-1;
   var names=new[]{"PowerSlash","DoubleCombo","WeaponCombo","Skill03"};

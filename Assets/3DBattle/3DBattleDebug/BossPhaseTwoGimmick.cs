@@ -160,7 +160,7 @@ namespace OneWay.Battle3D
             resolved[index]=true;int turn=index+1;
             float age=(strikeTimes[index]-clickTimes[turn])/Mathf.Max(.01f,boss.animator.speed);
             bool success=clicked[turn] && age>=0 && age<=GetParryWindow(turn+1);
-            if(success){Successes++;hitElapsed=-1;player.GetComponent<BattleParryEffect>()?.PlaySuccessEffect();}
+            if(success){Successes++;hitElapsed=-1;player.GetComponent<BattleParryEffect>()?.NotifySuccess(false);}
             else {Failures++;health.TakeGimmickDamage(failureDamage);if(health.IsAlive)hitElapsed=0;}
             if(!health.IsAlive){Abort();return;}
             pushRemaining+=pushDistance;

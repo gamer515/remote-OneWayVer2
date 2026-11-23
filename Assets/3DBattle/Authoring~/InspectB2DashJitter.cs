@@ -9,11 +9,11 @@ public static class InspectB2DashJitter
  public static object Run()
  {
   const string folder="Assets/3DBattle/Boss2/BossAnim/Approach/";
-  var g=UnityEngine.Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(folder+"B2_ApproachDash_Preview.prefab"));
+  var g=UnityEngine.Object.Instantiate(BattleCharacterAssetPaths.Load<GameObject>(folder+"B2_ApproachDash_Preview.prefab"));
   g.transform.SetPositionAndRotation(Vector3.zero,Quaternion.identity);g.transform.localScale=Vector3.one;g.GetComponent<Animator>().enabled=false;
   try
   {
-   var clip=AssetDatabase.LoadAssetAtPath<AnimationClip>(folder+"B2_ApproachDash.anim");
+   var clip=BattleCharacterAssetPaths.Load<AnimationClip>(folder+"B2_ApproachDash.anim");
    string[] names={"Hips","LeftUpperLeg","LeftLowerLeg","LeftFoot","LeftToes","RightUpperLeg","RightLowerLeg","RightFoot","RightToes"};
    var bones=g.GetComponentsInChildren<Transform>().ToDictionary(t=>t.name,t=>t);
    var samples=new List<object>();var positions=new Dictionary<string,List<Vector3>>();var rotations=new Dictionary<string,List<Quaternion>>();

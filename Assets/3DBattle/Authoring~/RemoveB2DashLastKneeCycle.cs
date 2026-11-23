@@ -16,12 +16,12 @@ public static class RemoveB2DashLastKneeCycle
  static object Run(bool apply)
  {
   if(Application.isPlaying)throw new Exception("Stop Play Mode before editing clips.");
-  var full=AssetDatabase.LoadAssetAtPath<AnimationClip>(Folder+"B2_ApproachDash.anim");
-  var inplace=AssetDatabase.LoadAssetAtPath<AnimationClip>(Folder+"B2_ApproachDash_InPlace.anim");
+  var full=BattleCharacterAssetPaths.Load<AnimationClip>(Folder+"B2_ApproachDash.anim");
+  var inplace=BattleCharacterAssetPaths.Load<AnimationClip>(Folder+"B2_ApproachDash_InPlace.anim");
   string backup=Folder+"Backups/B2_ApproachDash_BeforeThirdKneeRemoval.anim";
-  var source=AssetDatabase.LoadAssetAtPath<AnimationClip>(backup)??full;
+  var source=BattleCharacterAssetPaths.Load<AnimationClip>(backup)??full;
   var candidate=UnityEngine.Object.Instantiate(source);
-  var model=UnityEngine.Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(Folder+"B2_ApproachDash_Preview.prefab"));
+  var model=UnityEngine.Object.Instantiate(BattleCharacterAssetPaths.Load<GameObject>(Folder+"B2_ApproachDash_Preview.prefab"));
   model.transform.SetPositionAndRotation(Vector3.zero,Quaternion.identity);model.transform.localScale=Vector3.one;model.GetComponent<Animator>().enabled=false;
   try
   {
@@ -90,9 +90,9 @@ public static class RemoveB2DashLastKneeCycle
    {
     if(AnimationMode.InAnimationMode())AnimationMode.StopAnimationMode();
     foreach(var window in Resources.FindObjectsOfTypeAll<EditorWindow>().Where(w=>w.GetType().Name=="AnimationWindow"))window.Close();
-    if(!AssetDatabase.LoadAssetAtPath<AnimationClip>(backup))AssetDatabase.CopyAsset(Folder+"B2_ApproachDash.anim",backup);
+    if(!BattleCharacterAssetPaths.Load<AnimationClip>(backup))AssetDatabase.CopyAsset(Folder+"B2_ApproachDash.anim",backup);
     string ib=Folder+"Backups/B2_ApproachDash_InPlace_BeforeThirdKneeRemoval.anim";
-    if(!AssetDatabase.LoadAssetAtPath<AnimationClip>(ib))AssetDatabase.CopyAsset(Folder+"B2_ApproachDash_InPlace.anim",ib);
+    if(!BattleCharacterAssetPaths.Load<AnimationClip>(ib))AssetDatabase.CopyAsset(Folder+"B2_ApproachDash_InPlace.anim",ib);
     Undo.RegisterCompleteObjectUndo(new UnityEngine.Object[]{full,inplace},"Remove final B2 dash knee tuck");
     foreach(var binding in AnimationUtility.GetCurveBindings(candidate))
     {

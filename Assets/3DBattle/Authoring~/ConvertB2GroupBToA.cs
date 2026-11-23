@@ -36,11 +36,11 @@ public static class ConvertB2GroupBToA
   const string output=folder+"/ConvertedA";
   var paths=AssetDatabase.FindAssets("t:Model",new[]{folder}).Select(AssetDatabase.GUIDToAssetPath).ToArray();
   var sourcePath=paths.Single(p=>p.Contains("01a1b97c"));
-  var source=AssetDatabase.LoadAssetAtPath<GameObject>(sourcePath);
-  var reference=AssetDatabase.LoadAssetAtPath<GameObject>(paths.Single(p=>p.Contains("Double_Combo_Attack")));
-  var originalClip=AssetDatabase.LoadAllAssetsAtPath(sourcePath).OfType<AnimationClip>().First(c=>!c.name.StartsWith("__preview__"));
+  var source=BattleCharacterAssetPaths.Load<GameObject>(sourcePath);
+  var reference=BattleCharacterAssetPaths.Load<GameObject>(paths.Single(p=>p.Contains("Double_Combo_Attack")));
+  var originalClip=BattleCharacterAssetPaths.LoadAll(sourcePath).OfType<AnimationClip>().First(c=>!c.name.StartsWith("__preview__"));
   if(!AssetDatabase.IsValidFolder(output))AssetDatabase.CreateFolder(folder,"ConvertedA");
-  if(AssetDatabase.LoadAssetAtPath<AnimationClip>(output+"/B2_RetargetClip_A.anim")!=null)throw new Exception("Conversion exists; inspect before replacing");
+  if(BattleCharacterAssetPaths.Load<AnimationClip>(output+"/B2_RetargetClip_A.anim")!=null)throw new Exception("Conversion exists; inspect before replacing");
   var original=UnityEngine.Object.Instantiate(source);
   var converted=UnityEngine.Object.Instantiate(source);
   try

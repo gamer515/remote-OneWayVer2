@@ -19,7 +19,7 @@ public static class BuildDebugPlayerCombatFeel
         var player = scene.GetRootGameObjects().SelectMany(g => g.GetComponentsInChildren<BattlePlayerController>(true))
             .Single(p => p.name == "New Player - Attack Combo");
         var combo = player.GetComponent<NewPlayerAttackCombo>();
-        var copy = AssetDatabase.LoadAssetAtPath<NewPlayerAttackSet>(SetPath);
+        var copy = BattleCharacterAssetPaths.Load<NewPlayerAttackSet>(SetPath);
         if (copy == null)
         {
             copy = UnityEngine.Object.Instantiate(combo.motions);

@@ -25,8 +25,15 @@ namespace OneWay.Battle3D
             Style = style; slashRotation = source.GetSlashRotation(style);
             delay = source.launchDelay; speed = source.slashSpeed; life = source.flightSeconds;
             center = source.hitLocalCenter; half = source.hitLocalSize * .5f;
-            particles = GetComponentsInChildren<ParticleSystem>();
-            foreach (var ps in particles) { ps.Play(false); fadeLength = Mathf.Max(fadeLength, ps.main.startLifetime.constantMax); }
+            contacted = finishing = Launched = Complete = false;
+            fade = fadeLength = 0;
+            if (particles == null)
+            {
+                var pooled = GetComponent<BattlePooledEffect>();
+                particles = pooled ? pooled.Particles : GetComponentsInChildren<ParticleSystem>(true);
+            }
+            foreach (var ps in particles) if (ps.gameObject.activeInHierarchy)
+            { ps.Play(false); fadeLength = Mathf.Max(fadeLength, ps.main.startLifetime.constantMax); }
             FaceTarget();
         }
         void FaceTarget()

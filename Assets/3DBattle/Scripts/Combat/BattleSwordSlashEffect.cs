@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEngine.VFX;
 
 namespace OneWay.Battle3D
 {
@@ -15,9 +14,18 @@ namespace OneWay.Battle3D
         [Min(.01f)] public float effectScale = .2f;
         BattlePlayerController player;
         int pending = -1;
-        GameObject active;
+        BattleEffectLease active;
+        BattleEffectPool slashPool, flashPool;
         Vector3 anchorOffset;
         void Awake() => player = GetComponent<BattlePlayerController>();
+        void Start() => PreparePools();
+        void PreparePools()
+        {
+            if (slashPrefab && (slashPool == null || slashPool.Prefab != slashPrefab))
+            { slashPool?.Dispose(); slashPool = new BattleEffectPool(slashPrefab, transform, BattleEffectPool.Kind.Particles, 4, 8); }
+            if (hitFlashPrefab && (flashPool == null || flashPool.Prefab != hitFlashPrefab))
+            { flashPool?.Dispose(); flashPool = new BattleEffectPool(hitFlashPrefab, transform, BattleEffectPool.Kind.Particles, 4, 8); }
+        }
         public void PlayHitFlash(BattleBoss boss)
         {
             if (hitFlashPrefab == null || boss == null) return;
@@ -25,30 +33,28 @@ namespace OneWay.Battle3D
             Vector3 point = boss.hitbox != null ? boss.hitbox.ClosestPoint(sample) : boss.transform.position + Vector3.up;
             var camera = player != null && player.viewCamera != null ? player.viewCamera : Camera.main;
             Quaternion rotation = camera != null ? camera.transform.rotation : transform.rotation;
-            var effect = Instantiate(hitFlashPrefab, point, rotation);
+            PreparePools();
+            var effect = flashPool.Rent(point, rotation).Effect;
             effect.name = "Player Sword Hit Flash";
             effect.transform.localScale = hitFlashPrefab.transform.localScale * effectScale;
-            foreach (var ps in effect.GetComponentsInChildren<ParticleSystem>()) ps.Play(false);
-            Destroy(effect, .65f);
+            effect.Activate(); effect.ReleaseAfter(.65f);
         }
         public void PlayAuthoredSwing(float seconds, float tailSeconds = .1f, float scaleMultiplier = 1f)
         {
             if (slashPrefab == null) return;
             Vector3 center = sword != null ? sword.position : transform.position + Vector3.up;
             Quaternion rotation = sword != null ? sword.rotation : transform.rotation;
-            var effect = Instantiate(slashPrefab, center, rotation);
+            PreparePools();
+            var effect = slashPool.Rent(center, rotation).Effect;
             effect.name = "NewPlayer Sword Slash";
             effect.transform.localScale = slashPrefab.transform.localScale * effectScale * Mathf.Max(.01f, scaleMultiplier);
             float lifetime = Mathf.Max(.01f, seconds) + Mathf.Max(0, tailSeconds);
-            effect.GetComponent<BattleRefractiveSlash>()?.Initialize(lifetime);
-            ConfigureParticles(effect, lifetime);
-            foreach (var vfx in effect.GetComponentsInChildren<VisualEffect>()) vfx.playRate = 1f / lifetime;
-            Destroy(effect, lifetime);
+            effect.Activate(); effect.FitSwing(lifetime); effect.ReleaseAfter(lifetime);
         }
         public void PlaySwing(int step, float speed)
         {
             // Previous swing keeps its independently scheduled tail when a new swing starts.
-            active = null;
+            active = default;
             pending = step >= 1 && step <= 5 ? step - 1 : -1;
         }
         void LateUpdate() => Sample();
@@ -71,49 +77,38 @@ namespace OneWay.Battle3D
             if (frame >= endFrames[pending])
             {
                 pending = -1;
-                active = null;
+                active = default;
                 return;
             }
-            if (active == null && slashPrefab != null)
+            if (!active.IsAlive && slashPrefab != null)
             {
                 var rotation = localSwingRotations[pending];
                 if (rotation == new Quaternion(0,0,0,0)) rotation = Quaternion.identity;
                 Vector3 center = sword != null ? sword.position : transform.position + Vector3.up;
-                active = Instantiate(slashPrefab, center, transform.rotation * rotation);
-                active.name = "Player Sword Slash " + (pending + 1);
-                active.transform.localScale = slashPrefab.transform.localScale * effectScale;
+                PreparePools();
+                active = slashPool.Rent(center, transform.rotation * rotation);
+                var effect = active.Effect;
+                effect.name = "Player Sword Slash " + (pending + 1);
+                effect.transform.localScale = slashPrefab.transform.localScale * effectScale;
                 anchorOffset = center - transform.position;
                 float swingSeconds = (endFrames[pending] - startFrames[pending]) /
                     (clip.frameRate * Mathf.Max(.1f, player.normalAttackSpeed));
                 float lifetime = swingSeconds + .1f;
-                active.GetComponent<BattleRefractiveSlash>()?.Initialize(lifetime);
-                ConfigureParticles(active, lifetime);
-                foreach (var vfx in active.GetComponentsInChildren<VisualEffect>())
-                    vfx.playRate = 1f / lifetime;
+                effect.Activate(); effect.FitSwing(lifetime);
                 // Account for a render frame arriving slightly after the authored start frame.
                 float remaining = (endFrames[pending] - frame) /
                     (clip.frameRate * Mathf.Max(.1f, player.normalAttackSpeed)) + .1f;
-                Destroy(active, Mathf.Max(.1f, remaining));
+                effect.ReleaseAfter(Mathf.Max(.1f, remaining));
             }
-            if (active != null) active.transform.position = transform.position + anchorOffset;
-        }
-        static void ConfigureParticles(GameObject effect, float lifetime)
-        {
-            // The package's principal slash lasts half a second; fit it to the swing window.
-            foreach (var particles in effect.GetComponentsInChildren<ParticleSystem>())
-            {
-                var main = particles.main;
-                main.simulationSpeed = .5f / Mathf.Max(.01f, lifetime);
-                particles.Play(false);
-            }
+            if (active.IsAlive) active.Effect.transform.position = transform.position + anchorOffset;
         }
         public void Cancel()
         {
             pending = -1;
-            if (active != null) Destroy(active);
-            active = null;
+            active.Release(); active = default;
         }
         void OnDisable() => Cancel();
+        void OnDestroy() { slashPool?.Dispose(); flashPool?.Dispose(); }
     }
 }
 

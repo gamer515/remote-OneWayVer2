@@ -17,8 +17,8 @@ public static class CompressPlayableWeaponFall
  public static object Run(){
   if(EditorApplication.isPlaying)throw new Exception("Stop play first");
   var c=UnityEngine.Object.FindFirstObjectByType<NewPlayerAttackCombo>();var set=c.motions;var m=set.attacks[5];var old=m.clip;
-  const string path="Assets/3DBattle/NewPlayer/PlayableAttacks/NewPlayer_Attack06_FastFall.anim";
-  if(AssetDatabase.LoadAssetAtPath<AnimationClip>(path)!=null)throw new Exception("Already compressed");
+  const string path="Assets/3DBattle/NewPlayer/Runtime/Animations/NewPlayer_Attack06_FastFall.anim";
+  if(BattleCharacterAssetPaths.Load<AnimationClip>(path)!=null)throw new Exception("Already compressed");
   if(Mathf.Abs(m.Frames-78)>.01f)throw new Exception("Unexpected source duration");
   var controller=c.GetComponent<BattlePlayerController>().animator.runtimeAnimatorController as AnimatorController;if(controller==null)throw new Exception("Controller missing");
   System.IO.File.WriteAllText("Assets/3DBattle/Authoring~/AttackSetBeforeWeaponFallCompression.json",EditorJsonUtility.ToJson(set,true));

@@ -13,7 +13,7 @@ public static class BuildB2Cathedral
  static Material Mat(string name,string image)
  {
   var m=new Material(Shader.Find("Universal Render Pipeline/Unlit"));m.name=name;
-  m.SetTexture("_BaseMap",AssetDatabase.LoadAssetAtPath<Texture2D>(Folder+"/"+image));m.SetColor("_BaseColor",Color.white);m.SetFloat("_Cull",0);
+  m.SetTexture("_BaseMap",BattleCharacterAssetPaths.Load<Texture2D>(Folder+"/"+image));m.SetColor("_BaseColor",Color.white);m.SetFloat("_Cull",0);
   AssetDatabase.CreateAsset(m,Generated+"/"+name+".mat");return m;
  }
  static GameObject Surface(Transform root,string name,int nx,int ny,Func<float,float,Vector3> pos,Func<float,float,Vector2> uv,Material mat)

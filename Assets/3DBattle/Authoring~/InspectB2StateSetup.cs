@@ -13,7 +13,7 @@ public static class InspectB2StateSetup
   var battle=boss.GetComponentInParent<Battle3DSceneController>();
   var paths=AssetDatabase.FindAssets("t:Model",new[]{"Assets/3DBattle/Boss2/BossAnim"}).Select(AssetDatabase.GUIDToAssetPath).Where(p=>new[]{"Idle_02","Axe_Stance","run_fast_3_inplace","01a1a012","01a1bf9f"}.Any(p.Contains)).ToArray();
   var sources=paths.Select(p=>{
-   var model=AssetDatabase.LoadAssetAtPath<GameObject>(p);var clip=AssetDatabase.LoadAllAssetsAtPath(p).OfType<AnimationClip>().First(c=>!c.name.StartsWith("__preview__"));
+   var model=BattleCharacterAssetPaths.Load<GameObject>(p);var clip=BattleCharacterAssetPaths.LoadAll(p).OfType<AnimationClip>().First(c=>!c.name.StartsWith("__preview__"));
    return new{path=p,clip=clip.name,clip.length,clip.frameRate,bones=model.GetComponentsInChildren<SkinnedMeshRenderer>().First().bones.Select(t=>t.name).ToArray()};
   }).ToArray();
   var controller=animator.runtimeAnimatorController as AnimatorController;

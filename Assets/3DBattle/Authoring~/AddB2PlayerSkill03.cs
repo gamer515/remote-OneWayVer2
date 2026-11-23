@@ -20,7 +20,7 @@ public static class AddB2PlayerSkill03
   var playerAnimator=combo.GetComponentInChildren<Animator>();var motion=combo.motions.attacks[4];
   var bossAnimator=UnityEngine.Object.FindObjectsByType<Animator>(FindObjectsInactive.Include,FindObjectsSortMode.None).Single(a=>a.name.Contains("Heavy_Hammer")&&a.gameObject.activeInHierarchy);
   var source=UnityEngine.Object.Instantiate(playerAnimator.gameObject);
-  var target=UnityEngine.Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(AssetDatabase.GetAssetPath(PrefabUtility.GetCorrespondingObjectFromSource(bossAnimator.gameObject))));
+  var target=UnityEngine.Object.Instantiate(BattleCharacterAssetPaths.Load<GameObject>(AssetDatabase.GetAssetPath(PrefabUtility.GetCorrespondingObjectFromSource(bossAnimator.gameObject))));
   try
   {
    source.transform.SetPositionAndRotation(Vector3.zero,Quaternion.identity);source.transform.localScale=Vector3.one;
@@ -71,9 +71,9 @@ public static class AddB2PlayerSkill03
    for(int i=0;i<nodes.Length;i++)for(int j=0;j<10;j++){var c=curves[i][j];for(int k=0;k<c.length;k++){AnimationUtility.SetKeyLeftTangentMode(c,k,AnimationUtility.TangentMode.Linear);AnimationUtility.SetKeyRightTangentMode(c,k,AnimationUtility.TangentMode.Linear);}AnimationUtility.SetEditorCurve(clip,EditorCurveBinding.FloatCurve(AnimationUtility.CalculateTransformPath(nodes[i],target.transform),typeof(Transform),props[j]),c);}
    clip.EnsureQuaternionContinuity();float strikeFrame=motion.damageWindows[0].x+entryFrames;
    AnimationUtility.SetAnimationEvents(clip,new[]{new AnimationEvent{time=strikeFrame/30f,functionName="EmitB2Skill03Slash"}});
-   string clipPath=Folder+"B2_Skill03_FromPlayer.anim";var existing=AssetDatabase.LoadAssetAtPath<AnimationClip>(clipPath);if(existing){EditorUtility.CopySerialized(clip,existing);UnityEngine.Object.DestroyImmediate(clip);clip=existing;}else AssetDatabase.CreateAsset(clip,clipPath);
+   string clipPath=Folder+"B2_Skill03_FromPlayer.anim";var existing=BattleCharacterAssetPaths.Load<AnimationClip>(clipPath);if(existing){EditorUtility.CopySerialized(clip,existing);UnityEngine.Object.DestroyImmediate(clip);clip=existing;}else AssetDatabase.CreateAsset(clip,clipPath);
    var controller=(AnimatorController)bossAnimator.runtimeAnimatorController;
-   string backup=Folder+"B2_CrispSequence_BeforeSkill03.controller";if(!AssetDatabase.LoadAssetAtPath<AnimatorController>(backup))AssetDatabase.CopyAsset(AssetDatabase.GetAssetPath(controller),backup);
+   string backup=Folder+"B2_CrispSequence_BeforeSkill03.controller";if(!BattleCharacterAssetPaths.Load<AnimatorController>(backup))AssetDatabase.CopyAsset(AssetDatabase.GetAssetPath(controller),backup);
    var sm=controller.layers[0].stateMachine;var state=sm.states.Select(s=>s.state).FirstOrDefault(s=>s.name=="Skill03");if(!state)state=sm.AddState("Skill03",new Vector3(780,0,0));state.motion=clip;state.speed=combo.playbackSpeed;
    var weapon=sm.states.Select(s=>s.state).Single(s=>s.name=="WeaponCombo");var power=sm.states.Select(s=>s.state).Single(s=>s.name=="PowerSlash");
    foreach(var transition in weapon.transitions.Where(t=>t.destinationState==power)){Undo.RecordObject(transition,"Add B2 Skill03 to sequence");transition.destinationState=state;}

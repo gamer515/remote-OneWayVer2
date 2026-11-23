@@ -12,7 +12,7 @@ public static class PromoteDebugPlayer
 {
     const string Source = "Assets/Scenes/3DBattleDebugScene.unity";
     const string Target = "Assets/Scenes/3DBattleScene.unity";
-    const string AttackSet = "Assets/3DBattle/NewPlayer/PlayableAttacks/PlayerCombatAttackSet.asset";
+    const string AttackSet = "Assets/3DBattle/NewPlayer/Runtime/Data/PlayerCombatAttackSet.asset";
     static BattlePlayerController Player(Scene scene) => scene.GetRootGameObjects()
         .SelectMany(r => r.GetComponentsInChildren<BattlePlayerController>(true))
         .Single(p => p.name == "New Player - Attack Combo");
@@ -51,7 +51,7 @@ public static class PromoteDebugPlayer
             Directory.CreateDirectory("Temp/PlayerPromotion");
             File.Copy(Target,"Temp/PlayerPromotion/3DBattleScene.before.unity",true);
 
-            var set = AssetDatabase.LoadAssetAtPath<NewPlayerAttackSet>(AttackSet);
+            var set = BattleCharacterAssetPaths.Load<NewPlayerAttackSet>(AttackSet);
             if (set == null)
             {
                 set = UnityEngine.Object.Instantiate(sourceCombo.motions);

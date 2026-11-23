@@ -360,6 +360,7 @@ namespace OneWay.Battle3D
             if (wasEnabled) controller.enabled = true;
             if (authoredCombo != null && authoredCombo.CombatFeel != null) authoredCombo.ResetAirRecovery();
             GetComponent<BattlePlayerHealth>()?.ResetHealth();
+            GetComponent<DebugPlayerSpecialCombo>()?.ResetGauge();
             if (animator != null && animator.runtimeAnimatorController != null)
             {
                 animator.Rebind();

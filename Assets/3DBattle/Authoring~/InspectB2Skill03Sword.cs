@@ -14,7 +14,7 @@ public static class InspectB2Skill03Sword
   try
   {
    foreach(var g in new[]{p,b}){g.transform.SetPositionAndRotation(Vector3.zero,Quaternion.identity);g.transform.localScale=Vector3.one;foreach(var an in g.GetComponentsInChildren<Animator>())an.enabled=false;}
-   var pc=combo.motions.attacks[4].clip;var bc=AssetDatabase.LoadAssetAtPath<AnimationClip>("Assets/3DBattle/Boss2/BossAnim/Crisp/B2_Skill03_FromPlayer.anim");
+   var pc=combo.motions.attacks[4].clip;var bc=BattleCharacterAssetPaths.Load<AnimationClip>("Assets/3DBattle/Boss2/Runtime/Animations/B2_Skill03_FromPlayer.anim");
    var ps=p.GetComponentsInChildren<Transform>().Single(t=>t.name=="Sword");var bs=b.GetComponentsInChildren<Transform>().Single(t=>t.name=="B2 Holy Sword");
    int prefix=Mathf.RoundToInt((bc.length-pc.length)*30f);var frames=new List<object>();
    foreach(int f in new[]{0,1,3,6,10,16,20,26,36})

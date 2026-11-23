@@ -9,9 +9,9 @@ public static class ReviewB2DashLastCycle
  const string Folder="Assets/3DBattle/Boss2/BossAnim/Approach/";
  public static object Run()
  {
-  var prefab=AssetDatabase.LoadAssetAtPath<GameObject>(Folder+"B2_ApproachDash_Preview.prefab");
+  var prefab=BattleCharacterAssetPaths.Load<GameObject>(Folder+"B2_ApproachDash_Preview.prefab");
   var model=UnityEngine.Object.Instantiate(prefab);model.transform.SetPositionAndRotation(Vector3.zero,Quaternion.identity);model.transform.localScale=Vector3.one;model.GetComponent<Animator>().enabled=false;
-  var clip=AssetDatabase.LoadAssetAtPath<AnimationClip>(Folder+"B2_ApproachDash_InPlace.anim");
+  var clip=BattleCharacterAssetPaths.Load<AnimationClip>(Folder+"B2_ApproachDash_InPlace.anim");
   var cameraGo=new GameObject("B2 approach review camera");var camera=cameraGo.AddComponent<Camera>();camera.clearFlags=CameraClearFlags.SolidColor;camera.backgroundColor=new Color(.15f,.16f,.19f);camera.orthographic=true;camera.orthographicSize=1.55f;camera.nearClipPlane=.01f;camera.farClipPlane=100;camera.cullingMask=1<<30;
   int width=330,height=360;
   var atlas=new Texture2D(width*6,height*2,TextureFormat.RGB24,false);var tile=new Texture2D(width,height,TextureFormat.RGB24,false);var rt=new RenderTexture(width,height,24);camera.targetTexture=rt;var old=RenderTexture.active;

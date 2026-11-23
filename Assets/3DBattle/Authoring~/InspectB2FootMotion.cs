@@ -16,7 +16,7 @@ public static class InspectB2FootMotion
    string[] names={"B2_PowerSlash_Crisp","B2_DoubleCombo_Crisp","B2_WeaponCombo_Crisp","B2_Skill03_FromPlayer"};
    foreach(var name in names)
    {
-    var clip=AssetDatabase.LoadAssetAtPath<AnimationClip>("Assets/3DBattle/Boss2/BossAnim/Crisp/"+name+".anim");var frames=new List<object>();
+    var clip=BattleCharacterAssetPaths.Load<AnimationClip>("Assets/3DBattle/Boss2/BossAnim/Crisp/"+name+".anim");var frames=new List<object>();
     int end=Mathf.RoundToInt(clip.length*30);
     for(int f=0;f<=end;f++)
     {

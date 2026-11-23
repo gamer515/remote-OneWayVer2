@@ -253,18 +253,20 @@ public static class VerifyDebugSpecialCombo
             float leftLead=Vector3.Dot(lp-rp,s.player.transform.forward);
             float bodyTurn=Vector3.Angle(s.player.transform.forward,Vector3.ProjectOnPlane(hips.forward,Vector3.up));
             float chestTwist=Vector3.SignedAngle(Vector3.ProjectOnPlane(hips.forward,Vector3.up),Vector3.ProjectOnPlane(bone("Chest").forward,Vector3.up),Vector3.up);
-            Check(leftLead>.4f&&bodyTurn>85&&bodyTurn<94,"Preparation must lead with the left foot and turn the whole stance to the edited reference.");
-            Check(chestTwist<-15&&chestTwist>-28,"Chest must counter-turn relative to the pelvis instead of adding more spine twist.");
+            Check(leftLead>.4f&&bodyTurn>95&&bodyTurn<103,"Preparation must preserve frame 26's planted lower body.");
+            Check(chestTwist<-10&&chestTwist>-23,"Preparation must use frame 20's less twisted upper body.");
+            float uprightSwordAngle=Vector3.Angle(sword.forward,Vector3.up);
+            Check(uprightSwordAngle<18,"The frame 20 guard must keep the sword upright beside the head.");
             s.Advance(.64f-s.combo.FinisherHoldElapsed);
             Check(Vector3.Distance(hp,hips.position)<.001f,"Ready pose did not remain settled through .64 seconds.");
-            Check(Quaternion.Angle(sq,sword.rotation)<.1f,"Sword moved before the final .15 seconds.");
+            Check(Quaternion.Angle(sq,sword.rotation)<.1f,"Sword moved during the held guard.");
             s.Advance(.1599f);
             float drop=hp.y-hips.position.y;float pull=Quaternion.Angle(sq,sword.rotation);
             float planted=Mathf.Max(Vector3.Distance(lp,left.position),Vector3.Distance(rp,right.position));
             float pulledBodyTurn=Vector3.Angle(s.player.transform.forward,Vector3.ProjectOnPlane(hips.forward,Vector3.up));
             float pulledChestTwist=Vector3.SignedAngle(Vector3.ProjectOnPlane(hips.forward,Vector3.up),Vector3.ProjectOnPlane(bone("Chest").forward,Vector3.up),Vector3.up);
-            Check(pulledBodyTurn>95&&pulledBodyTurn<103&&pulledChestTwist<-15&&pulledChestTwist>-28,"Frame 26 must keep the user's pelvis/chest rotation distribution.");
-            Check(drop>.10f&&pull>25,"Final windup did not lower the body and pull the sword back.");
+            Check(pulledBodyTurn>95&&pulledBodyTurn<103&&pulledChestTwist<-10&&pulledChestTwist>-23,"Frame 26's pelvis and frame 20's chest must remain held until release.");
+            Check(Mathf.Abs(drop)<.001f&&pull<.1f,"The combined guard must remain unchanged for the entire .8 second hold.");
             Check(planted<.003f,"Feet slid during preparation: "+planted);
             Check(s.Hits==7&&Vector3.Distance(root,s.player.transform.position)<.001f,"Preparation moved root or caused damage.");
             var transforms=rig.GetComponentsInChildren<Transform>();var before=transforms.Select(t=>t.position).ToArray();
@@ -284,6 +286,10 @@ public static class VerifyDebugSpecialCombo
             float leadingStepAlongStance=Vector3.Dot(leadAfter-leadBefore,Quaternion.AngleAxis(33.8967f,Vector3.up)*Vector3.forward);
             Check(leadingStep>.14f&&leadingStepAlongStance>.21f&&Vector3.Distance(trailAfter,trailBefore)<.005f,"The left foot must step alone first along the turned stance.");
             Check(Vector3.Distance(root,s.player.transform.position)<.002f&&s.Hits==7,"Rush or damage started before the leading left-foot plant.");
+            s.Until(()=>s.combo.Frame>=29,.00002f);
+            var pulledSwordDirection=rig.transform.InverseTransformDirection(sword.forward);
+            float pullbackReferenceError=Vector3.Angle(pulledSwordDirection,new Vector3(-.6612f,.6763f,.3247f).normalized);
+            Check(pullbackReferenceError<2,"Frame 29 did not match the user's backward sword windup: "+pullbackReferenceError);
             s.Until(()=>s.combo.Frame>=31,.0002f);
             float passingFootLift=s.player.transform.InverseTransformPoint(right.position).y-trailBefore.y;
             Check(passingFootLift>.09f,"The passing right foot did not lift.");
@@ -299,7 +305,7 @@ public static class VerifyDebugSpecialCombo
                 s.Advance(.79f-s.combo.FinisherHoldElapsed);
                 Check(Vector3.Distance(unchanged,hips.position)<.001f&&Quaternion.Angle(rotation,sword.rotation)<.1f,"Empty optional clip changed legacy holding.");
             } finally {s.rules.finisherPreparation=prepared;}
-            return JsonConvert.SerializeObject(new{passed=true,holdSeconds=.8f,stablePoseSeconds=.65f,windupSeconds=.15f,bodyTurnDegrees=bodyTurn,chestTwistDegrees=chestTwist,pulledBodyTurnDegrees=pulledBodyTurn,pulledChestTwistDegrees=pulledChestTwist,leftLeadDuringPreparation=leftLead,leadingLeftStep=leadingStep,leadingStepAlongStance,passingRightFootLift=passingFootLift,rightLeadAtImpact=rightLead,pelvisDrop=drop,swordPullDegrees=pull,maxFootDrift=planted,commitPositionChange=maxPosition,commitRotationChange=maxRotation,productionOptOutPreserved=true},Formatting.Indented);
+            return JsonConvert.SerializeObject(new{passed=true,holdSeconds=.8f,stablePoseSeconds=.8f,bodyTurnDegrees=bodyTurn,chestTwistDegrees=chestTwist,uprightSwordAngle,pulledBodyTurnDegrees=pulledBodyTurn,pulledChestTwistDegrees=pulledChestTwist,leftLeadDuringPreparation=leftLead,leadingLeftStep=leadingStep,leadingStepAlongStance,pullbackReferenceError,passingRightFootLift=passingFootLift,rightLeadAtImpact=rightLead,pelvisDrop=drop,swordPullDegrees=pull,maxFootDrift=planted,commitPositionChange=maxPosition,commitRotationChange=maxRotation,productionOptOutPreserved=true},Formatting.Indented);
         }
     }
 }

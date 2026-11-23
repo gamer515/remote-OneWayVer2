@@ -24,7 +24,7 @@ public static class BuildB2PhaseSmokeAttack
   var stage=combat.GetComponentInParent<BattleStage>();var boundary=stage.boundary;
   if(!boundary||boundary.walls.Length!=4)throw new Exception("Four B2 boundary walls required");
   if(!AssetDatabase.IsValidFolder(Folder))AssetDatabase.CreateFolder("Assets/3DBattle/Boss2","Phase2");
-  var source=AssetDatabase.LoadAssetAtPath<GameObject>("Assets/3DBattle/Boss2/PhasePreview/B2_SmokeSlash_Preview.prefab").GetComponent<B2SmokeSlashPreview>();
+  var source=BattleCharacterAssetPaths.Load<GameObject>("Assets/3DBattle/Boss2/PhasePreview/B2_SmokeSlash_Preview.prefab").GetComponent<B2SmokeSlashPreview>();
   var cloudGo=new GameObject("B2 Phase Floating Gold Smoke");
   var shape=cloudGo.AddComponent<B2SmokeSlashPreview>();shape.enabled=false;shape.playOnStart=false;
   shape.cloudRoot=UnityEngine.Object.Instantiate(source.cloudRoot.gameObject,cloudGo.transform).transform;
@@ -69,8 +69,8 @@ public static class BuildB2PhaseSmokeAttack
    phase.hitLocalCenter=hit.center;phase.hitLocalSize=hit.size+Vector3.one*.02f;
   }
   finally{UnityEngine.Object.DestroyImmediate(visual);}
-  var retreat=AssetDatabase.LoadAssetAtPath<AnimationClip>("Assets/3DBattle/Boss2/PhasePreview/B2_WalkBackward_Preview.anim");
-  string loopPath=Folder+"/B2_PhaseRetreat_Loop.anim";var loop=AssetDatabase.LoadAssetAtPath<AnimationClip>(loopPath);
+  var retreat=BattleCharacterAssetPaths.Load<AnimationClip>("Assets/3DBattle/Boss2/PhasePreview/B2_WalkBackward_Preview.anim");
+  string loopPath=Folder+"/B2_PhaseRetreat_Loop.anim";var loop=BattleCharacterAssetPaths.Load<AnimationClip>(loopPath);
   if(!loop){loop=UnityEngine.Object.Instantiate(retreat);loop.name="B2_PhaseRetreat_Loop";AssetDatabase.CreateAsset(loop,loopPath);}
   var settings=AnimationUtility.GetAnimationClipSettings(loop);settings.loopTime=true;AnimationUtility.SetAnimationClipSettings(loop,settings);
   var controller=(AnimatorController)combat.animator.runtimeAnimatorController;var stateMachine=controller.layers[0].stateMachine;

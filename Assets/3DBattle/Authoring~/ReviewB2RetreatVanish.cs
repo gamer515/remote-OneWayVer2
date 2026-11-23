@@ -12,7 +12,7 @@ public static class ReviewB2RetreatVanish
  public static object Run()
  {
   var scene=EditorSceneManager.NewPreviewScene();
-  var prefab=AssetDatabase.LoadAssetAtPath<GameObject>(Folder+"B2_RetreatVanish_Preview.prefab");
+  var prefab=BattleCharacterAssetPaths.Load<GameObject>(Folder+"B2_RetreatVanish_Preview.prefab");
   var root=(GameObject)PrefabUtility.InstantiatePrefab(prefab,scene);
   var driver=root.GetComponent<B2RetreatVanishPreview>();
   var cg=new GameObject("Review camera");UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(cg,scene);

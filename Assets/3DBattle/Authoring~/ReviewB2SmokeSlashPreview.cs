@@ -20,7 +20,7 @@ public static class ReviewB2SmokeSlashPreview
  static object Render(bool closeup)
  {
   var scene=EditorSceneManager.NewPreviewScene();
-  var prefab=AssetDatabase.LoadAssetAtPath<GameObject>("Assets/3DBattle/Boss2/PhasePreview/B2_SmokeSlash_Preview.prefab");
+  var prefab=BattleCharacterAssetPaths.Load<GameObject>("Assets/3DBattle/Boss2/PhasePreview/B2_SmokeSlash_Preview.prefab");
   var root=(GameObject)PrefabUtility.InstantiatePrefab(prefab,scene);
   var driver=root.GetComponent<B2SmokeSlashPreview>();
   var cg=new GameObject("Review camera");UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(cg,scene);

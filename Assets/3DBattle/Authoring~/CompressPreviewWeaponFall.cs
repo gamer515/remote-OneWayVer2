@@ -9,7 +9,7 @@ public static class CompressPreviewWeaponFall
   var animator=GameObject.Find("Attack 06 - Weapon_Combo_1").GetComponentInChildren<Animator>();var controller=animator.runtimeAnimatorController as AnimatorController;var old=controller.animationClips.Single();
   if(Mathf.Abs(old.length*30-81)>.01f)throw new Exception("Unexpected source duration");
   const string path="Assets/3DBattle/NewPlayer/Attack/Recovery20/NewKnight_Weapon_Combo_1_Return20_FastFall.anim";
-  if(AssetDatabase.LoadAssetAtPath<AnimationClip>(path)!=null)throw new Exception("Output already exists");
+  if(BattleCharacterAssetPaths.Load<AnimationClip>(path)!=null)throw new Exception("Output already exists");
   var bindings=AnimationUtility.GetCurveBindings(old);var curves=bindings.Select(b=>AnimationUtility.GetEditorCurve(old,b)).ToArray();
   var clip=new AnimationClip{name="NewKnight_Weapon_Combo_1_Return20_FastFall",frameRate=30,wrapMode=old.wrapMode};
   AnimationUtility.SetEditorCurves(clip,bindings,curves.Select(Retime).ToArray());

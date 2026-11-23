@@ -29,7 +29,7 @@ public static class VerifySeparatePickaxeParry
         boss.GetComponent<BossActionController>().ResetController(); boss.GetComponent<BossPhaseTwo>().ResetPhase();
         var hit = boss.GetComponent<BossWeaponHit>(); var animator = boss.animator;
         var patterns = AssetDatabase.FindAssets("t:BossWeaponAttackPattern", new[] { "Assets/3DBattle/Settings" })
-            .Select(AssetDatabase.GUIDToAssetPath).Select(AssetDatabase.LoadAssetAtPath<BossWeaponAttackPattern>).ToArray();
+            .Select(AssetDatabase.GUIDToAssetPath).Select(BattleCharacterAssetPaths.Load<BossWeaponAttackPattern>).ToArray();
         var combo = patterns.Single(p => p.name == "B1_Attack7_Smooth10_20");
         var dummy = new GameObject("Temporary parry range target");
         var health = dummy.AddComponent<BattlePlayerHealth>(); health.maxHealth = 1000; health.ResetHealth();

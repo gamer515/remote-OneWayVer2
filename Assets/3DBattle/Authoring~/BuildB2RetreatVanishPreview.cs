@@ -29,13 +29,13 @@ public static class BuildB2RetreatVanishPreview
  static AnimationClip Convert(GameObject target)
  {
   string path=AssetDatabase.FindAssets("t:Model",new[]{"Assets/3DBattle/Boss2/BossAnim"}).Select(AssetDatabase.GUIDToAssetPath).Single(p=>p.Contains("Walk_Backward_with_Sword"));
-  var source=UnityEngine.Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(path));SafeModel(source);
+  var source=UnityEngine.Object.Instantiate(BattleCharacterAssetPaths.Load<GameObject>(path));SafeModel(source);
   try
   {
    var src=Bones(source);var dst=Bones(target);var sr=Rest(source);var tr=Rest(target);
-   var clip=AssetDatabase.LoadAllAssetsAtPath(path).OfType<AnimationClip>().First(c=>!c.name.StartsWith("__preview__"));
+   var clip=BattleCharacterAssetPaths.LoadAll(path).OfType<AnimationClip>().First(c=>!c.name.StartsWith("__preview__"));
    var joints=target.GetComponentsInChildren<Transform>(true).Where(t=>t.IsChildOf(dst["Hips"])&&!t.name.Contains("Sword")).ToArray();
-   var grip=AssetDatabase.LoadAssetAtPath<AnimationClip>("Assets/3DBattle/Boss2/BossAnim/Crisp/B2_PowerSlash_Crisp.anim");grip.SampleAnimation(target,0);
+   var grip=BattleCharacterAssetPaths.Load<AnimationClip>("Assets/3DBattle/Boss2/Runtime/Animations/B2_PowerSlash_Crisp.anim");grip.SampleAnimation(target,0);
    var fingers=joints.Where(t=>t.name.StartsWith("Right")&&(t.name.Contains("Thumb")||t.name.Contains("Middle"))).ToDictionary(t=>t,t=>t.localRotation);
    foreach(var t in joints)t.SetPositionAndRotation(Pos(tr[t.name]),tr[t.name].rotation);
    var restP=joints.Select(t=>t.localPosition).ToArray();var restQ=joints.Select(t=>t.localRotation).ToArray();
@@ -70,7 +70,7 @@ public static class BuildB2RetreatVanishPreview
     AnimationUtility.SetEditorCurve(result,EditorCurveBinding.FloatCurve(AnimationUtility.CalculateTransformPath(pair.Key,target.transform),typeof(Transform),Props[k]),curve);
    }
    result.EnsureQuaternionContinuity();
-   string outPath=Folder+"/B2_WalkBackward_Preview.anim";var old=AssetDatabase.LoadAssetAtPath<AnimationClip>(outPath);
+   string outPath=Folder+"/B2_WalkBackward_Preview.anim";var old=BattleCharacterAssetPaths.Load<AnimationClip>(outPath);
    if(old){EditorUtility.CopySerialized(result,old);UnityEngine.Object.DestroyImmediate(result);EditorUtility.SetDirty(old);return old;}
    AssetDatabase.CreateAsset(result,outPath);return result;
   }
@@ -98,7 +98,7 @@ public static class BuildB2RetreatVanishPreview
   var driver=root.AddComponent<B2RetreatVanishPreview>();driver.model=model;driver.movingRoot=moving.transform;driver.backwardClip=clip;
   driver.bodyRenderers=model.GetComponentsInChildren<Renderer>(true);
   var smokeRoot=new GameObject("Vanish Smoke - 8 Layers");smokeRoot.transform.SetParent(moving.transform,false);
-  var slash=AssetDatabase.LoadAssetAtPath<GameObject>("Assets/3DBattle/Boss2/GoldenSlashVFX/B2GoldenSlash.prefab");
+  var slash=BattleCharacterAssetPaths.Load<GameObject>("Assets/3DBattle/Boss2/GoldenSlashVFX/B2GoldenSlash.prefab");
   var sources=slash.GetComponent<B2SlashTrailLayout>().center.GetComponentsInChildren<ParticleSystem>(true);
   var materials=new Material[2];
   for(int m=0;m<2;m++)
@@ -107,7 +107,7 @@ public static class BuildB2RetreatVanishPreview
    var copy=new Material(sources[m].GetComponent<ParticleSystemRenderer>().sharedMaterial);
    copy.name="Vanish Smoke "+(m==0?"Ribbon":"Wisp");
    copy.SetFloat("_SoftParticles",100);copy.SetFloat("_AlphaClip",0);copy.SetFloat("_Clip",0);copy.DisableKeyword("_ALPHATEST_ON");
-   materials[m]=AssetDatabase.LoadAssetAtPath<Material>(mp);
+   materials[m]=BattleCharacterAssetPaths.Load<Material>(mp);
    if(materials[m]){EditorUtility.CopySerialized(copy,materials[m]);UnityEngine.Object.DestroyImmediate(copy);EditorUtility.SetDirty(materials[m]);}
    else{materials[m]=copy;AssetDatabase.CreateAsset(copy,mp);}
   }

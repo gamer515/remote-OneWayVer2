@@ -1,0 +1,165 @@
+﻿미사용 모델·애니메이션 정리 완료 (2026-11-23)
+
+검사 씬: MainMenuScene, DecisionScene, 3DBattleScene, 3DBattleDebugScene
+삭제: 148개, 1.14 GiB (해당 .meta도 함께 휴지통으로 이동)
+현재 Runtime 자산 90개 유지. 씬 파일/참조, 열린 씬의 미저장 상태, 보존 파일 12,758개 검증 통과.
+공유 설정/샘플 씬을 깨뜨리지 않기 위해 아래 공유 파일 7개는 보존했습니다.
+Assets/3DBattle/Boss1/Charged_Slash_InPlace_Boss1.anim <- Shared by retained asset: Assets/3DBattle/Settings/B1_Attack14.asset
+Assets/3DBattle/Boss1/Right_Hand_Sword_Slash_InPlace_Boss1.anim <- Shared by retained asset: Assets/3DBattle/Settings/B1_Attack10.asset
+Assets/3DBattle/slash5-HungNguyen/prefab/ground 1.prefab <- Shared by retained asset: Assets/3DBattle/slash5-HungNguyen/sample scene-slash5-HungNguyen.unity
+Assets/3DBattle/Boss1/Axe_Spin_Attack_InPlace_Boss1.anim <- Shared by retained asset: Assets/3DBattle/Settings/B1_Attack6.asset
+Assets/3DBattle/Boss1/Skill_03_InPlace_Boss1.anim <- Shared by retained asset: Assets/3DBattle/Settings/B1_Attack9.asset
+Assets/3DBattle/Boss1/Attack_InPlace_Boss1.anim <- Shared by retained asset: Assets/3DBattle/Settings/B1_BasicAttack3.asset
+Assets/3DBattle/Boss1/Weapon_Combo_InPlace_Boss1.anim <- Shared by retained asset: Assets/3DBattle/Settings/B1_Attack7.asset
+
+과거 제작 도구에서만 사용하는 원본과 백업도 삭제 대상에 포함됩니다. 해당 옛 작업을 재생성하려면 삭제 목록의 원본과 .meta를 휴지통에서 함께 복원해야 합니다.
+
+삭제 목록:
+Animation clip | Assets/3DBattle/3DBattleDebug/Finisher/Backups/DebugFinisher_UserEdit_BeforeIntegerCleanup_20261120_204526.anim
+Animation clip | Assets/3DBattle/3DBattleDebug/Finisher/Backups/DebugFinisher_UserEdit_BeforeRightRecovery_20261120_222708.anim
+Animation controller | Assets/3DBattle/3DBattleDebug/RunningKnight/RunningKnight.controller
+Animation clip | Assets/3DBattle/3DBattleDebug/RunningKnight/RunningKnight_Run_Loop.anim
+Mesh | Assets/3DBattle/3DBattleDebug/RunningKnight/RunningKnightBody.asset
+Animation clip | Assets/3DBattle/Animations/voltslashnew01.anim
+Authoring model source | Assets/3DBattle/Authoring~/B2SlashSmoothed.blend
+Authoring model source | Assets/3DBattle/Authoring~/B2SlashSmoothed.blend1
+Authoring model source | Assets/3DBattle/Authoring~/DwarfEyeFixed.blend
+Authoring model source | Assets/3DBattle/Authoring~/KnightVoltCombo_UserKeys.blend
+Authoring model source | Assets/3DBattle/Authoring~/MeshyRigFixed.fbx
+Model source | Assets/3DBattle/Boss1/Meshy_AI_boss_character_model_biped_16/Meshy_AI_boss_character_model_biped_Animation_Run_03_withSkin.fbx
+Model source | Assets/3DBattle/Boss1/Meshy_AI_boss_character_model_biped_17/Meshy_AI_boss_character_model_biped_Animation_Jump_with_Arms_Open_withSkin.fbx
+Model source | Assets/3DBattle/Boss1/Meshy_AI_boss_character_model_biped_18/Meshy_AI_boss_character_model_biped_Animation_Skill_01_withSkin.fbx
+Model prefab | Assets/3DBattle/Boss1/Pickaxe/pickaxe.prefab
+Animation clip | Assets/3DBattle/Boss1/Skill_02_Phase2_TenSpins_BeforeSpeedRamp.anim
+Model prefab | Assets/3DBattle/Boss2/B2WhiteSlash.prefab
+Mesh | Assets/3DBattle/Boss2/B2WhiteSlashMesh.asset
+Mesh | Assets/3DBattle/Boss2/B2WhiteSlashMesh_Smooth.asset
+Character prefab | Assets/3DBattle/Boss2/BossAnim/Approach/B2_ApproachDash_Preview.prefab
+Animation clip | Assets/3DBattle/Boss2/BossAnim/Approach/B2_ApproachDash_Travel.anim
+Animation clip | Assets/3DBattle/Boss2/BossAnim/Approach/Backups/B2_ApproachDash_BeforeLowerBodySmoothing.anim
+Animation clip | Assets/3DBattle/Boss2/BossAnim/Approach/Backups/B2_ApproachDash_BeforeThirdKneeRemoval.anim
+Animation clip | Assets/3DBattle/Boss2/BossAnim/Approach/Backups/B2_ApproachDash_InPlace_BeforeLowerBodySmoothing.anim
+Animation clip | Assets/3DBattle/Boss2/BossAnim/Approach/Backups/B2_ApproachDash_InPlace_BeforeThirdKneeRemoval.anim
+Avatar | Assets/3DBattle/Boss2/BossAnim/ConvertedA/B2_A_GenericAvatar.asset
+Animation clip | Assets/3DBattle/Boss2/BossAnim/ConvertedA/B2_RetargetClip_A.anim
+Animation controller | Assets/3DBattle/Boss2/BossAnim/ConvertedA/B2_RetargetClip_A.controller
+Character prefab | Assets/3DBattle/Boss2/BossAnim/ConvertedA/B2_RetargetClip_A.prefab
+Animation controller | Assets/3DBattle/Boss2/BossAnim/Crisp/B2_CrispSequence.controller
+Animation controller | Assets/3DBattle/Boss2/BossAnim/Crisp/B2_CrispSequence_BeforeSkill03.controller
+Animation controller | Assets/3DBattle/Boss2/BossAnim/Crisp/Backups/B2_CrispSequence_BeforePauses.controller
+Animation clip | Assets/3DBattle/Boss2/BossAnim/Crisp/Backups/B2_Skill03_BeforeHorizontalSword.anim
+Animation clip | Assets/3DBattle/Boss2/BossAnim/Crisp/Pauses/B2_PauseAfter_DoubleCombo.anim
+Animation clip | Assets/3DBattle/Boss2/BossAnim/Crisp/Pauses/B2_PauseAfter_PowerSlash.anim
+Animation clip | Assets/3DBattle/Boss2/BossAnim/Crisp/Pauses/B2_PauseAfter_Skill03.anim
+Animation clip | Assets/3DBattle/Boss2/BossAnim/Crisp/Pauses/B2_PauseAfter_WeaponCombo.anim
+Model source | Assets/3DBattle/Boss2/BossAnim/Meshy_AI_lowpoly_paladin_tpose_3d_20261030_animated_unity_humanoid_01a1a012_8420_754d_84f5_6b80d02a94ed/Meshy_AI_lowpoly_paladin_tpose_3d_20261030_animated_unity_humanoid_01a1a012_8420_754d_84f5_6b80d02a94ed.fbx
+Model source | Assets/3DBattle/Boss2/BossAnim/Meshy_AI_lowpoly_paladin_tpose_3d_20261030_animated_unity_humanoid_01a1b97c_879d_72c5_ac98_8283ff21ce00/Meshy_AI_lowpoly_paladin_tpose_3d_20261030_animated_unity_humanoid_01a1b97c_879d_72c5_ac98_8283ff21ce00.fbx
+Model source | Assets/3DBattle/Boss2/BossAnim/Meshy_AI_lowpoly_paladin_tpose_3d_20261030_animated_unity_humanoid_01a1bf98_ef2c_74f0_ad5b_babf9196c73c/Meshy_AI_lowpoly_paladin_tpose_3d_20261030_animated_unity_humanoid_01a1bf98_ef2c_74f0_ad5b_babf9196c73c.fbx
+Model source | Assets/3DBattle/Boss2/BossAnim/Meshy_AI_lowpoly_paladin_tpose_3d_20261030_animated_unity_humanoid_01a1bf9f_45c6_74e6_91af_46091742b00c/Meshy_AI_lowpoly_paladin_tpose_3d_20261030_animated_unity_humanoid_01a1bf9f_45c6_74e6_91af_46091742b00c.fbx
+Model source | Assets/3DBattle/Boss2/BossAnim/Meshy_AI_lowpoly_paladin_tpose_3d_20261030_animated_unity_humanoid_Axe_Stance/Meshy_AI_lowpoly_paladin_tpose_3d_20261030_animated_unity_humanoid_Axe_Stance.fbx
+Model source | Assets/3DBattle/Boss2/BossAnim/Meshy_AI_lowpoly_paladin_tpose_3d_20261030_animated_unity_humanoid_Double_Combo_Attack/Meshy_AI_lowpoly_paladin_tpose_3d_20261030_animated_unity_humanoid_Double_Combo_Attack.fbx
+Model source | Assets/3DBattle/Boss2/BossAnim/Meshy_AI_lowpoly_paladin_tpose_3d_20261030_animated_unity_humanoid_Idle_02/Meshy_AI_lowpoly_paladin_tpose_3d_20261030_animated_unity_humanoid_Idle_02.fbx
+Model source | Assets/3DBattle/Boss2/BossAnim/Meshy_AI_lowpoly_paladin_tpose_3d_20261030_animated_unity_humanoid_run_fast_3_inplace/Meshy_AI_lowpoly_paladin_tpose_3d_20261030_animated_unity_humanoid_run_fast_3_inplace.fbx
+Model source | Assets/3DBattle/Boss2/BossAnim/Meshy_AI_lowpoly_paladin_tpose_3d_20261030_animated_unity_humanoid_Walk_Backward_with_Sword_inplace/Meshy_AI_lowpoly_paladin_tpose_3d_20261030_animated_unity_humanoid_Walk_Backward_with_Sword_inplace.fbx
+Model source | Assets/3DBattle/Boss2/BossAnim/Meshy_AI_lowpoly_paladin_tpose_3d_20261030_animated_unity_humanoid_Weapon_Combo/Meshy_AI_lowpoly_paladin_tpose_3d_20261030_animated_unity_humanoid_Weapon_Combo.fbx
+Animation clip | Assets/3DBattle/Boss2/BossAnim/StateMachine/B2_Axe_Stance.anim
+Model prefab | Assets/3DBattle/Boss2/Cathedral/Chair/Furns_Chair_7.prefab
+Model source | Assets/3DBattle/Boss2/Cathedral/LowPillar/LowPillar.fbx
+Model source | Assets/3DBattle/Boss2/Meshy_AI_symmetric_white_slash_3d_20261105_generate.fbx
+Character prefab | Assets/3DBattle/Boss2/PhasePreview/B2_RetreatVanish_Preview.prefab
+Model source | Assets/3DBattle/BrokenVector/LowPolyRockPack/Models/Rock Type1 01.dae
+Model source | Assets/3DBattle/BrokenVector/LowPolyRockPack/Models/Rock Type1 03.dae
+Model source | Assets/3DBattle/BrokenVector/LowPolyRockPack/Models/Rock Type1 04.dae
+Model source | Assets/3DBattle/BrokenVector/LowPolyRockPack/Models/Rock Type2 01.dae
+Model source | Assets/3DBattle/BrokenVector/LowPolyRockPack/Models/Rock Type2 02.dae
+Model source | Assets/3DBattle/BrokenVector/LowPolyRockPack/Models/Rock Type2 04.dae
+Model source | Assets/3DBattle/BrokenVector/LowPolyRockPack/Models/Rock Type3 01.dae
+Model source | Assets/3DBattle/BrokenVector/LowPolyRockPack/Models/Rock Type3 02.dae
+Model source | Assets/3DBattle/BrokenVector/LowPolyRockPack/Models/Rock Type3 03.dae
+Model source | Assets/3DBattle/BrokenVector/LowPolyRockPack/Models/Rock Type3 04.dae
+Model source | Assets/3DBattle/BrokenVector/LowPolyRockPack/Models/Rock Type4 02.dae
+Model source | Assets/3DBattle/BrokenVector/LowPolyRockPack/Models/Rock Type5 01.dae
+Model source | Assets/3DBattle/BrokenVector/LowPolyRockPack/Models/Rock Type5 04.dae
+Model source | Assets/3DBattle/BrokenVector/LowPolyRockPack/Models/Rock Type6 03.dae
+Model source | Assets/3DBattle/BrokenVector/LowPolyRockPack/Models/Rock Type6 04.dae
+Model prefab | Assets/3DBattle/BrokenVector/LowPolyRockPack/Prefabs/Rock Type1 01.prefab
+Model prefab | Assets/3DBattle/BrokenVector/LowPolyRockPack/Prefabs/Rock Type1 03.prefab
+Model prefab | Assets/3DBattle/BrokenVector/LowPolyRockPack/Prefabs/Rock Type1 04.prefab
+Model prefab | Assets/3DBattle/BrokenVector/LowPolyRockPack/Prefabs/Rock Type2 01.prefab
+Model prefab | Assets/3DBattle/BrokenVector/LowPolyRockPack/Prefabs/Rock Type2 02.prefab
+Model prefab | Assets/3DBattle/BrokenVector/LowPolyRockPack/Prefabs/Rock Type2 04.prefab
+Model prefab | Assets/3DBattle/BrokenVector/LowPolyRockPack/Prefabs/Rock Type3 01.prefab
+Model prefab | Assets/3DBattle/BrokenVector/LowPolyRockPack/Prefabs/Rock Type3 02.prefab
+Model prefab | Assets/3DBattle/BrokenVector/LowPolyRockPack/Prefabs/Rock Type3 03.prefab
+Model prefab | Assets/3DBattle/BrokenVector/LowPolyRockPack/Prefabs/Rock Type3 04.prefab
+Model prefab | Assets/3DBattle/BrokenVector/LowPolyRockPack/Prefabs/Rock Type4 02.prefab
+Model prefab | Assets/3DBattle/BrokenVector/LowPolyRockPack/Prefabs/Rock Type5 01.prefab
+Model prefab | Assets/3DBattle/BrokenVector/LowPolyRockPack/Prefabs/Rock Type5 04.prefab
+Model prefab | Assets/3DBattle/BrokenVector/LowPolyRockPack/Prefabs/Rock Type6 03.prefab
+Model prefab | Assets/3DBattle/BrokenVector/LowPolyRockPack/Prefabs/Rock Type6 04.prefab
+Mesh | Assets/3DBattle/Effects/PlayerRefractiveCrescent.asset
+Model prefab | Assets/3DBattle/Effects/PlayerRefractiveSlash.prefab
+Model source | Assets/3DBattle/Meshy_AI_boss_character_model_biped/Meshy_AI_boss_character_model_biped_Meshy_Merged_Animations.fbx
+Model source | Assets/3DBattle/Meshy_AI_boss_character_model_biped_all/Meshy_AI_boss_character_model_biped_Meshy_Merged_Animations.fbx
+Model source | Assets/3DBattle/Meshy_AI_boss_character_model_biped_attack/Meshy_AI_boss_character_model_biped_Animation_Basic_Jump_withSkin.fbx
+Model source | Assets/3DBattle/Meshy_AI_boss_character_model_biped_rest/Meshy_AI_boss_character_model_biped_Animation_Axe_Breathe_and_Look_Around_withSkin.fbx
+Animation clip | Assets/3DBattle/Meshy_AI_lowpoly_paladin_tpose_biped/Heavy_Hammer_Swing_B2_Loop.anim
+Animation controller | Assets/3DBattle/Meshy_AI_lowpoly_paladin_tpose_biped/Paladin_B2_Loop.controller
+Character prefab | Assets/3DBattle/MeshyPlayer/Converted/FiveHitComboPreview.prefab
+Model source | Assets/3DBattle/MeshyPlayer/Meshy_AI_KnightCharacter_Attack.fbx
+Model source | Assets/3DBattle/MeshyPlayer/Meshy_AI_KnightCharacter_Double_Combo_Attack.fbx
+Model source | Assets/3DBattle/MeshyPlayer/Meshy_AI_KnightCharacter_Female_Crouch_Pick_Fr.fbx
+Model source | Assets/3DBattle/MeshyPlayer/Meshy_AI_KnightCharacter_Run_03.fbx
+Model source | Assets/3DBattle/MeshyPlayer/Meshy_AI_KnightCharacter_Run_Jump_and_Roll.fbx
+Model source | Assets/3DBattle/MeshyPlayer/Meshy_AI_KnightCharacter_Shield_Push_Left.fbx
+Model source | Assets/3DBattle/MeshyPlayer/Meshy_AI_KnightCharacter_Weapon_Combo.fbx
+Animation clip | Assets/3DBattle/NewPlayer/Attack/ComboPreview/NewKnight_ComboSequence_AttackWindows.anim
+Animation controller | Assets/3DBattle/NewPlayer/Attack/ComboPreview/NewKnight_ComboSequence_AttackWindows.controller
+Animation clip | Assets/3DBattle/NewPlayer/Attack/ComboPreview/NewKnight_ComboSequence_Preview.anim
+Animation controller | Assets/3DBattle/NewPlayer/Attack/ComboPreview/NewKnight_ComboSequence_Preview.controller
+Animation clip | Assets/3DBattle/NewPlayer/Attack/ComboPreview/NewKnight_ComboSequence_Preview_BeforeForwardFacing.anim
+Animation clip | Assets/3DBattle/NewPlayer/Attack/ComboPreview/NewKnight_ComboSequence_Preview_BeforeSkillReplacement.anim
+Animation clip | Assets/3DBattle/NewPlayer/Attack/ComboPreview/NewKnight_ComboSequence_ShortPreview.anim
+Animation controller | Assets/3DBattle/NewPlayer/Attack/ComboPreview/NewKnight_ComboSequence_ShortPreview.controller
+Model source | Assets/3DBattle/NewPlayer/Attack/Meshy_AI_KnightCharacter_rigged_20261021_animated_unity_humanoid_Attack.fbx
+Model source | Assets/3DBattle/NewPlayer/Attack/Meshy_AI_KnightCharacter_rigged_20261021_animated_unity_humanoid_Charged_Upward_Slash.fbx
+Model source | Assets/3DBattle/NewPlayer/Attack/Meshy_AI_KnightCharacter_rigged_20261021_animated_unity_humanoid_Double_Combo_Attack.fbx
+Model source | Assets/3DBattle/NewPlayer/Attack/Meshy_AI_KnightCharacter_rigged_20261021_animated_unity_humanoid_Right_Hand_Sword_Slash.fbx
+Model source | Assets/3DBattle/NewPlayer/Attack/Meshy_AI_KnightCharacter_rigged_20261021_animated_unity_humanoid_Skill_03.fbx
+Model source | Assets/3DBattle/NewPlayer/Attack/Meshy_AI_KnightCharacter_rigged_20261021_animated_unity_humanoid_Weapon_Combo_1.fbx
+Animation clip | Assets/3DBattle/NewPlayer/Attack/Previews/BeforeAttack01TailFit_20261103/NewKnight_Attack_Preview.anim
+Animation clip | Assets/3DBattle/NewPlayer/Attack/Previews/BeforeAttack01TailSmoothing_20261103/NewKnight_Attack_Preview.anim
+Animation clip | Assets/3DBattle/NewPlayer/Attack/Previews/BeforeHandFit/NewKnight_Attack_Preview.anim
+Animation clip | Assets/3DBattle/NewPlayer/Attack/Previews/BeforeHandFit/NewKnight_Charged_Upward_Slash_Preview.anim
+Animation clip | Assets/3DBattle/NewPlayer/Attack/Previews/BeforeHandFit/NewKnight_Double_Combo_Attack_Preview.anim
+Animation clip | Assets/3DBattle/NewPlayer/Attack/Previews/BeforeHandFit/NewKnight_Right_Hand_Sword_Slash_Preview.anim
+Animation clip | Assets/3DBattle/NewPlayer/Attack/Previews/BeforeHandFit/NewKnight_Weapon_Combo_1_Preview.anim
+Animation clip | Assets/3DBattle/NewPlayer/Attack/Previews/NewKnight_Attack_Preview.anim
+Animation controller | Assets/3DBattle/NewPlayer/Attack/Previews/NewKnight_Attack_Preview.controller
+Animation clip | Assets/3DBattle/NewPlayer/Attack/Previews/NewKnight_Attack_Preview_BeforeEditableSword.anim
+Animation clip | Assets/3DBattle/NewPlayer/Attack/Previews/NewKnight_Charged_Upward_Slash_Preview.anim
+Animation controller | Assets/3DBattle/NewPlayer/Attack/Previews/NewKnight_Charged_Upward_Slash_Preview.controller
+Animation clip | Assets/3DBattle/NewPlayer/Attack/Previews/NewKnight_Double_Combo_Attack_Preview.anim
+Animation controller | Assets/3DBattle/NewPlayer/Attack/Previews/NewKnight_Double_Combo_Attack_Preview.controller
+Animation clip | Assets/3DBattle/NewPlayer/Attack/Previews/NewKnight_Right_Hand_Sword_Slash_Preview.anim
+Animation controller | Assets/3DBattle/NewPlayer/Attack/Previews/NewKnight_Right_Hand_Sword_Slash_Preview.controller
+Animation clip | Assets/3DBattle/NewPlayer/Attack/Previews/NewKnight_Skill_03_Preview_BeforeForwardFacing.anim
+Animation clip | Assets/3DBattle/NewPlayer/Attack/Previews/NewKnight_Skill_03_Preview_BeforeUniform90.anim
+Animation clip | Assets/3DBattle/NewPlayer/Attack/Previews/NewKnight_Weapon_Combo_1_Preview.anim
+Animation controller | Assets/3DBattle/NewPlayer/Attack/Previews/NewKnight_Weapon_Combo_1_Preview.controller
+Animation clip | Assets/3DBattle/NewPlayer/Attack/Recovery20/NewKnight_Charged_Upward_Slash_Return20.anim
+Animation clip | Assets/3DBattle/NewPlayer/Attack/Recovery20/NewKnight_IdleReady.anim
+Animation clip | Assets/3DBattle/NewPlayer/Attack/Recovery20/NewKnight_Weapon_Combo_1_Return20.anim
+Mesh | Assets/3DBattle/NewPlayer/Converted/DefeatBody_BeforeRightFist.asset
+Animation clip | Assets/3DBattle/NewPlayer/Converted/NewKnight_ShieldParry_BeforeArmAdjustment.anim
+Mesh | Assets/3DBattle/NewPlayer/Converted/RollBody_BeforeRightFist.asset
+Model source | Assets/3DBattle/NewPlayer/Meshy_AI_KnightCharacter_rigge_Female_Crouch_Pick_Fr.fbx
+Model source | Assets/3DBattle/NewPlayer/Meshy_AI_KnightCharacter_rigge_hit.fbx
+Model source | Assets/3DBattle/NewPlayer/Meshy_AI_KnightCharacter_rigge_Run_Jump_and_Roll.fbx
+Model source | Assets/3DBattle/NewPlayer/Meshy_AI_KnightCharacter_rigge_Running.fbx
+Model source | Assets/3DBattle/NewPlayer/Meshy_AI_KnightCharacter_rigge_Sword_Parry_Backward_.fbx
+Animation clip | Assets/3DBattle/NewPlayer/PlayableAttacks/NewPlayer_Attack02_Compressed.anim
+Animation clip | Assets/3DBattle/NewPlayer/PlayableAttacks/NewPlayer_Attack06.anim
+Animation set | Assets/3DBattle/NewPlayer/PlayableAttacks/NewPlayerAttackSet.asset
+Character prefab | Assets/3DBattle/Prefabs/BattleKnight.prefab
+Character prefab | Assets/3DBattle/Prefabs/DungeonBoss.prefab
