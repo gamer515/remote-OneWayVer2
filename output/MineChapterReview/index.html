@@ -821,4 +821,9 @@ a:focus-visible{outline:2px solid #cfe8fb;outline-offset:3px}
 <p>현재 배치의 위치 (6.53864, −7.25350, −3.24840), 회전 (90°, 0°, 0°), 스케일 (1.93377, 3.30519, 1)을 DecisionScene에 저장했다. 게임이 씬을 열 때 이 값으로 책장을 생성한다. Unity 컴파일과 같은 값으로 두 차례 생성되는 것을 확인했다. 진행 중 회차를 유지해 메인 메뉴의 새 게임·이어하기는 다시 실행하지 않았다. 임시 검증 코드는 없다.</p>
 <p>후속 참조 사진에 표시된 Cabinet 메시의 로컬 위치 (0.08, −0.028, 0)를 CounterBookshelf 프리팹에 적용했다. 보관 슬롯과 도감은 Cabinet의 좌표계를 사용한다. 별도 테스트 저장으로 메인 메뉴의 새 게임과 이어하기 모두에서 메시와 슬롯이 같은 위치로 생성되는 것을 확인했다. 임시 검증 코드는 없다.</p>
 </section>
+<section id="l05-book-refill-check"><h2>2026-11-23 L05 책 생성과 리필 점검</h2>
+<p>기존 리필 가격은 해당 능력 코인 1개에 그 계열의 이전 리필 성공 횟수를 더한 값이다. 리필마다 책 3권이 추가된다. Unity의 별도 테스트 저장에서 힘 책은 첫 리필에서 코인 1개로 3권에서 6권, 다음 리필에서 코인 2개로 6권에서 9권이 됐다. 재고를 사용해 0권으로 만든 뒤 세 번째 리필은 코인 3개로 3권을 추가했다. 세 번 모두 투입구 호버의 가격과 실제 차감량이 일치했다.</p>
+<p>요청당 재고만 1권 줄고 지갑과 하루 학습량은 그대로였다. 배출구가 점유되면 책은 대기열에 들어갔고, 테스트 한도인 15권까지 차면 생성 요청이 재고를 사용하지 않았다. 가득 찬 대기열에서도 리필이 가능했다. 지능 2와 18에서 하루 학습 한도는 각각 2와 13이었다.</p>
+<p>잔액 부족과 다른 능력 코인 투입, 두 번째 리필의 부분 투입 후 Esc 취소에 차감과 재고 추가가 없었다. 메인 메뉴 이어하기에서 세 번째 리필 이후 힘 코인 12개·책 3권·다음 가격 4개·대기열 15권을 확인했다. 저장 전 부분 투입한 코인은 이어하기에서 예약이 해제됐다. 코드와 설정 변경은 없으며 별도 임시 검증 코드는 없다.</p>
+</section>
 </main><script>const oldSections = new Set(["mine-facility-layout-nov08","five-minute-day-nov08","tax-catalog-nov08","open-mine-calendar-nov08","encounter-panel-nov08","chapter-modules-nov08","payment-latest","dispenser-latest","npc-hero-latest","choice-depth-latest","layout-combat-latest","learning-plan","coastal-module-plan","place-types-plan","story-management","structure","screens","expansion","verification","cleanup"]); const id = location.hash.slice(1); if (oldSections.has(id)) location.replace("work-history.html#" + id);</script></body></html>
