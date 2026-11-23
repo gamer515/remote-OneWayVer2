@@ -22,6 +22,7 @@ public class UiController : MonoBehaviour
 
     [SerializeField] private MainStoryUi mainStoryUi;
     [SerializeField] private ViewUi viewUi;
+    private readonly NpcMumbleVoice npcVoice = new NpcMumbleVoice();
 
     public event Action<bool> OnPlayerViewChanged;
     public void FlashPlayerHit() => viewUi?.FlashPlayerHit();
@@ -34,14 +35,20 @@ public class UiController : MonoBehaviour
             mainStoryUi.SetActiveTextUi(isActive);
     }
 
-    public void ChangeUiText(TextTarget target, Dialogue dialogue = null, string text = null)
+    public void ChangeUiText(TextTarget target, Dialogue dialogue = null, string text = null, string voiceNpcId = null)
     {
         if (mainStoryUi == null)
             return;
 
-        mainStoryUi.WriteText(target, dialogue != null ? SanitizeText(dialogue.text) : text, dialogue?.speakerId);
+        string displayedText = dialogue != null ? SanitizeText(dialogue.text) : text;
+        mainStoryUi.WriteText(target, displayedText, dialogue?.speakerId);
+        if (target != TextTarget.FrontDialogue) return;
+        if (string.IsNullOrEmpty(voiceNpcId)) npcVoice.Stop();
+        else npcVoice.Speak(transform, voiceNpcId, displayedText);
     }
 
+    internal void StopDialogueVoice() => npcVoice.Stop();
+    private void OnDisable() => StopDialogueVoice();
 
     public void PreviewChoice(string text, string direction = null, bool canConfirm = true) =>
         mainStoryUi?.PreviewChoice(SanitizeText(text), direction, canConfirm);
@@ -84,6 +91,7 @@ public class UiController : MonoBehaviour
     private void SetDisplayMode(DisplayMode mode)
     {
         bool walking = mode == DisplayMode.Walking;
+        if (walking) StopDialogueVoice();
 
         // 플레이어 화면은 항상 유지하고 이벤트 상태에서 텍스트만 표시합니다.
         if (viewUi != null)

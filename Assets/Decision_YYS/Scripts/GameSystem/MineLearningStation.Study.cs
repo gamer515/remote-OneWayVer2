@@ -148,20 +148,32 @@ public sealed partial class MineLearningStation
         RestoreBookshelf();
     }
 
-    private bool RefreshDay()
+    private bool RefreshDay(bool renewAllowance = true)
     {
         int day = Mathf.FloorToInt(progress.clockDays);
         if (day == progress.day) return false;
         progress.day = day;
-        ReplenishStudy();
+        if (renewAllowance)
+        {
+            progress.attemptsToday = 0;
+            notice = null;
+        }
         Array.Clear(progress.refills, 0, progress.refills.Length);
         return true;
     }
 
-    public void ReplenishStudy()
+    public void RecoverStudyAfterRest(float? skippedToCalendarDay)
     {
         if (study == null || progress == null) return;
-        progress.attemptsToday = 0;
+        if (skippedToCalendarDay.HasValue)
+        {
+            // The rest skipped the night. Advance the calendar without granting a second refill.
+            progress.clockDays = skippedToCalendarDay.Value;
+            RefreshDay(renewAllowance: false);
+        }
+        int limit = TodayLimit;
+        int recovered = (limit + 1) / 2;
+        progress.attemptsToday = Mathf.Max(0, Mathf.Min(progress.attemptsToday, limit) - recovered);
         notice = null;
     }
 
@@ -320,9 +332,9 @@ public sealed partial class MineLearningStation
     internal bool CanSubmitCombo(MineLearningJob[] batch)
     {
         if (!UsesStudyRules || !CanBeginStudySession || HasComboStudy || ReadingResult != null ||
-            batch.Length < 2 || batch.Length > TodayLimit - progress.attemptsToday ||
+            batch.Length < 2 || batch.Length > TodayRemaining ||
             batch.Any(job => job.started || job.held || !CanRead(job))) return false;
-        return NumberComboReward(batch) != null ||
+        return ColorComboPattern(batch) != null || NumberComboReward(batch) != null ||
             study.combos.Any(combo => !progress.rewardedCombos.Contains(combo.id) &&
             combo.books.All(id => batch.Any(job => job.bookId == id))) ||
             readingCombos.Any(combo => !IsAbilityCombo(combo) && CanCompleteReadingCombo(combo, batch));
@@ -334,6 +346,9 @@ public sealed partial class MineLearningStation
         if (!CanSubmitCombo(batch)) return false;
         progress.numberComboRewardId = (string)NumberComboReward(batch)?["id"];
         progress.numberComboChoicesRemaining = progress.numberComboRewardId != null ? batch.Length : 0;
+        progress.numberComboBookCount = progress.numberComboChoicesRemaining;
+        progress.colorComboPattern = ColorComboPattern(batch);
+        progress.colorComboChoicesRemaining = progress.colorComboPattern != null ? batch.Length : 0;
         progress.comboSuccesses.Clear();
         progress.comboBoardPoint = pickupPoint;
         foreach (var job in batch) job.comboStudy = true;
@@ -349,7 +364,7 @@ public sealed partial class MineLearningStation
         if (!HasComboStudy || !CanBeginStudySession || ReadingResult != null ||
             progress.active.Any(job => job.comboStudy && !IsQueuedComboBook(job)))
             return Array.Empty<MineLearningJob>();
-        int slots = Mathf.Min(Capacity.simultaneous, TodayLimit - progress.attemptsToday);
+        int slots = Mathf.Min(Capacity.simultaneous, TodayRemaining);
         return progress.active.Where(IsQueuedComboBook)
             .OrderBy(job => job.stackOrder).ThenBy(job => job.boardU).Take(slots).ToArray();
     }
@@ -398,7 +413,7 @@ public sealed partial class MineLearningStation
                 {
                     PrepareStrengthTutorial(job);
                     if (!CanRead(job)) notice = $"{GetBookDisplayName(job)} / 읽기 능력치 부족";
-                    else if (job.started || progress.attemptsToday < TodayLimit)
+                    else if (job.started || TodayRemaining > 0)
                     {
                         if (!job.started)
                         {
@@ -469,10 +484,11 @@ public sealed partial class MineLearningStation
             if (!job.comboStudy || HasComboStudy || progress.rewardedCombos.Contains(combo.id) ||
                 !combo.books.All(progress.comboSuccesses.Contains)) continue;
             progress.rewardedCombos.Add(combo.id);
-            for (int ability = 0; ability < combo.coins.Length; ability++)
-                coins[ability] += combo.coins[ability];
+            var bonus = BoostComboCoins(combo.coins, combo.books.Length);
+            for (int ability = 0; ability < bonus.Length; ability++)
+                coins[ability] += bonus[ability];
             AwardSkill(combo.skill, combo.skillReward);
-            combos.Add(new LearningComboReward(combo.name.Replace('·', '/').Replace('×', '/'), combo.coins));
+            combos.Add(new LearningComboReward(combo.name.Replace('·', '/').Replace('×', '/'), bonus));
         }
         AwardCoins(coins, combos);
         if (job.comboStudy && !HasComboStudy) progress.comboSuccesses.Clear();
@@ -481,7 +497,7 @@ public sealed partial class MineLearningStation
         var skill = study.skills.FirstOrDefault(item => item.id == book?.skill);
         if (skill != null && book.skillReward > 0) rewards.Add($"{skill.name} +{book.skillReward}");
         string detail = rewards.Count == 0 ? "획득 없음" : string.Join(" / ", rewards);
-        if (combos.Count > 0) detail += "\n콤보 " + string.Join(" / ", combos.Select(combo => combo.Name));
+        if (combos.Count > 0) detail += "\n콤보\n" + string.Join("\n", combos.Select(ComboResult));
         ShowStudyResult(true, "학습 성공\n" + detail);
     }
 

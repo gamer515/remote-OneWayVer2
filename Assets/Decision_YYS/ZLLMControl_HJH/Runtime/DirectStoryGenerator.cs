@@ -17,9 +17,10 @@ namespace OneWay.Decision.DirectLlm
         public DirectStoryGenerator(DirectLlmClient client) => this.client = client ?? throw new ArgumentNullException(nameof(client));
 
         public Task<DirectLlmResult> RewriteDialogueAsync(LocalStoryEmotionLine line, string emotion, string original,
-            CancellationToken token) => client.GenerateDialogueAsync(DialogueMessages(line, emotion, original), token);
+            CancellationToken token) => client.GenerateDialogueAsync(DialogueMessages(line, emotion, original, nextRun: true),
+                token, text => LocalStoryDialogueRules.Rejection(original, text));
 
-        internal static string DialogueMessages(LocalStoryEmotionLine line, string emotion, string original)
+        internal static string DialogueMessages(LocalStoryEmotionLine line, string emotion, string original, bool nextRun = false)
         {
             var input = new JObject
             {
@@ -34,7 +35,9 @@ namespace OneWay.Decision.DirectLlm
             return new JArray(new JObject
             {
                 ["role"] = "user",
-                ["content"] = "NPC의 특징과 감정을 반영해 원문 대사를 바꿔 줘. 응답 형식은 JSON {\"text\":\"변경된 대사\"}로 해 줘.\n\n" +
+                ["content"] = "NPC의 특징과 감정을 반영해 원문 대사를 바꿔 줘. 응답 형식은 JSON {\"text\":\"변경된 대사\"}로 해 줘.\n" +
+                    (nextRun ? LocalStoryDialogueRules.RewriteInstruction + " " + LocalStoryDialogueRules.PreserveInstruction + "\n" +
+                        LocalStoryDialogueLength.PromptRule(original) : "") + "\n" +
                     input.ToString(Formatting.None)
             }).ToString(Formatting.None);
         }

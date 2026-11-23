@@ -64,9 +64,13 @@ public partial class DecisionManager
         return true;
     }
 
-    private void ShowAuthoredCard(string text, string speaker, string[] options, JToken line = null)
+    private void ShowAuthoredCard(string text, string speaker, string[] options, JToken line = null, string voiceNpcId = null)
     {
         uiController.SetDialogueClue(null, null);
+        var previous = activeCards?.MainStory?.ElementAtOrDefault(activeCardIndex);
+        bool redraw = line == null && previous?.text == text && previous?.speakerId == speaker;
+        if (!redraw && roadsideActor != null && roadsideStep != RoadsideStep.None)
+            voiceNpcId = roadsideEncounterId;
         var card = new Dialogue { text = text, speakerId = speaker, options = options, type = options == null ? "Next" : "Choice" };
         if (line?["played_line_path"] != null)
         {
@@ -81,7 +85,7 @@ public partial class DecisionManager
         currentState = StoryState.Transitioning;
         selectedGearIndex = options == null ? -1 : 0;
         journeyBoardInput?.SetChoiceCount(options?.Length ?? 0, selectedGearIndex);
-        presentationController.ShowDialogue(card);
+        presentationController.ShowDialogue(card, redraw ? null : voiceNpcId);
         FrameActiveEncounter(false);
         currentState = options == null ? StoryState.ShowingStory : StoryState.WaitingForChoice;
         if (options != null) RenderEncounterOptions();

@@ -538,6 +538,62 @@ unity command run_script --caller plugin --skill unity-cli --file AgentScripts/K
 <p id="ui-gear-audio-checks">원본 Unity 에디터에서 메인 메뉴부터 이어하기로 진입해 입력 검사 16건을 통과했다. 자판기 재고 감소와 클릭 리스너 1개, 노란 버튼의 잠금·확정, 기어 정지와 한 칸·세 칸 이동, 기어 조작 후 확정, 코인 배출·집기·드래그의 기존 효과음, 음소거를 확인했다. 기존 저장은 분리했고 설정값은 복원했다. 버튼이 이벤트를 보내는 기준은 Unity uGUI의 <code>Button.cs</code>를 확인했다. <a href="../Builds/UiSoundReview/Play.log">검증 로그</a></p>
 <p>임시 검증기 <code>Builds/UiSoundReview/UiSoundReview.template</code>과 격리 저장 <code>Builds/UiSoundReview/Saves/</code>는 Git에서 제외했으며 확인 후 정리 대기 상태다.</p>
 </section>
+<hr><section id="next-run-npc-dialogue-length">
+<h2>다음 회차 NPC 대사 길이</h2>
+<p>2026-11-24 · 기준 HEAD <code>4e625fb3</code>. <a href="../Assets/Decision_YYS/Scripts/Ai/LocalStoryEmotion.cs">LocalStoryEmotion.cs</a>의 공통 계산은 원문과 응답 <code>text</code>의 앞뒤 공백을 제거하고 본문 안의 공백과 문장부호를 포함한다. 허용 범위는 원문 길이 ±30자이며 최솟값은 1자다.</p>
+<p><a href="../Assets/Decision_YYS/ZLLMControl_HJH/Runtime/DirectStoryGenerator.cs">DirectStoryGenerator.cs</a>와 Gemma 프롬프트에 줄별 범위를 표시한다. <a href="../Assets/Decision_YYS/ZLLMControl_HJH/Runtime/DirectLlmClient.cs">DirectLlmClient.cs</a>는 범위를 벗어나면 기존 제공자 재시도를 사용한다. <a href="../Assets/Decision_YYS/Scripts/Ai/LocalStoryDialogueQueue.cs">LocalStoryDialogueQueue.cs</a>는 저장 직전에 같은 범위를 검사하며 끝까지 유효한 응답이 없으면 해당 줄의 원문을 사용한다.</p>
+<p>원본 Unity 에디터에서 컴파일 오류 0건, <a href="../Assets/Decision_YYS/ZLLMControl_HJH/Verification~/VerifyDirectLlm.cs">VerifyDirectLlm</a> 검사 53건을 통과했다. 60자 원문의 30·90자 허용과 29·91자 재시도, 짧은 원문의 공백 응답 거부, Gemma 최종 검증, 여러 줄의 개별 검사와 이미 완료된 줄 보존을 확인했다. 실제 외부 API 호출과 Gemma 추론은 실행하지 않았다. 모의 응답과 격리 저장 및 <a href="../Builds/DialogueLengthReview/Verification-30.log">검증 로그</a>를 사용했다.</p>
+<h3>내용 보존 검사</h3>
+<p>길이 제한과 함께 원문의 상황, 사실, 발화 의도, 말투를 유지하도록 두 생성 경로에 지시한다. 저장 전에는 기존 문구 검사를 재사용하고 숫자, 치환 구문, 높임말, 부정 표현, 난독 기호와 한 구절 변경 범위를 확인한다. 검사에서 벗어난 외부 응답은 다음 제공자로 넘어가며 최종 응답이 실패하면 원문을 사용한다. 자동 검사는 모든 의미 변화를 판정할 수 없다.</p>
+<p>원본 Unity에서 컴파일 오류 0건, 회귀 검사 58건을 통과했다. 2회차에 저장된 가렌 대사 18→46자 사례가 길이는 통과하고 내용 검사는 실패하는 것을 확인했다. 그 뒤 허용되는 모의 응답으로 재시도하는 경로와 Gemma 모의 응답이 거절되어 원문으로 돌아가는 경로를 확인했다. 실제 제공자 호출 및 Gemma 추론은 미검증이다. 기존 생성 기록은 읽기 전용으로 확인했다. <a href="../Builds/DialogueLengthReview/Verification-content.log">검증 로그</a></p>
+</section>
+<hr><section id="reading-color-combos">
+<h2>책 색깔 콤보와 기존 콤보 가산</h2>
+<p>2026-11-24 · <a href="../Assets/Decision_YYS/Resources/Chapters/Chapter_01/AuthoredNarrative/Reading/ComboRewards.json">ComboRewards.json</a>에 7종 38개를 저장했다. 책 데이터의 힘·속도·지능·매력 계열을 빨·파·노·청으로 읽고, 아래에서 위로 제출한 전체 배열 하나를 비교한다.</p>
+<table><tr><th>단계</th><th>적용</th><th>확인</th></tr>
+<tr><td>판정과 보상</td><td>2/3/4권은 주력 2/3/4개, 나머지 총 1/2/3개. 빈도 동률과 나머지 배분 순서는 묶음에서 처음 나온 색을 따른다. 기존 작가·번호·주제 콤보에는 주력 +1(2~3권) 또는 +2(4권 이상), 보조 +1을 가산한다.</td><td>38개 전수, 빨파노와 빨노파, 기존 배분 동률과 다음 계열, 지급 수량 확인.</td></tr>
+<tr><td>제출과 정산</td><td>기존 학습 버튼과 하루 한도를 사용한다. 마지막 독서 선택이 끝나면 선택 진행과 보상을 같은 체크포인트에 반영한다. 도감에는 지급된 색 조합을 조합별로 표시하고 결과에는 각각의 보상을 표시한다.</td><td>두 학습 자리를 재사용하는 4권 묶음, 마지막 선택 전후 저장 복원, 확정 반복, 새 묶음 재달성 확인.</td></tr></table>
+<p><a href="../Assets/Decision_YYS/Scripts/GameSystem/MineLearningStation.Study.cs">Study.cs</a>의 묶음 제출에서 조합과 선택 횟수를 설정하고, <a href="../Assets/Decision_YYS/Scripts/GameSystem/MineLearningStation.cs">MineLearningStation.cs</a>의 진행 상태에 저장한다. <a href="../Assets/Decision_YYS/Scripts/GameSystem/MineLearningStation.Reading.cs">Reading.cs</a>가 정산과 발견 기록을 관리하고, <a href="../Assets/Decision_YYS/Scripts/Controller/Ui/MainStoryUi.Reading.cs">MainStoryUi.Reading.cs</a>가 발견 보상을 표시한다. 기존 기본 보상과 세부 능력 계산은 변경하지 않았다.</p>
+<p>원본 Unity 컴파일 오류 0건. 실제 학습 코드와 격리 체크포인트를 사용한 120개 검사를 통과했다. 힘·속도·지능·매력 순으로 빨노 [2,0,1,0], 빨청 [2,0,0,1], 빨파 [2,1,0,0], 빨파노 [3,1,1,0], 빨빨노 [3,0,2,0], 빨파노청 [4,1,1,1]을 받았다. 빨파가 작가 콤보 ‘끈질긴 두 장’ [2,0,0,2]와 동시에 지급됐다. 4권의 하위 색 조합 보상은 없었고, 두 번째 새 묶음에서 해당 조합의 누적 지급이 2회가 됐다. 실제 씬에서 마우스로 조작하거나 Windows 빌드를 실행하지 않았다. <a href="../Builds/ColorComboReview/Verification.log">검증 로그</a></p>
+<p>검증기 <code>Builds/ColorComboReview/ReviewColorCombos.cs</code>와 같은 폴더의 격리 저장은 Git에서 제외했으며 검증 결과 확인 후 정리 대기 중이다.</p>
+</section>
+<hr><section id="collector-general-tax-handoff">
+<h2>기준세 이후 일반세 조우 누락</h2>
+<p>2026-11-24 · 실제 1회차 체크포인트에서 복귀가 끝났고 일반세 정산 누계가 0이며, 고지서가 세목 없는 객체로 저장된 상태를 읽었다. 저장에는 놓친 프레임의 화면 상태가 남지 않는다. 기존 순찰 시작은 고지서 객체가 null일 때만 생성했고, 복귀 조우는 실제 세목을 요구했다. 또한 독서 등으로 대화가 잠겼을 때 복귀 대열이 이미 접촉 거리 안에서도 전진할 수 있었다.</p>
+<table><tr><th>단계</th><th>수정</th><th>확인 결과</th></tr>
+<tr><td>고지서</td><td><a href="../Assets/Decision_YYS/Scripts/GameSystem/DecisionManager.Taxes.cs">DecisionManager.Taxes.cs</a>에서 세목이 없는 객체는 빈 고지서로 처리한다. 아직 유효한 순찰은 빈 고지서만 시작일 기준으로 다시 생성한다.</td><td>실제 저장의 빈 객체로 재현했고, 유효한 고지서 유지와 이미 완료한 순찰의 재발행 방지를 확인했다.</td></tr>
+<tr><td>복귀 조우</td><td><a href="../Assets/Decision_YYS/Scripts/GameSystem/DecisionManager.MineChapter.cs">DecisionManager.MineChapter.cs</a>에서 조우 범위에 들어온 복귀 대열은 화면 잠금 해제까지 대기한다.</td><td>독서 중 접촉과 순찰 종료 직전 접촉이 유지됐고, 독서 종료 후 일반세 납부·설득·결투가 열렸다. 기존 탈출 경계는 유지했다.</td></tr></table>
+<p>원본 Unity 컴파일 오류 0건, 격리 구성으로 14개 검사를 통과했다. 실제 정산 메서드의 콜백에서 기준세 속도 1개와 일반세 지능 3개·매력 2개 차감을 확인했다. 게임 화면에서 이동하고 코인을 직접 놓는 전체 플레이 및 회수 애니메이션은 확인하지 않았다. 원본 저장은 읽기 전용으로 사용했다. 이미 끝난 순찰은 다음 기존 일정에 따라 이어진다. <a href="../Builds/CollectorHandoffReview/Verification.log">검증 로그</a></p>
+<p>임시 검증기 <code>Builds/CollectorHandoffReview/ReviewCollectorHandoff.cs</code>는 Git에서 제외했으며 결과 확인 후 정리 대기 중이다.</p>
+</section>
+<hr><section id="central-npc-contact-fix">
+<h2>중앙 샛길 NPC 조우 누락</h2>
+<p>2026-11-24 · 같은 청크의 길가 NPC가 완료 ID 하나를 공유했고, 장소로 이동 중에 저장한 회차를 열면 전진 조우 검사가 꺼졌다. <a href="../Assets/Decision_YYS/Scripts/GameSystem/Terrain/TerrainBuilder.cs">TerrainBuilder.cs</a>에서 중앙 NPC에 독립 완료 ID를 사용한다. 기존 청크 완료 ID는 일반 길가 조우에 유지된다. <a href="../Assets/Decision_YYS/Scripts/GameSystem/DecisionManager.Encounters.cs">DecisionManager.Encounters.cs</a>는 장소의 최초 접근을 복원할 때 저장된 이동 단계에 전진 검사를 연결한다.</p>
+<table><tr><th>단계</th><th>확인</th></tr>
+<tr><td>대상 선택</td><td>앞선 일반 길가 조우를 완료한 뒤 중앙 NPC가 정지 거리 2유닛에서 선택된다. 중앙 NPC 반복 조우를 차단하고, 벽 쪽 장식 NPC와 장소 도착 우선순위를 확인했다.</td></tr>
+<tr><td>조우와 복귀</td><td>저장된 이동 단계를 복원해 기존 길가 첫 대사와 세 선택지를 열었다. 큰길 복귀를 선택한 뒤 코인 잔액 유지와 장소로 이동 재개를 확인했다.</td></tr></table>
+<p>Unity 에디터 컴파일 오류 0건, 격리 오브젝트로 실제 게임 메서드를 검증해 13건을 통과했다. 첨부 화면의 플레이 세션과 실제 버튼 조작은 재현하지 않았다. <a href="../Builds/CentralNpcContactReview/Verification.log">검증 로그</a></p>
+<p>임시 검증기 <code>Builds/CentralNpcContactReview/ReviewRoadsideContact.cs</code>는 Git에서 제외했으며 결과 확인 후 정리 대기 중이다.</p>
+</section>
+<hr><section id="forced-rest-learning-hover">
+<h2>강제 휴식 중 학습과 호버 갱신</h2>
+<p>2026-11-24 · 강제 휴식 중에는 남은 횟수로 학습할 수 있다. 휴식 완료 시 현재 하루 한도의 절반을 올림해 회복하고 최대 한도를 넘지 않는다. 밤에 강제 휴식으로 다음 일출까지 건너뛰면 날짜와 리필 횟수를 갱신하면서 회복은 한 번 적용한다. 자연스러운 날짜 변경은 하루 한도를 갱신한다.</p>
+<table><tr><th>단계</th><th>변경</th><th>확인</th></tr>
+<tr><td>강제 휴식</td><td><a href="../Assets/Decision_YYS/Scripts/GameSystem/DecisionManager.MineChapter.cs">DecisionManager.MineChapter.cs</a>, <a href="../Assets/Decision_YYS/Scripts/GameSystem/DecisionManager.Learning.cs">DecisionManager.Learning.cs</a>, <a href="../Assets/Decision_YYS/Scripts/GameSystem/MineLearningStation.Study.cs">MineLearningStation.Study.cs</a>, <a href="../Assets/Decision_YYS/Scripts/GameSystem/MineLearningStation.cs">MineLearningStation.cs</a></td><td>5회 중 3회 회복, 최대치 제한, 일출 건너뛰기와 자연 날짜 변경, 저장 직렬화, 휴식 중 학습 착수.</td></tr>
+<tr><td>호버</td><td><a href="../Assets/Decision_YYS/Scripts/Controller/Ui/LearningDispenserView.cs">LearningDispenserView.cs</a>에서 학습 진행과 책 모델을 반영한 뒤 호버를 갱신한다. <a href="../Assets/Decision_YYS/Scripts/GameSystem/MineLearningStation.Reading.cs">MineLearningStation.Reading.cs</a>는 책 상태와 남은 시간을 반환한다.</td><td>고정 커서의 타이머 갱신, 일시 정지, 횟수 소진, 완료 후 툴팁 해제, 선택 확정 시 성공 횟수를 확인했다.</td></tr></table>
+<p>Unity 컴파일 오류 0건, 에디터 격리 검사 13건 통과. 실제 플레이 화면의 마우스 조작과 휴식 연출은 재현하지 않았다. 임시 검증기 <code>Builds/StudyRestReview/ReviewStudyRest.cs</code>와 격리 검사 데이터는 Git에서 제외했고 결과 확인 후 정리 대기 중이다. <a href="../Builds/StudyRestReview/Verification.log">검증 로그</a></p>
+</section>
+<hr><section id="mine-mumble-voice">
+<h2>갱도 NPC의 Mumble Speak 음성</h2>
+<p>2026-11-24 · 구매자에게 제공된 <code>com.mumblespeak.sdk</code> 1.1.0을 <code>Packages/com.mumblespeak.sdk</code>에 로컬 임베디드 패키지로 설치했다. 다른 개발자는 구매한 패키지의 같은 폴더를 이 위치에 복사하면 된다. 프로젝트 어댑터는 패키지나 DLL을 찾지 못해도 텍스트를 표시한다. <a href="../.gitignore">.gitignore</a>에서 원본 SDK를 제외했다. 제작자 페이지는 무료·상업 게임 및 앱에 무로열티 사용을 허용하고 SDK 자체의 공유·재판매를 금지한다. <a href="https://joeyclover.itch.io/mumble-speak">제작자 라이선스</a></p>
+<table><tr><th>단계</th><th>적용</th><th>확인 방법</th></tr>
+<tr><td>발화 연결</td><td>장소·길가 NPC의 화면 본문을 <a href="../Assets/Decision_YYS/Scripts/Controller/UiController.cs">UiController</a>를 거쳐 공용 <a href="../Assets/Decision_YYS/Scripts/Controller/Ui/NpcMumbleVoice.cs">NpcMumbleVoice</a>에 보낸다. 원문과 다음 회차 변형문은 같은 경로를 사용한다.</td><td>한국어 원문·생성문, 길가 NPC, 안내와 선택지만 표시하는 흐름을 비교한다.</td></tr>
+<tr><td>음색과 정리</td><td>animalese, speed 2.0, 고정 캐릭터 시드, 기존 효과음 볼륨의 30%를 사용한다. 다음 발화가 이전 발화를 교체하고 이동 화면 또는 비활성화 때 멈춘다. 씬 소유 오디오 소스 하나와 캐리어 하나를 재사용한다.</td><td>빠른 넘김, 반복 발화, 씬 언로드, Windows x64 네이티브 합성 출력을 확인한다.</td></tr></table>
+<p>Unity 에디터에서 DLL 로드 및 한국어 세 줄 합성이 성공했다. 기본 1.4는 1.23~1.79초, 적용값 2.0은 0.86~1.25초였다. <a href="../Builds/MumbleVoiceReview/NativeTiming.txt">에디터 합성 시간</a></p>
+<p>기존 배포 씬을 포함한 Windows x64 Mono 일반 빌드 성공, 오류 0건. 빌드의 <code>Plugins/x86_64/mumble.dll</code>은 제공본과 SHA-256이 같다. 로컬 플레이어에서 기존 대사 메서드로 장소 발화, 실제 저장에서 뽑은 AI 대사, 길가 발화, 선택지와 안내, 빠른 넘김, 이동 화면과 씬 언로드를 확인했다. 50번 연속 호출 후 AudioSource 1개와 MumbleCarrier 1개가 유지됐고, 언로드 후 모두 해제됐다. 11개 검사가 통과했다. 실제 플레이어 음성 스트림의 피크 0.066을 기록해 WAV로 남겼으며 직접 청음은 수행하지 못했다. <a href="../Builds/MumbleVoiceReview/Windows/RuntimeVerification.log">실행 검증</a> · <a href="../Builds/MumbleVoiceReview/Windows/Windows-Dialogue.wav">플레이어 음성 샘플</a></p>
+<p>임시 검증기 <code>Builds/MumbleVoiceReview/ReviewMumbleSpeech.cs</code>, Windows 검증 빌드와 격리 저장은 Git에서 제외했고 결과 확인 후 정리 대기 중이다.</p>
+<p>음색 후속 조정은 <code>animalese</code> 속도 2.0→1.85, NPC 음성 볼륨 계수 0.30→0.36이다. Unity 컴파일 오류 0건. 같은 한국어 세 줄을 새 설정으로 합성해 0.93초, 1.17초, 1.35초를 확인했다. 조정 후 Windows 빌드 재생은 미검증이다. 새 임시 코드 파일은 없다.</p>
+</section>
 </body></html>
 
 

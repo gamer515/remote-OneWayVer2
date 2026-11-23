@@ -151,6 +151,12 @@ public partial class MainStoryUi
                 text.AppendLine();
             }
         }
+        else
+        {
+            foreach (var combo in station.DiscoveredColorCombos)
+                text.Append("<b>").Append(combo.Name).Append("</b>  /  색깔 콤보\n  ")
+                    .AppendLine(FormatGuideRewards(combo.Coins)).AppendLine();
+        }
         foreach (var combo in showBookCatalogue ? station.ReadingCombos.Take(0) : station.ReadingCombos)
         {
             if (station.ReadingComboPayouts((string)combo["id"]) <= 0) continue;
@@ -160,7 +166,7 @@ public partial class MainStoryUi
                 text.Append("<b>").Append((string)combo["name"]).Append("</b>  /  ")
                     .Append(length >= 3 ? $"같은 능력의 오름차순 연속 번호 {length}권" : "기존 발견")
                     .Append("  /  누적 지급 ").Append(station.ReadingComboPayouts((string)combo["id"])).AppendLine("회");
-                text.Append("  <b>콤보 추가 보상</b>  ").AppendLine(FormatGuideRewards(MineLearningStation.ReadCoinReward(combo["reward"]))).AppendLine();
+                text.Append("  <b>콤보 추가 보상</b>  ").AppendLine(FormatGuideRewards(station.ExistingComboCoins(combo))).AppendLine();
                 continue;
             }
             string type = (string)combo["type"] switch { "author" => "작가", "mainStat" => "주 능력", _ => "주제" };
@@ -181,7 +187,7 @@ public partial class MainStoryUi
                     .AppendLine(credits?.Contains(id) == true ? "완료" : "미완료");
                 text.Append("    독서 보상  ").AppendLine(FormatGuideRewards(station.ReadingChoiceRewards(id).ToArray()));
             }
-            text.Append("  <b>콤보 추가 보상</b>  ").AppendLine(FormatGuideRewards(MineLearningStation.ReadCoinReward(combo["reward"]))).AppendLine();
+            text.Append("  <b>콤보 추가 보상</b>  ").AppendLine(FormatGuideRewards(station.ExistingComboCoins(combo))).AppendLine();
         }
         comboGuideText.text = text.Length > 0 ? text.ToString() :
             showBookCatalogue ? "아직 발견한 책이 없습니다." : "아직 발견한 콤보가 없습니다.";

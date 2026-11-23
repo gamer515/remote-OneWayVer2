@@ -13,6 +13,9 @@ public sealed partial class MineLearningStation
     private const string FirstComboBook = "BK001", SecondComboBook = "BK002";
     private const string StrengthTutorialBook = "strength_basic";
     private JObject[] readingCombos = Array.Empty<JObject>();
+    private const string ComboColors = "빨파노청";
+    private Dictionary<string, string> colorCombos = new Dictionary<string, string>();
+    private JObject comboRewards;
     private bool readingDeferred;
     internal JObject ReadingPreview { get; private set; }
     internal int ReadingPreviewNumber { get; private set; }
@@ -65,15 +68,77 @@ public sealed partial class MineLearningStation
         progress.numberComboRewardId = null;
         var combo = readingCombos.FirstOrDefault(entry => (string)entry["id"] == rewardId);
         if (combo == null) return null;
-        var record = FindReadingComboProgress(rewardId);
+        RecordComboPayout(rewardId);
+        return combo;
+    }
+
+    private void RecordComboPayout(string id)
+    {
+        var record = FindReadingComboProgress(id);
         if (record == null)
         {
-            record = new ReadingComboProgress { id = rewardId, payouts = ReadingComboPayouts(rewardId) };
+            record = new ReadingComboProgress { id = id, payouts = ReadingComboPayouts(id) };
             progress.readingComboProgress.Add(record);
         }
         record.payouts++;
-        return combo;
     }
+
+    private string ColorComboPattern(MineLearningJob[] batch)
+    {
+        if (batch.Any(job => (uint)job.ability >= ComboColors.Length ||
+            !readingBooks.ContainsKey(job.bookId ?? ""))) return null;
+        string pattern = new string(batch.Select(job => ComboColors[job.ability]).ToArray());
+        return colorCombos.ContainsKey(pattern) ? pattern : null;
+    }
+
+    private static string ColorComboId(string pattern) => "CM_COLOR_" + pattern;
+    internal IEnumerable<LearningComboReward> DiscoveredColorCombos => colorCombos.Keys
+        .Where(pattern => ReadingComboPayouts(ColorComboId(pattern)) > 0).Select(ColorComboReward);
+
+    private LearningComboReward ColorComboReward(string pattern)
+    {
+        var groups = pattern.Select(color => ComboColors.IndexOf(color)).GroupBy(ability => ability).ToArray();
+        int main = groups.OrderByDescending(group => group.Count()).First().Key;
+        var others = groups.Select(group => group.Key).Where(ability => ability != main).ToArray();
+        var config = comboRewards["colorRewards"][pattern.Length.ToString()];
+        var coins = new int[AbilityKeys.Length];
+        coins[main] = (int)config["main"];
+        int otherCoins = (int)config["others"];
+        for (int i = 0; i < others.Length; i++)
+            coins[others[i]] = otherCoins / others.Length + (i < otherCoins % others.Length ? 1 : 0);
+        return new LearningComboReward($"{colorCombos[pattern]} · {pattern}", coins);
+    }
+
+    private LearningComboReward? CompleteColorComboChoice()
+    {
+        if (progress.colorComboChoicesRemaining <= 0 || --progress.colorComboChoicesRemaining != 0) return null;
+        string pattern = progress.colorComboPattern;
+        progress.colorComboPattern = null;
+        if (pattern == null || !colorCombos.ContainsKey(pattern)) return null;
+        RecordComboPayout(ColorComboId(pattern));
+        return ColorComboReward(pattern);
+    }
+
+    private int[] BoostComboCoins(int[] coins, int bookCount)
+    {
+        int[] reward = (int[])coins.Clone();
+        int[] byReward = Enumerable.Range(0, reward.Length).OrderByDescending(ability => reward[ability]).ToArray();
+        int main = byReward[0];
+        int other = reward[byReward[1]] > 0 ? byReward[1] : (main + 1) % reward.Length;
+        var config = comboRewards["existingBonus"];
+        reward[main] += (int)config[bookCount >= (int)config["longFrom"] ? "longMain" : "shortMain"];
+        reward[other] += (int)config["other"];
+        return reward;
+    }
+
+    internal int[] ExistingComboCoins(JObject combo, int bookCount = 0) =>
+        BoostComboCoins(ReadCoinReward(combo["reward"]), bookCount > 0 ? bookCount : (int)combo["condition"]["minCompleted"]);
+
+    internal static string FormatCoinReward(int[] coins) =>
+        string.Join(" / ", coins.Select((quantity, i) => quantity > 0 ? AbilityName(i) + " +" + quantity : null)
+            .Where(label => label != null));
+
+    private static string ComboResult(LearningComboReward combo) => $"{combo.Name}  {FormatCoinReward(combo.Coins)}";
 
     internal bool TryOpenReadingPreview(MineLearningJob job)
     {
@@ -167,6 +232,13 @@ public sealed partial class MineLearningStation
     {
         string title = GetBookDisplayName(job);
         if (job.bookNumber > 0) title += $" · {job.bookNumber}번";
+        if (IsStudying(job)) return $"{title}\n학습 중 {job.remaining:0.0}초";
+        if (job.started) return $"{title}\n학습 일시 정지 · {job.remaining:0.0}초 남음";
+        if (job.onBoard && job.boardIndex is 1 or 2)
+        {
+            if (!CanRead(job)) return $"{title}\n읽기 능력치 부족";
+            if (TodayRemaining == 0) return $"{title}\n오늘 학습량 소진";
+        }
         return IsStrengthTutorial(job) ? title + "\n초록 보드에 두면 기사가 펼쳐 볼지도." : title;
     }
 
@@ -201,6 +273,9 @@ public sealed partial class MineLearningStation
             .Select(asset => JObject.Parse(asset.text)).ToDictionary(book => (string)book["bookId"]);
         readingCombos = Resources.LoadAll<TextAsset>(AuthoredContent + "Reading/combos")
             .Select(asset => JObject.Parse(asset.text)).OrderBy(combo => (string)combo["id"]).ToArray();
+        comboRewards = ReadContent("Reading/ComboRewards");
+        colorCombos = comboRewards["colorCombos"].SelectMany(group => group["patterns"].Values<string>()
+            .Select(pattern => (pattern, name: (string)group["name"]))).ToDictionary(combo => combo.pattern, combo => combo.name);
         var previous = authoredBooks;
         previousBookIds.Clear();
         authoredBooks = readingBooks.Values.OrderBy(book => (string)book["bookId"]).GroupBy(book =>
@@ -264,12 +339,11 @@ public sealed partial class MineLearningStation
         string id = (string)book["bookId"];
         var amounts = ReadChoiceCoins(id, choice["reward"]);
         var combos = new List<LearningComboReward>();
-        void AddCombo(JObject combo)
+        void AddCombo(LearningComboReward combo)
         {
-            var bonus = ReadCoinReward(combo["reward"]);
             for (int i = 0; i < amounts.Length; i++)
-                amounts[i] += bonus[i];
-            combos.Add(new LearningComboReward((string)combo["name"], bonus));
+                amounts[i] += combo.Coins[i];
+            combos.Add(combo);
         }
 
         progress.pendingReading.RemoveAt(0);
@@ -279,13 +353,17 @@ public sealed partial class MineLearningStation
         foreach (var combo in id == StrengthTutorialBook ? Array.Empty<JObject>() : readingCombos)
         {
             if (IsAbilityCombo(combo) || !CreditReadingCombo(combo, id)) continue;
-            AddCombo(combo);
+            AddCombo(new LearningComboReward((string)combo["name"], ExistingComboCoins(combo)));
         }
         if (CompleteNumberComboChoice() is JObject numberCombo)
-            AddCombo(numberCombo);
+        {
+            AddCombo(new LearningComboReward((string)numberCombo["name"], ExistingComboCoins(numberCombo, progress.numberComboBookCount)));
+            progress.numberComboBookCount = 0;
+        }
+        if (CompleteColorComboChoice() is LearningComboReward colorCombo)
+            AddCombo(colorCombo);
         AwardCoins(amounts, combos);
-        string coins = string.Join(" / ", amounts.Select((quantity, i) => quantity > 0 ? AbilityName(i) + " +" + quantity : null)
-            .Where(label => label != null));
+        string coins = FormatCoinReward(amounts);
         progress.readingResult = (string)choice["result"] + "\n\n" +
             (coins.Length > 0 ? coins : "코인 획득 없음");
         var definition = id == StrengthTutorialBook ? null : authoredBooks.FirstOrDefault(entry => entry.id == id);
@@ -295,7 +373,7 @@ public sealed partial class MineLearningStation
             var skill = study.skills.FirstOrDefault(entry => entry.id == definition.skill);
             progress.readingResult += $"\n세부 능력  {skill?.name ?? definition.skill} +{definition.skillReward}";
         }
-        if (combos.Count > 0) progress.readingResult += "\n콤보 달성\n" + string.Join("\n", combos.Select(combo => combo.Name));
+        if (combos.Count > 0) progress.readingResult += "\n콤보 달성\n" + string.Join("\n", combos.Select(ComboResult));
         save?.Invoke();
     }
 

@@ -308,11 +308,32 @@ public static class LocalStoryDialogueQueue
             LocalStoryLog.Write(LocalStoryLogStage.Working,
                 $"{job.storyPath} / 대사 {line.cardIndex + 1} / API {error.Attempts.Count}곳 실패 / 내장 Gemma 사용",
                 activity: "대사 생성");
-            string messages = LocalStoryGemmaDialogue.Messages(line, job.emotion, original);
+            string messages = LocalStoryGemmaDialogue.Messages(line, job.emotion, original, nextRun: true);
             int seed = unchecked(job.sourceRun * 1000003 + line.cardIndex);
-            var result = await LocalStoryGemmaDialogue.Generate(messages, seed, token);
-            return (result.Text, LocalStoryGemmaDialogue.ProviderName, LocalStoryTestModels.Name(LocalStoryTestModel.Gemma));
+            string model = LocalStoryTestModels.Name(LocalStoryTestModel.Gemma);
+            try
+            {
+                var result = await LocalStoryGemmaDialogue.Generate(messages, seed, token);
+                return (result.Text, LocalStoryGemmaDialogue.ProviderName, model);
+            }
+            catch (DirectLlmFailure)
+            {
+                return (null, LocalStoryGemmaDialogue.ProviderName, model);
+            }
         }
+    }
+
+    private static void CompleteLine(LocalStoryEmotionLine line, string original,
+        (string Text, string Provider, string Model) result)
+    {
+        line.emotionFallback = LocalStoryDialogueRules.Rejection(original, result.Text) != null;
+        // An absent override uses the canonical dialogue both for authored and stored stories.
+        line.generatedText = line.emotionFallback ? null : result.Text;
+        line.rejection = line.emotionFallback ? "유효한 대사가 없어 원문을 사용합니다." : null;
+        line.apiProvider = result.Provider;
+        line.apiModel = result.Model;
+        line.originalText = original;
+        line.finished = true;
     }
 
     public static async Task Process(SaveIOService store, LocalStoryDialogueJob job,
@@ -350,11 +371,7 @@ public static class LocalStoryDialogueQueue
                 var card = job.authoredPack ? new EncounterCard { text = line.originalText } : cards.MainStory[line.cardIndex];
                 var result = await GenerateLine(generator, job, line, card.text, token);
                 token.ThrowIfCancellationRequested();
-                line.generatedText = result.Text;
-                line.apiProvider = result.Provider;
-                line.apiModel = result.Model;
-                line.originalText = card.text;
-                line.finished = true;
+                CompleteLine(line, card.text, result);
                 SaveJob(store, job);
             }
 

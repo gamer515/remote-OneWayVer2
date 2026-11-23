@@ -273,7 +273,8 @@ public partial class DecisionManager
             RecordMineCollectorEscape(procession, position);
             bool canOpenDialogue = CanOpenCollectorDialogue();
             bool canSuspendNpcPayment = npcBoardPaymentCost != null && journeyCoinSupply?.HasBoardPayment == true;
-            var nearby = (canOpenDialogue || npcPaymentRoot != null) && procession.CanMeet(position)
+            // Keep a return contact in range while a reading or payment presentation owns the view.
+            var nearby = (canOpenDialogue || npcPaymentRoot != null || procession.IsReturning) && procession.CanMeet(position)
                 ? procession.MemberInRange(position, mineRules.encounterDistance) : null;
             if (nearby == null)
             {
@@ -321,14 +322,19 @@ public partial class DecisionManager
     private void FinishMineRest()
     {
         mine.resting = false;
+        float? skippedToCalendarDay = null;
         if (mineRules.dayCycle is ChapterDayCycle cycle && cycle.IsAfterSunset(mine.elapsedSeconds))
         {
             mine.elapsedSeconds = cycle.NextSunrise(mine.elapsedSeconds);
+            skippedToCalendarDay = cycle.ElapsedDays(mine.elapsedSeconds);
+        }
+        learningStation?.RecoverStudyAfterRest(skippedToCalendarDay);
+        if (skippedToCalendarDay.HasValue)
+        {
             TickTaxSchedule(1f);
             UpdateChapterSky(1f);
             UpdateChapterCalendar();
         }
-        learningStation?.ReplenishStudy();
         mineView.Hide();
         if (currentState == StoryState.MovingToEncounter) playerController.ResumeMovement();
         SaveGuideCheckpoint();

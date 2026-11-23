@@ -77,6 +77,9 @@ public sealed partial class LearningDispenserView : MonoBehaviour
     internal void BindStudyGrid(BoxCollider grid) => studyGrid = grid;
     private TaxScaleView taxScale;
     private Vector2? defaultHoverSize;
+    private Vector2? hoverPointerPosition;
+    private bool HasOpenReading => station != null &&
+        (station.ReadingPreview != null || station.PendingReading != null || station.ReadingResult != null);
     internal void BindTaxScale(TaxScaleView view) => taxScale = view;
     public void BindCoinSupply(JourneyCoinSupplyController supply)
     {
@@ -118,21 +121,13 @@ public sealed partial class LearningDispenserView : MonoBehaviour
 
     private void Update()
     {
-        bool reading = station != null &&
-            (station.ReadingPreview != null || station.PendingReading != null || station.ReadingResult != null);
-        bool canInteract = station?.CanMoveBooks == true && !reading && studyCodexUi?.IsComboGuideInputBlocked != true;
+        hoverPointerPosition = null;
+        bool canInteract = station?.CanMoveBooks == true && !HasOpenReading && studyCodexUi?.IsComboGuideInputBlocked != true;
         if (!canInteract)
         {
             pressedBook = null;
             CancelBookDrag();
             CancelCodexPointer();
-            if (reading && station.CanMoveBooks)
-            {
-                if (bookHoverLabel != null) bookHoverLabel.gameObject.SetActive(false);
-                if (bookHoverBackground != null) bookHoverBackground.gameObject.SetActive(false);
-                HideStudentStats();
-                return;
-            }
         }
 #if ENABLE_INPUT_SYSTEM
         var pointer=Pointer.current;
@@ -141,7 +136,6 @@ public sealed partial class LearningDispenserView : MonoBehaviour
             pressedBook = null;
             CancelBookDrag();
             CancelCodexPointer();
-            HideStudentStats();
             return;
         }
         Vector2 position=pointer.position.ReadValue();
@@ -151,8 +145,7 @@ public sealed partial class LearningDispenserView : MonoBehaviour
         bool down=Input.GetMouseButtonDown(0), held=Input.GetMouseButton(0), up=Input.GetMouseButtonUp(0);
 #endif
         if (canInteract) HandleBookPointer(position, down, held, up);
-        ShowHoveredBook(position);
-        UpdateStudentStats(position);
+        hoverPointerPosition = position;
     }
 
     private void HandleBookPointer(Vector2 position, bool down, bool held, bool up)
@@ -184,7 +177,7 @@ public sealed partial class LearningDispenserView : MonoBehaviour
         if(up && IsDraggingBook) EndBookDrag(position);
     }
 
-    private void UpdateStudentStats(Vector2 position)
+    private void UpdateStudentStats(Vector2 position, MineLearningJob studying)
     {
         if (station?.UsesStudyRules != true || station.Progress == null ||
             studentHead == null || !studentHead.gameObject.activeInHierarchy ||
@@ -204,12 +197,12 @@ public sealed partial class LearningDispenserView : MonoBehaviour
         var progress = station.Progress;
         var coins = station.CurrentCoins;
         int limit = station.TodayLimit;
-        int remaining = Mathf.Max(0, limit - progress.attemptsToday);
+        string timer = studying != null ? $"\n학습 중 {studying.remaining:0.0}초" : "";
         studentStatsText.text = "<size=23><b>학습 상태</b></size>\n" +
             $"<color=#91BFFF>힘 {coins[0]}</color><pos=122><color=#FFAEAE>속도 {coins[1]}</color>\n" +
             $"<color=#FFDA83>지능 {coins[2]}</color><pos=122><color=#88DDD4>매력 {coins[3]}</color>\n" +
-            $"<color=#E9C885>성공 {progress.successfulStudies}<pos=122>오늘 {remaining}/{limit}\n" +
-            $"대기 {progress.queued.Count}/{station.ProductionQueueLimit}</color>";
+            $"<color=#E9C885>성공 {progress.successfulStudies}<pos=122>오늘 {station.TodayRemaining}/{limit}\n" +
+            $"대기 {progress.queued.Count}/{station.ProductionQueueLimit}{timer}</color>";
         RectTransformUtility.ScreenPointToLocalPointInRectangle(overlayRoot,
             viewCamera.WorldToScreenPoint(studentHead.position), null, out var point);
         studentStatsPanel.rectTransform.anchoredPosition = point + new Vector2(48, -62);
@@ -224,7 +217,7 @@ public sealed partial class LearningDispenserView : MonoBehaviour
         studentStatsPanel.color = new Color(.08f, .065f, .05f, .95f);
         studentStatsPanel.raycastTarget = false;
         var rect = studentStatsPanel.rectTransform;
-        rect.sizeDelta = new Vector2(288, 140);
+        rect.sizeDelta = new Vector2(288, 162);
         rect.pivot = new Vector2(0, .24f);
         var outline = panel.GetComponent<Outline>();
         outline.effectColor = new Color(.63f, .48f, .28f);
@@ -320,7 +313,8 @@ public sealed partial class LearningDispenserView : MonoBehaviour
         }
         if (!IsDraggingBook && !draggingCodex && TryFindBook(viewCamera.ScreenPointToRay(screenPoint), out var job, out _))
         {
-            SetHover(station.GetBookHoverText(job), screenPoint, keepOnScreen: MineLearningStation.IsStoredBook(job));
+            string label = station.GetBookHoverText(job);
+            SetHover(label, screenPoint, keepOnScreen: MineLearningStation.IsStoredBook(job) || label.Contains('\n'));
             return;
         }
         if (!IsDraggingBook && station?.UsesStudyRules == true && refillAreas != null)
@@ -345,7 +339,12 @@ public sealed partial class LearningDispenserView : MonoBehaviour
                 return;
             }
         }
-        bookHoverLabel.gameObject.SetActive(false);
+        HideBookHover();
+    }
+
+    private void HideBookHover()
+    {
+        if (bookHoverLabel != null) bookHoverLabel.gameObject.SetActive(false);
         if (bookHoverBackground != null) bookHoverBackground.gameObject.SetActive(false);
     }
 
@@ -514,9 +513,12 @@ public sealed partial class LearningDispenserView : MonoBehaviour
                 RectTransformUtility.ScreenPointToLocalPointInRectangle(overlayRoot,viewCamera.WorldToScreenPoint(overlayAnchors[i].position),null,out var point);
                 overlays[i].anchoredPosition=point;
             }
-        if(station == null) return;
-        var progress = station.Progress;
-        if(progress == null) return;
+        if (station?.Progress is not MineLearningProgress progress)
+        {
+            HideBookHover();
+            HideStudentStats();
+            return;
+        }
         if (station.UsesStudyRules)
         {
             UpdateStudyControls();
@@ -524,7 +526,8 @@ public sealed partial class LearningDispenserView : MonoBehaviour
         }
         UpdateBookshelf();
         UpdateStudyResult();
-        UpdateLearningMeter(progress);
+        var studying = progress.active.Find(station.IsStudying);
+        UpdateLearningMeter(studying);
         int tileCount = station.UsesStudyRules ? 0 : progress.queued.Count;
         while(tiles.Count > tileCount)
         {
@@ -590,23 +593,35 @@ public sealed partial class LearningDispenserView : MonoBehaviour
                 !job.held && job.boardIndex == 1);
             var waiting = progress.active.Find(job => job.onBoard && job.stackOrder == 0 && job.boardIndex == 1 && !job.held &&
                 (job.comboStudy ? comboReady : !station.HasComboStudy) &&
-                (job.started || progress.attemptsToday < station.TodayLimit) &&
+                (job.started || station.TodayRemaining > 0) &&
                 books.TryGetValue(job, out var placedBook) && BoardItemDrop.IsOnSurface(studyGrid, placedBook));
             if (waiting != null && books.TryGetValue(waiting, out var model)) StartPickup(waiting, model);
         }
         if (!station.UsesStudyRules)
         {
             foreach (var tick in queueTicks) tick.gameObject.SetActive(false);
-            return;
         }
-        int queueCapacity = station.ProductionQueueLimit;
-        int rows = Mathf.Max(queueCapacity, progress.queued.Count);
-        for (int i = 0; i < progress.queued.Count; i++)
-            ShowBook(progress.queued[i], .60f * Mathf.Min(1f, 8f / rows))
-                .SetPositionAndRotation(StudyQueuePosition(i, rows), queueBottom.rotation);
-        if (progress.producing != null)
-            ShowBook(progress.producing, .78f).SetPositionAndRotation(queueBottom.TransformPoint(generationSlotOffset), queueBottom.rotation);
-        UpdateStudyQueueTicks(queueCapacity, rows, progress.queued.Count);
+        else
+        {
+            int queueCapacity = station.ProductionQueueLimit;
+            int rows = Mathf.Max(queueCapacity, progress.queued.Count);
+            for (int i = 0; i < progress.queued.Count; i++)
+                ShowBook(progress.queued[i], .60f * Mathf.Min(1f, 8f / rows))
+                    .SetPositionAndRotation(StudyQueuePosition(i, rows), queueBottom.rotation);
+            if (progress.producing != null)
+                ShowBook(progress.producing, .78f).SetPositionAndRotation(queueBottom.TransformPoint(generationSlotOffset), queueBottom.rotation);
+            UpdateStudyQueueTicks(queueCapacity, rows, progress.queued.Count);
+        }
+        if (hoverPointerPosition is Vector2 pointerPosition && !(HasOpenReading && station.CanMoveBooks))
+        {
+            ShowHoveredBook(pointerPosition);
+            UpdateStudentStats(pointerPosition, studying);
+        }
+        else
+        {
+            HideBookHover();
+            HideStudentStats();
+        }
     }
 
     private void UpdateBoardStacks()
@@ -1013,10 +1028,9 @@ public sealed partial class LearningDispenserView : MonoBehaviour
 
     public bool TryRefillBooks(int ability, int insertedCoins) => station.Refill(ability, insertedCoins);
 
-    private void UpdateLearningMeter(MineLearningProgress progress)
+    private void UpdateLearningMeter(MineLearningJob job)
     {
         if (learningMeter == null || learningFill == null || studentHead == null || viewCamera == null || overlayRoot == null) return;
-        var job = progress.active.Find(station.IsStudying);
         bool visible = job != null && studentHead.gameObject.activeInHierarchy;
         UpdateReadingPose(visible ? job : null);
         learningMeter.gameObject.SetActive(visible);

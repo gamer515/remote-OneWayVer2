@@ -93,8 +93,9 @@ public partial class DecisionManager
                     BeginPackShortcutWalk();
                 else if (Authored.storyPackFrame == PackShortcutGame)
                     ShowAuthoredCard("이쪽으로 지나가려고? 나랑 한 판 어때?", ShortcutNpcName,
-                        new[] { "동전 던지기 한 판 할래요?", "저랑 한 판 겨뤄 볼래요?" });
-                else ShowAuthoredCard("앞면이랑 뒷면 중 뭘 고를래?", ShortcutNpcName, new[] { "앞면", "뒷면" });
+                        new[] { "동전 던지기 한 판 할래요?", "저랑 한 판 겨뤄 볼래요?" }, voiceNpcId: packShortcutActor.name);
+                else ShowAuthoredCard("앞면이랑 뒷면 중 뭘 고를래?", ShortcutNpcName, new[] { "앞면", "뒷면" },
+                    voiceNpcId: packShortcutActor.name);
                 break;
             case PackShortcutCoinPlaying:
                 FinishPackShortcutGame(false, Authored.storyPackShortcutWon);

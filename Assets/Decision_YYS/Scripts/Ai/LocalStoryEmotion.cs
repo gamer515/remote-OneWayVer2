@@ -1,6 +1,8 @@
 using System;
+using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
@@ -69,6 +71,80 @@ internal static class LocalStoryEmotion
     }
 }
 
+internal static class LocalStoryDialogueLength
+{
+    private const int Tolerance = 30;
+
+    private static int Count(string text) => new StringInfo(text?.Trim() ?? string.Empty).LengthInTextElements;
+
+    internal static (int Min, int Max) Range(string original)
+    {
+        int count = Count(original);
+        return (Math.Max(1, count - Tolerance), count + Tolerance);
+    }
+
+    internal static bool Allows(string original, string text)
+    {
+        var (min, max) = Range(original);
+        int count = Count(text);
+        return count >= min && count <= max;
+    }
+
+    internal static string PromptRule(string original)
+    {
+        var (min, max) = Range(original);
+        return $"응답의 text 값은 {min}~{max}자로 써 줘. 앞뒤 공백을 제외하고 본문 안의 공백과 문장부호를 포함해 세어 줘.\n";
+    }
+}
+
+internal static class LocalStoryDialogueRules
+{
+    private const int MaxPhraseWords = 4;
+    private static readonly Regex PoliteEnding = new Regex(
+        @"(?:습니다|습니까|십시오|나요|세요|네요|데요|거예요|예요|이에요|에요|어요|아요|해요|까요|죠|지만요|기요|만요)(?=[,.!?…]|\s*$)");
+    private static readonly Regex Negation = new Regex(@"않|없|아니|(?<!\p{L})(?:안|못)\s|지\s*말");
+    private static readonly Regex ObscuredText = new Regex(@"[\u2580-\u259F\u25A0-\u25FF※#]+");
+
+    internal static string RewriteInstruction =>
+        $"원문의 짧은 구절 한 곳만 바꿔 줘. 바꾸기 전과 후 모두 최대 {MaxPhraseWords}어절이고, 나머지 문구는 그대로 유지해 줘.";
+
+    internal const string PreserveInstruction =
+        "원문의 사실, 상황, 인물 이름, 수량, 요구와 판단, 반말·존댓말, 표현 수위를 유지해 줘. " +
+        "화자의 말투에 맞게 지정된 감정을 표현하되, 새로운 사건이나 의도를 추가하지 마. 같은 뜻으로 바꾸기 어렵다면 원문 그대로 답해 줘.";
+
+    internal static string Rejection(string original, string candidate)
+    {
+        if (!LocalStoryDialogueLength.Allows(original, candidate)) return "DialogueLengthOutOfRange";
+        string source = original?.Trim() ?? "";
+        string text = candidate.Trim();
+        if (!LocalStoryRewrite.ValidateDialogueWording(source, text) ||
+            PoliteEnding.IsMatch(source) != PoliteEnding.IsMatch(text) ||
+            Negation.IsMatch(source) != Negation.IsMatch(text) ||
+            !ObscuredText.Matches(source).Cast<Match>().Select(match => match.Value)
+                .SequenceEqual(ObscuredText.Matches(text).Cast<Match>().Select(match => match.Value)) ||
+            !ChangesOnePhrase(source, text))
+            return "DialogueContentChanged";
+        return null;
+    }
+
+    private static bool ChangesOnePhrase(string source, string text)
+    {
+        var before = source.Split((char[])null, StringSplitOptions.RemoveEmptyEntries);
+        var after = text.Split((char[])null, StringSplitOptions.RemoveEmptyEntries);
+        int start = 0;
+        while (start < before.Length && start < after.Length && before[start] == after[start]) start++;
+        int endBefore = before.Length;
+        int endAfter = after.Length;
+        while (endBefore > start && endAfter > start && before[endBefore - 1] == after[endAfter - 1])
+        {
+            endBefore--;
+            endAfter--;
+        }
+        bool keepsSourceWording = before.Length == 1 || start > 0 || endBefore < before.Length;
+        return keepsSourceWording && endBefore - start <= MaxPhraseWords && endAfter - start <= MaxPhraseWords;
+    }
+}
+
 internal static class LocalStoryGemmaDialogue
 {
     internal const string Mode = "GemmaDialogue";
@@ -77,12 +153,16 @@ internal static class LocalStoryGemmaDialogue
     private const int MaxPhraseWords = 4;
     private const string Grammar = "root ::= \"{\" ws \"\\\"text\\\"\" ws \":\" ws str ws \"}\"\nstr ::= \"\\\"\" ([^\"\\\\\\x00-\\x1f] | \"\\\\\" [\"\\\\/bfnrt] | \"\\\\u\" hex hex hex hex)+ \"\\\"\"\nhex ::= [0-9a-fA-F]\nws ::= [ \\t\\n\\r]*";
 
-    internal static string Messages(LocalStoryEmotionLine line, string emotion, string original)
+    internal static string Messages(LocalStoryEmotionLine line, string emotion, string original, bool nextRun = false)
     {
-        string prompt = "[원문]에서 짧은 구절 한 곳을 골라 [화자 말투]와 [감정]에 어울리는 표현으로 바꿔 줘. " +
+        string instructions = nextRun
+            ? LocalStoryDialogueRules.RewriteInstruction + " " + LocalStoryDialogueRules.PreserveInstruction + "\n\n"
+            : "[원문]에서 짧은 구절 한 곳을 골라 [화자 말투]와 [감정]에 어울리는 표현으로 바꿔 줘. " +
             $"바꾸기 전과 후 모두 최대 {MaxPhraseWords}어절이고, 나머지 문구는 그대로 유지해 줘.\n\n" +
-            "인물 이름, 수량, 반말·존댓말, 표현 수위, 누가 누구에게 무엇을 요구하거나 판단하는지는 유지해 줘.\n\n" +
+            "인물 이름, 수량, 반말·존댓말, 표현 수위, 누가 누구에게 무엇을 요구하거나 판단하는지는 유지해 줘.\n\n";
+        string prompt = instructions +
             $"[화자 말투] {line.speechStyle}\n[감정] {emotion}\n[원문] {original}\n\n" +
+            (nextRun ? LocalStoryDialogueLength.PromptRule(original) : "") +
             "{\"text\":\"최종 대사\"} 형식으로 응답해 줘.";
         return new JArray(new JObject { ["role"] = "user", ["content"] = prompt }).ToString(Formatting.None);
     }

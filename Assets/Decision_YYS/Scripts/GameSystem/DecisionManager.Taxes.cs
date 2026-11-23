@@ -122,6 +122,12 @@ public partial class DecisionManager
             mineCollectors.SetVisible(false);
             SaveGuideCheckpoint();
         }
+        if (mine.taxPatrolActive && !mine.collectorChaseClosed && !mine.HasTaxInvoice)
+        {
+            // A checkpoint can deserialize a missing invoice as an object with no lines.
+            AnnounceMineTax(Mathf.Max(0, mine.nextTaxDay - mine.taxScheduleInterval));
+            if (mine.HasTaxInvoice) SaveGuideCheckpoint();
+        }
         bool due = TaxDay >= mine.nextTaxDay;
         if (daylight < 1f || mine.taxPatrolActive || (!due && mine.collectorOpeningCompleted)) return;
         if (envController.LoadedChunkEndZ == null) return;
@@ -130,14 +136,16 @@ public partial class DecisionManager
         float length = registry.GetChunkWorldPosition(1).z - firstChunkZ;
         int lastChunk = Mathf.Max(0, Mathf.RoundToInt((envController.CurrentTerrainEndZ - firstChunkZ) / length) - 1);
         int chunk = Mathf.Clamp(Mathf.FloorToInt((playerController.CurrentPosition.z - firstChunkZ) / length), 0, lastChunk);
-        if (mine.taxInvoice == null)
-            mine.taxInvoice = taxRules.Announce(session.RunSeed, TaxDay, mine.taxScheduleTier, statContainer.stats,
-                ChapterContentCatalog.ChapterFolder(mine.taxChapterId) == "Chapter_01");
+        if (!mine.HasTaxInvoice) AnnounceMineTax(TaxDay);
         mine.nextTaxDay = TaxDay + mine.taxScheduleInterval;
         mine.taxPatrolActive = true;
         mineCollectors.BeginRoute(registry.GetChunkWorldPosition(chunk).z, registry.GetChunkWorldPosition(chunk + 1).z, chunk);
         SaveGuideCheckpoint();
     }
+
+    private void AnnounceMineTax(int day) =>
+        mine.taxInvoice = taxRules.Announce(session.RunSeed, day, mine.taxScheduleTier, statContainer.stats,
+            ChapterContentCatalog.ChapterFolder(mine.taxChapterId) == "Chapter_01");
 
     private static string DescribeTaxCost(int[] cost) =>
         string.Join(" + ", cost.Select((amount, index) => (amount, index))

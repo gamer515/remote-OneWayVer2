@@ -59,7 +59,7 @@ public partial class DecisionManager
             (duelMiniGame!=null && duelMiniGame.IsRunning) || (tutorialMiniGames!=null && tutorialMiniGames.CurrentKnightTarget!=null);
         float? calendarDays = mine != null && mineRules?.dayCycle is ChapterDayCycle cycle
             ? cycle.ElapsedDays(mine.elapsedSeconds) : null;
-        learningStation?.Tick(Time.deltaTime, busy, stopStudying: task || mine?.resting == true, calendarDays: calendarDays);
+        learningStation?.Tick(Time.deltaTime, busy, stopStudying: task, calendarDays: calendarDays);
         if (learningStation != null)
             uiController?.ShowReading(learningStation, !busy && !task && guideProgress?.allocating != true);
     }

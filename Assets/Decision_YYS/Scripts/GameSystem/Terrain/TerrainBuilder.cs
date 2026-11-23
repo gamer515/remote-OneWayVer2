@@ -158,8 +158,7 @@ public sealed class TerrainBuilder
             if (entry.Key < segment.FirstGlobalChunkIndex ||
                 entry.Key >= segment.FirstGlobalChunkIndex + segment.ChunkCount ||
                 !entry.Value || !entry.Value.activeInHierarchy) continue;
-            string id = "roadside:" + entry.Key;
-            if (resolved.Contains(id)) continue;
+            string chunkEncounterId = "roadside:" + entry.Key;
             foreach (Transform child in entry.Value.transform)
             {
                 if (!child.gameObject.activeInHierarchy ||
@@ -169,6 +168,9 @@ public sealed class TerrainBuilder
                 if (z < fromZ || z >= destinationZ) continue;
                 bool central = child.name.StartsWith(RoadsideEncounterPrefix + CentralRoadsideKey + "_",
                     System.StringComparison.Ordinal);
+                // A flank encounter must not consume the separate NPC on the through route.
+                string id = central ? chunkEncounterId + ":center" : chunkEncounterId;
+                if (resolved.Contains(id)) continue;
                 float triggerZ = central ? Mathf.Max(fromZ, z - stopDistance) : z;
                 if (triggerZ <= toZ && triggerZ < nearestTriggerZ)
                 {

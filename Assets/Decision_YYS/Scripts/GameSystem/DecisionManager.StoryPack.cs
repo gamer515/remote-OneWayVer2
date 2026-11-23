@@ -20,6 +20,11 @@ public partial class DecisionManager
     private bool IsPackMain => Authored.eventId.StartsWith("MAIN-", StringComparison.Ordinal);
     private Dictionary<string, LocalStoryDialogueJob> previousPackDialogue;
     private string PackSpeaker(string id) => IsPackMain ? StoryPack.PackName(id) : pendingEncounter?.DisplayName;
+    private string PackVoiceNpcId(JToken line)
+    {
+        string id = (string)line?["speaker_id"];
+        return StoryPack.IsPackNpc(id) ? id : null;
+    }
     private int StoredStoryIntelligence() => journeyCoinSupply?.IsReady == true
         ? journeyCoinSupply.AvailableCoins(2) : statContainer.stats[2];
 
@@ -256,7 +261,8 @@ public partial class DecisionManager
         if (lines != null && Authored.storyPackLine < lines.Count)
         {
             var line = lines[Authored.storyPackLine];
-            ShowAuthoredCard((string)line["text"], PackSpeaker((string)line["speaker_id"]) ?? pendingEncounter?.DisplayName, null, line);
+            ShowAuthoredCard((string)line["text"], PackSpeaker((string)line["speaker_id"]) ?? pendingEncounter?.DisplayName,
+                null, line, PackVoiceNpcId(line));
             uiController.SetDialogueClue(HasHighStoryAbility(2) ? (string)line["hover_hint"]?["target_text"] : null, () =>
             {
                 string hint = (string)line["hover_hint"]?["id"];
@@ -271,23 +277,25 @@ public partial class DecisionManager
         }
 
         var last = lines?.Last;
-        string speech = (string)last?["text"] ?? (string)PackDialogueStory()["opening"].Last?["text"];
+        var speechLine = last?["text"]?.Type == JTokenType.String ? last : PackDialogueStory()["opening"].Last;
+        string speech = (string)speechLine?["text"];
+        string voiceNpcId = PackVoiceNpcId(speechLine);
         string speaker = PackSpeaker((string)last?["speaker_id"]) ?? pendingEncounter?.DisplayName;
         switch (frame)
         {
             case PackCoins:
                 var options = AuthoredStats.Select(label => label + $" 코인 {PackFee}개").ToList();
                 if (!Authored.storyPackNegotiated) options.Add((string)PackPayment(story)["negotiation"]["text"]);
-                ShowAuthoredCard(speech, speaker, options.ToArray());
+                ShowAuthoredCard(speech, speaker, options.ToArray(), voiceNpcId: voiceNpcId);
                 ShowPackEvidenceLearningHint(story);
                 break;
             case PackNegotiate:
                 var routes = PackNegotiationRoutes();
-                ShowAuthoredCard(speech, speaker, routes.Select(route => (string)route["text"]).ToArray());
+                ShowAuthoredCard(speech, speaker, routes.Select(route => (string)route["text"]).ToArray(), voiceNpcId: voiceNpcId);
                 ShowPackEvidenceLearningHint(story, routes);
                 break;
             case PackToss:
-                ShowAuthoredCard(speech, speaker, new[] { "앞면", "뒷면" });
+                ShowAuthoredCard(speech, speaker, new[] { "앞면", "뒷면" }, voiceNpcId: voiceNpcId);
                 break;
             case PackDuel:
                 RunStoryPackDuel();
@@ -303,7 +311,7 @@ public partial class DecisionManager
                 FinishAuthoredEncounter();
                 break;
             default:
-                ShowAuthoredCard(speech, speaker, PackRootOptions(story).Select(choice => choice.text).ToArray());
+                ShowAuthoredCard(speech, speaker, PackRootOptions(story).Select(choice => choice.text).ToArray(), voiceNpcId: voiceNpcId);
                 ShowPackEvidenceLearningHint(story);
                 break;
         }

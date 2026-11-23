@@ -57,7 +57,8 @@ public partial class DecisionManager
             encounterFlow.TryGetEncounter(activePlaceId, out var encounter))
         {
             pendingEncounter = encounter;
-            if (phase != "card" && string.IsNullOrEmpty(loadedProgress?.activeStoryPath)) BeginEncounter(encounter);
+            if (phase != "card" && string.IsNullOrEmpty(loadedProgress?.activeStoryPath))
+                BeginEncounter(encounter, journeyWalk: phase == "walking");
             else
             {
                 restoringStoryCard = true;
@@ -319,9 +320,9 @@ public partial class DecisionManager
         BeginWalkStep();
     }
 
-    private void BeginEncounter(EncounterFlowController.Encounter encounter)
+    private void BeginEncounter(EncounterFlowController.Encounter encounter, bool journeyWalk)
     {
-        ApproachEncounter(encounter);
+        ApproachEncounter(encounter, journeyWalk: journeyWalk);
         Debug.Log($"[조우] {encounter.PlaceId} ({encounter.ContentPath})", this);
     }
 
@@ -560,7 +561,8 @@ public partial class DecisionManager
 
     private void PresentEncounterCard()
     {
-        if (!restoringStoryCard) storyVisit++;
+        bool newCard = !restoringStoryCard;
+        if (newCard) storyVisit++;
         restoringStoryCard = false;
         Dialogue card = activeCards.MainStory[activeCardIndex];
         // ResetSelection은 기어 선택 이벤트를 즉시 호출하므로 이전 Choice 상태부터 해제합니다.
@@ -573,7 +575,13 @@ public partial class DecisionManager
         RecordPlayedEncounterStory(card, activePlaceId, activeEncounterPath, activeCardIndex);
         SaveEncounterState("card");
         SaveGuideCheckpoint();
-        presentationController.ShowDialogue(card);
+        string voiceNpcId = null;
+        if (newCard && currentScenarioPath == MineAuthoredStory.Episode && pendingEncounter.HasValue &&
+            !string.IsNullOrWhiteSpace(card.speakerId) &&
+            (envController.AuthoredMine?.IsPackNpc(card.speakerId) == true ||
+                ChapterContentCatalog.Characters("Chapter_1").Any(npc => (string)npc["characterId"] == card.speakerId)))
+            voiceNpcId = card.speakerId;
+        presentationController.ShowDialogue(card, voiceNpcId);
         FrameActiveEncounter(false);
         CompleteEncounterCardPresentation(card);
     }

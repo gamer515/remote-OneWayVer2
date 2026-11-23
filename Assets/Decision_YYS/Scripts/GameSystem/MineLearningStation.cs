@@ -54,6 +54,9 @@ public readonly struct LearningComboReward
     public int bookNumberSequence;
     public string numberComboRewardId;
     public int numberComboChoicesRemaining;
+    public int numberComboBookCount;
+    public string colorComboPattern;
+    public int colorComboChoicesRemaining;
     public MineLearningJob producing;
     public List<MineLearningJob> stored = new List<MineLearningJob>();
     public List<string> mastered = new List<string>(), rewardedCombos = new List<string>();
@@ -158,6 +161,7 @@ public sealed partial class MineLearningStation : MonoBehaviour
         return $"{AbilityName(job.ability)} 책";
     }
     public int TodayLimit => UsesStudyRules && wallet != null ? DailyLimit(CurrentCoins[2]) : 0;
+    public int TodayRemaining => Mathf.Max(0, TodayLimit - (progress?.attemptsToday ?? 0));
     private static bool IsReadingPlacement(MineLearningJob job) => job.onBoard && job.boardIndex == 2;
     public bool IsStudying(MineLearningJob job) => CanStudyBooks && job != null && job.onBoard && !job.held &&
         job.transit <= 0 && (study == null ? !job.requiresBoard || job.boardIndex == 1 :
