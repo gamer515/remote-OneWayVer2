@@ -223,6 +223,23 @@ public partial class DecisionManager
         return options.Values.ToArray();
     }
 
+    private static JToken PackEvidenceLearningHint(JObject story) => story["choices"]?
+        .FirstOrDefault(choice => (string)choice["id"] == "C1")?["negotiation"]?["routes"]?
+        .FirstOrDefault(route => (string)route["id"] == "N_INT")?["learning_hint"];
+
+    private void ShowPackEvidenceLearningHint(JObject story, JToken[] routes = null)
+    {
+        if (Authored.storyPackNegotiated) return;
+        var evidence = (routes ?? PackNegotiationRoutes()).FirstOrDefault(route => (string)route["id"] == "N_INT");
+        if (evidence == null) return;
+
+        bool ready = PackCondition(evidence["condition"]);
+        var hint = PackEvidenceLearningHint(story);
+        uiController.SetStoryNotice((string)hint?[ready ? "ready" : "below"] ?? (ready
+            ? "이제 통행료를 줄일 근거를 댈 수 있겠어."
+            : "통행료를 깎으려면 근거가 더 필요해. 지능 코인을 얻고 다시 와 보자."));
+    }
+
     private void PresentStoryPack()
     {
         var story = PackStory();
@@ -262,9 +279,12 @@ public partial class DecisionManager
                 var options = AuthoredStats.Select(label => label + $" 코인 {PackFee}개").ToList();
                 if (!Authored.storyPackNegotiated) options.Add((string)PackPayment(story)["negotiation"]["text"]);
                 ShowAuthoredCard(speech, speaker, options.ToArray());
+                ShowPackEvidenceLearningHint(story);
                 break;
             case PackNegotiate:
-                ShowAuthoredCard(speech, speaker, PackNegotiationRoutes().Select(route => (string)route["text"]).ToArray());
+                var routes = PackNegotiationRoutes();
+                ShowAuthoredCard(speech, speaker, routes.Select(route => (string)route["text"]).ToArray());
+                ShowPackEvidenceLearningHint(story, routes);
                 break;
             case PackToss:
                 ShowAuthoredCard(speech, speaker, new[] { "앞면", "뒷면" });
@@ -284,6 +304,7 @@ public partial class DecisionManager
                 break;
             default:
                 ShowAuthoredCard(speech, speaker, PackRootOptions(story).Select(choice => choice.text).ToArray());
+                ShowPackEvidenceLearningHint(story);
                 break;
         }
     }
@@ -300,6 +321,8 @@ public partial class DecisionManager
         int selected = selectedGearIndex;
         if (selected < 0) return;
         var story = PackStory();
+        if (Authored.storyPackFrame is PackRoot or PackCoins or PackNegotiate)
+            uiController.SetStoryNotice(null);
         var voiced = PackDialogueStory();
         switch (Authored.storyPackFrame)
         {

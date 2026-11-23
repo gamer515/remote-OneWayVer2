@@ -826,4 +826,12 @@ a:focus-visible{outline:2px solid #cfe8fb;outline-offset:3px}
 <p>요청당 재고만 1권 줄고 지갑과 하루 학습량은 그대로였다. 배출구가 점유되면 책은 대기열에 들어갔고, 테스트 한도인 15권까지 차면 생성 요청이 재고를 사용하지 않았다. 가득 찬 대기열에서도 리필이 가능했다. 지능 2와 18에서 하루 학습 한도는 각각 2와 13이었다.</p>
 <p>잔액 부족과 다른 능력 코인 투입, 두 번째 리필의 부분 투입 후 Esc 취소에 차감과 재고 추가가 없었다. 메인 메뉴 이어하기에서 세 번째 리필 이후 힘 코인 12개·책 3권·다음 가격 4개·대기열 15권을 확인했다. 저장 전 부분 투입한 코인은 이어하기에서 예약이 해제됐다. 코드와 설정 변경은 없으며 별도 임시 검증 코드는 없다.</p>
 </section>
+<section id="l06-learning-growth"><h2>2026-11-23 L06 학습 성장 체감</h2>
+<p>MAIN-02_V1의 N_INT에 준비 전후 안내를 추가했다. 안내와 실제 근거 제시는 현재 지갑과 기존 조건 판정을 공유한다. 지능 2에서 기본 통행료 2개, BK001 수로 설계로 지능 1개 지급, 노란 버튼으로 조우 복귀, 속도 코인 1개를 납부통에 넣어 할인 정산을 확인했다. 메인 메뉴의 이어하기에서 힘·속도·지능·매력 잔액 [4, 1, 3, 2]와 독서 완료·납부 상태가 복원됐다.</p>
+<p>일반세는 별도 비교 회차에서 [4, 2, 2, 2]로 시작했다. 울림세 매력 2개와 요역·부역 힘 3개가 포함된 동일 고지서를 두 경우에 사용했다. 단권 보상 후 [4, 2, 3, 2]에서 정산하면 [1, 2, 3, 0], BK002 완료 이력을 넣어 끈질긴 두 장 콤보를 완성한 경우 [5, 2, 3, 3]에서 정산하면 [2, 2, 3, 1]이었다. 두 경우 모두 일반 납부 옵션을 확인하고 기존 확정 처리에서 잔액을 확인했다. 일반세 비교에서 저울·코인 회수 연출은 재생하지 않았다.</p>
+<p>이 고지서는 단권만으로도 납부할 수 있다. 차이는 이후 힘 2개나 매력 1개가 필요한 행동의 여유에 남았다. Unity 컴파일을 통과했다. 별도 임시 검증 코드는 없다.</p>
+<h3>2026-11-24 장소 NPC 공통 적용</h3>
+<p>메인·보조 장소 공통 대화 흐름이 각 장소의 N_INT 조건으로 학습 안내를 표시한다. 장소별 문구가 있는 경우 이를 사용하고, 다른 장소에는 통행료 공통 문구를 적용한다. 기본 장소 이야기 77개와 능력별 변형 308개에서 근거 제시 경로를 확인했다.</p>
+<p>Unity 컴파일을 통과했다. 메인 메뉴에서 시작한 테스트 회차의 MAIN-01, MAIN-02, SIDE-29, SIDE-17에서 안내와 학습 복귀 선택지를 확인했다. MAIN-09 데이터로 지능 3에서 부족, 지능 4에서 준비 안내가 나오는 것도 공통 표시 경로에서 확인했다. 별도 임시 검증 코드는 없다.</p>
+</section>
 </main><script>const oldSections = new Set(["mine-facility-layout-nov08","five-minute-day-nov08","tax-catalog-nov08","open-mine-calendar-nov08","encounter-panel-nov08","chapter-modules-nov08","payment-latest","dispenser-latest","npc-hero-latest","choice-depth-latest","layout-combat-latest","learning-plan","coastal-module-plan","place-types-plan","story-management","structure","screens","expansion","verification","cleanup"]); const id = location.hash.slice(1); if (oldSections.has(id)) location.replace("work-history.html#" + id);</script></body></html>
