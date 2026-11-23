@@ -673,7 +673,16 @@ public sealed class LearningDispenserView : MonoBehaviour
         Vector2 screen = viewCamera.WorldToScreenPoint(bounds.center);
         screen.y = viewCamera.WorldToScreenPoint(frontEdge).y;
         RectTransformUtility.ScreenPointToLocalPointInRectangle(overlayRoot, screen, null, out var point);
-        ((RectTransform)button.transform).anchoredPosition = point + Vector2.down * 17f;
+        var control = (RectTransform)button.transform;
+        string numbers = string.Join(" · ", stack.Select(job => job.bookNumber.ToString()));
+        var label = button.GetComponentInChildren<TMPro.TMP_Text>();
+        string caption = numbers + "\n학습하기";
+        if (label.text != caption)
+        {
+            label.text = caption;
+            control.sizeDelta = new Vector2(Mathf.Clamp(label.GetPreferredValues(numbers).x + 16f, 88f, 280f), 44f);
+        }
+        control.anchoredPosition = point + Vector2.down * 25f;
         button.interactable = CanUseComboButton(stack);
     }
 

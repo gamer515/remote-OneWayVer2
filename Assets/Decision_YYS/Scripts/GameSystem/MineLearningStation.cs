@@ -23,6 +23,7 @@ public readonly struct LearningComboReward
     public bool onBoard;
     public bool requiresBoard;
     public string bookId, bookName;
+    public int bookNumber;
     public float boardU, boardV;
     public int boardIndex;
     public float generationRemaining;
@@ -50,6 +51,9 @@ public readonly struct LearningComboReward
 {
     public List<MineLearningJob> active = new List<MineLearningJob>(), queued = new List<MineLearningJob>();
     public int sequence;
+    public int bookNumberSequence;
+    public string numberComboRewardId;
+    public int numberComboChoicesRemaining;
     public MineLearningJob producing;
     public List<MineLearningJob> stored = new List<MineLearningJob>();
     public List<string> mastered = new List<string>(), rewardedCombos = new List<string>();
@@ -204,6 +208,11 @@ public sealed partial class MineLearningStation : MonoBehaviour
         }
         for(int i=0;i<abilityButtons.Length;i++) { int ability=i; abilityButtons[i].onClick.RemoveAllListeners(); abilityButtons[i].onClick.AddListener(()=>Request(ability)); }
         bookTemplate.gameObject.SetActive(false); Rebuild();
+        bool numberedBooks = false;
+        foreach (var job in progress.active.Concat(progress.queued)
+                     .Concat(progress.stored ?? Enumerable.Empty<MineLearningJob>()).Append(progress.producing))
+            numberedBooks |= AssignBookNumber(job);
+        if (numberedBooks) save?.Invoke();
     }
     public bool Request(int ability)
     {
@@ -221,7 +230,7 @@ public sealed partial class MineLearningStation : MonoBehaviour
         float high = Mathf.Max(low, authoredLearning?.maximumSeconds ?? maximumSeconds);
         bool random = authoredLearning?.randomDuration ?? randomDuration;
         float seconds = random ? Mathf.Lerp(low, high, (float)MineChapterSettings.Roll(seed, progress.sequence++, "learning")) : book?.seconds ?? low;
-        progress.queued.Add(new MineLearningJob
+        var job = new MineLearningJob
         {
             ability = ability,
             reward = book?.reward ?? Mathf.Max(0, rewards[ability]),
@@ -230,7 +239,9 @@ public sealed partial class MineLearningStation : MonoBehaviour
             bookId = book?.id,
             bookName = book?.name,
             requiresBoard = book != null || ability == 0
-        });
+        };
+        AssignBookNumber(job);
+        progress.queued.Add(job);
         notice=null; FillSlots(); Rebuild(); save(); return true;
     }
     private bool FillSlots()

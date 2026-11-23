@@ -15,6 +15,65 @@ public sealed partial class MineLearningStation
     private JObject[] readingCombos = Array.Empty<JObject>();
     private bool readingDeferred;
     internal JObject ReadingPreview { get; private set; }
+    internal int ReadingPreviewNumber { get; private set; }
+    private const int MaxBookNumber = 13;
+    private static readonly string[] AbilityComboPrefixes = { "CM_STAT_STR_", "CM_STAT_SPD_", "CM_STAT_INT_", "CM_STAT_CHA_" };
+
+    // Match the original title to its original textbook template. Only the vending lane changes.
+    private static int ProductionAbility(BookDefinition book) => book.id switch
+    {
+        "BK002" or "BK018" => 1,
+        "BK007" => 0,
+        "BK009" => 3,
+        _ => book.ability
+    };
+
+    private bool AssignBookNumber(MineLearningJob job)
+    {
+        if (job == null || job.bookNumber is >= 1 and <= MaxBookNumber) return false;
+        job.bookNumber = 1 + (int)(MineChapterSettings.Roll(seed, ++progress.bookNumberSequence, "book-number") * MaxBookNumber);
+        return true;
+    }
+
+    internal static bool IsAbilityCombo(JObject combo) => (string)combo["type"] == "mainStat";
+
+    private JObject NumberComboReward(MineLearningJob[] batch)
+    {
+        if (batch.Length < 3 || batch[0].stackOrder <= 0) return null;
+        int ability = batch[0].ability;
+        int start = batch[0].bookNumber;
+        if ((uint)ability >= AbilityComboPrefixes.Length || start < 1 || start + batch.Length - 1 > MaxBookNumber)
+            return null;
+        for (int i = 0; i < batch.Length; i++)
+        {
+            var job = batch[i];
+            if (job.ability != ability || job.bookNumber != start + i ||
+                job.bookId == StrengthTutorialBook || !readingBooks.ContainsKey(job.bookId ?? "")) return null;
+        }
+        string prefix = AbilityComboPrefixes[ability];
+        return readingCombos.Where(combo => IsAbilityCombo(combo) &&
+                ((string)combo["id"]).StartsWith(prefix, StringComparison.Ordinal) &&
+                (int)combo["condition"]["minCompleted"] >= 3 &&
+                (int)combo["condition"]["minCompleted"] <= batch.Length)
+            .OrderByDescending(combo => (int)combo["condition"]["minCompleted"]).FirstOrDefault();
+    }
+
+    private JObject CompleteNumberComboChoice()
+    {
+        if (progress.numberComboChoicesRemaining <= 0 || --progress.numberComboChoicesRemaining != 0) return null;
+        string rewardId = progress.numberComboRewardId;
+        progress.numberComboRewardId = null;
+        var combo = readingCombos.FirstOrDefault(entry => (string)entry["id"] == rewardId);
+        if (combo == null) return null;
+        var record = FindReadingComboProgress(rewardId);
+        if (record == null)
+        {
+            record = new ReadingComboProgress { id = rewardId, payouts = ReadingComboPayouts(rewardId) };
+            progress.readingComboProgress.Add(record);
+        }
+        record.payouts++;
+        return combo;
+    }
 
     internal bool TryOpenReadingPreview(MineLearningJob job)
     {
@@ -24,13 +83,22 @@ public sealed partial class MineLearningStation
             !readingBooks.TryGetValue(job.bookId ?? "", out var book))
             return false;
         ReadingPreview = book;
+        ReadingPreviewNumber = job.bookNumber;
         return true;
     }
 
-    internal void CloseReadingPreview() => ReadingPreview = null;
+    internal void CloseReadingPreview()
+    {
+        ReadingPreview = null;
+        ReadingPreviewNumber = 0;
+    }
     internal IReadOnlyList<JObject> ReadingCombos => readingCombos;
     internal string ReadingTitle(string id) => (string)readingBooks[id]["parodyTitle"];
-    internal int ReadingAbility(string id) => Array.IndexOf(AbilityKeys, (string)readingBooks[id]["mainStat"]);
+    internal int ReadingAbility(string id)
+    {
+        var definition = authoredBooks?.FirstOrDefault(book => book.id == id);
+        return definition != null ? ProductionAbility(definition) : Array.IndexOf(AbilityKeys, (string)readingBooks[id]["mainStat"]);
+    }
     internal IEnumerable<JToken> ReadingChoiceRewards(string id) =>
         readingBooks[id]["choices"].Select(choice => choice["reward"]);
 
@@ -77,9 +145,12 @@ public sealed partial class MineLearningStation
         (job.bookId == StrengthTutorialBook ||
             string.IsNullOrEmpty(job.bookId) && (string.IsNullOrEmpty(job.bookName) || job.bookName == "힘 책"));
 
-    public string GetBookHoverText(MineLearningJob job) => IsStrengthTutorial(job)
-        ? "힘 책\n초록 보드에 두면 기사가 펼쳐 볼지도."
-        : GetBookDisplayName(job);
+    public string GetBookHoverText(MineLearningJob job)
+    {
+        string title = GetBookDisplayName(job);
+        if (job.bookNumber > 0) title += $" · {job.bookNumber}번";
+        return IsStrengthTutorial(job) ? title + "\n초록 보드에 두면 기사가 펼쳐 볼지도." : title;
+    }
 
     private void PrepareStrengthTutorial(MineLearningJob job)
     {
@@ -193,9 +264,11 @@ public sealed partial class MineLearningStation
         var combos = new List<LearningComboReward>();
         foreach (var combo in id == StrengthTutorialBook ? Array.Empty<JObject>() : readingCombos)
         {
-            if (!CreditReadingCombo(combo, id)) continue;
+            if (IsAbilityCombo(combo) || !CreditReadingCombo(combo, id)) continue;
             combos.Add(new LearningComboReward((string)combo["name"], AddRewards(combo["reward"])));
         }
+        if (CompleteNumberComboChoice() is JObject numberCombo)
+            combos.Add(new LearningComboReward((string)numberCombo["name"], AddRewards(numberCombo["reward"])));
         AwardCoins(amounts, combos);
         progress.readingResult = (string)choice["result"] + "\n\n" +
             string.Join(" / ", amounts.Select((quantity, i) => quantity > 0 ? AbilityName(i) + " +" + quantity : null)

@@ -201,7 +201,7 @@ public sealed partial class MineLearningStation
             return Explain("생성 대기열이 가득 찼습니다.");
 
         var amounts = wallet();
-        var available = authoredBooks.Where(entry => entry.ability == ability && CanRead(entry, amounts)).ToArray();
+        var available = authoredBooks.Where(entry => ProductionAbility(entry) == ability && CanRead(entry, amounts)).ToArray();
         if (available.Length == 0) return Explain("이 분야의 책을 읽으려면 지능이나 해당 능력이 더 필요합니다.");
         var book = available[progress.nextBook[ability] % available.Length];
         progress.nextBook[ability]++;
@@ -212,6 +212,7 @@ public sealed partial class MineLearningStation
             generationRemaining = book.generationSeconds, bookId = book.id, bookName = book.name,
             requiresBoard = true
         };
+        AssignBookNumber(progress.producing);
         notice = null;
         save?.Invoke();
         return true;
@@ -275,15 +276,18 @@ public sealed partial class MineLearningStation
         if (!UsesStudyRules || !CanBeginStudySession || HasComboStudy || ReadingResult != null ||
             batch.Length < 2 || batch.Length > TodayLimit - progress.attemptsToday ||
             batch.Any(job => job.started || job.held || !CanRead(job))) return false;
-        return study.combos.Any(combo => !progress.rewardedCombos.Contains(combo.id) &&
+        return NumberComboReward(batch) != null ||
+            study.combos.Any(combo => !progress.rewardedCombos.Contains(combo.id) &&
             combo.books.All(id => batch.Any(job => job.bookId == id))) ||
-            readingCombos.Any(combo => CanCompleteReadingCombo(combo, batch));
+            readingCombos.Any(combo => !IsAbilityCombo(combo) && CanCompleteReadingCombo(combo, batch));
     }
 
     internal bool SubmitCombo(Vector3 pickupPoint, int stackId)
     {
         var batch = ComboSubmission(stackId);
         if (!CanSubmitCombo(batch)) return false;
+        progress.numberComboRewardId = (string)NumberComboReward(batch)?["id"];
+        progress.numberComboChoicesRemaining = progress.numberComboRewardId != null ? batch.Length : 0;
         progress.comboSuccesses.Clear();
         progress.comboBoardPoint = pickupPoint;
         foreach (var job in batch) job.comboStudy = true;

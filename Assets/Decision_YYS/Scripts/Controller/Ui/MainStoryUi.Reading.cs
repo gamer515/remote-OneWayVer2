@@ -13,6 +13,7 @@ public partial class MainStoryUi
     private JObject displayedBook;
     private string displayedResult;
     private bool displayedPreview;
+    private int displayedBookNumber;
     private MineLearningStation readingStation;
     private GameObject comboGuideCanvas, comboGuidePanel, comboGuideToggle;
     private UnityEngine.UI.ScrollRect comboGuideScroll;
@@ -29,6 +30,7 @@ public partial class MainStoryUi
         string result = station.ReadingResult;
         if (!available || IsComboGuideOpen || book != null || result != null) station.CloseReadingPreview();
         bool preview = station.ReadingPreview != null;
+        int number = preview ? station.ReadingPreviewNumber : 0;
         if (preview) book = station.ReadingPreview;
         hideReadingForReward = available && !IsComboGuideOpen && result != null && HasLearningRewardPresentation;
         UpdateComboGuide(station, available && book == null && result == null);
@@ -40,11 +42,14 @@ public partial class MainStoryUi
         readingStation = station;
         if (readingPanel == null) BuildReading();
         readingPanel.SetActive(true);
-        if (displayedBook == book && displayedResult == result && displayedPreview == preview) return;
+        if (displayedBook == book && displayedResult == result && displayedPreview == preview &&
+            displayedBookNumber == number) return;
         displayedBook = book;
         displayedResult = result;
         displayedPreview = preview;
+        displayedBookNumber = number;
         readingTitle.text = result == null ? (string)book["parodyTitle"] : "독서 결과";
+        if (number > 0) readingTitle.text += $" · {number}번";
         readingBody.text = result ?? ((string)book["story"] + "\n\n" + (string)book["question"]);
         var choices = book?["choices"] as JArray;
         for (int i = 0; i < readingButtons.Length; i++)
@@ -133,6 +138,15 @@ public partial class MainStoryUi
         foreach (var combo in station.ReadingCombos)
         {
             if (station.ReadingComboPayouts((string)combo["id"]) <= 0) continue;
+            if (MineLearningStation.IsAbilityCombo(combo))
+            {
+                int length = (int)combo["condition"]["minCompleted"];
+                text.Append("<b>").Append((string)combo["name"]).Append("</b>  /  ")
+                    .Append(length >= 3 ? $"같은 능력의 오름차순 연속 번호 {length}권" : "기존 발견")
+                    .Append("  /  누적 지급 ").Append(station.ReadingComboPayouts((string)combo["id"])).AppendLine("회");
+                text.Append("  <b>콤보 추가 보상</b>  ").AppendLine(FormatGuideRewards(combo["reward"])).AppendLine();
+                continue;
+            }
             string type = (string)combo["type"] switch { "author" => "작가", "mainStat" => "주 능력", _ => "주제" };
             var condition = combo["condition"];
             var ids = condition["bookIds"].Values<string>().Distinct().ToArray();
