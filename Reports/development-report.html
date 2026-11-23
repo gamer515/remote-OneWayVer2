@@ -436,6 +436,53 @@ unity command run_script --caller plugin --skill unity-cli --file AgentScripts/K
 <h2>측정 근거와 임시 파일</h2>
 <p>제품 코드에서 계측을 제거하고 제품명과 빌드 중 바뀐 폰트 아틀라스를 원복했다. 원본 사용자 저장에는 쓰지 않았다. 로컬 계측용 빌드, 복사본, 원본 로그·PresentMon과 검증 도구는 Git에서 제외한 <code>Builds/Perf00A</code>에 있다. 임시 계측 소스 <code>Perf00AMeasurement.cs</code>와 메타, <code>Perf00AMeasurement.template</code>, <code>ProbeEdits.json</code>, <code>ProbeHashes.csv</code>, <code>SourceBackup/</code>, 실행·정렬 스크립트 <code>Launch-Trial.ps1</code>, <code>Start-Run.ps1</code>, <code>Start-Capture.ps1</code>, <code>Watch-Click.ps1</code>, <code>Summarize-Trials.ps1</code>는 결과 확인 후 정리 대기 상태다. <a href="../Builds/Perf00A/Trials.csv">측정 집계</a> · <a href="../Builds/Perf00A/Before-2.log">변경 전 이벤트</a> · <a href="../Builds/Perf00A/After-2.log">변경 후 이벤트</a> · <a href="../Builds/Perf00A/Before-2.csv">변경 전 PresentMon</a> · <a href="../Builds/Perf00A/After-2.csv">변경 후 PresentMon</a> · <a href="../Builds/Perf00A/Fresh.log">신규·연타</a> · <a href="../Builds/Perf00A/Battle.log">전투·메뉴 복귀·2회차</a></p>
 </section>
+<hr><section id="perf-00b">
+<h1>PERF-00B · 이어하기 로딩 최소 표시 시간</h1>
+<p>2026-11-24 (Asia/Seoul). 시작 브랜치는 <code>fearture/merge_progect</code>, 실제 기준 HEAD는 <code>363e235c0002c2f0ecdbb6713db3709b82841bb2</code>였다. 시작 당시 사용자 변경은 없었다.</p>
+
+<h2>변경과 적용값</h2>
+<p><a href="../Assets/Loading/Scripts/LoadingScreenController.cs">LoadingScreenController.cs</a>의 기존 이어하기 요청 플래그로 최소 표시 시간을 2.0초에서 0.5초로 선택한다. 이어하기 막대 시작 0초, 보간 속도 초당 1.5, 페이드 0.25초를 유지했다. 실제 비동기 로드가 활성화 대기점에 도달하고 막대가 완료돼야 씬을 활성화한다. 신규·미시작 다음 회차·전투·메뉴의 설정과 직접 미리보기 경로는 기존 값을 사용한다.</p>
+
+<h2>Windows 일반 빌드 전후 각 3회</h2>
+<p>PERF-00A와 같은 Unity 6000.3.12f1, URP 17.3.0, Windows x64 Mono 일반 Player와 1280×720 창. i5-10400, GTX 1660 SUPER(D3D12, 32.0.16.1088), 약 16GiB RAM, 1920×1080·143Hz 모니터, AC·균형 조정, PC 품질 인덱스 1·VSync 0. 같은 계측용 실행 파일에서 <code>-perf00b-baseline</code>으로 2.0초, 플래그 없이 0.5초를 실행했다. 각 실행 전 앱을 종료하고 PERF-00A와 바이트가 같은 1회차 복사본을 격리 경로에 복원했다. 테스트 설정은 실제 제품 설정 파일에 남기지 않았다. <a href="../Builds/Perf00B/Environment.json">환경 확인값</a></p>
+<table>
+<tr><th>표본</th><th>막대 첫 이동 (초)</th><th>씬 활성화 (초)</th><th>갱도 초기화 (초)</th><th>첫 입력 가능 (초)</th><th>실제 노란 버튼 수신 (초)</th><th>페이드 종료 (초)</th><th>전환 p95 / p99 (ms)</th><th>≥100ms</th></tr>
+<tr><td>전 1</td><td>0.636</td><td>2.933</td><td>2.944</td><td>3.267</td><td>3.776</td><td>4.327</td><td>1.532 / 4.103</td><td>2</td></tr>
+<tr><td>후 1</td><td>0.602</td><td>1.562</td><td>1.574</td><td>1.847</td><td>2.016</td><td>2.025</td><td>1.978 / 5.541</td><td>1</td></tr>
+<tr><td>전 2</td><td>0.595</td><td>2.673</td><td>2.684</td><td>2.963</td><td>3.131</td><td>3.141</td><td>1.402 / 3.967</td><td>1</td></tr>
+<tr><td>후 2</td><td>0.599</td><td>1.570</td><td>1.581</td><td>1.868</td><td>2.029</td><td>2.038</td><td>1.902 / 5.061</td><td>1</td></tr>
+<tr><td>전 3</td><td>0.601</td><td>2.679</td><td>2.690</td><td>2.968</td><td>3.133</td><td>3.142</td><td>1.426 / 3.999</td><td>1</td></tr>
+<tr><td>후 3</td><td>0.599</td><td>1.537</td><td>1.548</td><td>1.824</td><td>1.977</td><td>1.995</td><td>1.868 / 5.515</td><td>1</td></tr>
+<tr><td>중앙값 전 → 후</td><td>0.601 → 0.599</td><td>2.679 → 1.562</td><td>2.690 → 1.574</td><td>2.968 → 1.847</td><td>3.133 → 2.016</td><td>3.142 → 2.025</td><td>1.426 / 3.999 → 1.902 / 5.515</td><td>합계 4 → 3</td></tr>
+</table>
+<p>시작 핸들러에서부터 <code>sceneLoaded</code>, 갱도 초기화 로그 직전, 보드의 첫 활성 입력 폴링, 실제 노란 버튼 수신, 페이드 종료를 기록했다. 입력 폴링과 실제 클릭 수신은 모두 위치·저장 복원 계측 뒤였다. 기존처럼 초기화 이후의 페이드 중에도 보드의 노란 버튼 입력을 받을 수 있다. 같은 Windows QPC를 사용해 클릭부터 페이드 종료 사이의 주 스왑체인 Present 간격을 집계했다. p95·p99는 표본별 nearest-rank다. 전 1회차에서 느렸던 로드와 페이드를 포함했다.</p>
+
+<h2>남은 시간</h2>
+<p>변경 후 DecisionScene 비동기 로드는 시작 후 0.402~0.431초에 활성화 대기점에 도달했다. 최소 표시 만료는 약 0.500초, 막대 완료는 0.858~0.889초였다. 이번 표본에서는 최소 표시가 끝난 뒤 보간에 약 <strong>0.36~0.39초</strong>를 더 사용했다. 씬 활성화 요청부터 실제 활성화는 약 0.084~0.086초, 활성화부터 첫 입력 폴링은 <strong>0.285~0.298초</strong>였다. 실제 첫 클릭 수신은 그 뒤 약 0.15~0.17초였다. 전환 전체는 약 1.12초 짧아졌으며, 단축된 전환에서 p95·p99가 낮아지지는 않았다.</p>
+
+<h2>회귀 확인과 한계</h2>
+<ul>
+<li>6회 모두 Chapter 0 / Episode 0 / Story 0, 위치 (-200, 0, 10), 코인 잔액 [10, 1, 7, 2]와 기존 일반세 상황을 복원했다. 실제 노란 버튼 입력 6회가 기록됐다.</li>
+<li>빈 저장 신규 1회차의 2초 설정과 도입 화면을 확인했다. 5회 연타 시 추가 4회가 차단돼 로딩과 갱도 진입이 각각 한 번이었다. 보스 대기 복사본의 이어하기는 0.5초, 전투·패배 후 메뉴 복귀 및 미시작 2회차는 각각 2.0초였다. 이전 측정의 BossFootGrounding 예외는 재현됐고 메뉴 복귀는 완료됐다.</li>
+<li>로딩 미리보기는 별도 흐름과 직렬화 기본값을 코드에서 확인했다. 노트북, 인위적으로 느린 I/O, 로딩 미리보기 직접 재생, 자연 진행으로 보스 진입은 미측정이다.</li>
+</ul>
+<p><a href="../Builds/Perf00B/Trials.csv">개별 측정 원본 요약</a> · <a href="../Builds/Perf00B/Before-2.log">변경 전 이벤트</a> · <a href="../Builds/Perf00B/After-2.log">변경 후 이벤트</a> · <a href="../Builds/Perf00B/Before-2.csv">변경 전 PresentMon</a> · <a href="../Builds/Perf00B/After-2.csv">변경 후 PresentMon</a> · <a href="../Builds/Perf00B/Fresh.log">신규·연타</a> · <a href="../Builds/Perf00B/Battle.log">전투·메뉴·미시작 2회차</a></p>
+<h2>추가 검증 · 오브젝트 중복과 정리</h2>
+<p>같은 데스크톱의 Unity Editor Play에서 원본과 분리한 1회차 복사본을 사용했다. 각 동작을 한 번 워밍업하고 3회 반복했다. 게임의 책 생성·보관, 보상 확정과 시각 효과, 징수 회수 프레젠테이션, 청크 스트리밍 API를 호출했다. 동일한 복귀 조건을 위해 테스트의 책 재고·내용·잔액·보드 배치만 복원하고 달력과 순찰을 고정했다. 세금은 정산 후의 회수 경로부터 실제 리그를 재생했고, 납부 UI나 차감의 재진입은 반복 검증 범위에 포함되지 않았다. 청크는 플레이어 위치를 받는 스트리밍 경로에 경계 좌표를 전달했다.</p>
+<table>
+<tr><th>반복 시나리오</th><th>동작 중 검증</th><th>복귀 시 활성 / 비활성 GameObject</th><th>카메라 / Canvas 전체</th><th>Texture / RenderTexture / Material 전체</th></tr>
+<tr><td>책 한 권 배출·책장 보관</td><td>각 배출 요청당 작업 1개와 모델 1개가 생겼다. 보관 시 같은 모델 인스턴스를 재사용했다. 같은 상태로 복원하면 해당 모델이 정리됐다.</td><td>2,519 / 1,864</td><td>3 / 3</td><td>1,375 / 74 / 520</td></tr>
+<tr><td>힘 코인 2개 학습 보상</td><td>지급당 잔액 +2, 이동 표시 2개, 착지 모델 2개. 착지 코인 정리 후 모델 0개. 첫 실행 뒤 Canvas 2개, 비활성 코인 이미지 2개와 <code>LearningCoinFace_0</code> RenderTexture 1개는 같은 개수로 유지됐다.</td><td>2,524 / 1,868</td><td>3 / 5</td><td>1,375 / 75 / 520</td></tr>
+<tr><td>직접 회수 및 저울 회수, 각각</td><td>회수 1회당 손 Rig 1개와 납부 코인 2개. 완료 콜백 1회. 종료 후 손 Rig와 납부 코인 0개. 저울 옆 통 복제와 복원도 같은 복귀 오브젝트 수였다.</td><td>2,521 / 1,871</td><td>3 / 5</td><td>1,375 / 75 / 520</td></tr>
+<tr><td>첫 경계 왕복</td><td>인접 해안 지형을 미리 등록한 뒤 기존 로드 반경 2로 검사했다. 전진 시 청크 5 → 6, 돌아오면 5. 해당 청크 ID의 인스턴스는 최대 1개였다. 길가 NPC 3개, 장소 NPC 소켓 14개 유지.</td><td>2,521 / 1,871</td><td>3 / 5</td><td>1,375 / 75 / 520</td></tr>
+<tr><td>NPC가 있는 반대쪽 경계 왕복</td><td>전진 및 복귀에서 청크 6 → 3 → 6, 길가 NPC 3 → 2 → 3, 장소 NPC 소켓 14 → 3 → 14. 왕복 후 각 청크 ID가 한 개씩 복원됐다.</td><td>2,803 / 1,870</td><td>3 / 3</td><td>1,375 / 74 / 520</td></tr>
+</table>
+<p>표의 수치는 워밍업 뒤 세 반복의 동일 복귀 시점이다. 활성 카메라는 3개, 활성 Canvas는 보상 표시가 없는 초기 구간 2개와 보상 워밍업 뒤 3개였다. 임시 코인 카메라는 모든 복귀 시점에서 0개였다. 런타임 생성 Texture와 Material은 각각 78 / 127개, RenderTexture는 보상 전 72개에서 보상 후 73개로 유지됐다. 첫 워밍업 동안 사라진 RenderTexture 5개는 이름과 인스턴스 ID로 URP 카메라·SSAO 임시 타깃임을 구분했다. 보상에서 유지된 RenderTexture는 같은 인스턴스였다. 이 표본에서 반복적으로 누적되는 오브젝트나 리소스는 관찰되지 않았다.</p>
+<p><a href="../Builds/Perf00B/Objects/snapshots.csv">책·보상·두 회수·첫 청크 경계 스냅샷</a> · <a href="../Builds/Perf00B/Objects/npc-edge-snapshots.csv">NPC 포함 경계 스냅샷</a> · <a href="../Builds/Perf00B/Objects/runtime-assets.tsv">런타임 리소스 이름과 인스턴스 ID</a></p>
+
+<h2>빌드·재현 파일</h2>
+<p>Windows 계측용 빌드는 오류 0건으로 완료했다. 두 계측기를 제거한 최종 제품 소스의 재컴파일도 오류 0건이었다. 제품 코드에 남는 변경은 로딩 컨트롤러의 이어하기 최소 시간 선택뿐이다. 제품명과 빌드 중 갱신된 폰트 아틀라스는 원복했고 원본 사용자 저장에는 쓰지 않았다. 계측 소스·메타 <code>Perf00BMeasurement.cs</code>, <code>Objects/Perf00BObjectAudit.cs</code>, 각 소스 템플릿과 <code>SourceBackup/</code>, <code>ProbeEdits.json</code>, <code>ProbeHashes.csv</code>, <code>Stage-Probe.ps1</code>, <code>Finish-Probe.ps1</code>, <code>Launch-Trial.ps1</code>, <code>Start-Run.ps1</code>, <code>Start-Capture.ps1</code>, <code>Summarize-Trials.ps1</code>는 Git에서 제외한 <code>Builds/Perf00B/</code>에 보존했고 정리 대기 상태다.</p>
+</section>
 </body></html>
 
 

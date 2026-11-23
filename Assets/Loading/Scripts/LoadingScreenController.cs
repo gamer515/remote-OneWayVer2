@@ -9,6 +9,7 @@ namespace OneWay.Loading
     public sealed class LoadingScreenController : MonoBehaviour
     {
         public const string LoadingScenePath = "Assets/Scenes/LoadingScene.unity";
+        private const float ResumeMinimumDisplayTime = .5f;
 
         [Header("Destination / 목적지")]
         [Tooltip("Battle: LoadBattleScene 문구 / Decision: LoadDecisionScene 문구 / MainMenu: 문구 없음")]
@@ -216,11 +217,12 @@ namespace OneWay.Loading
             operation.allowSceneActivation = false;
             // Load the destination during the delay; only the bar presentation waits.
             float delay = startProgressImmediately ? 0f : fillStartDelay;
+            float displayTime = startProgressImmediately ? ResumeMinimumDisplayTime : minimumDisplayTime;
             if (delay > 0f) yield return new WaitForSecondsRealtime(delay);
             while (true)
             {
-                float minimumProgress = minimumDisplayTime <= 0f ? 1f :
-                    Mathf.Clamp01((Time.realtimeSinceStartup - started) / minimumDisplayTime);
+                float minimumProgress = displayTime <= 0f ? 1f :
+                    Mathf.Clamp01((Time.realtimeSinceStartup - started) / displayTime);
                 float readyProgress = Mathf.Clamp01(operation.progress / .9f);
                 float target = Mathf.Min(readyProgress, minimumProgress);
                 SetProgress(Mathf.MoveTowards(DisplayedProgress, target, Time.unscaledDeltaTime * 1.5f));
