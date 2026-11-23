@@ -29,6 +29,9 @@ public readonly struct LearningComboReward
     public bool started;
     public int studyAttempt;
     public bool comboStudy;
+    public int stackId;
+    public int stackOrder;
+    public float stackYaw;
     [NonSerialized] public bool held;
 }
 [Serializable] public sealed class ReadingComboProgress
@@ -157,6 +160,7 @@ public sealed partial class MineLearningStation : MonoBehaviour
     public void RememberPlacement(MineLearningJob job, float u, float v, int boardIndex = 0)
     {
         if(progress == null || !progress.active.Contains(job)) return;
+        job.stackId = job.stackOrder = 0;
         job.onBoard=true; job.boardU=Mathf.Clamp01(u); job.boardV=Mathf.Clamp01(v); job.boardIndex=boardIndex; save?.Invoke();
     }
     public CapacityStep Capacity

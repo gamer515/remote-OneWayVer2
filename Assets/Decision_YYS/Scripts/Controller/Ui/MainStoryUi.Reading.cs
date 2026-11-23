@@ -132,6 +132,7 @@ public partial class MainStoryUi
         var text = new StringBuilder();
         foreach (var combo in station.ReadingCombos)
         {
+            if (station.ReadingComboPayouts((string)combo["id"]) <= 0) continue;
             string type = (string)combo["type"] switch { "author" => "작가", "mainStat" => "주 능력", _ => "주제" };
             var condition = combo["condition"];
             var ids = condition["bookIds"].Values<string>().Distinct().ToArray();
@@ -152,7 +153,7 @@ public partial class MainStoryUi
             }
             text.Append("  <b>콤보 추가 보상</b>  ").AppendLine(FormatGuideRewards(combo["reward"])).AppendLine();
         }
-        comboGuideText.text = text.ToString();
+        comboGuideText.text = text.Length > 0 ? text.ToString() : "아직 발견한 콤보가 없습니다.";
         float width = comboGuideScroll.viewport.rect.width;
         if (width <= 0f)
         {

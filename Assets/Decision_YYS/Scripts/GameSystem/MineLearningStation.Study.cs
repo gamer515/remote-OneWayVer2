@@ -60,7 +60,7 @@ public sealed partial class MineLearningStation
     public float StudyResultUntil { get; private set; }
     public bool IsDailyLimitBlocking => study != null && CanStudyBooks &&
         progress.attemptsToday >= TodayLimit &&
-        progress.active.Any(job => job.onBoard && (job.boardIndex == 1 || IsReadingPlacement(job)) &&
+        progress.active.Any(job => job.onBoard && job.stackOrder == 0 && (job.boardIndex == 1 || IsReadingPlacement(job)) &&
             !job.started && !job.held && CanRead(job));
     public int Stock(int ability) => progress?.stock?[ability] ?? 0;
     public int RefillCost(int ability) => study == null ? 0 :
@@ -233,28 +233,75 @@ public sealed partial class MineLearningStation
         return true;
     }
 
-    public bool SubmitShelf(Vector3 pickupPoint)
+    internal const int ShelfComboId = -1;
+    internal IEnumerable<IGrouping<int, MineLearningJob>> BoardStacks() => progress.active
+        .Where(job => job.stackOrder > 0).OrderBy(job => job.stackOrder).GroupBy(job => job.stackId);
+
+    internal bool TryStackBook(MineLearningJob book, MineLearningJob target)
     {
-        if (!UsesStudyRules || !CanBeginStudySession || HasComboStudy) return false;
-        var batch = progress.active.Where(job => job.boardIndex == 3 && !job.started).ToArray();
-        if (batch.Length < 2)
-            return Explain("책장에 책을 두 권 이상 올려 주세요.");
-        if (!study.combos.Any(combo => !progress.rewardedCombos.Contains(combo.id) &&
-            combo.books.All(id => batch.Any(job => job.bookId == id))) &&
-            !readingCombos.Any(combo => CanCompleteReadingCombo(combo, batch)))
-            return Explain("이 조합으로는 콤보가 발동하지 않습니다.");
-        if (batch.Length > Capacity.simultaneous ||
-            batch.Length > TodayLimit - progress.attemptsToday || !batch.All(CanRead))
-            return Explain("콤보 학습에는 함께 읽을 자리와 오늘의 학습량이 필요합니다.");
-        progress.comboSuccesses.Clear();
-        progress.comboBoardPoint = pickupPoint;
-        foreach (var job in batch)
+        if (!UsesStudyRules || book == target || book.started || book.comboStudy || target.started ||
+            target.held || target.comboStudy || !target.onBoard || target.boardIndex > 1 ||
+            !progress.active.Contains(book) || !progress.active.Contains(target)) return false;
+        if (target.stackOrder == 0)
         {
-            job.comboStudy = true;
-            job.boardIndex = 1;
+            target.stackId = progress.active.Max(job => job.stackId) + 1;
+            AssignStackOrder(target, 1);
         }
+        int top = progress.active.Where(job => job.stackId == target.stackId && job.stackOrder > 0)
+            .Max(job => job.stackOrder);
+        book.stackId = target.stackId;
+        AssignStackOrder(book, top + 1);
+        book.onBoard = true;
+        book.boardIndex = target.boardIndex;
+        book.boardU = target.boardU;
+        book.boardV = target.boardV;
         save?.Invoke();
         return true;
+    }
+
+    private static void AssignStackOrder(MineLearningJob book, int order)
+    {
+        book.stackOrder = order;
+        if (book.stackYaw == 0f) book.stackYaw = Mathf.Lerp(-10f, 10f, Mathf.Repeat(order * .618034f, 1f));
+    }
+
+    internal MineLearningJob[] ComboSubmission(int stackId) => stackId == ShelfComboId
+        ? progress.active.Where(job => job.boardIndex == 3).OrderBy(job => job.boardU).ToArray()
+        : progress.active.Where(job => job.stackOrder > 0 && job.stackId == stackId)
+            .OrderBy(job => job.stackOrder).ToArray();
+
+    internal bool CanSubmitCombo(MineLearningJob[] batch)
+    {
+        if (!UsesStudyRules || !CanBeginStudySession || HasComboStudy || ReadingResult != null ||
+            batch.Length < 2 || batch.Length > TodayLimit - progress.attemptsToday ||
+            batch.Any(job => job.started || job.held || !CanRead(job))) return false;
+        return study.combos.Any(combo => !progress.rewardedCombos.Contains(combo.id) &&
+            combo.books.All(id => batch.Any(job => job.bookId == id))) ||
+            readingCombos.Any(combo => CanCompleteReadingCombo(combo, batch));
+    }
+
+    internal bool SubmitCombo(Vector3 pickupPoint, int stackId)
+    {
+        var batch = ComboSubmission(stackId);
+        if (!CanSubmitCombo(batch)) return false;
+        progress.comboSuccesses.Clear();
+        progress.comboBoardPoint = pickupPoint;
+        foreach (var job in batch) job.comboStudy = true;
+        save?.Invoke();
+        return true;
+    }
+
+    internal static bool IsQueuedComboBook(MineLearningJob job) =>
+        job.comboStudy && (job.stackOrder > 0 || job.boardIndex == 3);
+
+    internal MineLearningJob[] NextComboWave()
+    {
+        if (!HasComboStudy || !CanBeginStudySession || ReadingResult != null ||
+            progress.active.Any(job => job.comboStudy && !IsQueuedComboBook(job)))
+            return Array.Empty<MineLearningJob>();
+        int slots = Mathf.Min(Capacity.simultaneous, TodayLimit - progress.attemptsToday);
+        return progress.active.Where(IsQueuedComboBook)
+            .OrderBy(job => job.stackOrder).ThenBy(job => job.boardU).Take(slots).ToArray();
     }
 
     private bool TickStudy(float seconds, bool stop, float? calendarDays)
