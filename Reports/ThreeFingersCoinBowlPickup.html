@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ThreeFingers 코인 그릇 들어 올리기</title>
+<style>
+body{max-width:1100px;margin:32px auto;padding:0 24px;background:#f6f3eb;color:#24313b;font:16px/1.65 system-ui}h1,h2{line-height:1.3}table{border-collapse:collapse;width:100%}th,td{border:1px solid #bcb5a4;padding:9px;text-align:left}th{background:#eae3d5}code{overflow-wrap:anywhere}.views{display:grid;grid-template-columns:1fr 1fr;gap:16px}.views img{width:100%;background:#191f23}figure{margin:12px 0}figcaption{font-size:14px}input[type=range]{width:70%;vertical-align:middle}button{font:inherit;padding:6px 18px}a{color:#155b85}small{color:#53606a}@media(max-width:640px){.views{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<h1>ThreeFingers 코인 그릇 들어 올리기</h1><p><b>접근 동작 수정본</b> — 중간 정지를 없앤 최신 클립의 <a href="ThreeFingersCoinBowlPickup-ApproachComparison.html">수정 전후 동시 재생</a>을 확인할 수 있습니다. 1초·32프레임 그립은 유지했습니다.</p>
+<p>2026-11-21 (Asia/Seoul). 기존 ThreeFingers 리그와 나무 코인 그릇으로 접근 → 테두리 잡기 → 들어 올리기의 새 Unity 클립을 제작했다.</p>
+<p><b>전체 1.000초 · 60fps · 잡는 시점 32프레임(0.533333초, 0부터 계산) · 들어 올리는 높이 0.085m.</b> 잡은 이후 손과 그릇이 함께 올라가고 마지막 자세에서 멈춘다.</p>
+<h2>앞·옆 재생 검토</h2>
+<p>분리된 검증 프로젝트에서 실제 Animator와 Parent Constraint로 렌더링한 프레임이다. 재생은 2프레임씩 30fps로 표시해 원본 60fps 클립의 1초 타이밍을 재현한다.</p>
+<p><button id="play">재생</button> <input id="frame" type="range" min="0" max="60" step="2" value="32"> <output id="stamp">32프레임 · 0.533초</output></p>
+<div class="views">
+<figure><img id="front" src="../output/ThreeFingersCoinBowlPickup/runtime/front_32.png" alt="앞쪽에서 본 테두리 그립"><figcaption>앞 시점</figcaption></figure>
+<figure><img id="side" src="../output/ThreeFingersCoinBowlPickup/runtime/side_32.png" alt="옆쪽에서 본 테두리 그립"><figcaption>옆 시점</figcaption></figure>
+</div>
+<p><a href="../output/ThreeFingersCoinBowlPickup/pickup-front.png">앞쪽 APNG</a> · <a href="../output/ThreeFingersCoinBowlPickup/pickup-side.png">옆쪽 APNG</a> · <a href="../output/ThreeFingersCoinBowlPickup/contact-sheet.png">원본 URP 재질의 동작 구간 비교</a></p>
+<h2>결과물과 사용 방법</h2>
+<table>
+<tr><th>결과물</th><th>프로젝트 경로</th></tr>
+<tr><td>새 동작 클립</td><td><a href="../Assets/ThreeFingersCoinBowlPickup/Animations/ThreeFingers_CoinBowlPickup.anim">Assets/ThreeFingersCoinBowlPickup/Animations/ThreeFingers_CoinBowlPickup.anim</a></td></tr>
+<tr><td>미리보기 씬</td><td><a href="../Assets/ThreeFingersCoinBowlPickup/Scenes/ThreeFingers_CoinBowlPickup_Preview.unity">Assets/ThreeFingersCoinBowlPickup/Scenes/ThreeFingers_CoinBowlPickup_Preview.unity</a></td></tr>
+<tr><td>그립이 연결된 리그</td><td><a href="../Assets/ThreeFingersCoinBowlPickup/Prefabs/ThreeFingers_CoinBowlPickupRig.prefab">Assets/ThreeFingersCoinBowlPickup/Prefabs/ThreeFingers_CoinBowlPickupRig.prefab</a></td></tr>
+<tr><td>독립 그릇 프리팹</td><td><a href="../Assets/ThreeFingersCoinBowlPickup/Prefabs/CoinBowl_Independent.prefab">Assets/ThreeFingersCoinBowlPickup/Prefabs/CoinBowl_Independent.prefab</a></td></tr>
+</table>
+<p>미리보기 씬을 열고 Play하면 전용 Animator Controller가 한 번 재생하고 끝 자세를 유지한다. FrontCamera가 기본 활성 카메라다. 옆에서 보려면 FrontCamera를 끄고 SideCamera를 켠다. 게임 씬에 사용할 때는 연결이 완료된 리그 프리팹을 배치한다.</p>
+<p>그릇은 독립 프리팹의 중첩 인스턴스다. 미리보기 리그의 Bowl에만 Parent Constraint가 추가되어 Hand/CoinBowlGrip을 따라간다. 클립이 32프레임에서 Constraint weight를 0에서 1로 전환한다. 연결 오프셋을 잡는 자세에서 계산해 전환 때 위치·회전이 이어진다. 32프레임 이전에는 그릇이 바닥 위치에 고정된다. 코인은 kinematic으로 두고 그릇 안 로컬 위치를 유지한다.</p>
+<p>클립의 경로는 Hand 아래 기존 변형 본 계층을 사용한다. 전체 리그 루트에서 재생하면 손 동작과 Bowl의 연결이 함께 동작한다. 손만 원래 Animator에 적용할 때는 Hand 경로와 Bowl의 Parent Constraint 연결이 같은 구조인지 맞춰야 한다. 이번 작업에서 원래 게임 Animator나 이벤트에 자동 연결하지 않았다.</p>
+<h2>기존 리그 조사와 제작 방식</h2>
+<p>원본 <code>Assets/Decision_YYS/Prafabs/Hand.prefab</code> 및 HandRoot를 확인했다. <code>hand_game-rig/DEF-upper_arm.L</code> 아래 DEF-hand.L, index·middle·pinky의 세 손가락과 thumb의 3관절 체인이 있다. 손 스킨은 20개 변형 본을 사용한다. 기존 HandAnimController에는 Duel_Idle, PlayerGuardSlot, PlayerParrySlot, Slach_Attack이 연결되어 있었다.</p>
+<p>프로젝트의 Blender 파일과 AssetBuild를 검색했으며 손과 호환되는 .blend 원본은 찾지 못했다. <code>Assets/UnityAssets/three-finger-hand_Paid_Unity.fbx</code>와 <code>AssetBuild/ThreeFingerHandPaid/three-finger-hand_Paid.fbx</code>를 확인했다. Unity 프리팹 복제본에서 FBX의 열린 자세를 기준으로 변형 본 회전을 직접 베이크했다. 기존 프리팹의 검은 작업 복제본에서 제거했다. 기본 그릇 지름에 맞춰 미리보기 손의 루트 Scale은 0.065로 설정했다.</p>
+<h2>계획과 완료 상태</h2>
+<table>
+<tr><th>단계</th><th>작업</th><th>결과</th></tr>
+<tr><td>1</td><td>리그·클립·원본 조사</td><td>완료. Unity 기존 본 경로로 제작</td></tr>
+<tr><td>2</td><td>1초 동작·엄지 그립·독립 그릇 연결</td><td>완료. 32프레임 연결, 60프레임 종료</td></tr>
+<tr><td>3</td><td>앞·옆 렌더 및 스킨 관통 검사</td><td>완료. 61개 프레임 검사</td></tr>
+<tr><td>4</td><td>별도 프로젝트의 정상 Play 및 네이티브 제약 검사</td><td>완료. 자동 재생 통과와 73개 시점 검사</td></tr>
+<tr><td>5</td><td>검증 복제본·초기 로그 정리</td><td>완료. 제작·검증 소스와 최종 결과 보존</td></tr>
+</table>
+<h2>검증 결과와 범위</h2>
+<p>기존 게임과 분리한 작은 Unity 프로젝트를 생성해 정상 Animator 자동 재생을 확인했다. 이후 0~72프레임을 한 프레임씩 샘플링해 실제 Unity Parent Constraint 결과를 읽었다. 31프레임까지 그릇 위치 변화는 0이며 32프레임의 연결 오차는 약 7.45×10⁻⁹m였다. 들어 올리는 동안 상대 위치 오차도 같은 수준이며 그릇의 기울기는 0°였다. 1초 끝 위치와 이후 유지 자세를 확인했고 코인 로컬 위치 변화는 0이었다.</p>
+<p>실제 SkinnedMeshRenderer를 베이크한 손 메시의 모든 정점을 그릇 벽 Collider에 대해 0~60프레임에서 검사했다. 0.25mm 내부 허용 오차를 두었을 때 벽 내부로 들어간 정점은 모든 샘플에서 0개였다. 앞·옆 렌더도 직접 확인했다. 이 검사는 프레임 샘플과 정점·기존 Collider 기준이며 연속 표면의 수학적 무교차 증명은 아니다.</p>
+<p>원 프로젝트의 검토 이미지는 기존 URP 재질로 렌더링했다. 별도 프로젝트의 Play 캡처는 재질 색상과 텍스처를 복제한 Built-in Standard 렌더러를 사용했다. 이 렌더러 변환은 검증 복제 프로젝트 안에서만 수행했다. 새 미리보기 씬은 원래 Unity 프로젝트의 URP 재질을 사용한다.</p>
+<p><a href="../output/ThreeFingersCoinBowlPickup/runtime/play-check.json">네이티브 재생 결과</a> · <a href="../output/ThreeFingersCoinBowlPickup/geometry-check.json">프레임별 손 메시 검사</a> · <a href="../output/ThreeFingersCoinBowlPickup/cleanup.json">정리 결과</a></p>
+<h2>재현·수정 도구</h2>
+<p><a href="../AssetBuild/ThreeFingersCoinBowlPickup/PickupAuthoring.cs">PickupAuthoring.cs</a>의 Build가 전용 에셋을 제작한다. 클립 길이·접촉 시점과 손가락 각도는 이 도구의 상수와 Pose 함수에서 수정한다. PrepareIsolatedProject는 최종 에셋과 <a href="../AssetBuild/ThreeFingersCoinBowlPickup/PickupPlayCheck.cs">PickupPlayCheck.cs</a>를 검증 프로젝트로 복제한다. 해당 프로젝트를 batchmode로 열어 <code>PickupPlayCheck.Start</code>를 실행하면 정상 재생·프레임 검사와 캡처를 수행한 뒤 종료한다. <a href="../AssetBuild/ThreeFingersCoinBowlPickup/BuildPreviewAnimation.cjs">BuildPreviewAnimation.cjs</a>는 캡처를 앞·옆 APNG로 묶는다.</p>
+<p>참고한 작업 지침은 using-unity, unity-cli.md, unity-pipeline.md, Pipeline Documentation~/commands/scripts.md 및 development-principles였다.</p>
+<h2>작업 분리와 정리</h2>
+<p>기존 손 프리팹·FBX·HandAnimController·기존 클립·WoodenCoinBowl 원본은 수정하지 않았다. 게임 씬을 저장하거나 원래 에디터를 Play로 전환하지 않았다. 새 애니메이션과 프리팹·미리보기 씬은 Assets/ThreeFingersCoinBowlPickup 아래에, 유지할 도구는 AssetBuild/ThreeFingersCoinBowlPickup 아래에만 작성했다.</p>
+<p>검증용 <code>AssetBuild/ThreeFingersCoinBowlPickup/ValidationProject</code>와 초기 조사 로그·프로세스 기록은 정리했다. 검증 복제 프로젝트의 357개 파일, 약 12.7MiB를 제거했다. 삭제 전에 작업 폴더 경계·심볼릭 링크·검증 프로세스 종료를 확인했다. 삭제 대기 임시 코드는 없다. 재현 도구 3개와 최종 검증 JSON·이미지·클립·미리보기 씬은 보존했다. 커밋·푸시는 수행하지 않았다.</p>
+<script>
+const slider=document.querySelector('#frame');
+let timer=null;
+function showFrame(value){
+  const frame=String(value).padStart(2,'0');
+  for(const view of ['front','side'])document.querySelector('#'+view).src='../output/ThreeFingersCoinBowlPickup/runtime/'+view+'_'+frame+'.png';
+  document.querySelector('#stamp').textContent=value+'프레임 · '+(value/60).toFixed(3)+'초';
+}
+slider.addEventListener('input',()=>{clearInterval(timer);showFrame(Number(slider.value));});
+document.querySelector('#play').addEventListener('click',()=>{
+  clearInterval(timer);slider.value=0;showFrame(0);
+  timer=setInterval(()=>{const next=Number(slider.value)+2;if(next>60){clearInterval(timer);return;}slider.value=next;showFrame(next);},1000/30);
+});
+</script>
+</body>
+</html>

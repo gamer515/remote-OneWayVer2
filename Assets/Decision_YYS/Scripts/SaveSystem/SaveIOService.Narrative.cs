@@ -151,7 +151,7 @@ public partial class SaveIOService
                 throw new InvalidDataException("NPC 발화 외의 게임 데이터가 변경되었습니다.");
 
             var existing = FindNarrative(job.targetRun, job.storyPath);
-            if (existing == null || MatchesLegacyEmotion(existing, job))
+            if (existing == null || MatchesLegacyEmotion(existing, job) || MatchesPreviousDialogue(existing, job))
             {
                 var chapter = EditNarrativeChapter(job.chapterId);
                 chapter.stories.RemoveAll(entry => entry.targetRun == job.targetRun && entry.storyPath == job.storyPath);
@@ -169,11 +169,20 @@ public partial class SaveIOService
         !string.IsNullOrEmpty(job.legacyEmotionContentHash) && entry.contentHash == job.legacyEmotionContentHash &&
         entry.contentHash == LocalStoryDialogueQueue.Hash(entry.contentJson);
 
+    private static bool MatchesPreviousDialogue(NarrativeStoryEntry entry, LocalStoryDialogueJob job) =>
+        entry?.enabled == true && entry.origin == OneWay.Decision.DirectLlm.DirectStoryGenerator.DialogueOrigin &&
+        !string.IsNullOrEmpty(job.previousDialogueContentHash) && entry.contentHash == job.previousDialogueContentHash &&
+        entry.contentHash == LocalStoryDialogueQueue.Hash(entry.contentJson);
+
     internal bool CanReplaceEmotionDialogue(LocalStoryDialogueJob job)
     {
+        if (!SafeStoryPath(job.storyPath)) return false;
         lock (narrativeGate)
-            return CanReplaceNarrativeContent(job.targetRun, job.storyPath, job.contentHash) ||
-                (SafeStoryPath(job.storyPath) && MatchesLegacyEmotion(FindNarrative(job.targetRun, job.storyPath), job));
+        {
+            if (CanReplaceNarrativeContent(job.targetRun, job.storyPath, job.contentHash)) return true;
+            var existing = FindNarrative(job.targetRun, job.storyPath);
+            return MatchesLegacyEmotion(existing, job) || MatchesPreviousDialogue(existing, job);
+        }
     }
     private bool SaveNarrativeContent<T>(int run, string key, T data, bool reviewed,bool reviewRequired=false,string validationError=null)
     {
@@ -345,17 +354,18 @@ public partial class SaveIOService
         }
     }
     private string[] NarrativeChapters() => ChapterContentCatalog.Chapters.Select(c=>(string)c["id"]).ToArray();
-    public LocalStoryDialogueJob NextNarrativeJob()
+    public LocalStoryDialogueJob NextNarrativeJob(ISet<(int Run, string Job)> skipped)
     {
         int current = File.Exists(ProfilePath) ? ReadJson<ProfileData>(ProfilePath)?.currentRun ?? 1 : 1;
         foreach (int run in new[] { Math.Max(1, current - 1), current }.Distinct())
         {
             var queue = LoadNarrativeQueue(run);
-            if (queue?.finalized != true) continue;
+            if (queue == null) continue;
             var next = queue.jobs
                 .Where(job => job.status == "Pending" || job.status == "Generating")
                 .OrderBy(job => job.sequence)
-                .FirstOrDefault(job => LocalStoryDialogueQueue.CanProcess(this, job));
+                .FirstOrDefault(job => skipped?.Contains((job.sourceRun, job.jobId)) != true &&
+                    LocalStoryDialogueQueue.CanProcess(this, job));
             if (next != null) return next;
         }
         return null;
@@ -373,7 +383,7 @@ public partial class SaveIOService
         {
             sourceRun = latestJob.sourceRun, targetRun = latestJob.targetRun,
             chapterId = latestJob.chapterId, characterId = latestJob.characterId,
-            generationTrigger = "RunEndedEmotion", reason = latestJob.emotion
+            generationTrigger = "DialogueEnded", reason = latestJob.emotion
         });
         if (summary == null) return null;
         if (latestJob.auditArchived && !string.IsNullOrEmpty(latestJob.reportPath) && File.Exists(latestJob.reportPath))

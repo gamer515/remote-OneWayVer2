@@ -52,7 +52,6 @@ public sealed class DecisionStartData
     public Vector3? SavedPlayerPosition { get; }
     public Quaternion? SavedPlayerRotation { get; }
     public int[] RemainingCoins { get; }
-    public InventoryState Inventory { get; }
 
     public DecisionStartData(
         DecisionSession session,
@@ -61,8 +60,7 @@ public sealed class DecisionStartData
         SaveManager saveManager,
         Vector3? savedPlayerPosition,
         Quaternion? savedPlayerRotation,
-        int[] remainingCoins,
-        InventoryState inventory)
+        int[] remainingCoins)
     {
         Session = session;
         Player = player;
@@ -71,6 +69,5 @@ public sealed class DecisionStartData
         SavedPlayerPosition = savedPlayerPosition;
         SavedPlayerRotation = savedPlayerRotation;
         RemainingCoins = remainingCoins;
-        Inventory = inventory;
     }
 }

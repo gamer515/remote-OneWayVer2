@@ -312,6 +312,13 @@ public static partial class LocalStoryRewrite
         }
         catch(Exception e) { error=e.Message; return false; }
     }
+
+    internal static bool ValidateDialogueWording(string original, string candidate)
+    {
+        try { ValidateWording(original, candidate, int.MaxValue, null); return true; }
+        catch (FormatException) { return false; }
+    }
+
     private static void ValidateIdentifiers(EncounterCard source,string text,string[] options)
     {
         if(knownIdentifiers==null)knownIdentifiers=ChapterContentCatalog.Stories.SelectMany(info=>

@@ -6,6 +6,7 @@ public partial class MainStoryUi : ParentUi
 {
     [SerializeField] private TextMeshProUGUI front_Dialogue_Text;
     [SerializeField] private TextMeshProUGUI option_Text;
+    internal TMP_FontAsset DialogueFont => front_Dialogue_Text != null ? front_Dialogue_Text.font : option_Text?.font;
 
     [SerializeField] private ChatHistoryUi chatHistory;
 

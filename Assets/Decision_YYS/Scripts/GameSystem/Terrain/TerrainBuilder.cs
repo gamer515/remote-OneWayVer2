@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
 
@@ -7,6 +7,20 @@ using System.Linq;
 /// </summary>
 public sealed class TerrainBuilder
 {
+    internal enum MapPointKind { Place, Shop, RoadsideNpc }
+
+    internal readonly struct MapPoint
+    {
+        internal readonly Transform Target;
+        internal readonly MapPointKind Kind;
+
+        internal MapPoint(Transform target, MapPointKind kind)
+        {
+            Target = target;
+            Kind = kind;
+        }
+    }
+
     internal readonly struct FacilityMarker
     {
         internal readonly string Id;
@@ -32,10 +46,23 @@ public sealed class TerrainBuilder
 
     private readonly List<TerrainSegment> segments = new List<TerrainSegment>();
     private readonly Dictionary<int, GameObject> chunkInstances = new Dictionary<int, GameObject>();
+    private readonly Dictionary<int, List<MapPoint>> chunkMapPoints = new Dictionary<int, List<MapPoint>>();
+    private readonly Dictionary<int, Rect> chunkMapBounds = new();
     private readonly Dictionary<string, TerrainFacilityPlan.History> facilityHistory = new Dictionary<string, TerrainFacilityPlan.History>();
     private readonly List<FacilityMarker> facilityMarkers = new List<FacilityMarker>();
     internal IReadOnlyList<FacilityMarker> FacilityMarkers => facilityMarkers;
+    internal IEnumerable<List<MapPoint>> LoadedMapPoints => chunkMapPoints.Values;
+    internal bool TryGetMapBounds(int chunkIndex, out Rect bounds) => chunkMapBounds.TryGetValue(chunkIndex, out bounds);
+    internal bool IsChunkLoaded(int index) =>
+        chunkInstances.TryGetValue(index, out var chunk) && chunk != null && chunk.activeInHierarchy;
     internal bool HasChapter(string chapterId) => facilityHistory.ContainsKey(chapterId);
+
+    internal BossPreviewIdle FindBossPreview(TerrainPlaceRegistry registry)
+    {
+        var segment = segments.Find(candidate => candidate.Registry == registry);
+        return segment != null && chunkInstances.TryGetValue(segment.FirstGlobalChunkIndex, out var chunk) && chunk != null
+            ? chunk.GetComponentInChildren<BossPreviewIdle>() : null;
+    }
 
     internal Transform FindStoryPlace(TerrainPlaceRegistry registry, PlaceData place)
     {
@@ -44,6 +71,127 @@ public sealed class TerrainBuilder
             !chunkInstances.TryGetValue(segment.FirstGlobalChunkIndex + place.chunkIndex, out var chunk) ||
             chunk == null || !chunk.activeInHierarchy) return null;
         return chunk.transform.Find("Place_" + (place.sharedStoryVisualId ?? place.placeId));
+    }
+
+    private const string RoadsideEncounterPrefix = "RoadsideNpc_Gap_";
+    private const string CentralRoadsideKey = "npc:center";
+    private const float RoadsideEncounterReach = 6.5f;
+    private const float ShortcutEncounterReach = 1.6f;
+
+    internal bool TryGetShortcutRoute(TerrainPlaceRegistry registry, PlaceData place, int side,
+        float height, float encounterStopDistance, out Vector3[] route, out Transform actor)
+    {
+        route = null;
+        actor = null;
+        var location = FindStoryPlace(registry, place);
+        if (location == null || !TryWorldBounds(location, out var bounds)) return false;
+
+        Vector3 origin = registry.GetChunkWorldPosition(place.chunkIndex);
+        float entryZ = bounds.min.z - 2f, exitZ = bounds.max.z + 2f;
+        const float clearance = .55f;
+        var blockers = new List<Bounds>();
+        var roadsideActors = new List<Transform>();
+        foreach (Transform child in location.parent)
+        {
+            if (child == location || !child.gameObject.activeInHierarchy) continue;
+            if (child.name.StartsWith("RoadsideNpc_", System.StringComparison.Ordinal))
+                roadsideActors.Add(child);
+            else if ((child.name.StartsWith("Place_", System.StringComparison.Ordinal) ||
+                child.name.StartsWith("Roadside_", System.StringComparison.Ordinal)) &&
+                TryWorldBounds(child, out var obstacle)) blockers.Add(obstacle);
+        }
+
+        bool Clear(Vector3 a, Vector3 b) => !blockers.Any(blocker =>
+            Mathf.Min(a.x, b.x) < blocker.max.x + clearance && Mathf.Max(a.x, b.x) > blocker.min.x - clearance &&
+            Mathf.Min(a.z, b.z) < blocker.max.z + clearance && Mathf.Max(a.z, b.z) > blocker.min.z - clearance);
+
+        bool InShortcutReach(Vector3 position, float laneX)
+        {
+            if ((position.x - origin.x) * side <= 0f) return false;
+
+            // An actor just beyond a turn can still be within reach of the chosen side of the route.
+            float dx = position.x - laneX;
+            float dz = position.z - Mathf.Clamp(position.z, entryZ, exitZ);
+            return dx * dx + dz * dz <= ShortcutEncounterReach * ShortcutEncounterReach;
+        }
+
+        float edge = side < 0 ? bounds.min.x : bounds.max.x;
+        var exit = new Vector3(origin.x, height, exitZ);
+        for (float margin = 1.25f; margin <= 3.25f; margin += .5f)
+        {
+            float x = edge + side * margin;
+            if ((x - origin.x) * side < 4.25f || Mathf.Abs(x - origin.x) > 10.5f) continue;
+            var candidateActor = roadsideActors.Where(candidate =>
+                    InShortcutReach(candidate.position, x))
+                .OrderBy(candidate => candidate.position.z).FirstOrDefault();
+            float approachZ = candidateActor == null ? entryZ :
+                Mathf.Min(entryZ, candidateActor.position.z - encounterStopDistance);
+            var entry = new Vector3(origin.x, height, approachZ);
+            var sideEntry = new Vector3(x, height, approachZ);
+            var sideExit = new Vector3(x, height, exitZ);
+            if (!Clear(entry, sideEntry) || !Clear(sideEntry, sideExit) || !Clear(sideExit, exit)) continue;
+            if (candidateActor == null)
+            {
+                route ??= new[] { entry, sideEntry, sideExit, exit };
+                continue;
+            }
+            route = new[] { entry, sideEntry, sideExit, exit };
+            actor = candidateActor;
+            return true;
+        }
+        return route != null;
+    }
+
+    private static bool TryWorldBounds(Transform root, out Bounds bounds)
+    {
+        bounds = default;
+        bool found = false;
+        foreach (var renderer in root.GetComponentsInChildren<Renderer>())
+        {
+            if (!renderer.enabled) continue;
+            if (found) bounds.Encapsulate(renderer.bounds);
+            else bounds = renderer.bounds;
+            found = true;
+        }
+        return found;
+    }
+
+    internal Transform FindRoadsideNpc(TerrainPlaceRegistry registry, float routeX, float fromZ, float toZ,
+        float destinationZ, float stopDistance, ISet<string> resolved, out string encounterId)
+    {
+        encounterId = null;
+        Transform nearest = null;
+        float nearestTriggerZ = float.PositiveInfinity;
+        var segment = segments.Find(candidate => candidate.Registry == registry);
+        if (segment == null) return null;
+        foreach (var entry in chunkInstances)
+        {
+            if (entry.Key < segment.FirstGlobalChunkIndex ||
+                entry.Key >= segment.FirstGlobalChunkIndex + segment.ChunkCount ||
+                !entry.Value || !entry.Value.activeInHierarchy) continue;
+            string chunkEncounterId = "roadside:" + entry.Key;
+            foreach (Transform child in entry.Value.transform)
+            {
+                if (!child.gameObject.activeInHierarchy ||
+                    !child.name.StartsWith(RoadsideEncounterPrefix, System.StringComparison.Ordinal) ||
+                    Mathf.Abs(child.position.x - routeX) > RoadsideEncounterReach) continue;
+                float z = child.position.z;
+                if (z < fromZ || z >= destinationZ) continue;
+                bool central = child.name.StartsWith(RoadsideEncounterPrefix + CentralRoadsideKey + "_",
+                    System.StringComparison.Ordinal);
+                // A flank encounter must not consume the separate NPC on the through route.
+                string id = central ? chunkEncounterId + ":center" : chunkEncounterId;
+                if (resolved.Contains(id)) continue;
+                float triggerZ = central ? Mathf.Max(fromZ, z - stopDistance) : z;
+                if (triggerZ <= toZ && triggerZ < nearestTriggerZ)
+                {
+                    nearest = child;
+                    nearestTriggerZ = triggerZ;
+                    encounterId = id;
+                }
+            }
+        }
+        return nearest;
     }
 
     internal float? LoadedChunkEndZ(TerrainPlaceRegistry registry)
@@ -114,6 +262,8 @@ public sealed class TerrainBuilder
         if (chunkInstances.TryGetValue(globalChunkIndex, out GameObject loadedChunk) && loadedChunk != null)
             return true;
         chunkInstances.Remove(globalChunkIndex);
+        chunkMapPoints.Remove(globalChunkIndex);
+        chunkMapBounds.Remove(globalChunkIndex);
 
         int localChunkIndex = globalChunkIndex - segment.FirstGlobalChunkIndex;
         GameObject chunk = new GameObject($"Chunk_{globalChunkIndex}");
@@ -121,6 +271,8 @@ public sealed class TerrainBuilder
         chunk.transform.localPosition = Vector3.zero;
 
         GameObject ground = CreateGround(segment, localChunkIndex, chunk.transform);
+        if (ground != null && TryGetGroundMapBounds(ground, segment.Registry, localChunkIndex, out var bounds))
+            chunkMapBounds.Add(globalChunkIndex, bounds);
         if (ground != null) segment.RoomLayouts?[localChunkIndex]?.Apply(ground.transform);
         if (ground != null && segment.Data.places.Any(place => place.storyActors != null))
             foreach (Transform child in ground.transform)
@@ -136,66 +288,182 @@ public sealed class TerrainBuilder
                 foreach (Transform decoration in decorations)
                     if (decoration.name != "Decor_MineEdges") decoration.gameObject.SetActive(false);
         }
-        CreatePlaces(segment, localChunkIndex, chunk.transform, ground);
-        CreateMineRoadsideDecorations(segment, localChunkIndex, chunk.transform);
+        var mapPoints = new List<MapPoint>();
+        CreatePlaces(segment, localChunkIndex, chunk.transform, ground, mapPoints);
+        CreateMineRoadsideDecorations(segment, localChunkIndex, chunk.transform, mapPoints);
         foreach (var slot in segment.Facilities)
             if (slot.Chunk == localChunkIndex)
                 Debug.Log($"[장소 예정] {slot.Label} ({slot.Id}) · 청크 {globalChunkIndex + 1} · 로컬 X={slot.X:F1}, Z={slot.Z:F1} · {(slot.OptionalCandidate ? "주요 선택 후보" : "빈 자리 예약")} · 에셋/상호작용 연결 대기");
         chunkInstances.Add(globalChunkIndex, chunk);
+        chunkMapPoints.Add(globalChunkIndex, mapPoints);
         return true;
     }
 
-    private static void CreateMineRoadsideDecorations(TerrainSegment segment, int chunkIndex, Transform chunk)
+    private static bool TryGetGroundMapBounds(GameObject ground, TerrainPlaceRegistry registry,
+        int chunkIndex, out Rect bounds)
     {
-        var decorations = segment.PrefabCatalog?.MineRoadsideDecorations;
-        if (decorations == null || decorations.Count == 0) return;
-        var places = segment.Data.places.Where(place => place.chunkIndex == chunkIndex &&
-            place.authoredLocationId != null && place.placeId == place.sharedStoryVisualId).ToArray();
-        if (places.Length == 0) return;
-
-        var occupied = places.Select(place => new Vector2(place.position.z + place.storyLocationDepth.x,
-            place.position.z + place.storyLocationDepth.y))
-            .Concat(segment.Facilities.Where(slot => slot.Chunk == chunkIndex)
-                .Select(slot => new Vector2(slot.Z - 6f, slot.Z + 6f)))
-            .OrderBy(span => span.x).ToArray();
-        float length = segment.Data.chunkLength;
-        Vector3 origin = segment.Registry.GetChunkWorldPosition(chunkIndex);
-        for (int gap = 1; gap < occupied.Length; gap++)
+        // The floor mesh defines the covered map area. Walls and props can extend beyond it.
+        foreach (var renderer in ground.GetComponentsInChildren<MeshRenderer>())
         {
-            float end = Mathf.Min(occupied[gap].x - 2f, length - 6f);
-            float start = occupied[gap - 1].y + 2f;
-            if (end <= start) continue;
-            int count = Mathf.Max(1, Mathf.FloorToInt((end - start) / 16f));
-            for (int slot = 0; slot < count; slot++)
+            var floor = renderer.transform.parent?.parent;
+            if (floor == null || !(floor.name.StartsWith("Map_Ground_", System.StringComparison.Ordinal) ||
+                floor.name.StartsWith("Map_SandRoad_", System.StringComparison.Ordinal))) continue;
+
+            var surface = renderer.bounds;
+            float start = Mathf.Max(surface.min.z, registry.GetChunkWorldPosition(chunkIndex).z);
+            float end = Mathf.Min(surface.max.z, registry.GetChunkWorldPosition(chunkIndex + 1).z);
+            if (surface.size.x <= 0f || end <= start) continue;
+            bounds = Rect.MinMaxRect(surface.min.x, start, surface.max.x, end);
+            return true;
+        }
+        bounds = default;
+        return false;
+    }
+
+    private static void CreateMineRoadsideDecorations(TerrainSegment segment, int chunkIndex, Transform chunk,
+        List<MapPoint> mapPoints)
+    {
+        string groundId = segment.Data.groundIds?.ElementAtOrDefault(chunkIndex) ?? segment.Data.groundId;
+        if (groundId != "mine_village_180" && groundId != "mine_passage_180") return;
+        var catalog = segment.PrefabCatalog;
+        if (catalog == null) return;
+
+        Vector3 origin = segment.Registry.GetChunkWorldPosition(chunkIndex);
+        var occupied = new List<Bounds>();
+        var places = new List<Bounds>();
+        foreach (Transform child in chunk)
+        {
+            if (!child.name.StartsWith("Place_", System.StringComparison.Ordinal)) continue;
+            if (!TryWorldBounds(child, out var placeBounds)) continue;
+            places.Add(placeBounds);
+            occupied.Add(placeBounds);
+        }
+        foreach (var slot in segment.Facilities.Where(slot => slot.Chunk == chunkIndex))
+            occupied.Add(new Bounds(origin + new Vector3(slot.X, 1f, slot.Z), new Vector3(12f, 2f, 12f)));
+
+        // Decorations and flank NPCs stay clear of the walking and collector strip.
+        const float corridorHalfWidth = 4.25f, preferredDecorationHalfWidth = 7.25f;
+        const float placementHalfWidth = 10.5f, clearance = .75f;
+        float chunkStart = origin.z + 6f;
+        float chunkEnd = origin.z + segment.Data.chunkLength - 6f;
+        var gaps = new List<(float start, float end)>();
+        float previousEnd = float.NegativeInfinity;
+        foreach (var place in places.OrderBy(bounds => bounds.min.z))
+        {
+            float start = Mathf.Max(previousEnd, chunkStart);
+            float end = Mathf.Min(place.min.z, chunkEnd);
+            if (!float.IsNegativeInfinity(previousEnd) && end - start >= 3f)
+                gaps.Add((start, end));
+            previousEnd = Mathf.Max(previousEnd, place.max.z);
+        }
+        Vector3[] Candidates(float startZ, float endZ)
+        {
+            var points = new List<Vector3>();
+            for (float z = startZ + 1.5f; z <= endZ - 1.5f; z += 3f)
+            for (float x = 5.5f; x <= 8.5f; x += 1f)
             {
-                string key = $"mine-roadside:{gap}:{slot}";
-                int index = Mathf.Min(decorations.Count - 1, (int)(MineChapterSettings.Roll(
-                    segment.RunSeed, chunkIndex, key) * decorations.Count));
-                float slotStart = Mathf.Lerp(start, end, (float)slot / count);
-                float slotEnd = Mathf.Lerp(start, end, (slot + 1f) / count);
-                var prefab = Enumerable.Range(0, decorations.Count)
-                    .Select(offset => decorations[(index + offset) % decorations.Count])
-                    .FirstOrDefault(candidate => candidate != null &&
-                        MineAuthoredStory.RenderedBounds(candidate).extents.z <= (end - start) / (2f * count));
-                if (prefab == null) continue;
+                points.Add(new Vector3(origin.x - x, origin.y, z));
+                points.Add(new Vector3(origin.x + x, origin.y, z));
+            }
+            return points.ToArray();
+        }
+
+        float Roll(string key) => (float)MineChapterSettings.Roll(segment.RunSeed, chunkIndex, key);
+        bool Fits(Bounds bounds, float outerLimit, bool central)
+        {
+            if (bounds.min.z < origin.z + 6f || bounds.max.z > origin.z + segment.Data.chunkLength - 6f ||
+                bounds.min.x < origin.x - outerLimit || bounds.max.x > origin.x + outerLimit)
+                return false;
+            float coreHalfWidth = central ? .65f : corridorHalfWidth;
+            if (bounds.min.x < origin.x + coreHalfWidth && bounds.max.x > origin.x - coreHalfWidth)
+                return false;
+            return !occupied.Any(other => bounds.min.x < other.max.x + clearance &&
+                bounds.max.x > other.min.x - clearance && bounds.min.z < other.max.z + clearance &&
+                bounds.max.z > other.min.z - clearance);
+        }
+
+        bool Place(IReadOnlyList<GameObject> prefabs, string key, IEnumerable<Vector3> candidates,
+            bool npc, HashSet<GameObject> used, float startZ, float endZ,
+            float outerLimit = placementHalfWidth, bool central = false)
+        {
+            if (prefabs == null) return false;
+            var points = candidates.OrderBy(point => Roll(key + ":point:" +
+                Mathf.RoundToInt((point.x - origin.x) * 2f) + ":" +
+                Mathf.RoundToInt((point.z - origin.z) * 2f))).ToArray();
+            var choices = prefabs.Where(prefab => prefab != null)
+                .OrderBy(prefab => used.Contains(prefab))
+                .ThenBy(prefab => Roll(key + ":appearance:" + prefab.name));
+            foreach (var prefab in choices)
+            {
                 var localBounds = MineAuthoredStory.RenderedBounds(prefab);
-                var candidates = new[] { new Vector2(-4f, .30f), new Vector2(4f, .30f),
-                    new Vector2(-5f, .70f), new Vector2(5f, .70f) };
-                int pointIndex = Mathf.Min(candidates.Length - 1, (int)(MineChapterSettings.Roll(
-                    segment.RunSeed, chunkIndex, key + ":point") * candidates.Length));
-                Vector2 point = candidates[pointIndex];
-                float z = Mathf.Lerp(slotStart + localBounds.extents.z, slotEnd - localBounds.extents.z, point.y);
-                float side = Mathf.Sign(point.x);
-                float x = side * Mathf.Max(Mathf.Abs(point.x), 2.5f + localBounds.extents.x);
-                Vector3 center = origin + new Vector3(x, 0f, z);
-                Quaternion rotation = side < 0f ? Quaternion.Euler(0f, 180f, 0f) : Quaternion.identity;
-                var offset = new Vector3(localBounds.center.x, localBounds.min.y, localBounds.center.z);
-                var instance = Object.Instantiate(prefab, center - rotation * offset, rotation, chunk);
-                instance.name = "Roadside_" + prefab.name;
+                if (localBounds.size.sqrMagnitude < .001f) continue;
+                foreach (var point in points)
+                {
+                    float facing = point.x < origin.x ? 90f : -90f;
+                    // Supplied appearance models face local -Z.
+                    Quaternion rotation = Quaternion.Euler(0f, central ? 0f : npc ? facing + 180f : facing, 0f);
+                    Vector3 size = central ? localBounds.size :
+                        new Vector3(localBounds.size.z, localBounds.size.y, localBounds.size.x);
+                    var bounds = new Bounds(point + Vector3.up * localBounds.extents.y, size);
+                    if (bounds.min.z < startZ || bounds.max.z > endZ || !Fits(bounds, outerLimit, central)) continue;
+                    var offset = new Vector3(localBounds.center.x, localBounds.min.y, localBounds.center.z);
+                    var instance = Object.Instantiate(prefab, point - rotation * offset, rotation, chunk);
+                    bool betweenPlaces = npc && gaps.Any(gap =>
+                        bounds.min.z >= gap.start && bounds.max.z <= gap.end);
+                    string prefix = betweenPlaces ? RoadsideEncounterPrefix : npc ? "RoadsideNpc_" : "Roadside_";
+                    instance.name = prefix + key + "_" + prefab.name;
+                    if (npc) mapPoints.Add(new MapPoint(instance.transform, MapPointKind.RoadsideNpc));
+                    occupied.Add(bounds);
+                    used.Add(prefab);
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        var usedNpcs = new HashSet<GameObject>();
+        int npcCount = 1 + Mathf.Min(1, (int)(Roll("roadside-npc:count") * 2));
+        int placedNpcs = 0;
+        foreach (var (startZ, endZ) in gaps.OrderByDescending(gap => gap.end - gap.start))
+        {
+            var points = new List<Vector3>();
+            for (float z = startZ + 2f; z <= endZ - 2f; z += 3f)
+            {
+                points.Add(new Vector3(origin.x - 1.65f, origin.y, z));
+                points.Add(new Vector3(origin.x + 1.65f, origin.y, z));
+            }
+            if (!Place(catalog.MineRoadsideNpcs, CentralRoadsideKey, points, true, usedNpcs,
+                startZ, endZ, central: true)) continue;
+            placedNpcs++;
+            break;
+        }
+        var npcPoints = Candidates(chunkStart, chunkEnd);
+        var sides = new[] { -1, 1 }.OrderBy(side => Roll("roadside-npc:side:" + side)).ToArray();
+        foreach (int side in sides)
+        {
+            if (placedNpcs >= npcCount) break;
+            if (Place(catalog.MineRoadsideNpcs, "npc:" + side,
+                npcPoints.Where(point => Mathf.Sign(point.x - origin.x) == side),
+                true, usedNpcs, chunkStart, chunkEnd)) placedNpcs++;
+        }
+
+        var usedDecorations = new HashSet<GameObject>();
+        int gap = 0;
+        foreach (var (startZ, endZ) in gaps)
+        {
+            var points = Candidates(startZ, endZ);
+            string key = "decoration:" + gap++;
+            int count = 1 + Mathf.Min(2, (int)(Roll(key + ":count") * 3));
+            for (int i = 0; i < count; i++)
+            {
+                string itemKey = key + ":" + i;
+                if (Place(catalog.MineRoadsideDecorations, itemKey, points,
+                    false, usedDecorations, startZ, endZ, preferredDecorationHalfWidth)) continue;
+                if (!Place(catalog.MineRoadsideDecorations, itemKey, points,
+                    false, usedDecorations, startZ, endZ)) break;
             }
         }
     }
-
     public void UnloadOutsideRange(int minimumChunkIndex, int maximumChunkIndex)
     {
         // 등록된 지형과 배치 정보는 인스턴스보다 오래 유지되어 같은 청크를 다시 생성할 수 있습니다.
@@ -205,6 +473,8 @@ public sealed class TerrainBuilder
         {
             GameObject chunk = chunkInstances[index];
             chunkInstances.Remove(index);
+            chunkMapPoints.Remove(index);
+            chunkMapBounds.Remove(index);
             if (chunk == null) continue;
             chunk.SetActive(false);
             Object.Destroy(chunk);
@@ -244,8 +514,13 @@ public sealed class TerrainBuilder
         TerrainSegment segment,
         int localChunkIndex,
         Transform chunkParent,
-        GameObject ground)
+        GameObject ground,
+        List<MapPoint> mapPoints)
     {
+        var shopVisuals = new HashSet<string>(segment.Data.places
+            .Where(place => place != null && place.storyLocationShop)
+            .Select(place => place.sharedStoryVisualId ?? place.placeId));
+
         foreach (PlaceData place in segment.Data.places)
         {
             if (place != null && place.originalChunkIndex == localChunkIndex && ground != null)
@@ -254,6 +529,9 @@ public sealed class TerrainBuilder
                 if (old != null) old.gameObject.SetActive(false);
             }
             if (place == null || place.chunkIndex != localChunkIndex) continue;
+            var markerKind = shopVisuals.Contains(place.sharedStoryVisualId ?? place.placeId)
+                ? MapPointKind.Shop
+                : MapPointKind.Place;
             if (place.storyActors != null)
             {
                 if (place.sharedStoryVisualId != null && place.placeId != place.sharedStoryVisualId) continue;
@@ -274,6 +552,7 @@ public sealed class TerrainBuilder
                     var model = Object.Instantiate(actor.prefab, socket);
                     model.transform.localRotation = Quaternion.Euler(0f, 180f, 0f) * model.transform.localRotation;
                 }
+                if (group.childCount > 0) mapPoints.Add(new MapPoint(group, markerKind));
                 continue;
             }
 
@@ -305,6 +584,7 @@ public sealed class TerrainBuilder
                     segment.Registry.GetWorldPosition(place),
                     Quaternion.Euler(place.rotation));
                 PositionActorSockets(segment, place, authoredPlace);
+                mapPoints.Add(new MapPoint(authoredPlace, markerKind));
                 continue;
             }
 
@@ -312,6 +592,7 @@ public sealed class TerrainBuilder
             GameObject instance = Object.Instantiate(placePrefab,
                 segment.Registry.GetWorldPosition(place), Quaternion.Euler(place.rotation), chunkParent);
             instance.name = $"Place_{place.placeId}_{place.prefabId}";
+            mapPoints.Add(new MapPoint(instance.transform, markerKind));
         }
     }
 

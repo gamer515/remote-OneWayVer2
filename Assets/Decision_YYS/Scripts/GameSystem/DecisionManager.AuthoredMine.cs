@@ -9,6 +9,9 @@ public partial class DecisionManager
 {
     private const string PetDelivery = "@pet";
     private const string BossEntry = "@boss";
+    private const string BossChoices = "@boss-choices", BossStudy = "@boss-study";
+    private const string BossEncounterPath = MineAuthoredStory.Prefix + "Boss";
+    private bool IsMineBossEpisode => session?.ScenarioPath == "Chapter_1/Chapter_1_BossPreview";
     [SerializeField] private GameObject storyPetModel;
     private static readonly string[] AuthoredStats = { "힘", "속도", "지능", "매력" };
     private MineAuthoredProgress Authored => guideProgress.authoredMine;
@@ -31,7 +34,9 @@ public partial class DecisionManager
                     card.authoredStoryPackMode = MineAuthoredStory.ModeId(previous.shortStoryPack);
         if (pack.IsShort)
         {
-            pack.ShortLayoutSeed = ResolveShortLayoutSeed(previous);
+            pack.ShortLayoutSeed = previous?.shortStoryPack == true && previous.shortLayoutSeed > 0
+                ? previous.shortLayoutSeed
+                : session.RunSeed;
             if (previous?.shortStoryPack == true)
                 previous.shortLayoutSeed = pack.ShortLayoutSeed.Value;
         }
@@ -62,25 +67,13 @@ public partial class DecisionManager
         return true;
     }
 
-    private int ResolveShortLayoutSeed(MineAuthoredProgress current)
-    {
-        if (current?.shortStoryPack == true)
-            return current.shortLayoutSeed > 0 ? current.shortLayoutSeed : session.RunSeed;
-
-        if (session.RunNumber > 1)
-        {
-            var lastRun = SaveIOService.Instance.LoadRunData<GameProgress>(session.RunNumber - 1, "Progress");
-            var lastPack = lastRun?.guideProgress?.authoredMine;
-            if (lastRun?.isCompleted == true && lastPack?.shortStoryPack == true)
-                return lastPack.shortLayoutSeed > 0 ? lastPack.shortLayoutSeed :
-                    lastRun.runSeed > 0 ? lastRun.runSeed : session.RunSeed;
-        }
-        return session.RunSeed;
-    }
-
-    private void ShowAuthoredCard(string text, string speaker, string[] options, JToken line = null)
+    private void ShowAuthoredCard(string text, string speaker, string[] options, JToken line = null, string voiceNpcId = null)
     {
         uiController.SetDialogueClue(null, null);
+        var previous = activeCards?.MainStory?.ElementAtOrDefault(activeCardIndex);
+        bool redraw = line == null && previous?.text == text && previous?.speakerId == speaker;
+        if (!redraw && roadsideActor != null && roadsideStep != RoadsideStep.None)
+            voiceNpcId = roadsideEncounterId;
         var card = new Dialogue { text = text, speakerId = speaker, options = options, type = options == null ? "Next" : "Choice" };
         if (line?["played_line_path"] != null)
         {
@@ -95,7 +88,7 @@ public partial class DecisionManager
         currentState = StoryState.Transitioning;
         selectedGearIndex = options == null ? -1 : 0;
         journeyBoardInput?.SetChoiceCount(options?.Length ?? 0, selectedGearIndex);
-        presentationController.ShowDialogue(card);
+        presentationController.ShowDialogue(card, redraw ? null : voiceNpcId);
         FrameActiveEncounter(false);
         currentState = options == null ? StoryState.ShowingStory : StoryState.WaitingForChoice;
         if (options != null) RenderEncounterOptions();
@@ -104,12 +97,16 @@ public partial class DecisionManager
         SetYellowInputInteractable(true);
     }
 
-    private void ApplyAuthoredDelta(int[] delta)
+    private void ApplyAuthoredDelta(int[] delta, bool locationNpcReward = false)
     {
-        int[] stats = MineChapterSettings.ApplyDelta(statContainer.stats, delta);
+        int[] before = statContainer.stats;
+        int[] stats = MineChapterSettings.ApplyDelta(before, delta);
         statContainer.SetStats(stats);
         guideProgress.committedStats = stats;
         SyncAbilityWallet();
+        uiController?.ShowCoinGains(before, stats);
+        if (locationNpcReward && pendingEncounter.HasValue && pendingEncounter.Value.PlaceId == activePlaceId)
+            EnqueueNpcRewardPresentation(before, stats);
     }
 
     private void AddAuthoredFlags(System.Collections.Generic.IEnumerable<string> flags)
@@ -122,10 +119,7 @@ public partial class DecisionManager
     {
         uiController.SetDialogueClue(null, null);
         Authored.eventId = Authored.nodeId = null;
-        resolvedPlaceIds.Add(activePlaceId);
-        saveService.MarkEncounterCompleted(activePlaceId);
-        SaveGuideCheckpoint();
-        BeginExploration();
+        FinishEncounterAndResume(showRevisit: false);
     }
 
     private IEnumerator DeliverAuthoredPet()
@@ -194,16 +188,78 @@ public partial class DecisionManager
         return point;
     }
 
+    private void BeginAuthoredBossApproach()
+    {
+        var boss = envController.FindBossPreview();
+        if (boss == null)
+        {
+            uiController.SetStoryNotice("보스 구역을 불러오는 중입니다. 잠시 후 다시 눌러 주세요.");
+            return;
+        }
+        uiController.SetStoryNotice(null);
+        Vector3 stop = boss.EncounterPosition;
+        stop.y = playerController.CurrentPosition.y;
+        if ((stop - playerController.CurrentPosition).sqrMagnitude <= .01f)
+        {
+            PresentAuthoredBoss();
+            return;
+        }
+
+        pendingEncounter = null;
+        currentState = StoryState.MovingToEncounter;
+        walkingForwardJourney = true;
+        SetYellowInputInteractable(false);
+        presentationController.ShowWalkingView();
+        playerController.MoveAlongPath(new[] { stop }, GetJourneySpeedMultiplier());
+        SaveEncounterState("walking");
+    }
+
     private void PresentAuthoredBoss()
     {
-        activeEncounterPath = MineAuthoredStory.Prefix + "Boss";
-        Authored.nodeId = BossEntry;
+        var boss = envController.FindBossPreview();
+        if (boss == null) return;
+        activePlaceId = null;
+        activeEncounterPath = BossEncounterPath;
+        boss.FacePlayer(playerController.CurrentPosition);
+        playerController.StopAndLookAt(boss.transform.position);
+        if (Authored.nodeId == BossStudy)
+        {
+            PresentPackStudyPause();
+            return;
+        }
+
+        playerController.FocusNpc(boss.transform, true);
+        uiController.SetStoryNotice(null);
         uiController.SetStoryHeading("갱도 보스");
-        ShowAuthoredCard("보스 구역에 진입합니다.", "안내", null);
+        if (Authored.nodeId == BossChoices)
+            ShowAuthoredCard("준비가 됐다면 덤벼라.", "갱도 보스", new[] { "싸우기", "학습하기" }, voiceNpcId: "Chapter_1_Boss");
+        else
+        {
+            Authored.nodeId = BossEntry;
+            ShowAuthoredCard("여기까지 왔군. 내 앞을 지나가고 싶다면, 네 힘을 보여 봐라.", "갱도 보스", null,
+                voiceNpcId: "Chapter_1_Boss");
+        }
     }
 
     private void AdvanceAuthoredBoss()
     {
+        if (finalBattleRequested) return;
+        if (Authored.nodeId is BossEntry or BossStudy)
+        {
+            Authored.nodeId = BossChoices;
+            PresentAuthoredBoss();
+            return;
+        }
+        if (Authored.nodeId != BossChoices || currentState != StoryState.WaitingForChoice) return;
+        if (selectedGearIndex == 1)
+        {
+            Authored.bossStudyStartCount = learningStation?.Progress?.successfulStudies ?? 0;
+            Authored.nodeId = BossStudy;
+            PresentAuthoredBoss();
+            return;
+        }
+        if (selectedGearIndex != 0) return;
+        uiController.StopDialogueVoice();
         var chapter = currentOmnibus.chapters[chapterIndex];
         RelayCompletedEpisode();
         SaveEncounterState("battle");

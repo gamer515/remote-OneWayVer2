@@ -122,7 +122,9 @@ namespace JourneyMapKit
                 int steps = (int)((dragDelta.y - choiceStepOriginY) / choiceStepPixels);
                 if (steps == 0) return;
                 choiceStepOriginY += steps * choiceStepPixels;
-                SelectGear(Mathf.Clamp(SelectedIndex - steps, 0, choiceCount - 1));
+                int next = Mathf.Clamp(SelectedIndex - steps, 0, choiceCount - 1);
+                UiInteractionAudio.PlayGearSteps(Mathf.Abs(next - SelectedIndex));
+                SelectGear(next);
                 return;
             }
             float roll = Mathf.Clamp(-dragDelta.x * 0.12f, -22f, 22f);
@@ -138,6 +140,7 @@ namespace JourneyMapKit
             int index = dragDelta.x < 0f
                 ? (dragDelta.y >= 0f ? 0 : 1)
                 : (dragDelta.y >= 0f ? 2 : 3);
+            if (index != SelectedIndex) UiInteractionAudio.PlayGearSteps(1);
             SelectGear(index);
         }
 
@@ -199,7 +202,10 @@ namespace JourneyMapKit
             pressRoutine = StartCoroutine(AnimatePress());
 
             if (yellowInteractable)
+            {
+                UiInteractionAudio.PlayClick();
                 onYellowPressed.Invoke();
+            }
         }
 
         public void SetYellowInteractable(bool interactable)

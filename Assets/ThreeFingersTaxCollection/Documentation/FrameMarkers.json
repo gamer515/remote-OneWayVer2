@@ -1,0 +1,50 @@
+{
+  "fps": 60,
+  "frameNumbering": "zero-based",
+  "clips": [
+    {
+      "name": "ThreeFingers_TaxScaleCollection",
+      "duration": 3.0,
+      "frames": 180,
+      "markers": [
+        {
+          "frame": 30,
+          "time": 0.5,
+          "eventName": "OnTaxCoinsPicked"
+        },
+        {
+          "frame": 75,
+          "time": 1.25,
+          "eventName": "OnTaxCoinsDeposited"
+        },
+        {
+          "frame": 120,
+          "time": 2.0,
+          "eventName": "OnTaxBowlPicked"
+        },
+        {
+          "frame": 180,
+          "time": 3.0,
+          "eventName": "OnTaxCollectionComplete"
+        }
+      ]
+    },
+    {
+      "name": "ThreeFingers_DirectCoinCollection",
+      "duration": 1.2,
+      "frames": 72,
+      "markers": [
+        {
+          "frame": 30,
+          "time": 0.5,
+          "eventName": "OnDirectCoinsPicked"
+        },
+        {
+          "frame": 72,
+          "time": 1.2,
+          "eventName": "OnTaxCollectionComplete"
+        }
+      ]
+    }
+  ]
+}

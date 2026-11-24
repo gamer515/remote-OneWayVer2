@@ -9,6 +9,7 @@ namespace OneWay.Loading
     public sealed class LoadingScreenController : MonoBehaviour
     {
         public const string LoadingScenePath = "Assets/Scenes/LoadingScene.unity";
+        private const float ResumeMinimumDisplayTime = .5f;
 
         [Header("Destination / 목적지")]
         [Tooltip("Battle: LoadBattleScene 문구 / Decision: LoadDecisionScene 문구 / MainMenu: 문구 없음")]
@@ -42,20 +43,21 @@ namespace OneWay.Loading
         public string SelectedTip => tipLabel != null ? tipLabel.text : string.Empty;
         public static bool IsTransitioning => requestPending;
 
-        static LoadingDestination? pendingDestination;
+        static (LoadingDestination target, bool startProgressImmediately)? pendingRequest;
         static bool requestPending;
-        static LoadingDestination? queuedDestination;
+        static (LoadingDestination target, bool startProgressImmediately)? queuedRequest;
         static LoadingScreenController activeScreen;
         bool activatingDestination;
+        bool startProgressImmediately;
         AsyncOperation operation;
         Coroutine routine;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         static void ResetRequest()
         {
-            pendingDestination = null;
+            pendingRequest = null;
             requestPending = false;
-            queuedDestination = null;
+            queuedRequest = null;
             activeScreen = null;
         }
 
@@ -95,7 +97,8 @@ namespace OneWay.Loading
         /// Request a destination through LoadingScene. beforeLoad runs only for accepted requests,
         /// before any scene is replaced, so callers can hand off battle data safely.
         /// </summary>
-        public static bool Open(LoadingDestination target, Action beforeLoad = null)
+        public static bool Open(
+            LoadingDestination target, Action beforeLoad = null, bool startProgressImmediately = false)
         {
             if (!Application.isPlaying)
             {
@@ -113,14 +116,14 @@ namespace OneWay.Loading
                 // Decision.Start can resume an unfinished battle during scene activation.
                 // Queue that redirect until this overlay is gone; reject duplicate button clicks.
                 if (activeScreen == null || !activeScreen.activatingDestination ||
-                    target == activeScreen.destination || queuedDestination.HasValue) return false;
-                queuedDestination = target;
+                    target == activeScreen.destination || queuedRequest.HasValue) return false;
+                queuedRequest = (target, startProgressImmediately);
                 try { beforeLoad?.Invoke(); }
-                catch { queuedDestination = null; throw; }
+                catch { queuedRequest = null; throw; }
                 return true;
             }
             requestPending = true;
-            pendingDestination = target;
+            pendingRequest = (target, startProgressImmediately);
             try
             {
                 beforeLoad?.Invoke();
@@ -133,9 +136,13 @@ namespace OneWay.Loading
 
         void Start()
         {
-            bool requested = pendingDestination.HasValue;
-            if (requested) destination = pendingDestination.Value;
-            pendingDestination = null;
+            bool requested = pendingRequest.HasValue;
+            if (pendingRequest is { } request)
+            {
+                destination = request.target;
+                startProgressImmediately = request.startProgressImmediately;
+            }
+            pendingRequest = null;
             IsPreview = !requested && previewOnly;
             if (!IsPreview)
             {
@@ -209,11 +216,13 @@ namespace OneWay.Loading
             }
             operation.allowSceneActivation = false;
             // Load the destination during the delay; only the bar presentation waits.
-            if (fillStartDelay > 0f) yield return new WaitForSecondsRealtime(fillStartDelay);
+            float delay = startProgressImmediately ? 0f : fillStartDelay;
+            float displayTime = startProgressImmediately ? ResumeMinimumDisplayTime : minimumDisplayTime;
+            if (delay > 0f) yield return new WaitForSecondsRealtime(delay);
             while (true)
             {
-                float minimumProgress = minimumDisplayTime <= 0f ? 1f :
-                    Mathf.Clamp01((Time.realtimeSinceStartup - started) / minimumDisplayTime);
+                float minimumProgress = displayTime <= 0f ? 1f :
+                    Mathf.Clamp01((Time.realtimeSinceStartup - started) / displayTime);
                 float readyProgress = Mathf.Clamp01(operation.progress / .9f);
                 float target = Mathf.Min(readyProgress, minimumProgress);
                 SetProgress(Mathf.MoveTowards(DisplayedProgress, target, Time.unscaledDeltaTime * 1.5f));
@@ -235,10 +244,11 @@ namespace OneWay.Loading
                 yield return null;
             }
             if (destination != LoadingDestination.Battle) ReleaseCursor();
-            var redirect = queuedDestination;
+            var redirect = queuedRequest;
             ResetRequest();
             Destroy(gameObject);
-            if (redirect.HasValue) Open(redirect.Value);
+            if (redirect is { } next)
+                Open(next.target, startProgressImmediately: next.startProgressImmediately);
         }
 
         static void ReleaseCursor()

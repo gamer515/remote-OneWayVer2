@@ -15,7 +15,7 @@ public sealed class MineTaxLevy
 [Serializable]
 public sealed class MineTaxLine
 {
-    public string label, kind;
+    public string id, label, kind;
     public int[] cost;
     public int coins;
     public bool IsFlexible => kind == "mixed" || kind == "single";
@@ -25,12 +25,19 @@ public sealed class MineTaxLine
 [Serializable]
 public sealed class MineTaxInvoice
 {
+    public string id;
     public int day, tier;
     public string authority;
     public MineTaxLine[] lines;
     public int Total => lines.Sum(line => line.Total);
     public int Single => lines.Where(line => line.kind == "single").Sum(line => line.coins);
     public int Mixed => lines.Where(line => line.kind == "mixed").Sum(line => line.coins);
+
+    internal string EnsureId()
+    {
+        if (string.IsNullOrEmpty(id)) id = Guid.NewGuid().ToString("N");
+        return id;
+    }
 
     public bool CanPass(int[] wallet) => CanPass(wallet, out _, out _);
 
@@ -61,6 +68,13 @@ public sealed class MineTaxInvoice
 }
 
 [Serializable]
+public sealed class MineTaxArrear
+{
+    public MineTaxInvoice invoice;
+    public int penaltyCoins;
+}
+
+[Serializable]
 public sealed class ChapterTaxSettings
 {
     public string authority;
@@ -68,6 +82,7 @@ public sealed class ChapterTaxSettings
     public int[] intervalDays;
     public int maximumBurdenTier = 7;
     public float increasePerTier;
+    public float shortcutLateFeeRate = .25f;
     public MineTaxLevy[] levies;
 
     public static ChapterTaxSettings Load(string folder)
@@ -86,6 +101,7 @@ public sealed class ChapterTaxSettings
             if (string.IsNullOrWhiteSpace(authority) || intervalDays == null || intervalDays.Length == 0 || intervalDays[0] <= 0 ||
                 intervalDays.Where((days, index) => index > 0 && days <= intervalDays[index - 1]).Any() ||
                 !float.IsFinite(increasePerTier) || increasePerTier < 0 || increasePerTier > 2 ||
+                !float.IsFinite(shortcutLateFeeRate) || shortcutLateFeeRate < 0 || shortcutLateFeeRate > 1 ||
                 maximumBurdenTier < 0 || maximumBurdenTier > 20 ||
                 minimumLevies < 2 || maximumLevies < minimumLevies || maximumLevies > 3 ||
                 levies == null || levies.Any(levy => levy == null || string.IsNullOrWhiteSpace(levy.id) ||
@@ -143,6 +159,7 @@ public sealed class ChapterTaxSettings
         decimal multiplier = 1m + tier * (decimal)increasePerTier;
         return new MineTaxInvoice
         {
+            id = Guid.NewGuid().ToString("N"),
             day = day, tier = tier, authority = authority,
             lines = selected.Select(levy => Quote(levy, random, wallet, multiplier)).ToArray()
         };
@@ -150,7 +167,7 @@ public sealed class ChapterTaxSettings
 
     private static MineTaxLine Quote(MineTaxLevy levy, System.Random random, int[] wallet, decimal multiplier)
     {
-        var line = new MineTaxLine { label = levy.label, kind = levy.kind };
+        var line = new MineTaxLine { id = levy.id, label = levy.label, kind = levy.kind };
         if (levy.kind == "mixed" || levy.kind == "single")
         {
             line.coins = (int)Math.Ceiling(levy.coins * multiplier);

@@ -1,63 +1,112 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class MainMenuSoundManager : MonoBehaviour
 {
-    // 싱글톤 인스턴스
-    public static MainMenuSoundManager Instance;
+    private const string VolumeKey = "BGM_Volume";
+    private const string MineChapterId = "Chapter_1";
+    private const float MaxBgmGain = .4f;
 
-    [Header("BGM 설정")]
-    public AudioSource bgmSource; // 인스펙터에 나타날 스피커 컴포넌트
-    public AudioClip mainMenuBGM; // 인스펙터에 넣을 .wav 파일
+    private enum Music { Silent, Menu, Mine }
 
-    void Awake()
+    public static MainMenuSoundManager Instance { get; private set; }
+
+    [SerializeField] private AudioSource bgmSource;
+    [SerializeField] private AudioClip mainMenuBGM;
+    [SerializeField] private AudioClip caveTheme1;
+    [SerializeField] private AudioClip caveTheme2;
+
+    private readonly System.Random trackRandom = new System.Random();
+    private Music music;
+    private float volume;
+    private float trackGain = 1f;
+
+    private void Awake()
     {
-        // 1. 싱글톤 및 씬 전환 유지 설정
-        if (Instance == null)
-        {
-            Instance = this;
-            DontDestroyOnLoad(gameObject);
-        }
-        else
+        if (Instance != null && Instance != this)
         {
             Destroy(gameObject);
-            return; // 중복 생성된 경우 아래 코드를 실행하지 않음
+            return;
         }
 
-        // 2. AudioSource 자동 할당 (깜빡하고 인스펙터 연결 안 했을 때 방어)
+        Instance = this;
+        DontDestroyOnLoad(gameObject);
         if (bgmSource == null)
-        {
             bgmSource = GetComponent<AudioSource>();
-        }
 
-        // 3. 저장된 볼륨 불러오기
-        LoadVolume();
+        volume = Mathf.Clamp01(PlayerPrefs.GetFloat(VolumeKey, .5f));
+        ApplyVolume();
+        SceneManager.sceneLoaded += OnSceneLoaded;
     }
 
-    void Start()
+    private void Start() => OnSceneLoaded(SceneManager.GetActiveScene(), LoadSceneMode.Single);
+
+    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
-        // 시작할 때 BGM 파일이 잘 들어있으면 재생
-        if (mainMenuBGM != null && bgmSource != null)
-        {
-            bgmSource.clip = mainMenuBGM;
-            bgmSource.loop = true; // 배경음악이므로 반복 재생
-            bgmSource.Play();
-        }
+        if (mode != LoadSceneMode.Single) return;
+        SetMusic(scene.name == "MainMenuScene" ? Music.Menu : Music.Silent);
     }
 
-    // 볼륨 조절 및 PlayerPrefs에 저장
-    public void SetBGMVolume(float volume)
+    public void SetDecisionChapter(string chapterId)
+    {
+        if (SceneManager.GetActiveScene().name != "DecisionScene") return;
+        SetMusic(chapterId == MineChapterId ? Music.Mine : Music.Silent);
+    }
+
+    private void Update()
+    {
+        if (music == Music.Mine && bgmSource != null && !AudioListener.pause && !bgmSource.isPlaying)
+            PlayCaveTrack();
+    }
+
+    private void SetMusic(Music next)
+    {
+        if (next == music || bgmSource == null) return;
+
+        music = next;
+        bgmSource.Stop();
+        bgmSource.clip = null;
+
+        if (next == Music.Menu)
+            Play(mainMenuBGM, true, .8f);
+        else if (next == Music.Mine)
+            PlayCaveTrack();
+    }
+
+    private void PlayCaveTrack()
+    {
+        bool first = caveTheme2 == null || (caveTheme1 != null && trackRandom.Next(2) == 0);
+        Play(first ? caveTheme1 : caveTheme2, false, first ? 1f : .7f);
+    }
+
+    private void Play(AudioClip clip, bool loop, float gain)
+    {
+        if (clip == null) return;
+
+        trackGain = gain;
+        ApplyVolume();
+        bgmSource.clip = clip;
+        bgmSource.loop = loop;
+        bgmSource.Play();
+    }
+
+    public void SetBGMVolume(float value)
+    {
+        volume = Mathf.Clamp01(value);
+        ApplyVolume();
+        PlayerPrefs.SetFloat(VolumeKey, volume);
+    }
+
+    private void ApplyVolume()
     {
         if (bgmSource != null)
-        {
-            bgmSource.volume = volume;
-        }
-        PlayerPrefs.SetFloat("BGM_Volume", volume);
+            bgmSource.volume = volume * MaxBgmGain * trackGain;
     }
 
-    // 게임 시작 시 저장된 볼륨 값 가져오기
-    private void LoadVolume()
+    private void OnDestroy()
     {
-        float savedVol = PlayerPrefs.GetFloat("BGM_Volume", 0.5f); // 기본값 0.5
-        SetBGMVolume(savedVol);
+        if (Instance != this) return;
+        SceneManager.sceneLoaded -= OnSceneLoaded;
+        Instance = null;
     }
 }

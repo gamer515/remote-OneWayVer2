@@ -31,6 +31,7 @@ public class GameManager : MonoBehaviour
     public GameState CurrentState { get => currentState; set => currentState = value; }
 
     private SaveManager saveManager;
+    public bool HasJourneyCheckpoint => saveManager.HasJourneyCheckpoint;
     private DecisionRunCompletionService finalBattleCompletion;
 
     [Header("Player")]
@@ -78,8 +79,7 @@ public class GameManager : MonoBehaviour
             saveManager,
             savedPlayerPosition,
             savedPlayerRotation,
-            saveManager.LoadRemainingCoins(),
-            saveManager.LoadInventoryState());
+            saveManager.LoadRemainingCoins());
     }
 
     private (int, int, int, PlayerStats) LoadData()
@@ -118,7 +118,9 @@ public class GameManager : MonoBehaviour
         if (saveManager == null)
             saveManager = new SaveManager();
 
-        return saveManager.StartNextRun();
+        int nextRun = saveManager.StartNextRun();
+        LocalStoryRuntimeService.TryResumePending(recover: false);
+        return nextRun;
     }
 
     public void EnterFinalBattle(int stage = 1, string chapterBossId = null)
@@ -186,7 +188,7 @@ public class GameManager : MonoBehaviour
                     try { LocalStoryDialogueQueue.FinalizeRun(SaveIOService.Instance, sourceRun); }
                     catch (System.Exception e) { LocalStoryLog.Write(LocalStoryLogStage.Failed, "전투 종료 감정 저장: " + e.Message); }
                 },
-                () => { int next = PrepareNextPlaythrough(); LocalStoryRuntimeService.TryResumePending(); return next; },
+                PrepareNextPlaythrough,
                 () => {
                     new SceneTransitionService().LoadMainMenuScene();
                     Cursor.lockState = CursorLockMode.None;

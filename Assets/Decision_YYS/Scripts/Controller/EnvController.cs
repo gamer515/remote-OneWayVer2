@@ -32,11 +32,13 @@ public class EnvController : MonoBehaviour
         public string roomSourceGroundId;
     }
 
-    private sealed class RegisteredTerrain
+    internal sealed class RegisteredTerrain
     {
         public TerrainData Data;
         public TerrainPlaceRegistry Registry;
         public float EndZ;
+        public int FirstChunk;
+        public int ChunkCount;
     }
 
     [FormerlySerializedAs("terrain")]
@@ -54,12 +56,25 @@ public class EnvController : MonoBehaviour
     public float ChunkSize => chunkSize;
     public float CurrentTerrainEndZ { get; private set; }
     internal float? LoadedChunkEndZ => terrainBuilder.LoadedChunkEndZ(PlaceRegistry);
+    internal BossPreviewIdle FindBossPreview() => terrainBuilder.FindBossPreview(PlaceRegistry);
     internal Transform FindStoryPlace(PlaceData place) => terrainBuilder.FindStoryPlace(PlaceRegistry, place);
+    internal bool TryGetShortcutRoute(PlaceData place, int side, float height, float encounterStopDistance,
+        out Vector3[] route, out Transform actor) =>
+        terrainBuilder.TryGetShortcutRoute(PlaceRegistry, place, side, height, encounterStopDistance, out route, out actor);
+    internal Transform FindRoadsideNpc(float routeX, float fromZ, float toZ, float destinationZ, float stopDistance,
+        System.Collections.Generic.ISet<string> resolved, out string encounterId) =>
+        terrainBuilder.FindRoadsideNpc(PlaceRegistry, routeX, fromZ, toZ, destinationZ, stopDistance, resolved, out encounterId);
     public Vector3 TerrainOrigin => environment != null ? environment.transform.position : Vector3.zero;
 
     private TerrainRepository terrainRepository = new TerrainRepository();
     private readonly TerrainBuilder terrainBuilder = new TerrainBuilder();
     internal System.Collections.Generic.IReadOnlyList<TerrainBuilder.FacilityMarker> FacilityMarkers => terrainBuilder.FacilityMarkers;
+    internal IEnumerable<List<TerrainBuilder.MapPoint>> LoadedMapPoints => terrainBuilder.LoadedMapPoints;
+    internal bool TryGetCurrentMapBounds(out Rect bounds) =>
+        terrainBuilder.TryGetMapBounds(terrainStreamingController?.CurrentChunkIndex ?? -1, out bounds);
+    internal RegisteredTerrain MineCollectorTerrain =>
+        registeredTerrains.TryGetValue(MineAuthoredStory.Episode + "/Terrain", out var terrain) ? terrain : null;
+    internal bool IsTerrainChunkLoaded(int index) => terrainBuilder.IsChunkLoaded(index);
     private readonly Dictionary<string, RegisteredTerrain> registeredTerrains =
         new Dictionary<string, RegisteredTerrain>();
 
@@ -163,7 +178,9 @@ public class EnvController : MonoBehaviour
         {
             Data = terrainData,
             Registry = registry,
-            EndZ = segmentEndZ
+            EndZ = segmentEndZ,
+            FirstChunk = nextGlobalChunkIndex,
+            ChunkCount = chunkCount
         });
 
         nextGlobalChunkIndex += chunkCount;
@@ -476,6 +493,8 @@ public sealed class TerrainPrefabCatalog
     [SerializeField] private TerrainPrefabEntry[] characterEntries;
     [SerializeField] private GameObject[] mineRoadsideDecorations;
     internal IReadOnlyList<GameObject> MineRoadsideDecorations => mineRoadsideDecorations;
+    [SerializeField] private GameObject[] mineRoadsideNpcs;
+    internal IReadOnlyList<GameObject> MineRoadsideNpcs => mineRoadsideNpcs;
 
     private Dictionary<string, GameObject> prefabsById;
 

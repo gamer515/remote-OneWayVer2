@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using static Constants;
@@ -9,9 +10,19 @@ public class UiController : MonoBehaviour
 
     public DisplayMode CurrentDisplayMode { get; private set; } = DisplayMode.Event;
     public Vector2 StoryScreenCenter => viewUi != null ? viewUi.ScreenCenter : new Vector2(Screen.width * .25f, Screen.height * .65f);
+    internal Vector2 StoryScreenEntrance => viewUi != null
+        ? viewUi.ScreenPoint(new Vector2(.5f, .33f)) : new Vector2(Screen.width * .25f, Screen.height * .57f);
+    internal TMP_FontAsset DialogueFont => mainStoryUi?.DialogueFont;
+    internal void ShowCoinGains(int[] before, int[] after) => mainStoryUi?.ShowCoinGains(before, after);
+    internal void ShowLearningReward(int[] before, int[] after, IReadOnlyList<LearningComboReward> combos,
+        Camera boardCamera, Collider board, CoinDropController audio, JourneyCoinSupplyController supply = null) =>
+        mainStoryUi?.ShowLearningReward(before, after, combos, () => StoryScreenCenter,
+            () => viewUi != null ? viewUi.ScreenWidth : Screen.width * .55f,
+            offset => viewUi?.SetLearningRecoil(offset), boardCamera, board, audio, supply);
 
     [SerializeField] private MainStoryUi mainStoryUi;
     [SerializeField] private ViewUi viewUi;
+    private readonly NpcMumbleVoice npcVoice = new NpcMumbleVoice();
 
     public event Action<bool> OnPlayerViewChanged;
     public void FlashPlayerHit() => viewUi?.FlashPlayerHit();
@@ -24,14 +35,20 @@ public class UiController : MonoBehaviour
             mainStoryUi.SetActiveTextUi(isActive);
     }
 
-    public void ChangeUiText(TextTarget target, Dialogue dialogue = null, string text = null)
+    public void ChangeUiText(TextTarget target, Dialogue dialogue = null, string text = null, string voiceNpcId = null)
     {
         if (mainStoryUi == null)
             return;
 
-        mainStoryUi.WriteText(target, dialogue != null ? SanitizeText(dialogue.text) : text, dialogue?.speakerId);
+        string displayedText = dialogue != null ? SanitizeText(dialogue.text) : text;
+        mainStoryUi.WriteText(target, displayedText, dialogue?.speakerId);
+        if (target != TextTarget.FrontDialogue) return;
+        if (string.IsNullOrEmpty(voiceNpcId)) npcVoice.Stop();
+        else npcVoice.Speak(transform, voiceNpcId, displayedText);
     }
 
+    internal void StopDialogueVoice() => npcVoice.Stop();
+    private void OnDisable() => StopDialogueVoice();
 
     public void PreviewChoice(string text, string direction = null, bool canConfirm = true) =>
         mainStoryUi?.PreviewChoice(SanitizeText(text), direction, canConfirm);
@@ -74,6 +91,7 @@ public class UiController : MonoBehaviour
     private void SetDisplayMode(DisplayMode mode)
     {
         bool walking = mode == DisplayMode.Walking;
+        if (walking) StopDialogueVoice();
 
         // 플레이어 화면은 항상 유지하고 이벤트 상태에서 텍스트만 표시합니다.
         if (viewUi != null)

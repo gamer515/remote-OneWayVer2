@@ -14,11 +14,17 @@ public partial class DecisionManager
     private const string LowIntelligenceVariant = "지능_낮음";
     private const float PackRequirementSeconds = 3f;
     private const string PackRoot = "root", PackCoins = "coins", PackNegotiate = "negotiate",
-        PackToss = "toss", PackTask = "task", PackDuel = "duel", PackLeave = "leave";
+        PackToss = "toss", PackTask = "task", PackDuel = "duel", PackLeave = "leave", PackStudy = "study";
+    private const string PackStudyChoice = "STUDY_MORE";
     private MineAuthoredStory StoryPack => envController.AuthoredMine;
     private bool IsPackMain => Authored.eventId.StartsWith("MAIN-", StringComparison.Ordinal);
     private Dictionary<string, LocalStoryDialogueJob> previousPackDialogue;
     private string PackSpeaker(string id) => IsPackMain ? StoryPack.PackName(id) : pendingEncounter?.DisplayName;
+    private string PackVoiceNpcId(JToken line)
+    {
+        string id = (string)line?["speaker_id"];
+        return StoryPack.IsPackNpc(id) ? id : null;
+    }
     private int StoredStoryIntelligence() => journeyCoinSupply?.IsReady == true
         ? journeyCoinSupply.AvailableCoins(2) : statContainer.stats[2];
 
@@ -39,10 +45,10 @@ public partial class DecisionManager
     {
         string intelligence = PackAbilityVariant(2, "지능");
         if (StoryPack.IsShort)
-            return intelligence == LowIntelligenceVariant ? PackStory(intelligence) : ApplyPackEmotion(PackStory());
+            return ApplyPackEmotion(PackStory(intelligence == LowIntelligenceVariant ? intelligence : null));
         string charm = PackAbilityVariant(3, "매력");
         if (intelligence == null && charm == null) return ApplyPackEmotion(PackStory());
-        if (intelligence == null || charm == null) return PackStory(charm ?? intelligence);
+        if (intelligence == null || charm == null) return ApplyPackEmotion(PackStory(charm ?? intelligence));
         bool lowIntelligence = intelligence == LowIntelligenceVariant;
         var primary = (JObject)PackStory(lowIntelligence ? intelligence : charm).DeepClone();
         var secondary = PackStory(lowIntelligence ? charm : intelligence);
@@ -65,7 +71,7 @@ public partial class DecisionManager
             {
                 unchanged.Replace(voice.DeepClone());
             }
-        return primary;
+        return ApplyPackEmotion(primary);
     }
 
     private JObject ApplyPackEmotion(JObject source)
@@ -76,7 +82,8 @@ public partial class DecisionManager
             if (line["speaker_id"]?.Type != JTokenType.String || line["text"]?.Type != JTokenType.String) continue;
             string npcId = IsPackMain ? (string)line["speaker_id"] : envController.TerrainData.places
                 .FirstOrDefault(place => place.placeId == activePlaceId)?.storyNpcId;
-            if (!StoryPack.IsPackNpc(npcId)) continue;
+            // A clue's highlighted phrase must stay present in the spoken line.
+            if (!StoryPack.IsPackNpc(npcId) || line["hover_hint"]?["target_text"]?.Type == JTokenType.String) continue;
             string path = line.Path;
             string original = (string)line["text"];
             line["played_line_path"] = path;
@@ -135,17 +142,19 @@ public partial class DecisionManager
         var store = SaveIOService.Instance;
         int sourceRun = session.RunNumber - 1;
         var queue = LocalStoryDialogueQueue.Load(store, sourceRun);
-        if (queue?.finalized != true) return null;
+        if (queue == null) return null;
         string mode = queue.authoredStoryPackMode;
         if (string.IsNullOrEmpty(mode))
         {
             var previous = store.LoadRunData<GameProgress>(sourceRun, "Progress");
             mode = MineAuthoredStory.ModeId(previous?.guideProgress?.authoredMine?.shortStoryPack == true);
         }
-        if (mode != MineAuthoredStory.ModeId(StoryPack.IsShort)) return null;
+        string currentMode = MineAuthoredStory.ModeId(StoryPack.IsShort);
         return queue.jobs.Where(job => job.authoredPack && job.model == DirectStoryGenerator.ModelName &&
+            LocalStoryDialogueQueue.AuthoredMode(job, mode) == currentMode &&
             job.status == "Ready" && job.targetRun == session.RunNumber &&
-            job.emotionLines != null && !string.IsNullOrEmpty(job.emotion)).ToDictionary(job => job.jobId);
+            job.emotionLines != null && !string.IsNullOrEmpty(job.emotion))
+            .ToDictionary(job => LocalStoryDialogueQueue.AuthoredJobId(job.storyPath, job.characterId));
     }
 
     private static void AppendPackLines(JArray destination, JToken source)
@@ -163,6 +172,39 @@ public partial class DecisionManager
     }
 
     private JToken PackChoice(JObject story, string id) => story["choices"].First(choice => (string)choice["id"] == id);
+    private static (string id, string text)[] PackRootOptions(JObject story)
+    {
+        var configured = story["choices"].ToDictionary(choice => (string)choice["id"]);
+        return new[] { "C3", "C1" }
+            .Where(id => configured.TryGetValue(id, out var choice) && (id switch
+            {
+                "C3" => choice["requirement"] is JObject,
+                _ => (int?)choice["price"]?["base_fee"] > 0
+            }))
+            .Select(id => (id, (string)configured[id]["text"]))
+            .Append(("C4", (string)configured.GetValueOrDefault("C4")?["text"] ?? "샛길로 돌아가 볼까?"))
+            .Append((PackStudyChoice, "지금은 좀 부족한 것 같아. 책을 더 읽고 오자."))
+            .ToArray();
+    }
+
+    private bool IsPackStudyPaused => activeEncounterPath?.StartsWith(MineAuthoredStory.Prefix,
+        StringComparison.Ordinal) == true && Authored?.storyPackFrame == PackStudy;
+
+    private void PresentPackStudyPause()
+    {
+        currentState = StoryState.Exploring;
+        selectedGearIndex = -1;
+        journeyBoardInput?.SetChoiceCount(0);
+        ResetGearSelection();
+        presentationController.ExitChoice();
+        presentationController.ShowWalkingView();
+        playerController.ResetNpcFraming();
+        uiController.SetDialogueClue(null, null);
+        uiController.SetStoryNotice("책을 더 읽을 수 있어요. 노란 버튼을 누르면 대화를 이어갑니다.");
+        SetYellowInputInteractable(true);
+        SaveGuideCheckpoint();
+        SaveEncounterState("card");
+    }
     private JToken PackPayment(JObject story) => PackChoice(story, "C1");
     private int PackFee => Authored.storyPackFee > 0 ? Authored.storyPackFee : (int)PackPayment(PackStory())["price"]["base_fee"];
 
@@ -180,16 +222,34 @@ public partial class DecisionManager
             }
         }
         Add(StoryPack.IsShort || (PackAbilityVariant(2, "지능") == null && PackAbilityVariant(3, "매력") == null)
-            ? PackDialogueStory() : PackStory());
-        if (!StoryPack.IsShort && HasHighStoryAbility(2)) Add(PackStory("지능_높음"));
-        if (!StoryPack.IsShort && HasHighStoryAbility(3)) Add(PackStory("매력_높음"));
+            ? PackDialogueStory() : ApplyPackEmotion(PackStory()));
+        if (!StoryPack.IsShort && HasHighStoryAbility(2)) Add(ApplyPackEmotion(PackStory("지능_높음")));
+        if (!StoryPack.IsShort && HasHighStoryAbility(3)) Add(ApplyPackEmotion(PackStory("매력_높음")));
         return options.Values.ToArray();
+    }
+
+    private static JToken PackEvidenceLearningHint(JObject story) => story["choices"]?
+        .FirstOrDefault(choice => (string)choice["id"] == "C1")?["negotiation"]?["routes"]?
+        .FirstOrDefault(route => (string)route["id"] == "N_INT")?["learning_hint"];
+
+    private void ShowPackEvidenceLearningHint(JObject story, JToken[] routes = null)
+    {
+        if (Authored.storyPackNegotiated) return;
+        var evidence = (routes ?? PackNegotiationRoutes()).FirstOrDefault(route => (string)route["id"] == "N_INT");
+        if (evidence == null) return;
+
+        bool ready = PackCondition(evidence["condition"]);
+        var hint = PackEvidenceLearningHint(story);
+        uiController.SetStoryNotice((string)hint?[ready ? "ready" : "below"] ?? (ready
+            ? "이제 통행료를 줄일 근거를 댈 수 있겠어."
+            : "통행료를 깎으려면 근거가 더 필요해. 지능 코인을 얻고 다시 와 보자."));
     }
 
     private void PresentStoryPack()
     {
         var story = PackStory();
         uiController.SetStoryHeading((string)story["title"]);
+        if (TryPresentPackShortcut(story)) return;
         string frame = Authored.storyPackFrame;
         var lines = Authored.storyPackLines == null ? null : JArray.Parse(Authored.storyPackLines);
         if (frame == PetDelivery && (lines == null || Authored.storyPackLine >= lines.Count))
@@ -201,7 +261,8 @@ public partial class DecisionManager
         if (lines != null && Authored.storyPackLine < lines.Count)
         {
             var line = lines[Authored.storyPackLine];
-            ShowAuthoredCard((string)line["text"], PackSpeaker((string)line["speaker_id"]) ?? pendingEncounter?.DisplayName, null, line);
+            ShowAuthoredCard((string)line["text"], PackSpeaker((string)line["speaker_id"]) ?? pendingEncounter?.DisplayName,
+                null, line, PackVoiceNpcId(line));
             uiController.SetDialogueClue(HasHighStoryAbility(2) ? (string)line["hover_hint"]?["target_text"] : null, () =>
             {
                 string hint = (string)line["hover_hint"]?["id"];
@@ -216,20 +277,25 @@ public partial class DecisionManager
         }
 
         var last = lines?.Last;
-        string speech = (string)last?["text"] ?? (string)PackDialogueStory()["opening"].Last?["text"];
+        var speechLine = last?["text"]?.Type == JTokenType.String ? last : PackDialogueStory()["opening"].Last;
+        string speech = (string)speechLine?["text"];
+        string voiceNpcId = PackVoiceNpcId(speechLine);
         string speaker = PackSpeaker((string)last?["speaker_id"]) ?? pendingEncounter?.DisplayName;
         switch (frame)
         {
             case PackCoins:
                 var options = AuthoredStats.Select(label => label + $" 코인 {PackFee}개").ToList();
                 if (!Authored.storyPackNegotiated) options.Add((string)PackPayment(story)["negotiation"]["text"]);
-                ShowAuthoredCard(speech, speaker, options.ToArray());
+                ShowAuthoredCard(speech, speaker, options.ToArray(), voiceNpcId: voiceNpcId);
+                ShowPackEvidenceLearningHint(story);
                 break;
             case PackNegotiate:
-                ShowAuthoredCard(speech, speaker, PackNegotiationRoutes().Select(route => (string)route["text"]).ToArray());
+                var routes = PackNegotiationRoutes();
+                ShowAuthoredCard(speech, speaker, routes.Select(route => (string)route["text"]).ToArray(), voiceNpcId: voiceNpcId);
+                ShowPackEvidenceLearningHint(story, routes);
                 break;
             case PackToss:
-                ShowAuthoredCard(speech, speaker, new[] { "앞면", "뒷면" });
+                ShowAuthoredCard(speech, speaker, new[] { "앞면", "뒷면" }, voiceNpcId: voiceNpcId);
                 break;
             case PackDuel:
                 RunStoryPackDuel();
@@ -237,18 +303,23 @@ public partial class DecisionManager
             case PackTask:
                 StartCoroutine(RunStoryPackTask());
                 break;
+            case PackStudy:
+                PresentPackStudyPause();
+                break;
             case PackLeave:
                 Authored.storyPackFrame = Authored.storyPackLines = null;
                 FinishAuthoredEncounter();
                 break;
             default:
-                ShowAuthoredCard(speech, speaker, story["choices"].Select(choice => (string)choice["text"]).ToArray());
+                ShowAuthoredCard(speech, speaker, PackRootOptions(story).Select(choice => choice.text).ToArray(), voiceNpcId: voiceNpcId);
+                ShowPackEvidenceLearningHint(story);
                 break;
         }
     }
 
     private void AdvanceStoryPack()
     {
+        if (TryAdvancePackShortcut()) return;
         if (Authored.storyPackLines != null && Authored.storyPackLine < JArray.Parse(Authored.storyPackLines).Count)
         {
             Authored.storyPackLine++;
@@ -258,6 +329,8 @@ public partial class DecisionManager
         int selected = selectedGearIndex;
         if (selected < 0) return;
         var story = PackStory();
+        if (Authored.storyPackFrame is PackRoot or PackCoins or PackNegotiate)
+            uiController.SetStoryNotice(null);
         var voiced = PackDialogueStory();
         switch (Authored.storyPackFrame)
         {
@@ -273,7 +346,7 @@ public partial class DecisionManager
                 var cost = new int[AuthoredStats.Length];
                 cost[selected] = PackFee;
                 if (!TryBeginBoardPayment(cost, () => FinishPackOutcome(coin, coinVoice, selected),
-                    PresentStoryPack))
+                    PresentStoryPack, useNpcBowl: true))
                     ShowPackLines(new JArray(new JObject { ["text"] = "코인통을 사용할 수 없습니다." }), PackRoot);
                 return;
             case PackNegotiate:
@@ -294,9 +367,24 @@ public partial class DecisionManager
                 }
                 return;
         }
-        var choice = story["choices"][selected];
-        var dialogue = voiced["choices"][selected];
-        presentationController.ConfirmChoice((string)choice["text"]);
+        var rootChoices = PackRootOptions(story);
+        if (selected >= rootChoices.Length) return;
+        var option = rootChoices[selected];
+        presentationController.ConfirmChoice(option.text);
+        if (option.id == PackStudyChoice)
+        {
+            // Keep the finished dialogue lines so the same speaker and card return after study.
+            Authored.storyPackFrame = PackStudy;
+            PresentPackStudyPause();
+            return;
+        }
+        if (option.id == "C4")
+        {
+            ShowPackLines(null, PackShortcutDirection);
+            return;
+        }
+        var choice = PackChoice(story, option.id);
+        var dialogue = PackChoice(voiced, option.id);
         switch ((string)choice["id"])
         {
             case "C1": ShowPackLines(dialogue["dialogue"], PackCoins); break;
@@ -304,10 +392,6 @@ public partial class DecisionManager
                 ShowPackLines(dialogue["dialogue"], (string)choice["mini_game"]["type"] == "duel" ? PackDuel : PackToss);
                 break;
             case "C3": BeginPackRequirement(dialogue); break;
-            case "C4":
-                Debug.Log((string)choice["shortcut"]["log_message"], this);
-                ShowPackLines(null, PackRoot);
-                break;
         }
     }
 
@@ -408,7 +492,7 @@ public partial class DecisionManager
         var result = outcome?["result"];
         var delta = MineLearningStation.AbilityKeys.Select(key => (int?)result?["stats"]?[key] ?? 0).ToArray();
         if (coin >= 0) delta[coin] = -PackFee;
-        if (delta.Any(amount => amount != 0)) ApplyAuthoredDelta(delta);
+        if (delta.Any(amount => amount != 0)) ApplyAuthoredDelta(delta, locationNpcReward: true);
         AddAuthoredFlags(result?["reward_flags"]?.Values<string>() ?? Enumerable.Empty<string>());
         bool completed = (bool?)result?[IsPackMain ? "main_progress" : "side_completed"] ?? false;
         if (completed) Authored.storyPackResolution = (string)result?["resolution"] ?? "worked";
@@ -418,19 +502,20 @@ public partial class DecisionManager
     private string PackChoiceHint(int index)
     {
         if (Authored?.eventId == null || (!HasHighStoryAbility(2) && !HasHighStoryAbility(3))) return null;
+        string choiceId = Authored.storyPackFrame == PackRoot
+            ? PackRootOptions(PackStory()).ElementAtOrDefault(index).id : null;
         float? probability = Authored.storyPackFrame switch
         {
             PackCoins when index < 4 => statContainer.stats[index] >= PackFee ? 1f : 0f,
             PackNegotiate => PackCondition(PackNegotiationRoutes()[index]["condition"]) ? 1f : 0f,
             PackToss => .5f,
-            PackRoot when index == 0 => statContainer.stats.Any(stat => stat >= PackFee) ? 1f : 0f,
-            PackRoot when index == 1 && (string)PackChoice(PackStory(), "C2")["mini_game"]["type"] == "gambling" => .5f,
-            PackRoot when index == 2 => PackRequirementProbability(PackChoice(PackStory(), "C3")["requirement"]),
-            PackRoot when index == 3 => 0f,
+            PackRoot when choiceId == "C1" => statContainer.stats.Any(stat => stat >= PackFee) ? 1f : 0f,
+            PackRoot when choiceId == "C2" && (string)PackChoice(PackStory(), "C2")["mini_game"]["type"] == "gambling" => .5f,
+            PackRoot when choiceId == "C3" => PackRequirementProbability(PackChoice(PackStory(), "C3")["requirement"]),
             _ => null
         };
         if (!probability.HasValue)
-            return Authored.storyPackFrame == PackRoot && index == 1 ?
+            return choiceId == "C2" ?
                 "결투 결과는 전투로 결정됩니다." : null;
         string number = HasHighStoryAbility(2) ? $"성공 확률 {Mathf.RoundToInt(probability.Value * 100)}%" : null;
         string words = HasHighStoryAbility(3) ? probability.Value switch

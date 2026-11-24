@@ -20,6 +20,8 @@ public partial class DecisionManager
                 calendarDay > 0 ? progress.elapsedSeconds / calendarDay : 0);
         }
         progress.learning ??= new MineLearningProgress();
+        if (journeyCoinSupply?.CanStageCoins == true)
+            journeyCoinSupply.BindLearningBoard(progress.learning, SaveGuideCheckpointForLearning);
         learningStation.DisplayCoinCounts = journeyCoinSupply?.IsReady == true
             ? journeyCoinSupply.AvailableCoinCounts : null;
         learningStation.Initialize(progress.learning,session.RunSeed,()=>statContainer.stats,
@@ -30,11 +32,19 @@ public partial class DecisionManager
                 if(stats[0]>0) return true;
                 FinishRunAndReturnToMainMenu("학습 비용 지불 후 힘 0");return false;
             },
-            (ability,reward)=>
+            (reward, combos)=>
             {
-                var stats=statContainer.stats;stats[ability]+=reward;statContainer.SetStats(stats);guideProgress.committedStats=stats;SyncAbilityWallet();
+                var before = statContainer.stats;
+                var stats = (int[])before.Clone();
+                for (int ability = 0; ability < stats.Length; ability++) stats[ability] += reward[ability];
+                statContainer.SetStats(stats);
+                guideProgress.committedStats = stats;
+                SyncAbilityWallet();
+                uiController?.ShowLearningReward(before, stats, combos,
+                    journeyBoardInput != null ? journeyBoardInput.inputCamera : Camera.main,
+                    StudyGrid, coinDropController, journeyCoinSupply?.CanStageCoins == true
+                        ? journeyCoinSupply : null);
             },SaveGuideCheckpointForLearning);
-        backpackInventory?.BindStudyBooks(learningStation);
     }
     private void SaveGuideCheckpointForLearning() => SaveGuideCheckpoint();
     private void OnApplicationQuit()
@@ -49,8 +59,14 @@ public partial class DecisionManager
             (duelMiniGame!=null && duelMiniGame.IsRunning) || (tutorialMiniGames!=null && tutorialMiniGames.CurrentKnightTarget!=null);
         float? calendarDays = mine != null && mineRules?.dayCycle is ChapterDayCycle cycle
             ? cycle.ElapsedDays(mine.elapsedSeconds) : null;
-        learningStation?.Tick(Time.deltaTime, busy, stopStudying: task || mine?.resting == true, calendarDays: calendarDays);
+        learningStation?.Tick(Time.deltaTime, busy, stopStudying: task, calendarDays: calendarDays);
         if (learningStation != null)
+        {
             uiController?.ShowReading(learningStation, !busy && !task && guideProgress?.allocating != true);
+            if (IsMineBossEpisode && Authored?.nodeId == BossStudy && currentState == Constants.StoryState.Exploring &&
+                learningStation.Progress?.successfulStudies > Authored.bossStudyStartCount &&
+                learningStation.CanBeginStudySession && !learningStation.HasComboStudy && learningStation.ReadingResult == null)
+                AdvanceAuthoredBoss();
+        }
     }
 }

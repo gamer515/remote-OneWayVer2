@@ -68,8 +68,59 @@ public sealed class CoinDropController : MonoBehaviour
     private int[] remainingCoins = new int[4];
     private Material[] activeCoinMaterials;
     private bool isCollecting;
+    private static readonly string[] AbilityCoinSounds =
+    {
+        "freesound_community-stone-dropping-6843_Power",
+        "240640__misscellany__metallic-whoosh_speed",
+        "freesound_community-pageturn-102978_Knowledge",
+        "mixkit-light-spell-873_charm"
+    };
+    private readonly AudioClip[] abilityCoinClips = new AudioClip[4];
+    private readonly AudioClip[] learningCoinClips = new AudioClip[4];
+    private static readonly string[] LearningCoinSounds =
+    {
+        "freesound_community-stones-falling-6375_Powers",
+        "floraphonic-rotate-movement-whoosh-1-185335_speeds",
+        "freesound_community-flipping-novel-80266_knowledges",
+        "universfield-magic-twinkle-244951_charms"
+    };
+    private readonly HashSet<int> soundedCoins = new HashSet<int>();
+    private AudioSource abilityCoinSource;
+    private int abilityCoinSoundFrame = -1;
 
     public int[] RemainingCoins => (int[])remainingCoins.Clone();
+
+    internal bool TryPlayAbilityCoinSound(GameObject coin, int type)
+    {
+        if (coin == null || (uint)type >= AbilityCoinSounds.Length) return false;
+        if (abilityCoinSoundFrame != Time.frameCount)
+        {
+            abilityCoinSoundFrame = Time.frameCount;
+            soundedCoins.Clear();
+        }
+        // The rack and the grab handler can see the same coin on a single pointer press.
+        if (!soundedCoins.Add(coin.GetInstanceID())) return false;
+        return PlayAbilityCoinClip(ref abilityCoinClips[type], AbilityCoinSounds[type]);
+    }
+
+    internal void PlayLearningCoinSound(int type) =>
+        PlayAbilityCoinClip(ref learningCoinClips[type], LearningCoinSounds[type]);
+
+    private bool PlayAbilityCoinClip(ref AudioClip clip, string path)
+    {
+        float volume = Mathf.Clamp01(PlayerPrefs.GetFloat("BGM_Volume", .5f));
+        if (volume <= 0f) return false;
+        clip ??= Resources.Load<AudioClip>("Audio/AbilityCoins/" + path);
+        if (clip == null) return false;
+        if (abilityCoinSource == null)
+        {
+            abilityCoinSource = gameObject.AddComponent<AudioSource>();
+            abilityCoinSource.playOnAwake = false;
+            abilityCoinSource.spatialBlend = 0f;
+        }
+        abilityCoinSource.PlayOneShot(clip, volume);
+        return true;
+    }
 
     // 새 Journey 코인통도 같은 저장 재고를 사용합니다. 생성 위치와 물리는 Journey 쪽에서 담당합니다.
     public bool TryConsumeCoin(int coinTypeIndex)
@@ -216,6 +267,7 @@ public sealed class CoinDropController : MonoBehaviour
         RefreshInventoryDisplay();
 
         ApplyDropMotion(bettingCoin);
+        TryPlayAbilityCoinSound(coin, coinTypeIndex);
     }
 
     /// <summary>

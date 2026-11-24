@@ -11,25 +11,42 @@ public class SaveManager
 
     public int CurrentRun => profile.currentRun;
 
+    // New runs already have a Progress file before the player reaches the journey.
+    public bool HasJourneyCheckpoint =>
+        HasSaveData("Progress") &&
+        (LoadPlayerPosition().HasValue ||
+         cachedProgress.chapterIndex > 0 || cachedProgress.episodeIndex > 0 || cachedProgress.storyIndex > 0 ||
+         !string.IsNullOrEmpty(cachedProgress.interactionPhase) ||
+         cachedProgress.finalBattlePending ||
+         cachedProgress.guideProgress?.mineChapter?.initialized == true ||
+         cachedProgress.guideProgress?.runIntroLinesSeen > 0);
+
     public SaveManager()
     {
         // 프로필의 현재 회차를 기준으로 진행도와 능력치의 저장 폴더를 고정합니다.
         profile = SaveIOService.Instance.LoadOrCreateProfile();
-        cachedProgress = SaveIOService.Instance.LoadRunData<GameProgress>(CurrentRun, "Progress")
-            ?? new GameProgress();
-        EnsureRunSeed();
+        var savedProgress = SaveIOService.Instance.LoadRunData<GameProgress>(CurrentRun, "Progress");
+        cachedProgress = savedProgress ?? new GameProgress();
+        bool newGame = savedProgress == null && !SaveIOService.Instance.RunDataExists(CurrentRun, "Stats");
+        EnsureRunSeed(persist: !newGame);
+        if (newGame)
+        {
+            var startingStats = SetStartingBalances(cachedProgress);
+            SaveIOService.Instance.SaveRunData(CurrentRun, "Progress", cachedProgress);
+            SaveIOService.Instance.SaveRunData(CurrentRun, "Stats", startingStats);
+        }
     }
 
     public int RunSeed => EnsureRunSeed();
 
-    private int EnsureRunSeed()
+    private int EnsureRunSeed(bool persist = true)
     {
         if (cachedProgress.runSeed != 0)
             return cachedProgress.runSeed;
 
         byte[] bytes = System.Guid.NewGuid().ToByteArray();
         cachedProgress.runSeed = System.Math.Max(1, System.BitConverter.ToInt32(bytes, 0) & int.MaxValue);
-        SaveIOService.Instance.SaveRunData(CurrentRun, "Progress", cachedProgress);
+        if (persist) SaveIOService.Instance.SaveRunData(CurrentRun, "Progress", cachedProgress);
         return cachedProgress.runSeed;
     }
 
@@ -437,14 +454,26 @@ public class SaveManager
         var stats = SaveIOService.Instance.LoadRunData<PlayerStats>(CurrentRun, "Stats");
         if (stats == null || stats.stats is { Length: > 0 }) return;
 
-        var startingStats = SetStartingBalances(progress);
+        var startingStats = SetStartingBalances(progress, randomize: false);
         SaveIOService.Instance.SaveRunCheckpoint(CurrentRun, "Progress", progress);
         SaveIOService.Instance.SaveRunData(CurrentRun, "Stats", startingStats);
     }
 
-    private static PlayerStats SetStartingBalances(GameProgress progress)
+    private static PlayerStats SetStartingBalances(GameProgress progress, bool randomize = true)
     {
         int[] balances = Enumerable.Repeat(StartingAbilityCoinsPerType, 4).ToArray();
+        if (randomize)
+        {
+            const int minimum = 1, maximum = 10, total = 20;
+            var random = new System.Random(progress.runSeed);
+            // Rejecting other totals gives every valid four-ability allocation the same chance.
+            do
+            {
+                for (int i = 0; i < balances.Length; i++)
+                    balances[i] = random.Next(minimum, maximum + 1);
+            }
+            while (balances.Sum() != total);
+        }
         progress.remainingCoins = (int[])balances.Clone();
         progress.guideProgress ??= new GuideProgress();
         progress.guideProgress.committedStats = (int[])balances.Clone();

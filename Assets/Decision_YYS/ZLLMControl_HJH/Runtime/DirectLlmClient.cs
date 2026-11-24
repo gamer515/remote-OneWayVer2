@@ -75,14 +75,15 @@ namespace OneWay.Decision.DirectLlm
             CancellationToken token, Func<string, bool> acceptCards = null)
         {
             if (maxTokens < 1 || maxTokens > 8192) throw new ArgumentOutOfRangeException(nameof(maxTokens));
-            return Generate(messages, maxTokens, seed, token, acceptCards);
+            return Generate(messages, maxTokens, seed, token,
+                acceptCards == null ? null : json => acceptCards(json) ? null : "GameValidationFailed");
         }
 
-        public Task<DirectLlmResult> GenerateDialogueAsync(string messages, CancellationToken token) =>
-            Generate(messages, null, 0, token, null);
+        public Task<DirectLlmResult> GenerateDialogueAsync(string messages, CancellationToken token,
+            Func<string, string> rejectDialogue = null) => Generate(messages, null, 0, token, rejectDialogue);
 
         private async Task<DirectLlmResult> Generate(string messages, int? maxTokens, int seed,
-            CancellationToken token, Func<string, bool> acceptCards)
+            CancellationToken token, Func<string, string> rejectOutput)
         {
             token.ThrowIfCancellationRequested();
             var parsed = DirectLlmProtocol.Messages(messages);
@@ -114,7 +115,8 @@ namespace OneWay.Decision.DirectLlm
                         if (!response.TransportSucceeded || response.StatusCode < 200 || response.StatusCode >= 300)
                             throw new DirectLlmFailure("HttpOrNetworkError");
                         var result = DirectLlmProtocol.Response(endpoint.provider, response.Body, maxTokens.HasValue);
-                        if (acceptCards != null && !acceptCards(result.CardsJson)) throw new DirectLlmFailure("GameValidationFailed");
+                        string rejection = rejectOutput?.Invoke(maxTokens.HasValue ? result.CardsJson : result.Text);
+                        if (rejection != null) throw new DirectLlmFailure(rejection);
                         token.ThrowIfCancellationRequested();
                         attempt.Code = "Success";
                         attempt.Seconds = watch.Elapsed.TotalSeconds;

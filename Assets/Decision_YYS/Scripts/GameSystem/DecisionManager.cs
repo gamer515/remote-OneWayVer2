@@ -63,10 +63,11 @@ public partial class DecisionManager : MonoBehaviour
     [Tooltip("코인통 왼쪽부터 Blue, Red, Yellow, Teal 순서의 Journey 코인 프리팹입니다.")]
     [SerializeField] private GameObject[] journeyCoinPrefabs;
     [SerializeField] private Collider journeyCoinRamp;
-    [SerializeField] private BackpackInventoryController backpackInventory;
+    [SerializeField] private BoxCollider journeyStudyGrid;
     [SerializeField] private TutorialMiniGameController tutorialMiniGames;
     [SerializeField] private DuelMiniGameBridge duelMiniGame;
     private JourneyCoinSupplyController journeyCoinSupply;
+    private BoxCollider StudyGrid => journeyStudyGrid;
     [Header("Player Movement")]
     [Tooltip("NPC와 대화할 때 플레이어가 실제로 걸어가서 멈추는 거리입니다.")]
     [SerializeField, Range(0.5f, 10f)] private float encounterStopDistance = 2f;
@@ -85,8 +86,6 @@ public partial class DecisionManager : MonoBehaviour
             journeyBoardInput = FindFirstObjectByType<JourneyBoardInput>();
         if (coinDropController == null)
             coinDropController = FindFirstObjectByType<CoinDropController>();
-        if (backpackInventory == null)
-            backpackInventory = FindFirstObjectByType<BackpackInventoryController>();
         if (tutorialMiniGames == null)
             tutorialMiniGames = FindFirstObjectByType<TutorialMiniGameController>();
         if (duelMiniGame == null)
@@ -95,6 +94,8 @@ public partial class DecisionManager : MonoBehaviour
 
     private void OnEnable()
     {
+        if (uiController != null) uiController.OnPlayerViewChanged += OnNpcPaymentViewChanged;
+        if (uiController != null) uiController.OnPlayerViewChanged += OnTaxCollectionViewChanged;
         if (statContainer != null)
         {
             statContainer.OnTargetStatReached += HandleTargetStatReached;
@@ -112,6 +113,13 @@ public partial class DecisionManager : MonoBehaviour
 
     private void OnDisable()
     {
+        npcBoardPaymentCost = null;
+        resumeNpcPaymentAfterTax = null;
+        if (uiController != null) uiController.OnPlayerViewChanged -= OnNpcPaymentViewChanged;
+        if (uiController != null) uiController.OnPlayerViewChanged -= OnTaxCollectionViewChanged;
+        StopTaxCollection();
+        StopNpcPaymentPresentation();
+        StopNpcRewardPresentation();
         journeyCoinSupply?.ClearBoardPayment();
         StopChapterSky();
         RestoreGuideKneel();
@@ -142,16 +150,29 @@ public partial class DecisionManager : MonoBehaviour
 
         if (GameManager.Instance.ResumeFinalBattle()) return;
 
-        // Background generation must not lock gameplay. Each dialogue loads ready content or its source.
         LocalStoryRuntimeService.TryResumePending();
         Initialize();
     }
 
     private void Update()
     {
+        if (endTaxCollection != null)
+        {
+            journeyCoinSupply?.CancelLearningSelection();
+            if (collectorCollectionView == null || !collectorCollectionView.isActiveAndEnabled)
+                FinishTaxCollectionPresentation();
+            return;
+        }
+        if (activeRunIntro != null) return;
         TickMineChapter();
         TickLearning();
-        if (uiController?.IsReadingOpen == true) return;
+        if (uiController?.IsReadingOpen == true)
+        {
+            journeyCoinSupply?.CancelLearningSelection();
+            return;
+        }
+        if (uiController?.IsComboGuideInputBlocked == true)
+            journeyCoinSupply?.CancelLearningSelection();
         if (uiController?.IsComboGuideInputBlocked != true)
         {
             if (journeyCoinSupply?.HasBoardPayment == true)
@@ -172,6 +193,7 @@ public partial class DecisionManager : MonoBehaviour
         }
 
         // 이동 명령과 화면 표현은 분리하고, 실제 도착한 프레임에서 이야기 화면을 엽니다.
+        if (TryOpenRoadsideEncounter()) return;
         if (encounterFlow != null && currentState == StoryState.MovingToEncounter && mine?.resting != true &&
             playerController != null && playerController.HasReachedTarget())
         {
@@ -201,6 +223,9 @@ public partial class DecisionManager : MonoBehaviour
 
         session = startData.Session;
         loadedProgress = startData.SaveManager.LoadProgress();
+        newRunEntrance = chapterIndex == 0 && episodeIndex == 0 &&
+            !startData.SavedPlayerPosition.HasValue && string.IsNullOrEmpty(loadedProgress.interactionPhase) &&
+            loadedProgress.guideProgress?.mineChapter?.initialized != true;
         guideProgress = loadedProgress.guideProgress ?? new GuideProgress();
         guideProgress.completedEffects ??= new List<string>();
         guideProgress.runHistory ??= new List<PlayedEncounterCardRecord>();
@@ -265,7 +290,8 @@ public partial class DecisionManager : MonoBehaviour
             chapterIndex == 0 && !startData.SavedPlayerPosition.HasValue;
         roadViewCameraController.Initialize(
             startData.Player.transform,
-            useInitialCameraPosition);
+            useInitialCameraPosition,
+            envController);
 
         if (loadedProgress.interactionPhase == SaveManager.CoastEndingPhase)
         {
@@ -279,18 +305,18 @@ public partial class DecisionManager : MonoBehaviour
         }
 
         coinDropController.InitializeInventory(startData.RemainingCoins);
-        backpackInventory?.Initialize(
-            startData.Inventory,
-            saveService.SaveInventoryState);
+        var dispenser = FindFirstObjectByType<LearningDispenserView>();
+        dispenser?.BindStudyGrid(StudyGrid);
+        dispenser?.BindTaxScale(taxScaleView);
+        taxScaleView?.BindCoinPrefabs(journeyCoinPrefabs);
         if (journeyBoardInput != null)
         {
             journeyCoinSupply = new JourneyCoinSupplyController(
                 journeyBoardInput, journeyCoinPrefabs, coinDropController,
                 saveService.SaveRemainingCoins);
-            journeyCoinSupply.SetBoardGrid(backpackInventory?.StudyGrid);
+            journeyCoinSupply.SetBoardGrid(StudyGrid);
             journeyCoinSupply.CoinRamp = journeyCoinRamp;
             journeyCoinSupply.DropRunner = this;
-            var dispenser = FindFirstObjectByType<LearningDispenserView>();
             if (dispenser != null)
             {
                 journeyCoinSupply.WhiteBoard = dispenser.WhiteBoard;
@@ -501,6 +527,7 @@ private void SetYellowInputInteractable(bool interactable)
         }
 
         currentScenarioPath = mainStory.chapterId + "/" + mainStory.episodeIds[episodeIndex];
+        MainMenuSoundManager.Instance?.SetDecisionChapter(mainStory.chapterId);
         PreloadNextTerrain();
         InitializeMineChapter();
         InitializeLearning();
@@ -540,7 +567,7 @@ private void SetYellowInputInteractable(bool interactable)
                     try { LocalStoryDialogueQueue.FinalizeRun(SaveIOService.Instance,session.RunNumber); }
                     catch(Exception e) { LocalStoryLog.Write(LocalStoryLogStage.Failed,"회차 종료 감정 저장: "+e.Message,this); }
                 },
-                () => { int next = GameManager.Instance.PrepareNextPlaythrough(); LocalStoryRuntimeService.TryResumePending(); return next; },
+                () => GameManager.Instance.PrepareNextPlaythrough(),
                 () => sceneTransitionService.LoadMainMenuScene());
         Debug.Log($"[Story] {session?.RunNumber ?? 1}회차 {reason}. " +
             "설정된 시작 챕터에서 다음 회차를 준비하고 메인 메뉴로 이동합니다.", this);
@@ -612,6 +639,11 @@ private void SetYellowInputInteractable(bool interactable)
     private void HandleScreenClicked()
     {
         if (uiController != null && (uiController.IsReadingOpen || uiController.IsComboGuideInputBlocked)) return;
+        if (activeRunIntro != null)
+        {
+            AdvanceRunIntro();
+            return;
+        }
         HandleEncounterYellowPressed();
     }
 

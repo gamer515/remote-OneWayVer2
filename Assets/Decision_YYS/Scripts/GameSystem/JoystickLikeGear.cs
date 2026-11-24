@@ -170,6 +170,7 @@ public class JoystickLikeGear : MonoBehaviour
             return;
 
         currentGearSlot = slot;
+        UiInteractionAudio.PlayGearSteps(1);
         OnCoinTypeChanged?.Invoke(SelectedCoinIndex);
     }
 
@@ -197,6 +198,7 @@ public class JoystickLikeGear : MonoBehaviour
             : (targetPosition.y >= 0f ? 3 : 4);
         if (currentGearSlot == slot) return;
         currentGearSlot = slot;
+        UiInteractionAudio.PlayGearSteps(1);
         OnCoinTypeChanged?.Invoke(SelectedCoinIndex);
     }
 

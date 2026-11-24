@@ -45,22 +45,29 @@ public sealed partial class MineLearningStation
     }
 
     private StudyRules study;
+    [Header("Book production and storage")]
+    [SerializeField, Min(0)] private int extraProductionQueueSlots = 5;
+    [SerializeField, Min(1)] private int looseBookStorageLimit = 8;
     private float studyDaySeconds;
     private float nextStudySave;
     public bool UsesStudyRules => study != null;
+    public int ProductionQueueLimit => Capacity.waiting + (UsesStudyRules ? extraProductionQueueSlots : 0);
+    public int LooseBookStorageLimit => Mathf.Max(Capacity.simultaneous, looseBookStorageLimit);
+    private bool CanDeliverStudyBook => progress.active.All(job => job.onBoard) &&
+        progress.active.Count(job => !IsReadingPlacement(job) && !IsStoredBook(job) && !job.comboStudy) < LooseBookStorageLimit;
     public string StudyResult { get; private set; }
     public bool StudyResultSucceeded { get; private set; }
     public float StudyResultUntil { get; private set; }
     public bool IsDailyLimitBlocking => study != null && CanStudyBooks &&
         progress.attemptsToday >= TodayLimit &&
-        progress.active.Any(job => job.onBoard && (job.boardIndex == 1 || IsReadingPlacement(job)) &&
+        progress.active.Any(job => job.onBoard && job.stackOrder == 0 && (job.boardIndex == 1 || IsReadingPlacement(job)) &&
             !job.started && !job.held && CanRead(job));
     public int Stock(int ability) => progress?.stock?[ability] ?? 0;
     public int RefillCost(int ability) => study == null ? 0 :
         study.refillBase + (progress?.refills?[ability] ?? 0) * study.refillIncrease;
     public bool HasComboStudy => progress.active.Any(job => job.comboStudy);
     public bool CanBeginStudySession => CanStudyBooks && CurrentStudy == null &&
-        progress.pendingReading.Count == 0;
+        progress.pendingReading.Count == 0 && ReadingPreview == null;
 
     private MineLearningJob CurrentStudy => progress.active.Find(job => job.started && IsReadingPlacement(job)) ??
         progress.active.Find(IsReadingPlacement);
@@ -138,22 +145,35 @@ public sealed partial class MineLearningStation
             PrepareStrengthTutorial(tutorial);
             progress.active.Add(tutorial);
         }
+        RestoreBookshelf();
     }
 
-    private bool RefreshDay()
+    private bool RefreshDay(bool renewAllowance = true)
     {
         int day = Mathf.FloorToInt(progress.clockDays);
         if (day == progress.day) return false;
         progress.day = day;
-        ReplenishStudy();
+        if (renewAllowance)
+        {
+            progress.attemptsToday = 0;
+            notice = null;
+        }
         Array.Clear(progress.refills, 0, progress.refills.Length);
         return true;
     }
 
-    public void ReplenishStudy()
+    public void RecoverStudyAfterRest(float? skippedToCalendarDay)
     {
         if (study == null || progress == null) return;
-        progress.attemptsToday = 0;
+        if (skippedToCalendarDay.HasValue)
+        {
+            // The rest skipped the night. Advance the calendar without granting a second refill.
+            progress.clockDays = skippedToCalendarDay.Value;
+            RefreshDay(renewAllowance: false);
+        }
+        int limit = TodayLimit;
+        int recovered = (limit + 1) / 2;
+        progress.attemptsToday = Mathf.Max(0, Mathf.Min(progress.attemptsToday, limit) - recovered);
         notice = null;
     }
 
@@ -189,13 +209,12 @@ public sealed partial class MineLearningStation
     {
         if (progress.producing != null) return Explain("다른 책을 만들고 있습니다.");
         if (Stock(ability) <= 0) return Explain("책이 없습니다. 해당 능력 코인을 투입구에 넣으세요.");
-        var capacity = Capacity;
-        bool outletAvailable = progress.active.Count < capacity.simultaneous && progress.active.All(job => job.onBoard);
-        if (progress.queued.Count >= capacity.waiting && !(capacity.waiting == 0 && outletAvailable))
-            return Explain("학습 대기열이 가득 찼습니다.");
+        int queueLimit = ProductionQueueLimit;
+        if (progress.queued.Count >= queueLimit && !(queueLimit == 0 && CanDeliverStudyBook))
+            return Explain("생성 대기열이 가득 찼습니다.");
 
         var amounts = wallet();
-        var available = authoredBooks.Where(entry => entry.ability == ability && CanRead(entry, amounts)).ToArray();
+        var available = authoredBooks.Where(entry => ProductionAbility(entry) == ability && CanRead(entry, amounts)).ToArray();
         if (available.Length == 0) return Explain("이 분야의 책을 읽으려면 지능이나 해당 능력이 더 필요합니다.");
         var book = available[progress.nextBook[ability] % available.Length];
         progress.nextBook[ability]++;
@@ -206,6 +225,7 @@ public sealed partial class MineLearningStation
             generationRemaining = book.generationSeconds, bookId = book.id, bookName = book.name,
             requiresBoard = true
         };
+        AssignBookNumber(progress.producing);
         notice = null;
         save?.Invoke();
         return true;
@@ -227,55 +247,126 @@ public sealed partial class MineLearningStation
         return true;
     }
 
-    public bool SubmitShelf(Vector3 pickupPoint)
+    internal const int BookshelfCompartments = 6;
+    internal const int BookshelfSlots = BookshelfCompartments * 3;
+    private const int LegacyShelfBoard = 3, SingleBookShelfBoard = 4, BookshelfBoard = 5;
+
+    internal static bool IsStoredBook(MineLearningJob job) =>
+        job.boardIndex is LegacyShelfBoard or SingleBookShelfBoard or BookshelfBoard;
+
+    internal static int BookshelfSlot(MineLearningJob job)
     {
-        if (!UsesStudyRules || !CanBeginStudySession || HasComboStudy) return false;
-        var batch = progress.active.Where(job => job.boardIndex == 3 && !job.started).ToArray();
-        if (batch.Length < 2)
-            return Explain("책장에 책을 두 권 이상 올려 주세요.");
-        if (!study.combos.Any(combo => !progress.rewardedCombos.Contains(combo.id) &&
-            combo.books.All(id => batch.Any(job => job.bookId == id))) &&
-            !readingCombos.Any(combo => CanCompleteReadingCombo(combo, batch)))
-            return Explain("이 조합으로는 콤보가 발동하지 않습니다.");
-        if (batch.Length > Capacity.simultaneous ||
-            batch.Length > TodayLimit - progress.attemptsToday || !batch.All(CanRead))
-            return Explain("콤보 학습에는 함께 읽을 자리와 오늘의 학습량이 필요합니다.");
+        int maxSlot = job.boardIndex switch
+        {
+            LegacyShelfBoard => 4,
+            SingleBookShelfBoard => BookshelfCompartments - 1,
+            _ => BookshelfSlots - 1
+        };
+        return Mathf.Clamp(Mathf.RoundToInt(job.boardU * maxSlot), 0, maxSlot);
+    }
+
+    private void RestoreBookshelf()
+    {
+        progress.discoveredBookIds ??= new List<string>();
+        bool changed = false;
+        foreach (var job in progress.active.Where(job => !job.comboStudy &&
+                     job.boardIndex is LegacyShelfBoard or SingleBookShelfBoard))
+        {
+            job.boardU = BookshelfSlot(job) / (BookshelfSlots - 1f);
+            job.boardIndex = BookshelfBoard;
+            changed = true;
+        }
+        foreach (string id in progress.active.Concat(progress.queued).Concat(progress.stored)
+                     .Select(job => job.bookId).Concat(progress.completedReading).Concat(progress.mastered)
+                     .Concat(progress.pendingReading))
+            changed |= DiscoverBook(id);
+        if (changed) save?.Invoke();
+    }
+
+    internal bool CanStoreBook(MineLearningJob book, int slot) => CanMoveBooks && !book.comboStudy &&
+        (uint)slot < BookshelfSlots && progress.active.Contains(book) &&
+        !progress.active.Any(job => job != book && IsStoredBook(job) && BookshelfSlot(job) == slot);
+
+    internal bool TryStoreBook(MineLearningJob book, int slot)
+    {
+        if (!CanStoreBook(book, slot)) return false;
+        RememberPlacement(book, slot / (BookshelfSlots - 1f), .5f, BookshelfBoard);
+        return true;
+    }
+
+    internal IEnumerable<IGrouping<int, MineLearningJob>> BoardStacks() => progress.active
+        .Where(job => job.stackOrder > 0).OrderBy(job => job.stackOrder).GroupBy(job => job.stackId);
+
+    internal bool TryStackBook(MineLearningJob book, MineLearningJob target)
+    {
+        if (!UsesStudyRules || book == target || book.started || book.comboStudy || target.started ||
+            target.held || target.comboStudy || !target.onBoard || target.boardIndex > 1 ||
+            !progress.active.Contains(book) || !progress.active.Contains(target)) return false;
+        if (target.stackOrder == 0)
+        {
+            target.stackId = progress.active.Max(job => job.stackId) + 1;
+            AssignStackOrder(target, 1);
+        }
+        int top = progress.active.Where(job => job.stackId == target.stackId && job.stackOrder > 0)
+            .Max(job => job.stackOrder);
+        book.stackId = target.stackId;
+        AssignStackOrder(book, top + 1);
+        book.onBoard = true;
+        book.boardIndex = target.boardIndex;
+        book.boardU = target.boardU;
+        book.boardV = target.boardV;
+        save?.Invoke();
+        return true;
+    }
+
+    private static void AssignStackOrder(MineLearningJob book, int order)
+    {
+        book.stackOrder = order;
+        if (book.stackYaw == 0f) book.stackYaw = Mathf.Lerp(-10f, 10f, Mathf.Repeat(order * .618034f, 1f));
+    }
+
+    internal MineLearningJob[] ComboSubmission(int stackId) => progress.active
+        .Where(job => job.stackOrder > 0 && job.stackId == stackId)
+            .OrderBy(job => job.stackOrder).ToArray();
+
+    internal bool CanSubmitCombo(MineLearningJob[] batch)
+    {
+        if (!UsesStudyRules || !CanBeginStudySession || HasComboStudy || ReadingResult != null ||
+            batch.Length < 2 || batch.Length > TodayRemaining ||
+            batch.Any(job => job.started || job.held || !CanRead(job))) return false;
+        return ColorComboPattern(batch) != null || NumberComboReward(batch) != null ||
+            study.combos.Any(combo => !progress.rewardedCombos.Contains(combo.id) &&
+            combo.books.All(id => batch.Any(job => job.bookId == id))) ||
+            readingCombos.Any(combo => !IsAbilityCombo(combo) && CanCompleteReadingCombo(combo, batch));
+    }
+
+    internal bool SubmitCombo(Vector3 pickupPoint, int stackId)
+    {
+        var batch = ComboSubmission(stackId);
+        if (!CanSubmitCombo(batch)) return false;
+        progress.numberComboRewardId = (string)NumberComboReward(batch)?["id"];
+        progress.numberComboChoicesRemaining = progress.numberComboRewardId != null ? batch.Length : 0;
+        progress.numberComboBookCount = progress.numberComboChoicesRemaining;
+        progress.colorComboPattern = ColorComboPattern(batch);
+        progress.colorComboChoicesRemaining = progress.colorComboPattern != null ? batch.Length : 0;
         progress.comboSuccesses.Clear();
         progress.comboBoardPoint = pickupPoint;
-        foreach (var job in batch)
-        {
-            job.comboStudy = true;
-            job.boardIndex = 1;
-        }
+        foreach (var job in batch) job.comboStudy = true;
         save?.Invoke();
         return true;
     }
 
-    public event Action StoredBooksChanged;
+    internal static bool IsQueuedComboBook(MineLearningJob job) =>
+        job.comboStudy && (job.stackOrder > 0 || job.boardIndex == LegacyShelfBoard);
 
-    public bool StoreBook(MineLearningJob job)
+    internal MineLearningJob[] NextComboWave()
     {
-        if (!CanMoveBooks || job == null || job.comboStudy || !job.onBoard || !progress.active.Remove(job)) return false;
-        job.onBoard = job.held = false;
-        progress.stored.Add(job);
-        notice = $"{GetBookDisplayName(job)} / 가방에 보관";
-        Rebuild();
-        save?.Invoke();
-        StoredBooksChanged?.Invoke();
-        return true;
-    }
-
-    public bool RestoreBook(MineLearningJob job, float u, float v, int boardIndex = 0)
-    {
-        if (!CanMoveBooks || job == null || progress.active.Count >= Capacity.simultaneous)
-            return Explain("보드에 놓을 수 있는 책 자리가 없습니다.");
-        if (!progress.stored.Remove(job)) return false;
-        progress.active.Add(job);
-        job.transit = 0;
-        RememberPlacement(job, u, v, boardIndex);
-        Rebuild();
-        StoredBooksChanged?.Invoke();
-        return true;
+        if (!HasComboStudy || !CanBeginStudySession || ReadingResult != null ||
+            progress.active.Any(job => job.comboStudy && !IsQueuedComboBook(job)))
+            return Array.Empty<MineLearningJob>();
+        int slots = Mathf.Min(Capacity.simultaneous, TodayRemaining);
+        return progress.active.Where(IsQueuedComboBook)
+            .OrderBy(job => job.stackOrder).ThenBy(job => job.boardU).Take(slots).ToArray();
     }
 
     private bool TickStudy(float seconds, bool stop, float? calendarDays)
@@ -291,7 +382,7 @@ public sealed partial class MineLearningStation
             // Leave a living player's last health coin available for movement and recovery.
             int floor = ability == 0 && amounts[ability] > 0 ? 1 : 0;
             int loss = (int)Math.Min(Math.Max(0, amounts[ability] - floor), (long)periods * study.decayCoins);
-            if (loss > 0) grant(ability, -loss);
+            if (loss > 0) GrantSingleAbility(ability, -loss);
             progress.lastStudyDay[ability] += periods * decayDays;
             changed = true;
         }
@@ -304,6 +395,7 @@ public sealed partial class MineLearningStation
                 if (progress.producing.generationRemaining <= 0)
                 {
                     PrepareStrengthTutorial(progress.producing);
+                    DiscoverBook(progress.producing.bookId);
                     progress.queued.Add(progress.producing);
                     progress.producing = null;
                     enteredQueue = changed = true;
@@ -321,7 +413,7 @@ public sealed partial class MineLearningStation
                 {
                     PrepareStrengthTutorial(job);
                     if (!CanRead(job)) notice = $"{GetBookDisplayName(job)} / 읽기 능력치 부족";
-                    else if (job.started || progress.attemptsToday < TodayLimit)
+                    else if (job.started || TodayRemaining > 0)
                     {
                         if (!job.started)
                         {
@@ -345,7 +437,7 @@ public sealed partial class MineLearningStation
                 i++;
             }
             // Give a newly completed book a rendered frame in the queue before delivery starts.
-            if (!enteredQueue) changed |= FillSlots();
+            if (!enteredQueue && ReadingPreview == null) changed |= FillSlots();
         }
         if (Time.unscaledTime >= nextStudySave)
         {
@@ -379,35 +471,33 @@ public sealed partial class MineLearningStation
         var coins = new int[4];
         int reward = book?.reward ?? job.reward;
         coins[job.ability] = reward;
-        AwardCoins(job.ability, reward);
         progress.successfulStudies++;
         if (book != null)
         {
             AwardSkill(book.skill, book.skillReward);
             if (!progress.mastered.Contains(book.id)) progress.mastered.Add(book.id);
         }
-        var combos = new List<string>();
+        var combos = new List<LearningComboReward>();
         if (job.comboStudy) progress.comboSuccesses.Add(job.bookId);
         foreach (var combo in study.combos)
         {
             if (!job.comboStudy || HasComboStudy || progress.rewardedCombos.Contains(combo.id) ||
                 !combo.books.All(progress.comboSuccesses.Contains)) continue;
             progress.rewardedCombos.Add(combo.id);
-            for (int ability = 0; ability < combo.coins.Length; ability++)
-            {
-                AwardCoins(ability, combo.coins[ability]);
-                coins[ability] += combo.coins[ability];
-            }
+            var bonus = BoostComboCoins(combo.coins, combo.books.Length);
+            for (int ability = 0; ability < bonus.Length; ability++)
+                coins[ability] += bonus[ability];
             AwardSkill(combo.skill, combo.skillReward);
-            combos.Add(combo.name.Replace('·', '/').Replace('×', '/'));
+            combos.Add(new LearningComboReward(combo.name.Replace('·', '/').Replace('×', '/'), bonus));
         }
+        AwardCoins(coins, combos);
         if (job.comboStudy && !HasComboStudy) progress.comboSuccesses.Clear();
         var rewards = coins.Select((amount, ability) => amount > 0 ? $"{AbilityNames[ability]} +{amount}" : null)
             .Where(text => text != null).ToList();
         var skill = study.skills.FirstOrDefault(item => item.id == book?.skill);
         if (skill != null && book.skillReward > 0) rewards.Add($"{skill.name} +{book.skillReward}");
         string detail = rewards.Count == 0 ? "획득 없음" : string.Join(" / ", rewards);
-        if (combos.Count > 0) detail += "\n콤보 " + string.Join(" / ", combos);
+        if (combos.Count > 0) detail += "\n콤보\n" + string.Join("\n", combos.Select(ComboResult));
         ShowStudyResult(true, "학습 성공\n" + detail);
     }
 
@@ -422,11 +512,19 @@ public sealed partial class MineLearningStation
         StudyResultUntil = Time.unscaledTime + 3.5f;
     }
 
-    private void AwardCoins(int ability, int amount)
+    private void AwardCoins(int[] amounts, IReadOnlyList<LearningComboReward> combos)
     {
-        if (amount == 0) return;
-        grant(ability, amount);
-        progress.lastStudyDay[ability] = progress.day;
+        if (!amounts.Any(amount => amount != 0)) return;
+        grant(amounts, combos);
+        for (int ability = 0; ability < amounts.Length; ability++)
+            if (amounts[ability] != 0) progress.lastStudyDay[ability] = progress.day;
+    }
+
+    private void GrantSingleAbility(int ability, int amount)
+    {
+        var delta = new int[4];
+        delta[ability] = amount;
+        grant(delta, null);
     }
 
     private void AwardSkill(string id, int amount)

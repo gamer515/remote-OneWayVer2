@@ -8,6 +8,53 @@ using static Constants;
 
 public partial class DecisionManager
 {
+    private static readonly string[] FirstRunIntro =
+    {
+        "여기 뭐지? 방금까지 학교 앞이었는데.",
+        "저 불빛 끝에도 길이 있나? 생각보다 깊어 보이는데.",
+        "모험 좀 해 보고 싶다고는 했지만… 이런 데 떨어질 줄은 몰랐지.",
+        "일단 서 있기만 해서는 아무것도 안 되잖아. 뭐라도 해야 하지 않을까?",
+        "책이 있네. 힘, 속도, 지능, 매력… 이런 것도 책으로 배울 수 있나?",
+        "뭘 익힐 때마다 코인이 생기는 건가? 길을 지나거나 물건을 살 때 쓸 수도 있겠네.",
+        "좋아. 일단 한 권만 읽고, 저 불빛 있는 데까지 가 보자."
+    };
+    private static readonly string[] ReturningRunIntro =
+    {
+        "뭐야, 다시 돌아온 건가? 이번엔 어떤 능력부터 키워 볼까?"
+    };
+    private string[] activeRunIntro;
+    private bool newRunEntrance;
+
+    private bool TryStartRunIntro()
+    {
+        if (currentScenarioPath != MineAuthoredStory.Episode ||
+            (!newRunEntrance && guideProgress.runIntroLinesSeen <= 0))
+            return false;
+
+        var lines = session.RunNumber == 1 ? FirstRunIntro : ReturningRunIntro;
+        if (guideProgress.runIntroLinesSeen >= lines.Length) return false;
+        activeRunIntro = lines;
+        currentState = StoryState.Transitioning;
+        SetYellowInputInteractable(true);
+        AdvanceRunIntro();
+        return true;
+    }
+
+    private void AdvanceRunIntro()
+    {
+        int index = guideProgress.runIntroLinesSeen;
+        if (index >= activeRunIntro.Length)
+        {
+            activeRunIntro = null;
+            BeginExploration();
+            return;
+        }
+
+        presentationController.ShowDialogue(new Dialogue { text = activeRunIntro[index], speakerId = "나", type = "Next" });
+        guideProgress.runIntroLinesSeen = index + 1;
+        SaveGuideCheckpoint();
+    }
+
     private bool guideCoinBusy;
     private PlayableGraph guideKneelGraph;
     private Animator guideKneelAnimator;
@@ -115,6 +162,7 @@ public partial class DecisionManager
         }
         if (!guideProgress.completedEffects.Contains(key))
         {
+            bool resumedEffect = guideProgress.activeEffectId == key;
             currentState = StoryState.Transitioning;
             SetYellowInputInteractable(false);
             if (guideProgress.activeEffectId != key)
@@ -162,6 +210,8 @@ public partial class DecisionManager
             storyEvents.Add(record);
             guideProgress.activeEffectId = null;
             SaveGuideCheckpoint();
+            if (!resumedEffect && action.kind == "return_knowledge")
+                uiController?.ShowCoinGains(record.coinsBefore, record.coinsAfter);
         }
         currentState = StoryState.ShowingStory;
         SetYellowInputInteractable(true);

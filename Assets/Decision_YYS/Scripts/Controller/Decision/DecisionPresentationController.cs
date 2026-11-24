@@ -41,18 +41,26 @@ public sealed class DecisionPresentationController
         uiController.ActiveOptionTextUi(true);
     }
 
-    public void ShowDialogue(Dialogue dialogue)
+    public void ShowDialogue(Dialogue dialogue, string voiceNpcId = null)
     {
         if (uiController == null || dialogue == null)
             return;
 
         uiController.ActiveOptionTextUi(false);
         uiController.ShowEventView();
-        uiController.ChangeUiText(TextTarget.FrontDialogue, dialogue);
+        uiController.ChangeUiText(TextTarget.FrontDialogue, dialogue, voiceNpcId: voiceNpcId);
     }
 
-    public void ConfirmChoice(string text) => uiController?.AppendPlayerChoice(text);
-    public void ShowInteraction(string text, string characterId) => uiController?.AppendInteraction(text, characterId);
+    public void ConfirmChoice(string text)
+    {
+        uiController?.StopDialogueVoice();
+        uiController?.AppendPlayerChoice(text);
+    }
+    public void ShowInteraction(string text, string characterId)
+    {
+        uiController?.StopDialogueVoice();
+        uiController?.AppendInteraction(text, characterId);
+    }
 
     public void ExitChoice()
     {

@@ -25,6 +25,7 @@ public sealed class GuideCoinAction
 [Serializable]
 public sealed class GuideProgress
 {
+    public int runIntroLinesSeen;
     public MineAuthoredProgress authoredMine;
     public MineChapterProgress mineChapter;
     public int[] knowledgeBefore;
@@ -49,6 +50,7 @@ public sealed class GuideProgress
 [Serializable]
 public sealed class MineAuthoredProgress
 {
+    public int bossStudyStartCount;
     public int contentVersion;
     public bool shortStoryPack;
     public int shortLayoutSeed;
@@ -59,6 +61,8 @@ public sealed class MineAuthoredProgress
     public bool storyPackNegotiated, storyPackTaskWon;
     public string storyPackRevealedHint;
     public float storyPackTaskRemaining;
+    public int storyPackShortcutSide;
+    public bool storyPackShortcutWon;
     public string eventId, nodeId, pendingPet;
     public List<string> flags = new List<string>();
     public List<string> choices = new List<string>();

@@ -21,12 +21,12 @@ using UnityEngine;
     public bool paidCharm;
     public string returnStoryPath;
 }
-[Serializable] public sealed class MineChapterProgress
+[Serializable] public sealed class MineChapterProgress : MineCollectorProgress
 {
     public List<MinePlaceVisit> visits = new List<MinePlaceVisit>();
     public List<MineNpcBalance> recipients = new List<MineNpcBalance>();
     public List<string> completedActions = new List<string>();
-    public float elapsedSeconds, savedDayLength, collectorZ, fatigue;
+    public float elapsedSeconds, savedDayLength, fatigue;
     public bool initialized, resting;
     public bool variedRoomLayout;
     public int collected, persuasionAttempts;
@@ -35,28 +35,42 @@ using UnityEngine;
     public int racePresses;
     public float activityRemaining;
     public int[] activityDelta;
+    public int nextTaxDay, taxScheduleTier, taxScheduleInterval, collectorScheduleVersion;
+    public string taxChapterId;
+    public bool collectorOpeningCompleted;
+    public List<MineCollectorProgress> collectorPatrols = new List<MineCollectorProgress>();
+    public List<MineTaxArrear> taxArrears = new List<MineTaxArrear>();
+    public MineLearningProgress learning = new MineLearningProgress();
+}
+
+// The inherited fields retain the old single-patrol checkpoint layout for migration.
+[Serializable] public class MineCollectorProgress
+{
+    public int collectorDay = -1;
+    public int collectorGlobalChunk = -1;
+    public bool collectorPending;
+    public float collectorZ, collectorEntryZ;
+    public Vector3[] collectorPositions;
     public int collectorRouteVersion, collectorCount, collectorPhase, collectorStop;
     public float collectorWait;
     public bool collectorPassedPlayer;
     public int collectorNpcPauseIndex, collectorNpcWitnessIndex;
     public int collectorNpcActorIndex, collectorNpcWitnessActor;
     public float collectorNpcPause;
-    public int nextTaxDay, taxScheduleTier, taxScheduleInterval;
-    public string taxChapterId;
     public bool taxPatrolActive;
-    public bool collectorOpeningCompleted;
     public float collectorRouteStartZ, collectorRouteEndZ;
     public bool collectorReturning;
     public int collectorChunkIndex;
     public bool collectorChaseClosed;
     public MineTaxInvoice taxInvoice;
+    public string shortcutPursuitInvoiceId;
     public bool HasTaxInvoice => taxInvoice?.lines?.Length > 0;
-    public MineLearningProgress learning = new MineLearningProgress();
 }
 
 [Serializable] public sealed class MineCollectorPatrolSettings
 {
     public int inspectionStart = 1, inspectionIncrease = 1;
+    public float spawnLeadDistance = 25f;
     public float chaseSpeedStart = 2.70f, chaseSpeedIncrease = .20f, chaseSpeedMax = 3.60f;
 
     public int MinimumCoins(int chunkIndex) => Mathf.Max(0, inspectionStart + inspectionIncrease * chunkIndex);
@@ -84,10 +98,14 @@ using UnityEngine;
     public static MineChapterSettings Load(string document = "Chapter_01/Rules")
     {
         var authored = ChapterWorkbookContent.Get(document);
-        if (authored != null) return authored.ToObject<MineChapterSettings>();
-        var asset = Resources.Load<TextAsset>("Chapters/" + document);
-        if (asset == null) throw new InvalidOperationException("청크 1 시험 설정이 없습니다.");
-        return JsonUtility.FromJson<MineChapterSettings>(asset.text);
+        var asset = authored == null ? Resources.Load<TextAsset>("Chapters/" + document) : null;
+        if (authored == null && asset == null) throw new InvalidOperationException("청크 1 시험 설정이 없습니다.");
+        var rules = authored != null ? authored.ToObject<MineChapterSettings>() : JsonUtility.FromJson<MineChapterSettings>(asset.text);
+        // Existing installs keep their own copy of Rules.xlsx. Migrate only the old shipped timing.
+        if (document == "Chapter_01/Rules" && rules.dayCycle is { daySeconds: 135f, duskSeconds: 15f,
+                nightSeconds: 135f, dawnSeconds: 15f } cycle)
+            cycle.daySeconds = cycle.nightSeconds = 75f;
+        return rules;
     }
     public float SuccessChance(int ability) => successBase + successBonus * Mathf.Max(0, ability) / (Mathf.Max(0, ability) + abilityScale);
     public float StatusMultiplier(int strength) => 1 + Mathf.Max(0, statusThreshold - strength) * statusPenaltyPerPoint;

@@ -4,6 +4,18 @@ using System.Linq;
 using TMPro;
 using UnityEngine;
 
+public readonly struct LearningComboReward
+{
+    public readonly string Name;
+    public readonly int[] Coins;
+
+    public LearningComboReward(string name, int[] coins)
+    {
+        Name = name;
+        Coins = coins;
+    }
+}
+
 [Serializable] public sealed class MineLearningJob
 {
     public int ability, reward;
@@ -11,12 +23,16 @@ using UnityEngine;
     public bool onBoard;
     public bool requiresBoard;
     public string bookId, bookName;
+    public int bookNumber;
     public float boardU, boardV;
     public int boardIndex;
     public float generationRemaining;
     public bool started;
     public int studyAttempt;
     public bool comboStudy;
+    public int stackId;
+    public int stackOrder;
+    public float stackYaw;
     [NonSerialized] public bool held;
 }
 [Serializable] public sealed class ReadingComboProgress
@@ -25,10 +41,22 @@ using UnityEngine;
     public int payouts;
     public List<string> unusedBooks = new List<string>();
 }
+[Serializable] public sealed class LearningBoardCoin
+{
+    public int ability;
+    public Vector2 position;
+}
+
 [Serializable] public sealed class MineLearningProgress
 {
     public List<MineLearningJob> active = new List<MineLearningJob>(), queued = new List<MineLearningJob>();
     public int sequence;
+    public int bookNumberSequence;
+    public string numberComboRewardId;
+    public int numberComboChoicesRemaining;
+    public int numberComboBookCount;
+    public string colorComboPattern;
+    public int colorComboChoicesRemaining;
     public MineLearningJob producing;
     public List<MineLearningJob> stored = new List<MineLearningJob>();
     public List<string> mastered = new List<string>(), rewardedCombos = new List<string>();
@@ -41,10 +69,12 @@ using UnityEngine;
     public List<string> comboSuccesses = new List<string>();
     public List<string> pendingReading = new List<string>();
     public List<string> completedReading = new List<string>();
+    public List<string> discoveredBookIds = new List<string>();
     public List<string> claimedReadingCombos = new List<string>();
     public List<ReadingComboProgress> readingComboProgress = new List<ReadingComboProgress>();
     public string readingResult;
     public Vector3 comboBoardPoint;
+    public List<LearningBoardCoin> boardRewardCoins = new List<LearningBoardCoin>();
 }
 
 /// <summary>FIFO learning, paid once on entry; capacities and durations are authored in the Inspector.</summary>
@@ -94,7 +124,7 @@ public sealed partial class MineLearningStation : MonoBehaviour
     private MineLearningProgress progress;
     private Func<int[]> wallet;
     private Func<int,int,bool> charge;
-    private Action<int,int> grant;
+    private Action<int[], IReadOnlyList<LearningComboReward>> grant;
     private Action save;
     private int seed;
     private bool paused;
@@ -131,6 +161,7 @@ public sealed partial class MineLearningStation : MonoBehaviour
         return $"{AbilityName(job.ability)} 책";
     }
     public int TodayLimit => UsesStudyRules && wallet != null ? DailyLimit(CurrentCoins[2]) : 0;
+    public int TodayRemaining => Mathf.Max(0, TodayLimit - (progress?.attemptsToday ?? 0));
     private static bool IsReadingPlacement(MineLearningJob job) => job.onBoard && job.boardIndex == 2;
     public bool IsStudying(MineLearningJob job) => CanStudyBooks && job != null && job.onBoard && !job.held &&
         job.transit <= 0 && (study == null ? !job.requiresBoard || job.boardIndex == 1 :
@@ -138,6 +169,7 @@ public sealed partial class MineLearningStation : MonoBehaviour
     public void RememberPlacement(MineLearningJob job, float u, float v, int boardIndex = 0)
     {
         if(progress == null || !progress.active.Contains(job)) return;
+        job.stackId = job.stackOrder = 0;
         job.onBoard=true; job.boardU=Mathf.Clamp01(u); job.boardV=Mathf.Clamp01(v); job.boardIndex=boardIndex; save?.Invoke();
     }
     public CapacityStep Capacity
@@ -160,9 +192,11 @@ public sealed partial class MineLearningStation : MonoBehaviour
         authoredBooks = books?.books;
         authoredLearning = settings;
     }
-    public void Initialize(MineLearningProgress state, int runSeed, Func<int[]> getWallet, Func<int,int,bool> spend, Action<int,int> reward, Action persist)
+    public void Initialize(MineLearningProgress state, int runSeed, Func<int[]> getWallet, Func<int,int,bool> spend,
+        Action<int[], IReadOnlyList<LearningComboReward>> reward, Action persist)
     {
         progress=state; seed=runSeed; wallet=getWallet; charge=spend; grant=reward; save=persist;paused=studyPaused=false;notice=null;
+        CloseReadingPreview();
         readingBooks[StrengthTutorialBook] = ReadContent("Reading/StrengthTutorial");
         progress.active ??= new List<MineLearningJob>();
         progress.queued ??= new List<MineLearningJob>();
@@ -177,8 +211,20 @@ public sealed partial class MineLearningStation : MonoBehaviour
             status.fontSize = 19;
             status.color = new Color(.24f, .15f, .08f);
         }
-        for(int i=0;i<abilityButtons.Length;i++) { int ability=i; abilityButtons[i].onClick.RemoveAllListeners(); abilityButtons[i].onClick.AddListener(()=>Request(ability)); }
+        for (int i = 0; i < abilityButtons.Length; i++)
+        {
+            int ability = i;
+            var button = abilityButtons[i];
+            button.onClick.RemoveAllListeners();
+            button.onClick.AddListener(() => Request(ability));
+            UiInteractionAudio.Bind(button);
+        }
         bookTemplate.gameObject.SetActive(false); Rebuild();
+        bool numberedBooks = false;
+        foreach (var job in progress.active.Concat(progress.queued)
+                     .Concat(progress.stored ?? Enumerable.Empty<MineLearningJob>()).Append(progress.producing))
+            numberedBooks |= AssignBookNumber(job);
+        if (numberedBooks) save?.Invoke();
     }
     public bool Request(int ability)
     {
@@ -196,7 +242,7 @@ public sealed partial class MineLearningStation : MonoBehaviour
         float high = Mathf.Max(low, authoredLearning?.maximumSeconds ?? maximumSeconds);
         bool random = authoredLearning?.randomDuration ?? randomDuration;
         float seconds = random ? Mathf.Lerp(low, high, (float)MineChapterSettings.Roll(seed, progress.sequence++, "learning")) : book?.seconds ?? low;
-        progress.queued.Add(new MineLearningJob
+        var job = new MineLearningJob
         {
             ability = ability,
             reward = book?.reward ?? Mathf.Max(0, rewards[ability]),
@@ -205,16 +251,17 @@ public sealed partial class MineLearningStation : MonoBehaviour
             bookId = book?.id,
             bookName = book?.name,
             requiresBoard = book != null || ability == 0
-        });
+        };
+        AssignBookNumber(job);
+        progress.queued.Add(job);
         notice=null; FillSlots(); Rebuild(); save(); return true;
     }
     private bool FillSlots()
     {
         bool changed=false;
-        while(progress.active.Count<Capacity.simultaneous && progress.queued.Count>0)
+        while (progress.queued.Count > 0 &&
+            (study != null ? CanDeliverStudyBook : progress.active.Count < Capacity.simultaneous))
         {
-            // An uncollected book owns the physical outlet, including while it is travelling or held.
-            if (study != null && progress.active.Any(book => !book.onBoard)) break;
             var job=progress.queued[0]; progress.queued.RemoveAt(0); job.transit=DeliverySeconds; progress.active.Add(job); changed=true;
         }
         return changed;
@@ -245,7 +292,7 @@ public sealed partial class MineLearningStation : MonoBehaviour
                 }
                 var book = authoredBooks?.FirstOrDefault(item => item.id == job.bookId);
                 int reward = book?.reward ?? (string.IsNullOrEmpty(job.bookId) ? Mathf.Max(0, rewards[job.ability]) : job.reward);
-                progress.active.RemoveAt(i); grant(job.ability,reward); changed=true;
+                progress.active.RemoveAt(i); GrantSingleAbility(job.ability, reward); changed=true;
             }
             changed |= FillSlots();
         }

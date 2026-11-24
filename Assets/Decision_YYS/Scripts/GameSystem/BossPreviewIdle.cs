@@ -9,11 +9,20 @@ public sealed class BossPreviewIdle : MonoBehaviour
     [SerializeField] private string roarState = "Sword_Shout";
     [SerializeField, Min(0.1f)] private float idleSeconds = 11.3f;
     [SerializeField, Min(0.1f)] private float roarSeconds = 6.2f;
+    [SerializeField, Min(0.5f)] private float encounterDistance = 7f;
     private float elapsed;
     private Vector3 position, scale;
     private Quaternion rotation;
     private float feetHeight;
     public bool IsRoaring { get; private set; }
+    internal Vector3 EncounterPosition => transform.position - Vector3.forward * encounterDistance;
+
+    internal void FacePlayer(Vector3 playerPosition)
+    {
+        Vector3 direction = Vector3.ProjectOnPlane(playerPosition - transform.position, Vector3.up);
+        // The preview rig faces local -Z.
+        if (direction.sqrMagnitude > .001f) transform.rotation = Quaternion.LookRotation(-direction);
+    }
 
     private void OnEnable()
     {

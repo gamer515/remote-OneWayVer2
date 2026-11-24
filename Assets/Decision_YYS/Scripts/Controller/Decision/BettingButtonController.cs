@@ -55,14 +55,17 @@ public sealed class BettingButtonController : MonoBehaviour
 
         if (clickedButton == blueButton && bettingInteractable)
         {
+            UiInteractionAudio.PlayClick();
             BluePressed?.Invoke();
         }
         else if (clickedButton == redButton && bettingInteractable)
         {
+            UiInteractionAudio.PlayClick();
             RedPressed?.Invoke();
         }
         else if (clickedButton == yellowButton && yellowInteractable)
         {
+            UiInteractionAudio.PlayClick();
             YellowPressed?.Invoke();
         }
     }

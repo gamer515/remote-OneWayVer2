@@ -19,6 +19,12 @@ public partial class DecisionManager
     private int arrivalCardIndex;
     private string arrivalStoryPath;
     private bool walkingForwardJourney;
+    private float roadsideWalkZ;
+    private Transform roadsideActor;
+    private string roadsideEncounterId;
+    private enum RoadsideStep { None, Opening, Offer, PickCoinFace, Playing, Result }
+    private RoadsideStep roadsideStep;
+    private const string RoadsideDemand = "여긴 못 지나가. 지나가려면 돈을 내놔.";
 
     private void StartEncounterEpisode()
     {
@@ -36,26 +42,31 @@ public partial class DecisionManager
                 if (!string.IsNullOrWhiteSpace(id)) resolvedPlaceIds.Add(id);
 
         pendingEncounter = null;
-        if (currentScenarioPath == "Chapter_1/Chapter_1_BossPreview" &&
-            Authored?.nodeId?.StartsWith(BossEntry, StringComparison.Ordinal) == true)
+        roadsideStep = RoadsideStep.None;
+        if (IsMineBossEpisode &&
+            (Authored?.nodeId is BossEntry or BossChoices or BossStudy || loadedProgress?.interactionPhase == "walking"))
         {
-            PresentAuthoredBoss();
+            BeginExploration();
+            BeginAuthoredBossApproach();
             return;
         }
         activePlaceId = loadedProgress?.activePlaceId;
         activeCardIndex = loadedProgress?.activeCardIndex ?? 0;
         string phase = loadedProgress?.interactionPhase;
-        if ((phase == "prompt" || phase == "card" || phase == "walking" || phase == "tutorial_result") && encounterFlow.TryGetEncounter(activePlaceId, out var encounter))
+        if ((phase == "prompt" || phase == "card" || phase == "walking" || phase == "tutorial_result") &&
+            !resolvedPlaceIds.Contains(activePlaceId) &&
+            encounterFlow.TryGetEncounter(activePlaceId, out var encounter))
         {
             pendingEncounter = encounter;
-            if (phase != "card" && string.IsNullOrEmpty(loadedProgress?.activeStoryPath)) BeginEncounter(encounter);
+            if (phase != "card" && string.IsNullOrEmpty(loadedProgress?.activeStoryPath))
+                BeginEncounter(encounter, journeyWalk: phase == "walking");
             else
             {
                 restoringStoryCard = true;
                 ApproachEncounter(encounter, activeCardIndex, loadedProgress?.activeStoryPath);
             }
         }
-        else BeginExploration();
+        else if (!TryStartRunIntro()) BeginExploration();
     }
 
     private void HandleEncounterYellowPressed()
@@ -73,7 +84,17 @@ public partial class DecisionManager
         }
         switch (currentState)
         {
-            case StoryState.Exploring: BeginWalkStep(); break;
+            case StoryState.Exploring:
+                if (IsMineBossEpisode && Authored?.nodeId == BossStudy)
+                    AdvanceAuthoredBoss();
+                else if (IsPackStudyPaused)
+                {
+                    uiController.SetStoryNotice(null);
+                    Authored.storyPackFrame = PackRoot;
+                    PresentStoryPack();
+                }
+                else BeginWalkStep();
+                break;
             case StoryState.ShowingStory: AdvanceEncounterCard(); break;
             case StoryState.WaitingForChoice:
                 if (selectedGearIndex >= 0) AdvanceEncounterCard();
@@ -83,6 +104,12 @@ public partial class DecisionManager
 
     private void BeginExploration()
     {
+        packShortcutWalking = false;
+        ResetShortcutPursuits();
+        packShortcutActor = null;
+        roadsideStep = RoadsideStep.None;
+        roadsideActor = null;
+        roadsideEncounterId = null;
         lastMinePlace = null;
         RestoreStoryNpcFacing(activePlaceId);
         playerController?.ResetNpcFraming();
@@ -105,6 +132,11 @@ public partial class DecisionManager
     private void BeginWalkStep()
     {
         mineView?.Hide();
+        if (IsMineBossEpisode)
+        {
+            BeginAuthoredBossApproach();
+            return;
+        }
         float startZ = playerController.CurrentPosition.z;
         // 한 번 누르면 다음 이벤트 오브젝트까지 계속 걷습니다. 그 사이 청크는 EnvController가 스트리밍합니다.
         float endZ = encounterFlow.EpisodeEndZ;
@@ -132,6 +164,7 @@ public partial class DecisionManager
         presentationController.ShowWalkingView();
         var destination = new Vector3(envController.TerrainOrigin.x, playerController.CurrentPosition.y, endZ);
         walkingForwardJourney = true;
+        roadsideWalkZ = startZ;
         float speedMultiplier = GetJourneySpeedMultiplier();
         if (currentScenarioPath == MineAuthoredStory.Episode && envController.AuthoredMine != null)
             playerController.MoveToZ(endZ, speedMultiplier);
@@ -154,6 +187,12 @@ public partial class DecisionManager
 
     private void CompleteWalkStep()
     {
+        if (IsMineBossEpisode)
+        {
+            PresentAuthoredBoss();
+            return;
+        }
+        if (TryCompletePackShortcutWalk()) return;
         if (pendingEncounter.HasValue)
         {
             var encounter = pendingEncounter.Value;
@@ -166,15 +205,144 @@ public partial class DecisionManager
         else BeginExploration();
     }
 
-    private void BeginEncounter(EncounterFlowController.Encounter encounter)
+    private bool TryOpenRoadsideEncounter()
     {
-        ApproachEncounter(encounter);
+        if (currentScenarioPath != MineAuthoredStory.Episode || envController.AuthoredMine == null ||
+            encounterFlow == null || currentState != StoryState.MovingToEncounter || !walkingForwardJourney ||
+            collectingTax || mine?.resting == true || playerController == null) return false;
+
+        Vector3 position = playerController.CurrentPosition;
+        float z = position.z;
+        if (z <= roadsideWalkZ) return false;
+        // Keep the scheduled location encounter if both would trigger at its stop.
+        float destinationZ = playerController.TargetPosition.z;
+        float endZ = Mathf.Min(z, destinationZ - .01f);
+        var actor = envController.FindRoadsideNpc(position.x, roadsideWalkZ, endZ,
+            destinationZ, encounterStopDistance, resolvedPlaceIds, out var id);
+        roadsideWalkZ = z;
+        if (actor == null) return false;
+
+        BeginExploration();
+        roadsideActor = actor;
+        roadsideEncounterId = id;
+        roadsideStep = RoadsideStep.Opening;
+        ShowAuthoredCard(RoadsideDemand, "길가의 사람", null);
+        return true;
+    }
+
+    private void ShowRoadsideOffer(string speech = RoadsideDemand)
+    {
+        roadsideStep = RoadsideStep.Offer;
+        ShowAuthoredCard(speech, "길가의 사람", new[]
+        {
+            "동전 던지기 한 판 할래요?", "저랑 한 판 겨뤄 볼래요?", "그냥 큰길로 돌아가자."
+        });
+    }
+
+    private void AdvanceRoadsideEncounter()
+    {
+        if (roadsideStep == RoadsideStep.Opening)
+        {
+            ShowRoadsideOffer();
+            return;
+        }
+        if (roadsideStep == RoadsideStep.Result)
+        {
+            ResumeAfterRoadsideEncounter();
+            return;
+        }
+        var card = activeCards.MainStory[activeCardIndex];
+        int selected = selectedGearIndex;
+        if (selected < 0 || selected >= card.options.Length) return;
+        presentationController.ConfirmChoice(card.options[selected]);
+        if (roadsideStep == RoadsideStep.PickCoinFace)
+        {
+            bool heads = selected == 0;
+            if (tutorialMiniGames == null || !tutorialMiniGames.IsReady)
+            {
+                ShowRoadsideOffer("지금은 동전을 던질 준비가 안 됐어.");
+                return;
+            }
+            BeginRoadsideGame();
+            bool won = MineChapterSettings.Roll(session.RunSeed, 0, roadsideEncounterId + ":coin") < .5;
+            bool resultHeads = won ? heads : !heads;
+            RecordRoadsideGame(false, won);
+            tutorialMiniGames.StartRoadsideCoinToss(resultHeads, won, uiController, interrupted =>
+            {
+                if (roadsideStep != RoadsideStep.Playing) return;
+                if (interrupted) ResumeAfterRoadsideEncounter();
+                else ShowRoadsideGameResult(won);
+            });
+        }
+        else if (selected == 0)
+        {
+            roadsideStep = RoadsideStep.PickCoinFace;
+            ShowAuthoredCard("앞면이랑 뒷면 중 뭘 고를래?", "길가의 사람", new[] { "앞면", "뒷면" });
+        }
+        else if (selected == 1)
+        {
+            if (duelMiniGame == null)
+            {
+                ShowRoadsideOffer("지금은 겨룰 준비가 안 됐어.");
+                return;
+            }
+            BeginRoadsideGame();
+            FrameActiveEncounter(true);
+            duelMiniGame.BeginDuel(won => FinishRoadsideGame(true, won),
+                mineRules.duelHitTarget, statContainer.stats[0], ConsumeMineDuelHealth);
+        }
+        else ResumeAfterRoadsideEncounter();
+    }
+
+    private void BeginRoadsideGame()
+    {
+        roadsideStep = RoadsideStep.Playing;
+        currentState = StoryState.Duel;
+        SetYellowInputInteractable(false);
+        presentationController.ExitChoice();
+        // Checkpoint before launching so a reload cannot replay a spent encounter.
+        resolvedPlaceIds.Add(roadsideEncounterId);
+        SaveEncounterState("explore");
+    }
+
+    private void FinishRoadsideGame(bool duel, bool won)
+    {
+        if (roadsideStep != RoadsideStep.Playing) return;
+        RecordRoadsideGame(duel, won);
+        ShowRoadsideGameResult(won);
+    }
+
+    private void RecordRoadsideGame(bool duel, bool won)
+    {
+        var card = activeCards.MainStory[activeCardIndex];
+        var result = NewStoryEvent(roadsideEncounterId + ":result", duel ? "duel_result" : "gamble_result", card);
+        result.placeId = roadsideEncounterId;
+        RecordMiniGameResult(result, won);
+    }
+
+    private void ShowRoadsideGameResult(bool won)
+    {
+        roadsideStep = RoadsideStep.Result;
+        ShowAuthoredCard(won ? "이번엔 네가 이겼네." : "이번엔 내가 이겼어.", "길가의 사람", null);
+    }
+
+    private void ResumeAfterRoadsideEncounter()
+    {
+        resolvedPlaceIds.Add(roadsideEncounterId);
+        BeginExploration();
+        BeginWalkStep();
+    }
+
+    private void BeginEncounter(EncounterFlowController.Encounter encounter, bool journeyWalk)
+    {
+        ApproachEncounter(encounter, journeyWalk: journeyWalk);
         Debug.Log($"[조우] {encounter.PlaceId} ({encounter.ContentPath})", this);
     }
 
     private void ApproachEncounter(EncounterFlowController.Encounter encounter, int index = 0, string storyPath = null,
         bool journeyWalk = false)
     {
+        roadsideWalkZ = playerController.CurrentPosition.z;
         pendingEncounter = encounter; arrivalCardIndex = index; arrivalStoryPath = storyPath;
         activePlaceId = encounter.PlaceId; activeCardIndex = index; activeEncounterPath = storyPath;
         var placement = envController.NpcPlacement;
@@ -279,13 +447,21 @@ public partial class DecisionManager
             else BeginInsufficientPaymentDuel(card);
             return true;
         }
-        if (!confirmed && !boardPaid && TryBeginBoardPayment(choice.abilityCost,
-            () => AdvanceEncounterCard(true), () =>
+        if (!confirmed && !boardPaid && choice.abilityCost?.Any(amount => amount > 0) == true)
+        {
+            bool locationPayment = pendingEncounter.HasValue && pendingEncounter.Value.PlaceId == activePlaceId;
+            if (TryBeginBoardPayment(choice.abilityCost, () => AdvanceEncounterCard(true), () =>
+                {
+                    presentationController.ShowDialogue(card);
+                    journeyBoardInput?.SetChoiceCount(card.options.Length);
+                    RenderEncounterOptions();
+                }, useNpcBowl: locationPayment)) return true;
+            if (locationPayment)
             {
-                presentationController.ShowDialogue(card);
-                journeyBoardInput?.SetChoiceCount(card.options.Length);
-                RenderEncounterOptions();
-            })) return true;
+                uiController.SetStoryNotice("납부통을 사용할 수 없습니다.");
+                return true;
+            }
+        }
         RecordStoryChoice(card, choice);
         int relationshipDelta = choice.relationshipDelta *
             (statContainer.stats.Length == 4 && statContainer.stats[3] == 0 ? 2 : 1);
@@ -294,11 +470,7 @@ public partial class DecisionManager
             choice.grantsUnlocks, choice.relationshipId, relationshipDelta);
         var selected = storyEvents.FindLast(e => e.eventKey == "choice:" + storyVisit);
         var interactions = saveService.ApplyNarrativeInteractions(selected);
-        if (interactions.Count > 0)
-        {
-            backpackInventory?.Initialize(saveService.LoadInventoryState(), saveService.SaveInventoryState);
-            foreach (var interaction in interactions) presentationController.ShowInteraction(interaction.notice, selected.characterId);
-        }
+        foreach (var interaction in interactions) presentationController.ShowInteraction(interaction.notice, selected.characterId);
         if (choice.abilityCost != null && statContainer.stats[0] <= 0)
         {
             FinishRunAndReturnToMainMenu("체력 0으로 사망");
@@ -402,7 +574,8 @@ public partial class DecisionManager
 
     private void PresentEncounterCard()
     {
-        if (!restoringStoryCard) storyVisit++;
+        bool newCard = !restoringStoryCard;
+        if (newCard) storyVisit++;
         restoringStoryCard = false;
         Dialogue card = activeCards.MainStory[activeCardIndex];
         // ResetSelection은 기어 선택 이벤트를 즉시 호출하므로 이전 Choice 상태부터 해제합니다.
@@ -415,7 +588,13 @@ public partial class DecisionManager
         RecordPlayedEncounterStory(card, activePlaceId, activeEncounterPath, activeCardIndex);
         SaveEncounterState("card");
         SaveGuideCheckpoint();
-        presentationController.ShowDialogue(card);
+        string voiceNpcId = null;
+        if (newCard && currentScenarioPath == MineAuthoredStory.Episode && pendingEncounter.HasValue &&
+            !string.IsNullOrWhiteSpace(card.speakerId) &&
+            (envController.AuthoredMine?.IsPackNpc(card.speakerId) == true ||
+                ChapterContentCatalog.Characters("Chapter_1").Any(npc => (string)npc["characterId"] == card.speakerId)))
+            voiceNpcId = card.speakerId;
+        presentationController.ShowDialogue(card, voiceNpcId);
         FrameActiveEncounter(false);
         CompleteEncounterCardPresentation(card);
     }
@@ -458,7 +637,12 @@ public partial class DecisionManager
 
     private void AdvanceEncounterCard(bool boardPaid = false)
     {
-        if (activeEncounterPath == MineAuthoredStory.Prefix + "Boss")
+        if (roadsideStep != RoadsideStep.None)
+        {
+            AdvanceRoadsideEncounter();
+            return;
+        }
+        if (activeEncounterPath == BossEncounterPath)
         {
             AdvanceAuthoredBoss();
             return;
@@ -546,26 +730,34 @@ public partial class DecisionManager
 
     private void ResolveEncounter()
     {
-        var finishedEncounter=pendingEncounter;
         duelMiniGame?.CleanupDuel();
         tutorialMiniGames?.Cleanup();
-        if (!string.IsNullOrEmpty(activePlaceId))
+        FinishEncounterAndResume(showRevisit: pendingEncounter.HasValue);
+    }
+
+    private void FinishEncounterAndResume(bool showRevisit)
+    {
+        string placeId = activePlaceId;
+        if (!string.IsNullOrEmpty(placeId))
         {
-            resolvedPlaceIds.Add(activePlaceId);
-            saveService?.MarkEncounterCompleted(activePlaceId);
-        }
-        BeginExploration();
-        LocalStoryNotebook.Refresh(SaveIOService.Instance);
-        if(finishedEncounter.HasValue)
-        {
-            var finished=finishedEncounter.Value;
-            ShowMineRevisit(finished.PlaceId);
+            resolvedPlaceIds.Add(placeId);
+            SaveGuideCheckpoint();
+            saveService?.MarkEncounterCompleted(placeId);
             try
             {
-                LocalStoryDialogueQueue.EncounterEnded(SaveIOService.Instance, session.RunNumber, finished.PlaceId);
+                LocalStoryDialogueQueue.EncounterEnded(SaveIOService.Instance, session.RunNumber, placeId);
             }
-            catch(Exception e) { LocalStoryLog.Write(LocalStoryLogStage.Failed,"대화 종료 기록: "+e.Message,this); }
+            catch (Exception e)
+            {
+                LocalStoryLog.Write(LocalStoryLogStage.Deferred, "장소 대사 생성 보류: " + e.Message, this);
+            }
         }
+
+        uiController?.SetStoryNotice(null);
+        BeginExploration();
+        if (showRevisit) ShowMineRevisit(placeId);
+        LocalStoryRuntimeService.TryResumePending(recover: false);
+        LocalStoryNotebook.Refresh(SaveIOService.Instance);
     }
 
     private void CompleteEncounterEpisode()
@@ -578,9 +770,9 @@ public partial class DecisionManager
             return;
         }
         var chapter = currentOmnibus.chapters[chapterIndex];
-        if (currentScenarioPath == "Chapter_1/Chapter_1_BossPreview" && Authored != null && envController.AuthoredMine != null)
+        if (IsMineBossEpisode)
         {
-            PresentAuthoredBoss();
+            BeginAuthoredBossApproach();
             return;
         }
         if (episodeIndex == chapter.episodeIds.Count - 1 && chapter.bossStage > 0)
@@ -618,6 +810,18 @@ public partial class DecisionManager
 
     private void FrameActiveEncounter(bool fullBody)
     {
+        if (packShortcutActor != null && IsPackShortcutNpcFrame)
+        {
+            playerController.FocusNpc(packShortcutActor, fullBody);
+            playerController.StopAndLookAt(packShortcutActor.position);
+            return;
+        }
+        if (roadsideActor != null && roadsideStep != RoadsideStep.None)
+        {
+            playerController.FocusNpc(roadsideActor, fullBody);
+            playerController.StopAndLookAt(roadsideActor.position);
+            return;
+        }
         if (playerController == null || string.IsNullOrEmpty(activePlaceId)) return;
         string speaker = activeCards?.MainStory?[activeCardIndex]?.speakerId;
         var actor = FindEncounterActor(activePlaceId, speaker);
