@@ -22,6 +22,7 @@ public sealed class LocalStoryEmotionLine
     public bool paraphrased;
     public bool emotionFallback;
     public bool finished;
+    public bool locationBatchAttempted;
 }
 
 internal static class LocalStoryEmotion
@@ -61,7 +62,7 @@ internal static class LocalStoryEmotion
 
         return new LocalStoryEmotionLine
         {
-            cardIndex = index, speakerId = card.speakerId,
+            cardIndex = index, speakerId = card.speakerId, originalText = card.text,
             name = (string)person["name"], role = (string)person["role"],
             speechStyle = Prefer("speechStyle", "speech_style"), personality = Prefer("personality", "personality"),
             publicFacts = ((person["publicFacts"] as JArray)?.Values<string>() ?? Enumerable.Empty<string>())
@@ -73,7 +74,7 @@ internal static class LocalStoryEmotion
 
 internal static class LocalStoryDialogueLength
 {
-    private const int Tolerance = 30;
+    private const int Tolerance = 25;
 
     private static int Count(string text) => new StringInfo(text?.Trim() ?? string.Empty).LengthInTextElements;
 
@@ -117,6 +118,7 @@ internal static class LocalStoryDialogueRules
         if (!LocalStoryDialogueLength.Allows(original, candidate)) return "DialogueLengthOutOfRange";
         string source = original?.Trim() ?? "";
         string text = candidate.Trim();
+        if (source == text) return null;
         if (!LocalStoryRewrite.ValidateDialogueWording(source, text) ||
             PoliteEnding.IsMatch(source) != PoliteEnding.IsMatch(text) ||
             Negation.IsMatch(source) != Negation.IsMatch(text) ||
@@ -129,19 +131,34 @@ internal static class LocalStoryDialogueRules
 
     private static bool ChangesOnePhrase(string source, string text)
     {
-        var before = source.Split((char[])null, StringSplitOptions.RemoveEmptyEntries);
-        var after = text.Split((char[])null, StringSplitOptions.RemoveEmptyEntries);
+        var before = Regex.Matches(source, @"\S+");
+        var after = Regex.Matches(text, @"\S+");
         int start = 0;
-        while (start < before.Length && start < after.Length && before[start] == after[start]) start++;
-        int endBefore = before.Length;
-        int endAfter = after.Length;
-        while (endBefore > start && endAfter > start && before[endBefore - 1] == after[endAfter - 1])
+        while (start < before.Count && start < after.Count && before[start].Value == after[start].Value) start++;
+        int endBefore = before.Count;
+        int endAfter = after.Count;
+        while (endBefore > start && endAfter > start && before[endBefore - 1].Value == after[endAfter - 1].Value)
         {
             endBefore--;
             endAfter--;
         }
-        bool keepsSourceWording = before.Length == 1 || start > 0 || endBefore < before.Length;
-        return keepsSourceWording && endBefore - start <= MaxPhraseWords && endAfter - start <= MaxPhraseWords;
+        int removed = endBefore - start, added = endAfter - start;
+        bool keepsSourceWording = before.Count == 1 || start > 0 || endBefore < before.Count;
+        if (!keepsSourceWording || removed + added == 0 || removed > MaxPhraseWords || added > MaxPhraseWords) return false;
+        if (removed == 0) return KeepsUnchangedText(source, before, text);
+        if (added == 0) return KeepsUnchangedText(text, after, source);
+        int prefixBefore = before[start].Index, prefixAfter = after[start].Index;
+        int suffixBefore = before[endBefore - 1].Index + before[endBefore - 1].Length;
+        int suffixAfter = after[endAfter - 1].Index + after[endAfter - 1].Length;
+        return source.Substring(0, prefixBefore) == text.Substring(0, prefixAfter) &&
+            source.Substring(suffixBefore) == text.Substring(suffixAfter);
+
+        bool KeepsUnchangedText(string shorter, MatchCollection words, string longer)
+        {
+            int split = start < words.Count ? words[start].Index : shorter.Length;
+            return longer.StartsWith(shorter.Substring(0, split), StringComparison.Ordinal) &&
+                longer.EndsWith(shorter.Substring(split), StringComparison.Ordinal);
+        }
     }
 }
 

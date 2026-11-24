@@ -4,17 +4,10 @@ using UnityEngine;
 public sealed class BossPreviewIdle : MonoBehaviour
 {
     [SerializeField] private Animator animator;
-    [SerializeField] private Transform leftFoot, rightFoot;
-    [SerializeField] private string idleState = "Axe_Breathe_and_Look_Around";
-    [SerializeField] private string roarState = "Sword_Shout";
-    [SerializeField, Min(0.1f)] private float idleSeconds = 11.3f;
-    [SerializeField, Min(0.1f)] private float roarSeconds = 6.2f;
+    private static readonly int Idle = Animator.StringToHash("Base Layer.Axe_Breathe_and_Look_Around");
     [SerializeField, Min(0.5f)] private float encounterDistance = 7f;
-    private float elapsed;
     private Vector3 position, scale;
     private Quaternion rotation;
-    private float feetHeight;
-    public bool IsRoaring { get; private set; }
     internal Vector3 EncounterPosition => transform.position - Vector3.forward * encounterDistance;
 
     internal void FacePlayer(Vector3 playerPosition)
@@ -24,33 +17,33 @@ public sealed class BossPreviewIdle : MonoBehaviour
         if (direction.sqrMagnitude > .001f) transform.rotation = Quaternion.LookRotation(-direction);
     }
 
+    private void Awake()
+    {
+        if (animator == null) return;
+        position = animator.transform.localPosition;
+        rotation = animator.transform.localRotation;
+        scale = animator.transform.localScale;
+    }
+
     private void OnEnable()
     {
         if (animator == null) return;
-        position = animator.transform.localPosition; rotation = animator.transform.localRotation; scale = animator.transform.localScale;
         animator.applyRootMotion = false;
         animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
-        elapsed = 0; IsRoaring = false;
-        animator.Play(idleState, 0, 0);
-        animator.Update(0);
-        animator.transform.SetLocalPositionAndRotation(position, rotation); animator.transform.localScale = scale;
-        feetHeight = LowestFoot();
+        animator.Play(Idle, 0, 0f);
+        animator.Update(0f);
+        RestorePlacement();
     }
-    private void Update()
-    {
-        if (animator == null) return;
-        elapsed += Time.deltaTime;
-        if (elapsed < (IsRoaring ? roarSeconds : idleSeconds)) return;
-        elapsed = 0; IsRoaring = !IsRoaring;
-        animator.CrossFadeInFixedTime(IsRoaring ? roarState : idleState, 0.2f, 0);
-    }
+
     private void LateUpdate()
     {
         if (animator == null) return;
+        RestorePlacement();
+    }
+
+    private void RestorePlacement()
+    {
         animator.transform.SetLocalPositionAndRotation(position, rotation);
         animator.transform.localScale = scale;
-        if (leftFoot != null && rightFoot != null)
-            animator.transform.position += Vector3.up * (feetHeight - LowestFoot());
     }
-    private float LowestFoot() => leftFoot != null && rightFoot != null ? Mathf.Min(leftFoot.position.y, rightFoot.position.y) : transform.position.y;
 }

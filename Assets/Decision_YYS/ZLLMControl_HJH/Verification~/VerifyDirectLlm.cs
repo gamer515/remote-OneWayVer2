@@ -65,7 +65,7 @@ public static class VerifyDirectLlm
                 ? (string)body["generationConfig"]["responseMimeType"] == "application/json"
                 : (string)body["response_format"]["type"] == "json_object", "JSON response format requested");
             string prompt = DialoguePrompt(fake.Calls.Single());
-            Check(prompt.Contains("30~90자") && prompt.Contains("사실") && prompt.Contains("존댓말"),
+            Check(prompt.Contains("35~85자") && prompt.Contains("사실") && prompt.Contains("존댓말"),
                 "content instructions and numeric range on every provider");
             var input = JObject.Parse(prompt.Substring(prompt.IndexOf("\n\n", StringComparison.Ordinal) + 2));
             Check(input.Count == 3 && (string)input["npc"]["personality"] == line.personality &&
@@ -78,7 +78,7 @@ public static class VerifyDirectLlm
         var body = JObject.Parse(request.Body);
         return request.Provider == DirectLlmProvider.Gemini
             ? (string)body["contents"].Single()["parts"].Single()["text"]
-            : (string)body["messages"].Single()["content"];
+            : (string)body["messages"].Last["content"];
     }
 
     private static string DialogueJson(string text) => new JObject { ["text"] = text }.ToString(Formatting.None);
@@ -86,10 +86,10 @@ public static class VerifyDirectLlm
     private static async Task CheckDialogueLength()
     {
         string original = new string('가', 60);
-        string minimum = " \t" + new string('가', 28) + " !\n";
-        string maximum = new string('나', 90);
+        string minimum = " \t" + new string('가', 33) + " !\n";
+        string maximum = new string('나', 85);
         var line = new LocalStoryEmotionLine();
-        foreach (string invalid in new[] { new string('가', 29), new string('가', 91) })
+        foreach (string invalid in new[] { new string('가', 34), new string('가', 86) })
         {
             var fake = new Fake { Handler = (r, t) => Task.FromResult(Reply(r.Provider,
                 DialogueJson(r.Provider == DirectLlmProvider.Gemini ? invalid : minimum))) };
@@ -99,13 +99,13 @@ public static class VerifyDirectLlm
         }
 
         string shortOriginal = "  안녕! ";
-        Check(LocalStoryDialogueLength.Range(shortOriginal) == (1, 33) &&
+        Check(LocalStoryDialogueLength.Range(shortOriginal) == (1, 28) &&
             !LocalStoryDialogueLength.Allows(shortOriginal, " \t\r\n") &&
             LocalStoryDialogueLength.Allows(shortOriginal, " 네 "), "short original, whitespace and minimum of one");
-        Check(LocalStoryGemmaDialogue.Messages(line, "기쁨", shortOriginal, nextRun: true).Contains("1~33자"),
+        Check(LocalStoryGemmaDialogue.Messages(line, "기쁨", shortOriginal, nextRun: true).Contains("1~28자"),
             "Gemma uses the same numeric range");
 
-        var exhausted = new Fake { Handler = (r, t) => Task.FromResult(Reply(r.Provider, DialogueJson(new string('가', 91)))) };
+        var exhausted = new Fake { Handler = (r, t) => Task.FromResult(Reply(r.Provider, DialogueJson(new string('가', 86)))) };
         try
         {
             await new DirectStoryGenerator(Client(exhausted)).RewriteDialogueAsync(line, "기쁨", original, CancellationToken.None);
@@ -143,11 +143,11 @@ public static class VerifyDirectLlm
         LocalStoryDialogueQueue.Save(store, new LocalStoryDialogueQueueData
             { sourceRun = 1, targetRun = 2, finalized = true, jobs = new List<LocalStoryDialogueJob> { job } });
         var queueFake = new Fake { Handler = (r, t) => Task.FromResult(Reply(r.Provider,
-            DialogueJson(DialoguePrompt(r).Contains("30~90자") ? maximum : "네"))) };
+            DialogueJson(DialoguePrompt(r).Contains("35~85자") ? maximum : "네"))) };
         await LocalStoryDialogueQueue.Process(store, job, new DirectStoryGenerator(Client(queueFake)), CancellationToken.None);
         var saved = LocalStoryDialogueQueue.Load(store, 1).jobs.Single();
-        Check(queueFake.Calls.Count == 2 && DialoguePrompt(queueFake.Calls[0]).Contains("30~90자") &&
-            DialoguePrompt(queueFake.Calls[1]).Contains("1~33자"), "one multi-line job uses each source's range");
+        Check(queueFake.Calls.Count == 2 && DialoguePrompt(queueFake.Calls[0]).Contains("35~85자") &&
+            DialoguePrompt(queueFake.Calls[1]).Contains("1~28자"), "unavailable script preserves individual source ranges");
         Check(saved.status == "Ready" && saved.emotionLines.Select(l => l.generatedText)
             .SequenceEqual(new[] { maximum, "네", maximum }), "queue persists each valid result and preserves the previously finished line");
     }
@@ -155,7 +155,7 @@ public static class VerifyDirectLlm
     private static async Task CheckDialogueContent()
     {
         const string original = "이젠 돌보다 수저가 더 무겁구먼.";
-        const string recorded = "귀관의 도움으로, 본인의 책무를 다할 수 있게 되었습니다. 심심한 감사를 표합니다.";
+        const string recorded = "귀관의 도움으로 본인의 책무를 다했습니다. 감사합니다.";
         const string valid = "이젠 돌보다 수저가 더 묵직하구먼.";
         var line = new LocalStoryEmotionLine();
         Check(LocalStoryDialogueLength.Allows(original, recorded), "the recorded Garen reply passes length alone");
@@ -170,10 +170,183 @@ public static class VerifyDirectLlm
             "numbers, speech register and negation are protected");
         Check(LocalStoryDialogueRules.Rejection("▥※▣ 없어도 ▣▨※?", "힘이 없어도 광부지?") == "DialogueContentChanged",
             "masked words are protected");
+        Check(LocalStoryDialogueRules.Rejection("여기는 낡은 갱도야.", "여기는 정말 낡은 갱도야.") == null &&
+            LocalStoryDialogueRules.Rejection("여기는 정말 낡은 갱도야.", "여기는 낡은 갱도야.") == null &&
+            LocalStoryDialogueRules.Rejection("여기는 오래된 좁은 갱도야.", "여기는  오래된 깊은 갱도야.") == "DialogueContentChanged",
+            "single phrase insertions and deletions remain valid while unrelated whitespace changes are rejected");
         var completeLine = typeof(LocalStoryDialogueQueue).GetMethod("CompleteLine", BindingFlags.NonPublic | BindingFlags.Static);
         completeLine.Invoke(null, new object[] { line, original, (recorded, "Gemma", "mock") });
         Check(line.finished && line.emotionFallback && line.generatedText == null && line.originalText == original,
             "Gemma result within range is rejected for changed content");
+    }
+
+    private static async Task CheckLocationDialogue(bool partial)
+    {
+        const string path = "AuthoredMine/MAIN-02";
+        string artifacts = Path.GetFullPath(Path.Combine("Builds", "CompactDialogueReview"));
+        Directory.CreateDirectory(artifacts);
+        string root = Path.Combine(artifacts, Guid.NewGuid().ToString("N"));
+        var constructor = typeof(SaveIOService).GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance,
+            null, new[] { typeof(string) }, null);
+        var store = (SaveIOService)constructor.Invoke(new object[] { root });
+        store.SaveProfile(new ProfileData { currentRun = 2 });
+        store.SaveRunData(1, "Progress", new GameProgress { runSeed = 9125, isCompleted = true });
+        var script = MineLearningStation.ReadContent("Stories/CHUNK-02/MAIN-02_V1");
+        var people = MineLearningStation.ReadContent("Relationships/NPC_전체목록")["npcs"].ToDictionary(p => (string)p["npc_id"]);
+        var sourceRows = script["opening"].OfType<JObject>()
+            .Append((JObject)script.SelectToken("choices[0].coin_options[0].dialogue[0]")).ToArray();
+        var jobs = sourceRows.GroupBy(row => (string)row["speaker_id"]).Select((group, index) =>
+        {
+            var person = people[group.Key];
+            return new LocalStoryDialogueJob
+            {
+                jobId = path + "|" + group.Key + "|Short", storyPath = path, placeId = "MAIN-02",
+                authoredPack = true, authoredStoryPackMode = "Short", characterId = group.Key,
+                model = DirectStoryGenerator.ModelName, sourceRun = 1, targetRun = 2, revision = 1, sequence = index + 1,
+                emotion = index == 0 ? "당황" : "존중",
+                emotionLines = group.Select((row, i) => new LocalStoryEmotionLine
+                {
+                    cardIndex = i, authoredLinePath = row.Path, originalText = (string)row["text"],
+                    speakerId = group.Key, name = (string)person["name"], role = (string)person["role"],
+                    personality = (string)person["personality"], speechStyle = (string)person["speech_style"],
+                    publicFacts = person["character_traits"].Values<string>().ToArray()
+                }).ToList()
+            };
+        }).ToList();
+        LocalStoryDialogueQueue.Save(store, new LocalStoryDialogueQueueData
+        {
+            sourceRun = 1, targetRun = 2, authoredStoryPackMode = "Short", finalized = true, jobs = jobs
+        });
+
+        const string edit = "갱목 아래쪽에 흰 가루가 쌓였네.";
+        string prefix = partial ? "partial" : "success";
+        string Original(string tokenPath) => (string)script.SelectToken(tokenPath)["text"];
+        var retryOriginals = new List<string>();
+        using var cancel = new CancellationTokenSource();
+        var fake = new Fake();
+        var options = new DirectLlmOptions();
+        foreach (var endpoint in options.endpoints) endpoint.enabled = endpoint.provider == DirectLlmProvider.Gemini;
+        var generator = new DirectStoryGenerator(new DirectLlmClient(options, fake, Credentials));
+        fake.Handler = (request, _) =>
+        {
+            string prompt = DialoguePrompt(request);
+            if (prompt.StartsWith("{", StringComparison.Ordinal))
+            {
+                var input = JObject.Parse(prompt);
+                File.WriteAllText(Path.Combine(artifacts, prefix + "-request.json"), JObject.Parse(request.Body).ToString());
+                var sections = (JArray)input["sections"];
+                var editable = sections.SelectMany(section => (JArray)section["lines"]).OfType<JArray>().ToArray();
+                Check(editable.Length == 6 && editable.Select(row => (string)row[1]).Distinct().Count() == 2,
+                    "MAIN-02 batch contains six editable lines from two NPC jobs");
+                Check(input.Count == 3 && (string)input["location"] == "금 간 갱목" && sections.Count == 2 &&
+                    (string)sections[0]["branch"] == "공통 도입" &&
+                    ((string)sections[1]["context"]).Contains("힘 코인 2개"),
+                    "only the requested opening and payment branch are included, with relevant choice context");
+                foreach (var row in editable)
+                    Check(row.Count == 4 && int.TryParse((string)row[0], out int _) &&
+                        (string)row[2] == jobs.Single(job => job.characterId == (string)row[1]).emotion,
+                        "short IDs, four array fields and existing job emotion");
+                Check(((JObject)input["npcs"]).Count == 2 && editable.Select(row => (string)row[0]).Distinct().Count() == 6,
+                    "only two actual NPC profiles and six distinct short IDs");
+                var output = new JArray();
+                // Return out of order to verify ID-based routing even if the provider ignores ordering.
+                foreach (var row in editable.Reverse())
+                {
+                    string id = (string)row[0];
+                    string lineOriginal = (string)row[3];
+                    if (partial && lineOriginal == Original("opening[3]")) continue;
+                    string text = lineOriginal == Original("opening[0]") ? edit : lineOriginal;
+                    if (partial && lineOriginal == Original("opening[4]")) text += new string('가', 26);
+                    var reply = new JObject { ["id"] = id, ["text"] = text };
+                    output.Add(reply);
+                    if (partial && lineOriginal == Original("opening[2]")) output.Add(reply.DeepClone());
+                }
+                if (partial) output.Add(new JObject { ["id"] = "not-an-input-id", ["text"] = "이 대사는 저장하면 안 돼." });
+                var response = new JObject { ["lines"] = output };
+                File.WriteAllText(Path.Combine(artifacts, prefix + "-response.json"), response.ToString());
+                return Task.FromResult(Reply(request.Provider, response.ToString(Formatting.None)));
+            }
+            string original = (string)JObject.Parse(prompt.Substring(prompt.IndexOf("\n\n", StringComparison.Ordinal) + 2))["original"];
+            if (!cancel.IsCancellationRequested)
+            {
+                cancel.Cancel(); // Interrupt the first failed row after the valid batch rows have been checkpointed.
+                return Task.FromCanceled<DirectLlmHttpResponse>(cancel.Token);
+            }
+            retryOriginals.Add(original);
+            return Task.FromResult(Reply(request.Provider, DialogueJson(original)));
+        };
+
+        if (partial)
+        {
+            try
+            {
+                await LocalStoryDialogueQueue.Process(store, jobs[0], generator, cancel.Token);
+                throw new InvalidOperationException("Expected an interrupted retry");
+            }
+            catch (OperationCanceledException) { }
+            var saved = LocalStoryDialogueQueue.Load(store, 1).jobs.SelectMany(job => job.emotionLines).ToArray();
+            Check(fake.Calls.Count == 2 && saved.Count(line => line.finished) == 3 &&
+                saved.Where(line => !line.finished).All(line => line.locationBatchAttempted),
+                "partial success and failed IDs are checkpointed before the cancelled retry");
+        }
+        var reopened = (SaveIOService)constructor.Invoke(new object[] { root });
+        while (LocalStoryDialogueQueue.Next(reopened) is LocalStoryDialogueJob next)
+            await LocalStoryDialogueQueue.Process(reopened, next, generator, CancellationToken.None);
+        var final = LocalStoryDialogueQueue.Load(reopened, 1);
+        Check(final.jobs.All(job => job.status == "Ready") &&
+            final.jobs.SelectMany(job => job.emotionLines).Single(line => line.authoredLinePath == "opening[0]").generatedText == edit,
+            "both NPC jobs commit and the changed text is saved against its source path");
+        Check(final.jobs.SelectMany(job => job.emotionLines).All(line => line.generatedText ==
+            (line.authoredLinePath == "opening[0]" ? edit : line.originalText)), "every other response is stored on its own source line");
+        if (partial)
+            Check(retryOriginals.SequenceEqual(new[] { "opening[2]", "opening[3]", "opening[4]" }
+                .Select(p => (string)script.SelectToken(p)["text"])), "duplicates, omissions, and content violations alone are retried");
+        int calls = fake.Calls.Count;
+        foreach (var job in jobs) await LocalStoryDialogueQueue.Process(reopened, job, generator, CancellationToken.None);
+        Check(calls == (partial ? 5 : 1) && fake.Calls.Count == calls && LocalStoryDialogueQueue.Next(reopened) == null,
+            "success, partial retries and reopening have the expected request count");
+        File.WriteAllText(Path.Combine(artifacts, prefix + "-count.txt"),
+            $"HTTP requests: {calls}; batches: 1; resumed line retries: {retryOriginals.Count}; duplicate requests after completion: 0");
+    }
+
+    private static async Task CheckLegacyLocationDialogue()
+    {
+        string root = Path.GetFullPath(Path.Combine("Builds", "LocationDialogueReview", Guid.NewGuid().ToString("N")));
+        var constructor = typeof(SaveIOService).GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance,
+            null, new[] { typeof(string) }, null);
+        var store = (SaveIOService)constructor.Invoke(new object[] { root });
+        store.SaveProfile(new ProfileData { currentRun = 2 });
+        const string opening = "Chapter_1/Chapter_1_01/Encounters/brook";
+        var jobs = new[] { opening, opening + "_pay" }.Select((path, index) =>
+        {
+            string source = ChapterContentCatalog.Story(path);
+            var lines = JsonUtility.FromJson<EncounterCardRoot>(source).MainStory
+                .Select((card, i) => LocalStoryEmotion.CreateLine("Chapter_1", card, i)).Where(line => line != null);
+            return new LocalStoryDialogueJob
+            {
+                jobId = path, storyPath = path, placeId = "brook", revision = 1, sequence = index + 1,
+                sourceRun = 1, targetRun = 2, sourceHash = LocalStoryDialogueQueue.Hash(source), emotion = "감사",
+                model = DirectStoryGenerator.ModelName, emotionLines = lines.Take(1).ToList()
+            };
+        }).ToList();
+        LocalStoryDialogueQueue.Save(store, new LocalStoryDialogueQueueData
+            { sourceRun = 1, targetRun = 2, finalized = true, jobs = jobs });
+        var fake = new Fake { Handler = (request, _) =>
+        {
+            var sections = (JArray)JObject.Parse(DialoguePrompt(request))["sections"];
+            var editable = sections.SelectMany(section => (JArray)section["lines"]).ToArray();
+            Check(editable.Length == 2 && sections.Any(section => (string)section["branch"] == "brook_pay" && section["context"] != null),
+                "legacy opening and linked payment branch are sent as one location");
+            return Task.FromResult(Reply(request.Provider, new JObject
+            {
+                ["lines"] = new JArray(editable.Select(row => new JObject
+                    { ["id"] = row[0].DeepClone(), ["text"] = row[3].DeepClone() }))
+            }.ToString(Formatting.None)));
+        } };
+        foreach (var job in jobs)
+            await LocalStoryDialogueQueue.Process(store, job, new DirectStoryGenerator(Client(fake)), CancellationToken.None);
+        Check(fake.Calls.Count == 1 && LocalStoryDialogueQueue.Load(store, 1).jobs.All(job => job.status == "Ready"),
+            "linked legacy scripts use one request and keep both existing per-story commits");
     }
 
     public static async Task<string> Run()
@@ -182,6 +355,9 @@ public static class VerifyDirectLlm
         CheckDialogue();
         await CheckDialogueLength();
         await CheckDialogueContent();
+        await CheckLocationDialogue(false);
+        await CheckLocationDialogue(true);
+        await CheckLegacyLocationDialogue();
         var fake = new Fake(); var client = Client(fake);
         var first = await client.GenerateAsync(Messages, 512, 17, CancellationToken.None);
         Check(first.Provider == DirectLlmProvider.Gemini && fake.Calls.Count == 1, "success stops further providers");

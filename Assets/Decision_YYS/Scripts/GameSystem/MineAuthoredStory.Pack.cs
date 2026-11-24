@@ -43,13 +43,38 @@ internal sealed partial class MineAuthoredStory
     internal JObject PackStory(string id, int seed, string variant = null)
     {
         var candidates = packStories[id];
-        int picked = IsShort ? 0 : Pick(seed, 0, id, candidates.Length);
+        int picked = PackStoryIndex(id, seed, IsShort, candidates.Length);
         if (variant == null) return candidates[picked];
-        string folder = id.StartsWith("MAIN-", StringComparison.Ordinal) ? "CHUNK-" + id.Substring(5) : "SIDE_STORIES";
-        string path = "AbilityVariants/" + folder + "/" + variant + "/" + id + "_V" + (picked + 1);
+        string path = PackVariantPath(id, variant, picked);
         if (!packVariants.TryGetValue(path, out var story))
             packVariants[path] = story = MineLearningStation.ReadContent(path);
         return story;
+    }
+
+    private static int PackStoryIndex(string id, int seed, bool shortMode, int count) =>
+        shortMode ? 0 : Pick(seed, 0, id, count);
+
+    private static string PackStoryFolder(string id) =>
+        id.StartsWith("MAIN-", StringComparison.Ordinal) ? "CHUNK-" + id.Substring(5) : "SIDE_STORIES";
+
+    private static string PackVariantPath(string id, string variant, int index) =>
+        "AbilityVariants/" + PackStoryFolder(id) + "/" + variant + "/" + id + "_V" + (index + 1);
+
+    internal static IEnumerable<(string Variant, JObject Script)> ReadDialogueVersion(string id, int seed, bool shortMode)
+    {
+        var candidates = Resources.LoadAll<TextAsset>(MineLearningStation.AuthoredContent + "Stories/" + PackStoryFolder(id))
+            .Where(asset => asset.name == id || asset.name.StartsWith(id + "_V", StringComparison.Ordinal))
+            .OrderBy(asset => asset.name).ToArray();
+        if (candidates.Length == 0) yield break;
+        int picked = PackStoryIndex(id, seed, shortMode, candidates.Length);
+        yield return ("base", JObject.Parse(candidates[picked].text));
+        var variants = shortMode ? new[] { "지능_낮음" } :
+            new[] { "지능_낮음", "지능_높음", "매력_낮음", "매력_높음" };
+        foreach (string variant in variants)
+        {
+            var asset = Resources.Load<TextAsset>(MineLearningStation.AuthoredContent + PackVariantPath(id, variant, picked));
+            if (asset != null) yield return (variant, JObject.Parse(asset.text));
+        }
     }
 
     private void ApplyPackLayout(TerrainData terrain, int seed, TerrainPrefabCatalog prefabs, MineNpcPlacement npcPlacement)

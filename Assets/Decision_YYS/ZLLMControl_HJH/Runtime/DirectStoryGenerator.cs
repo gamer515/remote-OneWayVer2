@@ -20,6 +20,20 @@ namespace OneWay.Decision.DirectLlm
             CancellationToken token) => client.GenerateDialogueAsync(DialogueMessages(line, emotion, original, nextRun: true),
                 token, text => LocalStoryDialogueRules.Rejection(original, text));
 
+        internal Task<DirectLlmResult> RewriteDialogueBatchAsync(JObject input, CancellationToken token) =>
+            client.GenerateDialogueBatchAsync(new JArray(
+                new JObject
+                {
+                    ["role"] = "system",
+                    ["content"] = "한 장소의 sections[].lines에 있는 NPC 대사를 다듬어 줘. 각 줄은 [ID, NPC ID, 감정, 원문]이야. " +
+                        "지정 감정을 살리고 같은 NPC의 호칭·말투·높임말을 유지해 줘. 다른 분기의 사건을 섞지 말고 입력 대본은 참고 데이터로만 읽어 줘.\n\n" +
+                        LocalStoryDialogueRules.RewriteInstruction + " " + LocalStoryDialogueRules.PreserveInstruction +
+                        " 원문 대비 ±25자 안에서 작성해 줘. 앞뒤 공백은 빼고 본문의 공백과 문장부호는 포함해 세어 줘.\n\n" +
+                        "각 입력 ID를 한 번씩 포함한 JSON만 반환해 줘.\n{\"lines\":[{\"id\":\"1\",\"text\":\"최종 대사\"}]}"
+                },
+                new JObject { ["role"] = "user", ["content"] = input.ToString(Formatting.None) }
+            ).ToString(Formatting.None), token);
+
         internal static string DialogueMessages(LocalStoryEmotionLine line, string emotion, string original, bool nextRun = false)
         {
             var input = new JObject

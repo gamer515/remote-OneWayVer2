@@ -28,6 +28,7 @@ using UnityEngine;
     public LocalStorySectionCheckpoint sectionCheckpoint;
     public LocalStoryRevisionRequest snapshot;
     public string sourceHash, emotion, legacyEmotionContentHash, previousDialogueContentHash;
+    public string placeId;
     public int sequence;
     public List<LocalStoryEmotionLine> emotionLines;
     public bool authoredPack;
@@ -42,7 +43,7 @@ using UnityEngine;
 }
 
 /// <summary>Persistent next-run work. No in-progress dialogue replacement and no implicit memory promotion.</summary>
-public static class LocalStoryDialogueQueue
+public static partial class LocalStoryDialogueQueue
 {
     internal static string AuthoredJobId(string storyPath, string npcId) => storyPath + "|" + npcId;
 
@@ -72,7 +73,7 @@ public static class LocalStoryDialogueQueue
             {
                 job = new LocalStoryDialogueJob { authoredPack = true, jobId = key + "|" + mode, storyPath = record.encounterPath,
                     authoredStoryPackMode = mode, sequence = ++sequence,
-                    chapterId = "Chapter_1", episodeId = "Chapter_1_01", characterId = card.authoredNpcId,
+                    chapterId = "Chapter_1", episodeId = "Chapter_1_01", characterId = card.authoredNpcId, placeId = record.placeId,
                     sourceRun = queue.sourceRun, targetRun = queue.targetRun, revision = 1, model = DirectStoryGenerator.ModelName,
                     status = "WaitingForRunEnd", emotionLines = new List<LocalStoryEmotionLine>() };
                 queue.jobs.Add(job);
@@ -229,7 +230,8 @@ public static class LocalStoryDialogueQueue
                 if (job != null) queue.jobs.Remove(job);
                 job = new LocalStoryDialogueJob
                 {
-                    jobId = path, storyPath = path, characterId = (string)ChapterContentCatalog.Info(path)["characterId"],
+                    jobId = path, storyPath = path, placeId = group.First().placeId,
+                    characterId = (string)ChapterContentCatalog.Info(path)["characterId"],
                     sourceRun = run, targetRun = run + 1, revision = 1, sequence = ++sequence, sourceHash = sourceHash,
                     inputHash = Hash(sourceHash + "|" + run + "|" + path), model = DirectStoryGenerator.ModelName, status = "WaitingForRunEnd",
                     emotionLines = lines
@@ -271,7 +273,8 @@ public static class LocalStoryDialogueQueue
             var queue = Load(store, run);
             if (queue?.finalized != true) continue;
             var legacy = queue.jobs.Where(job => job.model != DirectStoryGenerator.ModelName &&
-                (job.status == "Ready" || job.status == "Rejected" || job.status == "Generating" || job.status == "Pending") &&
+                (job.status == "Generating" || job.status == "Pending") &&
+                job.emotionLines?.Any(line => !line.finished) == true &&
                 CanProcess(store, job)).ToArray();
             if (legacy.Length == 0) continue;
             foreach (var job in legacy)
@@ -281,7 +284,7 @@ public static class LocalStoryDialogueQueue
                 job.model = DirectStoryGenerator.ModelName;
                 job.status = "Pending";
                 job.generationWinner = null;
-                foreach (var line in job.emotionLines)
+                foreach (var line in job.emotionLines.Where(line => !line.finished))
                 {
                     line.generatedText = null;
                     line.rejection = null;
@@ -365,6 +368,7 @@ public static class LocalStoryDialogueQueue
         try
         {
             var cards = job.authoredPack ? null : JsonUtility.FromJson<EncounterCardRoot>(source);
+            await GenerateLocationBatch(store, job, generator, source, token);
             foreach (var line in job.emotionLines.Where(line => !line.finished))
             {
                 token.ThrowIfCancellationRequested();
@@ -433,10 +437,19 @@ public static class LocalStoryDialogueQueue
         }
     }
 
-    private static void SaveJob(SaveIOService store, LocalStoryDialogueJob job)
+    private static void SaveJob(SaveIOService store, LocalStoryDialogueJob job) => SaveJobs(store, job.sourceRun, new[] { job });
+
+    private static void SaveJobs(SaveIOService store, int run, IEnumerable<LocalStoryDialogueJob> jobs)
     {
-        var queue = Load(store, job.sourceRun);
+        var queue = Load(store, run);
+        foreach (var job in jobs) MergeJob(queue, job);
+        Save(store, queue);
+    }
+
+    private static void MergeJob(LocalStoryDialogueQueueData queue, LocalStoryDialogueJob job)
+    {
         int index = queue.jobs.FindIndex(candidate => candidate.jobId == job.jobId);
+        if (index < 0) return;
         var stored = queue.jobs[index];
         var update = job;
         if (stored.emotionLines.Count > job.emotionLines.Count)
@@ -451,6 +464,5 @@ public static class LocalStoryDialogueQueue
             }
         }
         queue.jobs[index] = update;
-        Save(store, queue);
     }
 }

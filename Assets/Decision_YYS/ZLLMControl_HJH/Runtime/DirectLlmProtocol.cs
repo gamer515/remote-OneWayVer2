@@ -90,7 +90,7 @@ namespace OneWay.Decision.DirectLlm
             return new DirectLlmHttpRequest(endpoint.provider, url, header, value, body.ToString(Formatting.None), timeoutSeconds);
         }
 
-        internal static DirectLlmResult Response(DirectLlmProvider provider, string raw, bool expectCards)
+        internal static DirectLlmResult Response(DirectLlmProvider provider, string raw, bool expectCards, bool expectDialogueBatch = false)
         {
             try
             {
@@ -102,7 +102,7 @@ namespace OneWay.Decision.DirectLlm
                 {
                     var candidate = root["candidates"]?.First;
                     string finish = (string)candidate?["finishReason"];
-                    if (finish != "STOP" && (expectCards || finish != "MAX_TOKENS"))
+                    if (finish != "STOP" && (expectCards || expectDialogueBatch || finish != "MAX_TOKENS"))
                         throw new DirectLlmFailure("IncompleteOrBlocked");
                     var parts = candidate["content"]?["parts"] as JArray;
                     if (parts == null) throw new DirectLlmFailure("EmptyResponse");
@@ -115,7 +115,7 @@ namespace OneWay.Decision.DirectLlm
                 {
                     var choice = root["choices"]?.First;
                     string finish = (string)choice?["finish_reason"];
-                    if (finish != "stop" && (expectCards || finish != "length"))
+                    if (finish != "stop" && (expectCards || expectDialogueBatch || finish != "length"))
                         throw new DirectLlmFailure("IncompleteOrBlocked");
                     var message = choice["message"];
                     if (!string.IsNullOrWhiteSpace((string)message?["refusal"])) throw new DirectLlmFailure("Refused");
@@ -128,6 +128,11 @@ namespace OneWay.Decision.DirectLlm
                 if (string.IsNullOrWhiteSpace(content)) throw new DirectLlmFailure("EmptyResponse");
                 result.RawText = content;
                 if (expectCards) result.CardsJson = Cards(content);
+                else if (expectDialogueBatch)
+                {
+                    if (Parse(content) is not JObject batch || batch.Count != 1 || batch["lines"] is not JArray)
+                        throw new DirectLlmFailure("InvalidDialogueBatch");
+                }
                 else result.Text = Dialogue(content);
                 return result;
             }

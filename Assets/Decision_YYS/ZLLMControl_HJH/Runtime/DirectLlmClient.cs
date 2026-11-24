@@ -82,8 +82,11 @@ namespace OneWay.Decision.DirectLlm
         public Task<DirectLlmResult> GenerateDialogueAsync(string messages, CancellationToken token,
             Func<string, string> rejectDialogue = null) => Generate(messages, null, 0, token, rejectDialogue);
 
+        internal Task<DirectLlmResult> GenerateDialogueBatchAsync(string messages, CancellationToken token) =>
+            Generate(messages, null, 0, token, null, expectDialogueBatch: true);
+
         private async Task<DirectLlmResult> Generate(string messages, int? maxTokens, int seed,
-            CancellationToken token, Func<string, string> rejectOutput)
+            CancellationToken token, Func<string, string> rejectOutput, bool expectDialogueBatch = false)
         {
             token.ThrowIfCancellationRequested();
             var parsed = DirectLlmProtocol.Messages(messages);
@@ -114,7 +117,7 @@ namespace OneWay.Decision.DirectLlm
                         attempt.HttpStatus = response.StatusCode;
                         if (!response.TransportSucceeded || response.StatusCode < 200 || response.StatusCode >= 300)
                             throw new DirectLlmFailure("HttpOrNetworkError");
-                        var result = DirectLlmProtocol.Response(endpoint.provider, response.Body, maxTokens.HasValue);
+                        var result = DirectLlmProtocol.Response(endpoint.provider, response.Body, maxTokens.HasValue, expectDialogueBatch);
                         string rejection = rejectOutput?.Invoke(maxTokens.HasValue ? result.CardsJson : result.Text);
                         if (rejection != null) throw new DirectLlmFailure(rejection);
                         token.ThrowIfCancellationRequested();
