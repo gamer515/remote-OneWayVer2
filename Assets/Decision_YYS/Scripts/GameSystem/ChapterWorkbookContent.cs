@@ -319,7 +319,7 @@ internal static class ChapterWorkbookContent
             rules.intelligence == null || rules.capacities == null ||
             rules.dailyIntelligenceThresholds == null || rules.dailyLimits == null ||
             rules.startingStock < 0 || rules.refillStock <= 0 || rules.refillBase <= 0 || rules.refillIncrease < 0 ||
-            rules.decayCoins < 0 || !Positive(rules.daySeconds) ||
+            rules.decayCoins < 0 || rules.dailyLimitBonus < 0 || !Positive(rules.daySeconds) ||
             !Positive(rules.deliverySeconds) || !Ordered(rules.dailyIntelligenceThresholds) ||
             rules.dailyLimits.Length != rules.dailyIntelligenceThresholds.Length || rules.dailyLimits.Any(value => value <= 0) ||
             !Ordered(rules.capacities.Select(step => step.knowledgeCoins)) ||
@@ -335,7 +335,7 @@ internal static class ChapterWorkbookContent
             books.Any(book => string.IsNullOrWhiteSpace(book.id) || string.IsNullOrWhiteSpace(book.name) ||
                 string.IsNullOrWhiteSpace(book.author) || book.ability < 0 || book.ability > 3 ||
                 book.requiredAbility < 0 || book.requiredKnowledge < 0 || book.reward < 0 || book.skillReward < 0 ||
-                !skills.Contains(book.skill) || !Positive(book.seconds) || !Positive(book.generationSeconds)) ||
+                !skills.Contains(book.skill) || !Positive(book.seconds)) ||
             rules.combos.Select(combo => combo.id).Distinct().Count() != rules.combos.Length ||
             rules.combos.Any(combo => string.IsNullOrWhiteSpace(combo.id) || string.IsNullOrWhiteSpace(combo.name) ||
                 combo.books == null || combo.books.Length < 2 || combo.books.Distinct().Count() != combo.books.Length ||

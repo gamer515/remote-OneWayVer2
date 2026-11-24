@@ -70,10 +70,11 @@ using UnityEngine;
 [Serializable] public sealed class MineCollectorPatrolSettings
 {
     public int inspectionStart = 1, inspectionIncrease = 1;
-    public float spawnLeadDistance = 25f;
-    public float chaseSpeedStart = 2.70f, chaseSpeedIncrease = .20f, chaseSpeedMax = 3.60f;
+    public float inspectionSpeed = 3.4f;
+    public float chaseSpeedStart = 3.8f, chaseSpeedIncrease = .20f, chaseSpeedMax = 4.7f;
 
     public int MinimumCoins(int chunkIndex) => Mathf.Max(0, inspectionStart + inspectionIncrease * chunkIndex);
+    public float InspectionSpeed => Mathf.Max(.01f, inspectionSpeed);
     public float ChaseSpeed(int chunkIndex) => Mathf.Max(.01f, Mathf.Min(chaseSpeedMax, chaseSpeedStart + chaseSpeedIncrease * chunkIndex));
 }
 
@@ -101,6 +102,12 @@ using UnityEngine;
         var asset = authored == null ? Resources.Load<TextAsset>("Chapters/" + document) : null;
         if (authored == null && asset == null) throw new InvalidOperationException("청크 1 시험 설정이 없습니다.");
         var rules = authored != null ? authored.ToObject<MineChapterSettings>() : JsonUtility.FromJson<MineChapterSettings>(asset.text);
+        if (rules.collectorPatrol == null)
+        {
+            asset ??= Resources.Load<TextAsset>("Chapters/" + document);
+            rules.collectorPatrol = (asset == null ? null : JsonUtility.FromJson<MineChapterSettings>(asset.text).collectorPatrol)
+                ?? new MineCollectorPatrolSettings();
+        }
         // Existing installs keep their own copy of Rules.xlsx. Migrate only the old shipped timing.
         if (document == "Chapter_01/Rules" && rules.dayCycle is { daySeconds: 135f, duskSeconds: 15f,
                 nightSeconds: 135f, dawnSeconds: 15f } cycle)

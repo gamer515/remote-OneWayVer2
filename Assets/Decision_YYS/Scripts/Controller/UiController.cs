@@ -56,7 +56,7 @@ public class UiController : MonoBehaviour
     public void AppendPlayerChoice(string text) => mainStoryUi?.AppendPlayerChoice(SanitizeText(text));
     public void AppendInteraction(string text, string speakerId) => mainStoryUi?.AppendInteraction(SanitizeText(text), speakerId);
     public void SetStoryHeading(string text) => mainStoryUi?.SetStoryHeading(SanitizeText(text));
-    public void SetStoryNotice(string text) => mainStoryUi?.SetStoryNotice(SanitizeText(text));
+    public void SetStoryNotice(string text, bool fadeOut = false) => mainStoryUi?.SetStoryNotice(SanitizeText(text), fadeOut);
     internal void SetTaxCriteria(string text) => mainStoryUi?.SetTaxCriteria(SanitizeText(text));
     internal bool IsReadingOpen => mainStoryUi != null && mainStoryUi.IsReadingOpen;
     internal bool IsComboGuideInputBlocked => mainStoryUi != null && mainStoryUi.IsComboGuideInputBlocked;

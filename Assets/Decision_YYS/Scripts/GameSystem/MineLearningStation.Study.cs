@@ -20,6 +20,7 @@ public sealed partial class MineLearningStation
         [Newtonsoft.Json.JsonProperty("enduranceThresholds")]
         public int[] dailyIntelligenceThresholds;
         public int[] dailyLimits;
+        public int dailyLimitBonus = 2;
         public StudySkill[] skills;
         public StudyCombo[] combos;
     }
@@ -88,9 +89,9 @@ public sealed partial class MineLearningStation
     private float initialCalendarDays;
     private bool usesChapterCalendar;
 
-    private void InitializeStudyState()
+    private bool InitializeStudyState()
     {
-        if (study == null) return;
+        if (study == null) return false;
         nextStudySave = 0;
         StudyResult = null;
         progress.stored ??= new List<MineLearningJob>();
@@ -111,6 +112,14 @@ public sealed partial class MineLearningStation
             PrepareStrengthTutorial(job);
             job.bookId = CurrentReadingBookId(job);
             job.bookName = GetBookDisplayName(job);
+        }
+        bool migratedProduction = progress.producing != null;
+        if (migratedProduction)
+        {
+            var book = progress.producing;
+            progress.producing = null;
+            book.generationRemaining = 0f;
+            progress.queued.Add(book);
         }
         progress.pendingReading ??= new List<string>();
         progress.pendingReading.RemoveAll(id => string.IsNullOrEmpty(id) || !readingBooks.ContainsKey(id));
@@ -146,6 +155,7 @@ public sealed partial class MineLearningStation
             progress.active.Add(tutorial);
         }
         RestoreBookshelf();
+        return migratedProduction;
     }
 
     private bool RefreshDay(bool renewAllowance = true)
@@ -183,7 +193,7 @@ public sealed partial class MineLearningStation
     {
         int index = Array.FindLastIndex(study.dailyIntelligenceThresholds, threshold => intelligence >= threshold);
         int limit = study.dailyLimits[Mathf.Max(0, index)];
-        return FirstStudyDay ? Mathf.Max(2, limit) : limit;
+        return (FirstStudyDay ? Mathf.Max(2, limit) : limit) + Mathf.Max(0, study.dailyLimitBonus);
     }
 
     private StudyTier Intelligence(int knowledge) =>
@@ -207,10 +217,10 @@ public sealed partial class MineLearningStation
 
     private bool ProduceBook(int ability)
     {
-        if (progress.producing != null) return Explain("다른 책을 만들고 있습니다.");
         if (Stock(ability) <= 0) return Explain("책이 없습니다. 해당 능력 코인을 투입구에 넣으세요.");
         int queueLimit = ProductionQueueLimit;
-        if (progress.queued.Count >= queueLimit && !(queueLimit == 0 && CanDeliverStudyBook))
+        if (progress.queued.Count >= queueLimit &&
+            !(queueLimit == 0 && progress.queued.Count == 0 && CanDeliverStudyBook))
             return Explain("생성 대기열이 가득 찼습니다.");
 
         var amounts = wallet();
@@ -219,13 +229,15 @@ public sealed partial class MineLearningStation
         var book = available[progress.nextBook[ability] % available.Length];
         progress.nextBook[ability]++;
         progress.stock[ability]--;
-        progress.producing = new MineLearningJob
+        var job = new MineLearningJob
         {
             ability = ability, reward = book.reward, duration = book.seconds, remaining = book.seconds,
-            generationRemaining = book.generationSeconds, bookId = book.id, bookName = book.name,
+            bookId = book.id, bookName = book.name,
             requiresBoard = true
         };
-        AssignBookNumber(progress.producing);
+        AssignBookNumber(job);
+        DiscoverBook(job.bookId);
+        progress.queued.Add(job);
         notice = null;
         save?.Invoke();
         return true;
@@ -334,7 +346,7 @@ public sealed partial class MineLearningStation
         if (!UsesStudyRules || !CanBeginStudySession || HasComboStudy || ReadingResult != null ||
             batch.Length < 2 || batch.Length > TodayRemaining ||
             batch.Any(job => job.started || job.held || !CanRead(job))) return false;
-        return ColorComboPattern(batch) != null || NumberComboReward(batch) != null ||
+        return NumberComboReward(batch) != null || MatchStackCombo(batch, hasAbilitySequence: false) != null ||
             study.combos.Any(combo => !progress.rewardedCombos.Contains(combo.id) &&
             combo.books.All(id => batch.Any(job => job.bookId == id))) ||
             readingCombos.Any(combo => !IsAbilityCombo(combo) && CanCompleteReadingCombo(combo, batch));
@@ -347,7 +359,7 @@ public sealed partial class MineLearningStation
         progress.numberComboRewardId = (string)NumberComboReward(batch)?["id"];
         progress.numberComboChoicesRemaining = progress.numberComboRewardId != null ? batch.Length : 0;
         progress.numberComboBookCount = progress.numberComboChoicesRemaining;
-        progress.colorComboPattern = ColorComboPattern(batch);
+        progress.colorComboPattern = MatchStackCombo(batch, progress.numberComboRewardId != null);
         progress.colorComboChoicesRemaining = progress.colorComboPattern != null ? batch.Length : 0;
         progress.comboSuccesses.Clear();
         progress.comboBoardPoint = pickupPoint;
@@ -388,20 +400,6 @@ public sealed partial class MineLearningStation
         }
         if (!stop)
         {
-            bool enteredQueue = false;
-            if (progress.producing != null)
-            {
-                progress.producing.generationRemaining -= seconds;
-                if (progress.producing.generationRemaining <= 0)
-                {
-                    PrepareStrengthTutorial(progress.producing);
-                    DiscoverBook(progress.producing.bookId);
-                    progress.queued.Add(progress.producing);
-                    progress.producing = null;
-                    enteredQueue = changed = true;
-                }
-            }
-
             var currentStudy = CurrentStudy;
             for (int i = 0; i < progress.active.Count;)
             {
@@ -436,8 +434,7 @@ public sealed partial class MineLearningStation
                 }
                 i++;
             }
-            // Give a newly completed book a rendered frame in the queue before delivery starts.
-            if (!enteredQueue && ReadingPreview == null) changed |= FillSlots();
+            if (ReadingPreview == null) changed |= FillSlots();
         }
         if (Time.unscaledTime >= nextStudySave)
         {

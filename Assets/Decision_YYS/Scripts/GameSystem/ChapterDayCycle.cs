@@ -12,6 +12,23 @@ public sealed class ChapterDayCycle
     public int DayIndex(float elapsedSeconds) => Mathf.FloorToInt(ElapsedDays(elapsedSeconds));
     public bool IsAfterSunset(float elapsedSeconds) => Mathf.Repeat(elapsedSeconds, DayLength) >= daySeconds + duskSeconds;
     public float NextSunrise(float elapsedSeconds) => (DayIndex(elapsedSeconds) + 1) * DayLength;
+
+    // The saved chapter clock is also the source of the remaining pause on continue.
+    internal float CollectorMovementSeconds(float from, float to, out bool paused)
+    {
+        const float pauseSeconds = 10f;
+        float sunset = daySeconds + duskSeconds;
+        float nightStart = DayIndex(to) * DayLength + sunset;
+        paused = to >= nightStart && to < nightStart + pauseSeconds;
+        float frozen = FrozenTimeAt(to) - FrozenTimeAt(from);
+        return Mathf.Max(0f, to - from - frozen);
+
+        float FrozenTimeAt(float time)
+        {
+            int day = DayIndex(time);
+            return day * pauseSeconds + Mathf.Clamp(time - day * DayLength - sunset, 0f, pauseSeconds);
+        }
+    }
     public bool IsValid => FinitePositive(daySeconds) && FinitePositive(duskSeconds) &&
         FinitePositive(nightSeconds) && FinitePositive(dawnSeconds) && float.IsFinite(DayLength) &&
         InRange(daylightSky) && InRange(nightSky) && InRange(nightLightMultiplier);

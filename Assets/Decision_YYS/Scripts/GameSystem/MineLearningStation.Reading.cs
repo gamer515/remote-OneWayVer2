@@ -14,7 +14,9 @@ public sealed partial class MineLearningStation
     private const string StrengthTutorialBook = "strength_basic";
     private JObject[] readingCombos = Array.Empty<JObject>();
     private const string ComboColors = "빨파노청";
-    private Dictionary<string, string> colorCombos = new Dictionary<string, string>();
+    private Dictionary<string, (string Name, string Group)> colorCombos = new();
+    private JObject[] stackNumberCombos = Array.Empty<JObject>();
+    private const string StackComboIdPrefix = "CM_STACK_";
     private JObject comboRewards;
     private bool readingDeferred;
     internal JObject ReadingPreview { get; private set; }
@@ -83,40 +85,159 @@ public sealed partial class MineLearningStation
         record.payouts++;
     }
 
-    private string ColorComboPattern(MineLearningJob[] batch)
+    private string MatchStackCombo(MineLearningJob[] batch, bool hasAbilitySequence)
     {
-        if (batch.Any(job => (uint)job.ability >= ComboColors.Length ||
+        if (batch.Length is < 2 or > 4 || batch.Any(job => (uint)job.ability >= ComboColors.Length ||
             !readingBooks.ContainsKey(job.bookId ?? ""))) return null;
-        string pattern = new string(batch.Select(job => ComboColors[job.ability]).ToArray());
-        return colorCombos.ContainsKey(pattern) ? pattern : null;
+        string colors = new string(batch.Select(job => ComboColors[job.ability]).ToArray());
+        bool colorMatch = colorCombos.TryGetValue(colors, out var group);
+        if (batch.Any(job => job.bookNumber is < 1 or > MaxBookNumber)) return colorMatch ? colors : null;
+        var hybrid = stackNumberCombos.FirstOrDefault(rule =>
+            (string)rule["colorGroup"] is string requiredGroup && group.Group == requiredGroup &&
+            MatchesBookNumbers(batch, (string)rule["pattern"]));
+        var number = hybrid ?? stackNumberCombos.FirstOrDefault(rule =>
+            rule["colorGroup"] == null && !(hasAbilitySequence && (string)rule["pattern"] == "123") &&
+            MatchesBookNumbers(batch, (string)rule["pattern"]));
+        var priority = comboRewards["stackPriority"];
+        if (hybrid == null && colorMatch &&
+            (number == null || (int)priority["color"] >= (int)priority["number"])) return colors;
+        return number == null ? null :
+            $"{(string)number["id"]}/{colors}/{string.Join("·", batch.Select(job => job.bookNumber))}";
     }
 
-    private static string ColorComboId(string pattern) => "CM_COLOR_" + pattern;
-    internal IEnumerable<LearningComboReward> DiscoveredColorCombos => colorCombos.Keys
-        .Where(pattern => ReadingComboPayouts(ColorComboId(pattern)) > 0).Select(ColorComboReward);
+    private static bool MatchesBookNumbers(MineLearningJob[] batch, string pattern)
+    {
+        if (pattern?.Length != batch.Length) return false;
+        int a = batch[0].bookNumber, b = batch[1].bookNumber;
+        return pattern switch
+        {
+            "AA" => a == b,
+            "123" => b == a + 1 && batch[2].bookNumber == a + 2,
+            "AABB" => a == b && a != batch[2].bookNumber && batch[2].bookNumber == batch[3].bookNumber,
+            "ABAB" => a != b && a == batch[2].bookNumber && b == batch[3].bookNumber,
+            _ => false
+        };
+    }
 
-    private LearningComboReward ColorComboReward(string pattern)
+    private static string StackComboId(string key) =>
+        key.Contains("/") ? StackComboIdPrefix + key : "CM_COLOR_" + key;
+
+    internal IEnumerable<string> ComboGuideHints => comboRewards?["guideHints"]?.Values<string>() ??
+        Enumerable.Empty<string>();
+
+    internal IEnumerable<(string Title, string Body)> ComboReferencePages()
+    {
+        if (comboRewards == null) yield break;
+        const string order = "묶음의 아래에서 위로 읽는 순서";
+        string ColorRows(JToken group) => string.Join("\n", group["patterns"].Values<string>()
+            .Select(pattern => string.Join(" → ", pattern.Select(ColoredBookSymbol))));
+        string RewardLine(string table, int length, int bonus = 0)
+        {
+            var reward = comboRewards[table][length.ToString()];
+            return $"추가 코인  주력 {(int)reward["main"] + bonus} · 나머지 합계 {(int)reward["others"]}";
+        }
+
+        var groups = comboRewards["colorCombos"].ToArray();
+        foreach (var group in groups)
+        {
+            int length = ((string)group["patterns"].First).Length;
+            yield return ($"색깔 조합 · {(string)group["name"]}", $"{order}\n\n{ColorRows(group)}\n\n{RewardLine("colorRewards", length)}");
+        }
+        foreach (var rule in stackNumberCombos)
+        {
+            string pattern = (string)rule["pattern"];
+            string example = pattern switch
+            {
+                "AA" => "같은 번호 두 권  ·  예 7 → 7",
+                "123" => "연속 오름차순 세 권  ·  예 3 → 4 → 5",
+                "AABB" => "서로 다른 번호 두 쌍  ·  예 4 → 4 → 8 → 8",
+                "ABAB" => "서로 다른 번호를 교대로  ·  예 2 → 5 → 2 → 5",
+                _ => pattern
+            };
+            var group = groups.FirstOrDefault(item => (string)rule["colorGroup"] is string id && (string)item["id"] == id);
+            string kind = group == null ? "숫자" : "색 + 숫자";
+            string body = $"{order}\n\n{example}";
+            if (group != null) body += $"\n\n아래 색 순서 중 하나를 함께 맞추세요.\n{ColorRows(group)}";
+            body += "\n\n" + RewardLine(group == null ? "numberRewards" : "colorRewards", pattern.Length,
+                group == null ? 0 : (int)comboRewards["colorNumberMainBonus"]);
+            yield return ($"{kind} 조합 · {(string)rule["name"]}", body);
+        }
+        yield return ("능력 조합", $"{order}\n\n같은 능력의 책을 3권 이상 연속 오름차순으로 쌓으세요.\n예  힘 3 → 힘 4 → 힘 5\n\n13에서 1로 이어지지 않아요.\n같은 조건의 숫자 조합 보상은 한 번만 지급돼요.");
+        foreach (string type in new[] { "author", "theme" })
+        {
+            string heading = type == "author" ? "작가 조합" : "주제 조합";
+            var entries = readingCombos.Where(combo => (string)combo["type"] == type)
+                .Select(combo =>
+                {
+                    var condition = combo["condition"];
+                    var titles = condition["bookIds"].Values<string>().Where(readingBooks.ContainsKey).Select(ReadingTitle);
+                    return $"<b>{(string)combo["name"]}</b> · {(int)condition["minCompleted"]}권\n{string.Join(" / ", titles)}";
+                }).ToArray();
+            for (int i = 0; i < entries.Length; i += 3)
+                yield return (heading, string.Join("\n\n", entries.Skip(i).Take(3)));
+        }
+    }
+
+    private static string ColoredBookSymbol(char color)
+    {
+        string ink = color switch { '빨' => "#AA3538", '파' => "#2557A8", '노' => "#845800", _ => "#15746C" };
+        return $"<color={ink}><b>{color}</b></color>";
+    }
+
+    internal IEnumerable<(LearningComboReward Reward, string Condition)> DiscoveredStackCombos
+    {
+        get
+        {
+            foreach (string pattern in colorCombos.Keys)
+                if (ReadingComboPayouts(StackComboId(pattern)) > 0 && ResolveStackCombo(pattern) is { } color)
+                    yield return color;
+            if (progress.readingComboProgress == null) yield break;
+            foreach (var entry in progress.readingComboProgress)
+                if (entry.payouts > 0 && entry.id != null && entry.id.StartsWith(StackComboIdPrefix, StringComparison.Ordinal) &&
+                    ResolveStackCombo(entry.id.Substring(StackComboIdPrefix.Length)) is { } combo)
+                    yield return combo;
+        }
+    }
+
+    private (LearningComboReward Reward, string Condition)? ResolveStackCombo(string key)
+    {
+        if (colorCombos.TryGetValue(key, out var color))
+            return (new LearningComboReward($"{color.Name} · {key}", StackComboCoins(key, "colorRewards", 0)),
+                $"아래에서 위로 {key}");
+        var parts = key.Split('/');
+        if (parts.Length != 3 || parts[1].Length is < 2 or > 4 ||
+            parts[1].Any(ch => !ComboColors.Contains(ch))) return null;
+        var rule = stackNumberCombos.FirstOrDefault(item => (string)item["id"] == parts[0]);
+        if (rule == null) return null;
+        bool hybrid = rule["colorGroup"] != null;
+        string condition = $"아래에서 위로 색 {parts[1]} / 번호 {parts[2]}";
+        string name = $"{(string)rule["name"]} · {parts[2]}";
+        return (new LearningComboReward(name, StackComboCoins(parts[1], hybrid ? "colorRewards" : "numberRewards",
+            hybrid ? (int)comboRewards["colorNumberMainBonus"] : 0)), condition);
+    }
+
+    private int[] StackComboCoins(string pattern, string rewardTable, int bonus)
     {
         var groups = pattern.Select(color => ComboColors.IndexOf(color)).GroupBy(ability => ability).ToArray();
         int main = groups.OrderByDescending(group => group.Count()).First().Key;
         var others = groups.Select(group => group.Key).Where(ability => ability != main).ToArray();
-        var config = comboRewards["colorRewards"][pattern.Length.ToString()];
+        var config = comboRewards[rewardTable][pattern.Length.ToString()];
         var coins = new int[AbilityKeys.Length];
-        coins[main] = (int)config["main"];
         int otherCoins = (int)config["others"];
+        coins[main] = (int)config["main"] + bonus + (others.Length == 0 ? otherCoins : 0);
         for (int i = 0; i < others.Length; i++)
             coins[others[i]] = otherCoins / others.Length + (i < otherCoins % others.Length ? 1 : 0);
-        return new LearningComboReward($"{colorCombos[pattern]} · {pattern}", coins);
+        return coins;
     }
 
-    private LearningComboReward? CompleteColorComboChoice()
+    private LearningComboReward? CompleteStackComboChoice()
     {
         if (progress.colorComboChoicesRemaining <= 0 || --progress.colorComboChoicesRemaining != 0) return null;
         string pattern = progress.colorComboPattern;
         progress.colorComboPattern = null;
-        if (pattern == null || !colorCombos.ContainsKey(pattern)) return null;
-        RecordComboPayout(ColorComboId(pattern));
-        return ColorComboReward(pattern);
+        if (pattern == null || ResolveStackCombo(pattern) is not { } combo) return null;
+        RecordComboPayout(StackComboId(pattern));
+        return combo.Reward;
     }
 
     private int[] BoostComboCoins(int[] coins, int bookCount)
@@ -274,8 +395,10 @@ public sealed partial class MineLearningStation
         readingCombos = Resources.LoadAll<TextAsset>(AuthoredContent + "Reading/combos")
             .Select(asset => JObject.Parse(asset.text)).OrderBy(combo => (string)combo["id"]).ToArray();
         comboRewards = ReadContent("Reading/ComboRewards");
+        stackNumberCombos = comboRewards["numberCombos"].OfType<JObject>().ToArray();
         colorCombos = comboRewards["colorCombos"].SelectMany(group => group["patterns"].Values<string>()
-            .Select(pattern => (pattern, name: (string)group["name"]))).ToDictionary(combo => combo.pattern, combo => combo.name);
+            .Select(pattern => (pattern, name: (string)group["name"], id: (string)group["id"])))
+            .ToDictionary(combo => combo.pattern, combo => (combo.name, combo.id));
         var previous = authoredBooks;
         previousBookIds.Clear();
         authoredBooks = readingBooks.Values.OrderBy(book => (string)book["bookId"]).GroupBy(book =>
@@ -295,7 +418,6 @@ public sealed partial class MineLearningStation
                 {
                     id = id, name = (string)entry["parodyTitle"], ability = group.Key,
                     author = (string)entry["author"], seconds = template?.seconds ?? minimumSeconds,
-                    generationSeconds = template?.generationSeconds ?? deliverySeconds,
                     requiredKnowledge = template?.requiredKnowledge ?? 0,
                     requiredAbility = template?.requiredAbility ?? 0,
                     skill = exact?.skill,
@@ -360,8 +482,8 @@ public sealed partial class MineLearningStation
             AddCombo(new LearningComboReward((string)numberCombo["name"], ExistingComboCoins(numberCombo, progress.numberComboBookCount)));
             progress.numberComboBookCount = 0;
         }
-        if (CompleteColorComboChoice() is LearningComboReward colorCombo)
-            AddCombo(colorCombo);
+        if (CompleteStackComboChoice() is LearningComboReward stackCombo)
+            AddCombo(stackCombo);
         AwardCoins(amounts, combos);
         string coins = FormatCoinReward(amounts);
         progress.readingResult = (string)choice["result"] + "\n\n" +

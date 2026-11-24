@@ -40,7 +40,7 @@ public sealed class ChatHistoryUi : MonoBehaviour
     public bool IsTyping => composerActive && choiceDraft;
     public void SetDialogueVisible(bool visible) => floatingView?.SetVisible(visible);
     public void SetStoryHeading(string text) => floatingView?.SetStoryHeading(text);
-    public void SetStoryNotice(string text) => floatingView?.SetStoryNotice(text);
+    public void SetStoryNotice(string text, bool fadeOut = false) => floatingView?.SetStoryNotice(text, fadeOut);
     internal void SetTaxCriteria(string text) => floatingView?.SetTaxCriteria(text);
     internal void SetChoiceHints(System.Func<int, string> hint, int first, int count) =>
         floatingView?.SetChoiceHints(hint, first, count);

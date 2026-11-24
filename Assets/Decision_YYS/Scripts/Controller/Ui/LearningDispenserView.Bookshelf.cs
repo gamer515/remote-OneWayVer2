@@ -12,7 +12,7 @@ public sealed partial class LearningDispenserView
     private Vector3[] bookshelfSlots;
     private readonly Transform[] codexBooks = new Transform[2];
     private readonly bool[] codexOnBoard = new bool[2];
-    private static readonly string[] CodexTitles = { "발견한 책", "발견한 콤보" };
+    private static readonly string[] CodexTitles = { "발견한 책", "조합표" };
     private MainStoryUi studyCodexUi;
     private int pressedCodex = -1;
     private bool draggingCodex;

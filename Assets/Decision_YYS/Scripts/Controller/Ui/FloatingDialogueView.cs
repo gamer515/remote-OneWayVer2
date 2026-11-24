@@ -26,6 +26,10 @@ public sealed class FloatingDialogueView : MonoBehaviour
     private ChatBubbleGraphic headingBackdrop, noticeBackdrop;
     private CanvasGroup headingFade;
     private float headingShownAt;
+    private const float NoticeHoldSeconds = 2.5f;
+    private const float NoticeFadeSeconds = .65f;
+    private CanvasGroup noticeFade;
+    private float noticeFadeAt = float.PositiveInfinity;
     private TextMeshProUGUI taxCriteria;
     private TextMeshProUGUI choiceHint;
     private System.Func<int, string> getChoiceHint;
@@ -35,7 +39,7 @@ public sealed class FloatingDialogueView : MonoBehaviour
 
     private void OnDisable()
     {
-        if (noticeBackdrop != null) noticeBackdrop.gameObject.SetActive(false);
+        SetStoryNotice(null);
     }
 
     private void OnDestroy()
@@ -65,9 +69,14 @@ public sealed class FloatingDialogueView : MonoBehaviour
         }
         if (noticeBackdrop != null && !string.IsNullOrEmpty(storyNotice.text))
         {
-            float gap = studyNotice != null && studyNotice.isActiveAndEnabled
-                ? studyNotice.rectTransform.rect.height + 29f : 10f;
-            noticeBackdrop.gameObject.SetActive(noticeBackdrop.FollowSpeaker(noticeSpeaker, noticeWorldCamera, gap));
+            noticeFade.alpha = 1f - Mathf.Clamp01((Time.unscaledTime - noticeFadeAt) / NoticeFadeSeconds);
+            if (noticeFade.alpha <= 0f) SetStoryNotice(null);
+            else
+            {
+                float gap = studyNotice != null && studyNotice.isActiveAndEnabled
+                    ? studyNotice.rectTransform.rect.height + 29f : 10f;
+                noticeBackdrop.gameObject.SetActive(noticeBackdrop.FollowSpeaker(noticeSpeaker, noticeWorldCamera, gap));
+            }
         }
         string hint = null;
         var mouse = UnityEngine.InputSystem.Mouse.current;
@@ -136,8 +145,15 @@ public sealed class FloatingDialogueView : MonoBehaviour
         headingShownAt = Time.unscaledTime;
     }
 
-    public void SetStoryNotice(string text) =>
+    public void SetStoryNotice(string text, bool fadeOut = false)
+    {
         SetStoryLabel(ref storyNotice, ref noticeBackdrop, "StoryNotice", text, .045f, 15f, true);
+        if (noticeBackdrop == null) return;
+        noticeFade ??= noticeBackdrop.gameObject.AddComponent<CanvasGroup>();
+        noticeFade.blocksRaycasts = false;
+        noticeFade.alpha = 1f;
+        noticeFadeAt = fadeOut && !string.IsNullOrEmpty(text) ? Time.unscaledTime + NoticeHoldSeconds : float.PositiveInfinity;
+    }
 
     internal void SetTaxCriteria(string text)
     {

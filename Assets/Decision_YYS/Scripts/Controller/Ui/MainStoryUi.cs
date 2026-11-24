@@ -76,7 +76,7 @@ public partial class MainStoryUi : ParentUi
     public void AppendPlayerChoice(string text) => chatHistory?.AppendPlayerChoice(text);
     public void AppendInteraction(string text, string speakerId) => chatHistory?.AppendDialogue(text, speakerId);
     public void SetStoryHeading(string text) => chatHistory?.SetStoryHeading(text);
-    public void SetStoryNotice(string text) => chatHistory?.SetStoryNotice(text);
+    public void SetStoryNotice(string text, bool fadeOut = false) => chatHistory?.SetStoryNotice(text, fadeOut);
     internal void SetTaxCriteria(string text) => chatHistory?.SetTaxCriteria(text);
     internal void SetChoiceHints(System.Func<int, string> hint, int first, int count) =>
         chatHistory?.SetChoiceHints(hint, first, count);

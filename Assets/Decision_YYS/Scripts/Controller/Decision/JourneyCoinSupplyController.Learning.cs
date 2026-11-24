@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using UnityEngine.UI;
 
 public sealed partial class JourneyCoinSupplyController
 {
@@ -11,6 +10,8 @@ public sealed partial class JourneyCoinSupplyController
         internal LearningBoardCoin Data;
         internal GameObject Model;
         internal Vector3 RestPosition;
+        internal Vector3 OutlineOffset;
+        internal Vector2 OutlineRadii;
         internal bool InFlight;
     }
 
@@ -20,7 +21,7 @@ public sealed partial class JourneyCoinSupplyController
     private Action saveLearningBoard;
     private Vector2 selectionStart, learningGrabPoint;
     private bool selectingLearningCoins, draggingLearningCoins;
-    private RectTransform learningSelectionBox;
+    private CoinSelectionGraphic learningSelectionGraphic;
     private static Mesh coinStarMesh;
     private static Material coinStarMaterial;
     private const string CoinStarName = "CoinFaceStar";
@@ -109,7 +110,13 @@ public sealed partial class JourneyCoinSupplyController
         Bounds bounds = paymentGrid.bounds;
         data.position = new Vector2(Mathf.InverseLerp(bounds.min.x, bounds.max.x, rest.x),
             Mathf.InverseLerp(bounds.min.z, bounds.max.z, rest.z));
-        learningCoins.Add(new LandedCoin { Model = model, Data = data, RestPosition = rest });
+        var shape = BoardItemDrop.ItemBounds(model.transform);
+        var top = new Vector3(shape.center.x, shape.max.y, shape.center.z);
+        learningCoins.Add(new LandedCoin
+        {
+            Model = model, Data = data, RestPosition = rest,
+            OutlineOffset = top - rest, OutlineRadii = new Vector2(shape.extents.x, shape.extents.z)
+        });
         return true;
     }
 
@@ -177,7 +184,7 @@ public sealed partial class JourneyCoinSupplyController
         foreach (var coin in selectedLearningCoins) coin.Model.transform.position = coin.RestPosition;
         selectedLearningCoins.Clear();
         selectingLearningCoins = draggingLearningCoins = false;
-        if (learningSelectionBox != null) learningSelectionBox.gameObject.SetActive(false);
+        ShowLearningSelection();
         return hadSelection;
     }
 
@@ -198,7 +205,7 @@ public sealed partial class JourneyCoinSupplyController
                 }
                 learningGrabPoint = point;
                 draggingLearningCoins = true;
-                if (learningSelectionBox != null) learningSelectionBox.gameObject.SetActive(false);
+                ShowLearningSelection();
                 inventory.TryPlayAbilityCoinSound(hit.Model, hit.Data.ability);
             }
             else
@@ -221,13 +228,15 @@ public sealed partial class JourneyCoinSupplyController
                 if (area.width >= 5f && area.height >= 5f)
                     selectedLearningCoins.AddRange(learningCoins.Where(coin => !coin.InFlight &&
                         area.Contains(CoinScreenPoint(coin.RestPosition))));
-                ShowLearningSelection(area, held || selectedLearningCoins.Count > 0);
+                ShowLearningSelection(held && !up ? area : null);
             }
+            else ShowLearningSelection();
             if (up || !held) selectingLearningCoins = false;
             return true;
         }
         if (!draggingLearningCoins) return false;
         if (held)
+        {
             foreach (var coin in selectedLearningCoins)
             {
                 var target = CoinScreenPoint(coin.RestPosition) + point - learningGrabPoint;
@@ -235,6 +244,8 @@ public sealed partial class JourneyCoinSupplyController
                 if (boardInput.TryCreateRay(target, out var dragRay) && dragPlane.Raycast(dragRay, out float distance))
                     coin.Model.transform.position = dragRay.GetPoint(distance);
             }
+            ShowLearningSelection();
+        }
         if (up)
         {
             int target = hasRay ? FindSupplyTarget(ray) : -1;
@@ -276,30 +287,35 @@ public sealed partial class JourneyCoinSupplyController
         Mathf.Min(selectionStart.x, end.x), Mathf.Min(selectionStart.y, end.y),
         Mathf.Max(selectionStart.x, end.x), Mathf.Max(selectionStart.y, end.y));
 
-    private void ShowLearningSelection(Rect area, bool visible)
+    private void ShowLearningSelection(Rect? area = null)
     {
-        if (visible && learningSelectionBox == null)
+        if (learningSelectionGraphic == null)
         {
+            if (!area.HasValue && selectedLearningCoins.Count == 0) return;
             var root = new GameObject("LearningCoinSelection", typeof(RectTransform), typeof(Canvas));
             root.transform.SetParent(coinContainer, false);
             var canvas = root.GetComponent<Canvas>();
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
             canvas.sortingOrder = 143;
-            var image = new GameObject("SelectionBounds", typeof(RectTransform), typeof(Image), typeof(Outline)).GetComponent<Image>();
-            image.transform.SetParent(root.transform, false);
-            image.raycastTarget = false;
-            image.color = new Color(.88f, 1f, .58f, .18f);
-            var outline = image.GetComponent<Outline>();
-            outline.effectColor = new Color(.94f, 1f, .64f, .94f);
-            outline.useGraphicAlpha = false;
-            learningSelectionBox = image.rectTransform;
-            learningSelectionBox.pivot = Vector2.zero;
+            var graphic = new GameObject("SelectionOutlines", typeof(RectTransform), typeof(CoinSelectionGraphic))
+                .GetComponent<CoinSelectionGraphic>();
+            graphic.transform.SetParent(root.transform, false);
+            graphic.raycastTarget = false;
+            var rect = graphic.rectTransform;
+            rect.anchorMin = rect.pivot = Vector2.zero;
+            rect.anchorMax = Vector2.one;
+            rect.offsetMin = rect.offsetMax = Vector2.zero;
+            learningSelectionGraphic = graphic;
         }
-        if (learningSelectionBox == null) return;
-        learningSelectionBox.gameObject.SetActive(visible);
-        learningSelectionBox.anchorMin = new Vector2(area.xMin / Screen.width, area.yMin / Screen.height);
-        learningSelectionBox.anchorMax = new Vector2(area.xMax / Screen.width, area.yMax / Screen.height);
-        learningSelectionBox.offsetMin = learningSelectionBox.offsetMax = Vector2.zero;
+        learningSelectionGraphic.BeginFrame(area);
+        foreach (var coin in selectedLearningCoins)
+        {
+            Vector3 top = coin.Model.transform.position + coin.OutlineOffset;
+            learningSelectionGraphic.AddCoin(CoinScreenPoint(top),
+                CoinScreenPoint(top + Vector3.right * coin.OutlineRadii.x),
+                CoinScreenPoint(top + Vector3.forward * coin.OutlineRadii.y));
+        }
+        learningSelectionGraphic.EndFrame();
     }
 
     private static void StampCoin(GameObject coin)

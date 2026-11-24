@@ -668,6 +668,59 @@ unity command run_script --caller plugin --skill unity-cli --file AgentScripts/K
 <tr><td>검증 범위</td><td>Unity 컴파일 성공, <a href="../Assets/Decision_YYS/ZLLMControl_HJH/Verification~/VerifyDirectLlm.cs">모의 HTTP 및 격리 저장 검증</a> 87개 통과. 새 형식의 실제 API 응답 품질과 토큰 사용량은 측정하지 않았다.</td></tr></table>
 <p><a href="../Builds/CompactDialogueReview/before-request.json">변경 전 요청</a> · <a href="../Builds/CompactDialogueReview/success-request.json">변경 후 요청</a> · <a href="../Builds/CompactDialogueReview/request-sizes.json">크기 비교</a>. 임시 컴파일용 검증 복사본 <code>Builds/CompactDialogueReview/VerifyDirectLlm.cs</code>와 격리 저장은 Git에서 제외했고 정리 대기 상태다.</p>
 </section>
+<hr><section id="board-coin-selection-outlines">
+<h2>보드 코인 범위 선택 표시</h2>
+<p>2026-11-25 · 기준 <code>5e5b792f</code>. <a href="../Assets/Decision_YYS/Scripts/Controller/Decision/JourneyCoinSupplyController.Learning.cs">JourneyCoinSupplyController.Learning.cs</a>의 기존 선택 결과를 <a href="../Assets/Decision_YYS/Scripts/Controller/Ui/CoinSelectionGraphic.cs">CoinSelectionGraphic.cs</a>에 전달한다. 드래그 범위는 투명한 내부와 얇은 점선으로 표시하고 선택된 코인에는 코인 바깥의 윤곽선을 그린다. 장식은 포인터 입력을 받지 않는다.</p>
+<table><tr><th>Play 검증</th><th>결과</th></tr>
+<tr><td>범위 변경과 확정</td><td>격리 저장으로 DecisionScene을 열고 보상 코인 3개를 보드에 착지시켰다. 포인터 좌표를 기존 처리기에 입력해 범위를 양방향으로 드래그했고, 3개에서 2개로 축소할 때 빠진 코인의 윤곽선이 바로 사라졌다. 드래그를 놓으면 윤곽선만 남았다.</td></tr>
+<tr><td>취소와 수납</td><td>취소 시 윤곽선이 사라졌다. 서로 다른 계열의 코인을 묶음으로 코인통 영역에 넣었을 때 선택이 해제됐으며, 보드 상태는 한 번 저장되고 잔액은 유지됐다.</td></tr></table>
+<p>Unity 에디터에서 검증했다. 임시 검증기와 격리 저장은 Git에서 제외했다. <a href="../Builds/CoinSelectionReview/CoinSelection.png">적용 화면</a> · <a href="../Builds/CoinSelectionReview/Play.log">검증 로그</a></p>
+</section>
+<hr><section id="mine-collector-chunk-edges">
+<h2>갱도 징수원 청크 순찰과 밤 정지</h2>
+<p>2026-11-25 · 기준 <code>5e5b792f</code>. 그날 플레이어가 있는 일반 청크의 월드 경계를 순찰 범위로 저장한다. 먼 쪽 끝에서 한 번 등장하고, 검사 대형 선두가 입구 끝에 도착했을 때 일반세 추격으로 전환한다. 추격자는 청크에 종속되지 않으며 보스 입구 1.5유닛 밖에서 대기한다. <a href="../Assets/Decision_YYS/Scripts/GameSystem/DecisionManager.Taxes.cs">등장과 고지서</a> · <a href="../Assets/Decision_YYS/Scripts/GameSystem/MineCollectorProcession.cs">순찰과 추격</a></p>
+<table><tr><th>단계</th><th>변경과 Play 검증</th></tr>
+<tr><td>등장과 검사</td><td>실제 일반 청크 0–180과 180–360, 길이가 다른 700–813 시험 청크를 사용했다. 입구 끝에 선두가 도착한 뒤 전환했다. 기준 충족 시 차감하지 않았고, 기준 미달 시 기준세 1개만 차감했다. 두 경우 모두 일반세 고지서는 추격 단계에 사용할 수 있도록 유지됐다.</td></tr>
+<tr><td>이동과 속도</td><td>기존 검사 기본 3.0유닛/초와 초기 구간의 경로별 환산 속도를 검사 3.4유닛/초로 통일했다. 추격은 2.7–3.6에서 3.8–4.7유닛/초로 변경했다. 113유닛 시험 청크에서 징수원 모델의 1초 이동량 3.4와 3.8을 확인했다. 설정은 워크북의 <code>collectorPatrol</code> 또는 <a href="../Assets/Decision_YYS/Resources/Chapters/Chapter_01/Rules.json">Rules.json</a>에서 바꿀 수 있다.</td></tr>
+<tr><td>밤 정지와 보스</td><td>낮 90초·밤 90초를 유지했다. 밤 시작 후 10초 정지는 기존 체크포인트의 갱도 시계로 복원된다. 검사 중인 무리와 이전 날 추격자가 일몰에 멈췄다가 같은 자리에서 재개했다. 보스 구역은 새 날에도 미생성이며 기존 추격자는 입구 밖에서 대기했다. <a href="../Assets/Decision_YYS/Scripts/GameSystem/ChapterDayCycle.cs">시간 계산</a> · <a href="../Assets/Decision_YYS/Scripts/GameSystem/DecisionManager.MineChapter.cs">Play 처리</a></td></tr>
+<tr><td>이어하기와 정산</td><td>다른 날짜의 두 무리와 독립 고지서를 확인했다. 납부 확정 콜백이 중복되어도 한 번만 차감되고 다른 고지서는 열려 있었다. 메인 메뉴 이어하기에서 미납 고지서와 순찰 위치·단계를 복원하고, 정산한 고지서는 다시 열리지 않았다.</td></tr></table>
+<p>Unity 6000.3.12f1 Play의 격리 저장에서 시간과 이동을 재현했다. Windows 일반 빌드와 물리 코인 납부 입력은 확인하지 않았다. 임시 검증기 <code>Builds/CollectorPatrolRouteReview/ReviewCollectorPatrolRoute.cs</code>와 격리 저장은 Git에서 제외했고 정리 대기 상태다. <a href="../Builds/CollectorPatrolRouteReview/Play.log">검증 로그</a></p>
+</section>
+<hr><section id="story-negotiation-hint-fade">
+<h2>장소 NPC 협상 힌트 페이드아웃</h2>
+<p>2026-11-25 · 협상 근거 안내가 NPC 대사를 가리는 문제를 줄였다. <a href="../Assets/Decision_YYS/Scripts/GameSystem/DecisionManager.StoryPack.cs">협상 힌트</a>는 2.5초간 표시한 뒤 <a href="../Assets/Decision_YYS/Scripts/Controller/Ui/FloatingDialogueView.cs">FloatingDialogueView</a>의 CanvasGroup으로 글씨와 배경을 0.65초 동안 함께 숨긴다.</p>
+<table><tr><th>단계</th><th>결과</th></tr>
+<tr><td>적용</td><td>협상 가능과 지능 부족 안내에 같은 시간을 적용했다. 작업 진행 등 다른 안내는 기존 표시 시간을 사용한다.</td></tr>
+<tr><td>검증</td><td>Unity Play의 DecisionScene 대화 UI에서 처음 표시, 중간 투명도, 말풍선이 사라진 뒤 NPC 대사 유지, 새 안내 재표시와 일반 안내 유지 여부를 확인했다.</td></tr></table>
+<p>임시 검증기 <code>Builds/StoryNoticeFadeReview/ReviewStoryNoticeFade.cs</code>와 격리 저장은 Git에서 제외했고 정리 대기 상태다. <a href="../Builds/StoryNoticeFadeReview/Play.log">Play 검증 로그</a></p>
+</section>
+<hr><section id="mine-inspector-waits-for-reading">
+<h2>독서 보상 선택 중 징수원 검사 대기</h2>
+<p>2026-11-25 · <a href="../Assets/Decision_YYS/Scripts/GameSystem/DecisionManager.MineChapter.cs">징수원 접촉 처리</a>에서 실제 검사 거리에 들어왔는지와 대화 UI를 열 수 있는지를 나눠 판정한다. 검사 거리에서 보상 선택이나 독서 결과가 열려 있으면 새 징수원은 자리를 지키고, 선택을 마친 뒤 해당 징수원의 기준세 검사로 이어진다.</p>
+<table><tr><th>단계</th><th>Unity Play 확인</th></tr>
+<tr><td>접촉과 대기</td><td>둘째 날의 새 징수원이 BK001 선택 중 검사 범위에 들어와 5초 분량의 이동 갱신 동안 정지했다. 보상 확정 및 결과가 표시되는 동안에도 검사 단계가 유지됐다.</td></tr>
+<tr><td>조우와 정산</td><td>독서 결과를 닫은 뒤 기준 미달에서 납부 선택지를 열었다. 기준세 확정 시 코인 1개를 차감하고, 이전 날 추격자는 자신의 일반세 고지서로 별도 조우했다.</td></tr></table>
+<p>격리 저장에서 플레이어 위치와 징수원 시간을 재현했다. 기준세는 정산 경로로 확인했다. 임시 검증기 <code>Builds/InspectorReadingReview/ReviewInspectorReading.cs</code>와 격리 저장은 Git에서 제외했고 정리 대기 상태다. <a href="../Builds/InspectorReadingReview/Play.log">Play 검증 로그</a></p>
+</section>
+<hr><section id="book-queue-daily-and-number-combos">
+<h2>즉시 책 대기열과 번호 콤보</h2>
+<p>2026-11-25 · 기준 <code>5e5b792f</code>. 자판기 입력이 성공하면 책과 번호를 만들어 즉시 FIFO 대기열에 등록한다. 배출 동작은 기존 0.6초 설정을 사용한다. 책 생성은 재고 1권을 쓰며, 리필 가격은 1개부터 같은 계열 리필마다 1개씩 증가하고 재고를 3권 채운다. 꽉 찬 대기열과 재고 부족에는 등록하지 않는다. 기존 저장에서 생성 중이던 책은 대기열 뒤에 한 번만 복원한다. <a href="../Assets/Decision_YYS/Scripts/GameSystem/MineLearningStation.Study.cs">학습과 생성</a> · <a href="../Assets/Decision_YYS/Scripts/Controller/Ui/LearningDispenserView.cs">자판기 표시</a></p>
+<p><code>Study.xlsx</code>의 <code>LearningSystem/Rules</code>에서 <code>/dailyLimitBonus</code>를 설정할 수 있다. 기본값 +2의 일반 구간별 한도는 3·4·5·7·10·15·22권이다. 첫날의 기존 최소 학습량을 적용한 뒤 보너스를 더한다. <a href="../Assets/Decision_YYS/Scripts/GameSystem/ChapterWorkbookContent.cs">설정 검사</a></p>
+<table><tr><th>단계</th><th>변경과 검증</th></tr>
+<tr><td>생성과 학습량</td><td>프로젝트 학습 규칙과 격리 저장으로 즉시 등록, 배출구 점유 시 FIFO, 만석과 재고 부족, 기존 생성 중 저장의 두 번 복원, 지능 구간별 +2를 검증했다. <a href="../Builds/BookQueueComboReview/Production.log">생성 및 학습량 로그</a></td></tr>
+<tr><td>묶음과 보상</td><td>색+숫자가 우선이며, 기본 우선순위는 색깔 20과 숫자 10이다. 숫자 전용 총량은 2·3·4권에서 각각 3·5·7개다. 같은 계열만 있으면 보조 몫도 주력에 준다. 색+숫자는 해당 색 보상에 주력 1개를 더한다. 빨노는 힘 2·지능 1, 파7·노7은 속도 2·지능 1, 빨3·파4·노5는 힘 4·속도 1·지능 1을 지급했다. 기존 색 38조합, 작가와 능력 보상, 하위 규칙 배제, 마지막 선택 전 저장 복원, 중복 정산 방지, 새 묶음 재지급을 확인했다. <a href="../Assets/Decision_YYS/Resources/Chapters/Chapter_01/AuthoredNarrative/Reading/ComboRewards.json">조합 및 보상 데이터</a> · <a href="../Assets/Decision_YYS/Scripts/GameSystem/MineLearningStation.Reading.cs">묶음 판정</a> · <a href="../Assets/Decision_YYS/Scripts/GameSystem/MineLearningStation.cs">기존 저장 필드</a> · <a href="../Builds/BookQueueComboReview/Combos.log">콤보 로그</a></td></tr>
+<tr><td>도감</td><td>기존 발견 기록을 사용하며 규칙 힌트 16개를 추가했다. 미발견 상태에서 조합 이름·색 배열·보상이 숨겨지고, 완료 후 아래에서 위로의 색·번호와 보상이 표시됐다. <a href="../Assets/Decision_YYS/Scripts/Controller/Ui/MainStoryUi.Reading.cs">도감 UI</a></td></tr></table>
+<p>Unity Play의 DecisionScene에서 자판기 버튼으로 대기열 등록과 기존 배출을 확인했다. 실제 묶음 학습 버튼으로 빨3·파4·노5를 제출했고, 집기 이후 세 권이 학습량 3권을 사용하며 보상이 한 번 지급됐다. <a href="../Builds/BookQueueComboReview/BoardPlay.log">Play 로그</a></p>
+<p>임시 검증기 <code>ReviewImmediateBooks.cs</code>, <code>ReviewNumberBookCombos.cs</code>, <code>ReviewBookBoardPlay.cs</code>와 격리 저장은 <code>Builds/BookQueueComboReview/</code>에 Git 제외 및 정리 대기 상태로 보관한다.</p>
+</section>
+<hr><section id="in-game-combination-reference">
+<h2>조합표 책의 낱장 안내</h2>
+<p>2026-11-25 · 책장의 두 번째 도감책을 열면 종이 페이지에서 실제 색 조합 38개, 숫자·혼합 규칙, 능력·작가·주제 조건을 볼 수 있다. 참고 23장과 발견 기록 1장으로 구성했다. 각 색 배열은 아래에서 위 순서로 쓰고 색을 구분했다. <a href="../Assets/Decision_YYS/Scripts/GameSystem/MineLearningStation.Reading.cs">조합 데이터 연결</a></p>
+<table><tr><th>단계</th><th>결과</th></tr>
+<tr><td>화면과 조작</td><td>이전 장, 다음 장, 페이지 번호와 발견 기록 바로가기를 연결했다. 다시 열면 첫 장을 표시한다. <a href="../Assets/Decision_YYS/Scripts/Controller/Ui/MainStoryUi.Reading.cs">페이지 UI</a> · <a href="../Assets/Decision_YYS/Scripts/Controller/Ui/LearningDispenserView.Bookshelf.cs">책장 책 이름</a></td></tr>
+<tr><td>검증</td><td>Unity 에디터에서 실제 도감 UI를 열고 24장, 처음·마지막 이동 제한, 발견 기록 바로가기와 다른 도감 책을 확인했다. 화면 렌더링과 게임 내 마우스 입력은 확인하지 않았다. <a href="../Builds/ComboReferenceReview/Verification.log">결과 로그</a></td></tr></table>
+<p>임시 검증기 <code>Builds/ComboReferenceReview/ReviewComboReference.cs</code>와 격리 저장은 Git에서 제외했고 정리 대기 상태다.</p>
+</section>
 </body></html>
 
 

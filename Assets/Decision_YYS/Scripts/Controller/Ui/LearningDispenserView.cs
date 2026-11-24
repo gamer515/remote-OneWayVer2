@@ -13,7 +13,6 @@ public sealed partial class LearningDispenserView : MonoBehaviour
     [SerializeField] private Transform queueBottom, dynamicRoot;
     [SerializeField] private Vector3 queueStep = new Vector3(0,.126f,0);
     [SerializeField] private float studyQueueHeight = 3.7f;
-    [SerializeField] private Vector3 generationSlotOffset = new Vector3(0, 4.47f, -.04f);
     [SerializeField] private GameObject queuedTilePrefab;
     [SerializeField] private GameObject[] learningBookPrefabs;
     [SerializeField] private Transform[] outletPath;
@@ -294,17 +293,6 @@ public sealed partial class LearningDispenserView : MonoBehaviour
         {
             SetHover(taxNotice, screenPoint, keepOnScreen: true);
             return;
-        }
-        if (!IsDraggingBook && station?.Progress?.producing is MineLearningJob producing)
-        {
-            Vector2 center = viewCamera.WorldToScreenPoint(queueBottom.TransformPoint(generationSlotOffset));
-            Vector2 corner = viewCamera.WorldToScreenPoint(queueBottom.TransformPoint(generationSlotOffset + new Vector3(.34f, .44f, 0)));
-            if (Mathf.Abs(screenPoint.x - center.x) <= Mathf.Abs(corner.x - center.x) &&
-                Mathf.Abs(screenPoint.y - center.y) <= Mathf.Abs(corner.y - center.y))
-            {
-                SetHover($"{station.GetBookDisplayName(producing)} / 생성 중 {Mathf.Max(0, producing.generationRemaining):0.0}초", screenPoint);
-                return;
-            }
         }
         if (!IsDraggingBook && !draggingCodex && CodexUnderPointer(screenPoint) is int codex && codex >= 0)
         {
@@ -608,8 +596,6 @@ public sealed partial class LearningDispenserView : MonoBehaviour
             for (int i = 0; i < progress.queued.Count; i++)
                 ShowBook(progress.queued[i], .60f * Mathf.Min(1f, 8f / rows))
                     .SetPositionAndRotation(StudyQueuePosition(i, rows), queueBottom.rotation);
-            if (progress.producing != null)
-                ShowBook(progress.producing, .78f).SetPositionAndRotation(queueBottom.TransformPoint(generationSlotOffset), queueBottom.rotation);
             UpdateStudyQueueTicks(queueCapacity, rows, progress.queued.Count);
         }
         if (hoverPointerPosition is Vector2 pointerPosition && !(HasOpenReading && station.CanMoveBooks))

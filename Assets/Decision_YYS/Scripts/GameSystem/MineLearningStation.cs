@@ -55,6 +55,7 @@ public readonly struct LearningComboReward
     public string numberComboRewardId;
     public int numberComboChoicesRemaining;
     public int numberComboBookCount;
+    // Keep the original save fields. The key can now also identify a number or mixed stack.
     public string colorComboPattern;
     public int colorComboChoicesRemaining;
     public MineLearningJob producing;
@@ -87,7 +88,6 @@ public sealed partial class MineLearningStation : MonoBehaviour
         public float seconds;
         public string author, skill;
         public int requiredAbility, skillReward;
-        public float generationSeconds;
     }
 
     [Serializable] public sealed class BookCatalog { public BookDefinition[] books; }
@@ -200,7 +200,7 @@ public sealed partial class MineLearningStation : MonoBehaviour
         readingBooks[StrengthTutorialBook] = ReadContent("Reading/StrengthTutorial");
         progress.active ??= new List<MineLearningJob>();
         progress.queued ??= new List<MineLearningJob>();
-        InitializeStudyState();
+        bool migratedProduction = InitializeStudyState();
         if (study != null && status != null)
         {
             status.gameObject.SetActive(false);
@@ -224,7 +224,7 @@ public sealed partial class MineLearningStation : MonoBehaviour
         foreach (var job in progress.active.Concat(progress.queued)
                      .Concat(progress.stored ?? Enumerable.Empty<MineLearningJob>()).Append(progress.producing))
             numberedBooks |= AssignBookNumber(job);
-        if (numberedBooks) save?.Invoke();
+        if (numberedBooks || migratedProduction) save?.Invoke();
     }
     public bool Request(int ability)
     {

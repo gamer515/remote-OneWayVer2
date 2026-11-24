@@ -167,41 +167,26 @@ public partial class DecisionManager
     }
 
     internal static bool TryPlanCollectorSpawn(EnvController.RegisteredTerrain terrain, float playerZ,
-        float leadDistance, out MineCollectorProgress state)
+        out MineCollectorProgress state)
     {
         state = null;
         var registry = terrain.Registry;
         float origin = registry.GetChunkWorldPosition(0).z;
         if (playerZ < origin || playerZ >= terrain.EndZ) return false;
-        float chunkLength = registry.GetChunkWorldPosition(1).z - origin;
-        int current = Mathf.Clamp(Mathf.FloorToInt((playerZ - origin) / chunkLength), 0, terrain.ChunkCount - 1);
-        for (int chunk = current; chunk < Mathf.Min(current + 2, terrain.ChunkCount); chunk++)
+        for (int chunk = 0; chunk < terrain.ChunkCount; chunk++)
         {
             float start = registry.GetChunkWorldPosition(chunk).z;
-            float end = registry.GetChunkWorldPosition(chunk + 1).z;
-            // Use the entry lane or the clearing just beyond an actual authored facility.
-            float spawn = terrain.Data.places
-                .Where(place => place.chunkIndex == chunk && place.authoredLocationId != null)
-                .Select(place => registry.GetWorldPosition(place).z + place.storyLocationDepth.y + 2f)
-                .Append(start + 6f)
-                .Where(z => z >= playerZ + leadDistance && z >= start + 2f && z <= end - 6f)
-                .DefaultIfEmpty(float.PositiveInfinity).Min();
-            if (!float.IsFinite(spawn)) continue;
+            float end = chunk == terrain.ChunkCount - 1 ? terrain.EndZ : registry.GetChunkWorldPosition(chunk + 1).z;
+            if (playerZ < start || playerZ >= end) continue;
             state = new MineCollectorProgress
             {
                 collectorPending = true, taxPatrolActive = true,
                 collectorChunkIndex = chunk, collectorGlobalChunk = terrain.FirstChunk + chunk,
-                collectorRouteStartZ = start, collectorRouteEndZ = end, collectorZ = spawn
+                collectorRouteStartZ = start, collectorRouteEndZ = end, collectorZ = end
             };
             return true;
         }
         return false;
-    }
-
-    private bool TryPlanCollectorSpawn(EnvController.RegisteredTerrain terrain, float playerZ, out MineCollectorProgress state)
-    {
-        float lead = mineRules.collectorPatrol?.spawnLeadDistance ?? 25f;
-        return TryPlanCollectorSpawn(terrain, playerZ, Mathf.Clamp(lead, 20f, 30f), out state);
     }
 
     private MineTaxInvoice AnnounceMineTax(int day) =>

@@ -20,6 +20,11 @@ public partial class MainStoryUi
     private bool showBookCatalogue;
     private UnityEngine.UI.ScrollRect comboGuideScroll;
     private TextMeshProUGUI comboGuideText;
+    private TextMeshProUGUI comboPageNumber;
+    private UnityEngine.UI.Button previousComboPage, nextComboPage, comboDiscoveries;
+    private MineLearningStation comboGuideStation;
+    private (string Title, string Body)[] comboPages;
+    private int comboPage;
     private int comboGuideInputFrame = -1, guideStudyCount = -1;
     private bool hideReadingForReward;
     internal bool IsReadingOpen => hideReadingForReward || (readingPanel != null && readingPanel.activeInHierarchy);
@@ -128,8 +133,14 @@ public partial class MainStoryUi
         if (IsReadingOpen || IsComboGuideOpen) return;
         if (comboGuideCanvas == null) BuildComboGuide();
         showBookCatalogue = bookCatalogue;
-        comboGuideTitle.text = bookCatalogue ? "발견한 책" : "발견한 콤보";
-        comboGuideHint.text = bookCatalogue ? "지금까지 얻은 책" : "완성한 콤보와 추가 보상";
+        comboGuideStation = station;
+        comboPages = bookCatalogue ? null : station.ComboReferencePages().ToArray();
+        comboPage = 0;
+        comboGuideTitle.text = bookCatalogue ? "발견한 책" : "조합표";
+        previousComboPage.gameObject.SetActive(!bookCatalogue);
+        nextComboPage.gameObject.SetActive(!bookCatalogue);
+        comboDiscoveries.gameObject.SetActive(!bookCatalogue);
+        comboPageNumber.gameObject.SetActive(!bookCatalogue);
         SetComboGuideOpen(true);
         UpdateComboGuide(station);
     }
@@ -140,6 +151,20 @@ public partial class MainStoryUi
         if (guideStudyCount == studyCount) return;
         guideStudyCount = studyCount;
 
+        if (!showBookCatalogue)
+        {
+            previousComboPage.interactable = comboPage > 0;
+            nextComboPage.interactable = comboPage < comboPages.Length;
+            comboPageNumber.text = $"{comboPage + 1} / {comboPages.Length + 1}";
+            if (comboPage < comboPages.Length)
+            {
+                var page = comboPages[comboPage];
+                comboGuideHint.text = page.Title;
+                SetComboGuideText(page.Body + "\n\n빨강 힘  ·  파랑 속도  ·  노랑 지능  ·  청록 매력");
+                return;
+            }
+        }
+        comboGuideHint.text = showBookCatalogue ? "지금까지 얻은 책" : "발견한 콤보와 추가 보상";
         string[] colors = { "#2557A8", "#AA3538", "#845800", "#15746C" };
         var text = new StringBuilder();
         if (showBookCatalogue)
@@ -153,9 +178,9 @@ public partial class MainStoryUi
         }
         else
         {
-            foreach (var combo in station.DiscoveredColorCombos)
-                text.Append("<b>").Append(combo.Name).Append("</b>  /  색깔 콤보\n  ")
-                    .AppendLine(FormatGuideRewards(combo.Coins)).AppendLine();
+            foreach (var (reward, condition) in station.DiscoveredStackCombos)
+                text.Append("<b>").Append(reward.Name).Append("</b>  /  ").AppendLine(condition)
+                    .Append("  <b>콤보 추가 보상</b>  ").AppendLine(FormatGuideRewards(reward.Coins)).AppendLine();
         }
         foreach (var combo in showBookCatalogue ? station.ReadingCombos.Take(0) : station.ReadingCombos)
         {
@@ -189,8 +214,19 @@ public partial class MainStoryUi
             }
             text.Append("  <b>콤보 추가 보상</b>  ").AppendLine(FormatGuideRewards(station.ExistingComboCoins(combo))).AppendLine();
         }
-        comboGuideText.text = text.Length > 0 ? text.ToString() :
-            showBookCatalogue ? "아직 발견한 책이 없습니다." : "아직 발견한 콤보가 없습니다.";
+        if (text.Length == 0)
+            text.AppendLine(showBookCatalogue ? "아직 발견한 책이 없습니다." : "아직 발견한 콤보가 없습니다.");
+        if (!showBookCatalogue && station.ComboGuideHints.Any())
+        {
+            text.AppendLine().AppendLine("<b>조합 힌트</b>");
+            foreach (var hint in station.ComboGuideHints) text.Append("• ").AppendLine(hint);
+        }
+        SetComboGuideText(text.ToString());
+    }
+
+    private void SetComboGuideText(string text)
+    {
+        comboGuideText.text = text;
         float width = comboGuideScroll.viewport.rect.width;
         if (width <= 0f)
         {
@@ -199,6 +235,21 @@ public partial class MainStoryUi
         }
         var content = comboGuideScroll.content;
         content.sizeDelta = new Vector2(0f, comboGuideText.GetPreferredValues(comboGuideText.text, width, Mathf.Infinity).y + 18f);
+    }
+
+    private void TurnComboPage(int direction)
+    {
+        ShowComboPage(comboPage + direction);
+    }
+
+    private void ShowComboPage(int page)
+    {
+        comboPage = Mathf.Clamp(page, 0, comboPages.Length);
+        comboGuideInputFrame = Time.frameCount;
+        guideStudyCount = -1;
+        comboGuideScroll.StopMovement();
+        comboGuideScroll.content.anchoredPosition = Vector2.zero;
+        UpdateComboGuide(comboGuideStation);
     }
 
     private static string FormatGuideRewards(params int[][] rewards)
@@ -243,6 +294,10 @@ public partial class MainStoryUi
         var shade = ReadingRect(root, "ComboGuideModal", Vector2.zero, Vector2.one);
         comboGuidePanel = shade.gameObject;
         shade.gameObject.AddComponent<UnityEngine.UI.Image>().color = new Color(.09f, .06f, .035f, .62f);
+        var binding = ReadingRect(shade, "CodexBinding", new Vector2(.19f, .097f), new Vector2(.81f, .881f));
+        binding.gameObject.AddComponent<UnityEngine.UI.Image>().color = new Color(.30f, .16f, .09f);
+        var leaves = ReadingRect(shade, "CodexPaperEdges", new Vector2(.198f, .107f), new Vector2(.802f, .876f));
+        leaves.gameObject.AddComponent<UnityEngine.UI.Image>().color = new Color(.77f, .63f, .40f);
         var body = ReadingPage(shade, "ComboGuidePage", .20f, .80f);
         body.anchorMin = new Vector2(.20f, .12f);
         body.anchorMax = new Vector2(.80f, .88f);
@@ -251,8 +306,10 @@ public partial class MainStoryUi
         var rewardHint = comboGuideHint = ReadingText(body, "ComboGuideRewardHint", 22f, new Vector2(.05f, .825f), new Vector2(.75f, .875f));
         rewardHint.text = "독서 보상은 선택지별 최소~최대치입니다.";
         AddCloseCodexButton(body);
+        comboDiscoveries = CreateCodexButton(body, "ComboDiscoveries", "발견 기록", .60f, .78f, .87f, .96f);
+        comboDiscoveries.onClick.AddListener(() => ShowComboPage(comboPages.Length));
 
-        var viewport = ReadingRect(body, "ComboGuideViewport", new Vector2(.05f, .06f), new Vector2(.95f, .81f));
+        var viewport = ReadingRect(body, "ComboGuideViewport", new Vector2(.07f, .13f), new Vector2(.93f, .79f));
         viewport.gameObject.AddComponent<UnityEngine.UI.Image>().color = new Color(1f, 1f, 1f, 0f);
         viewport.gameObject.AddComponent<UnityEngine.UI.RectMask2D>();
         comboGuideScroll = viewport.gameObject.AddComponent<UnityEngine.UI.ScrollRect>();
@@ -266,21 +323,32 @@ public partial class MainStoryUi
         comboGuideText = ReadingText(content, "ComboGuideRows", 24f, Vector2.zero, Vector2.one);
         comboGuideText.enableAutoSizing = false;
         comboGuideText.richText = true;
+        previousComboPage = CreateCodexButton(body, "PreviousComboPage", "이전 장", .07f, .23f, .035f, .10f);
+        nextComboPage = CreateCodexButton(body, "NextComboPage", "다음 장", .77f, .93f, .035f, .10f);
+        previousComboPage.onClick.AddListener(() => TurnComboPage(-1));
+        nextComboPage.onClick.AddListener(() => TurnComboPage(1));
+        comboPageNumber = ReadingText(body, "ComboPageNumber", 22f, new Vector2(.38f, .035f), new Vector2(.62f, .10f));
+        comboPageNumber.alignment = TextAlignmentOptions.Center;
         comboGuidePanel.SetActive(false);
     }
 
-    private void AddCloseCodexButton(RectTransform parent)
+    private void AddCloseCodexButton(RectTransform parent) =>
+        CreateCodexButton(parent, "CloseComboGuide", "닫기", .80f, .95f, .87f, .96f)
+            .onClick.AddListener(() => SetComboGuideOpen(false));
+
+    private UnityEngine.UI.Button CreateCodexButton(RectTransform parent, string name, string caption,
+        float left, float right, float bottom, float top)
     {
-        var rect = ReadingRect(parent, "CloseComboGuide", new Vector2(.80f, .87f), new Vector2(.95f, .96f));
+        var rect = ReadingRect(parent, name, new Vector2(left, bottom), new Vector2(right, top));
         var image = rect.gameObject.AddComponent<UnityEngine.UI.Image>();
         image.color = new Color(.83f, .70f, .49f);
         var button = rect.gameObject.AddComponent<UnityEngine.UI.Button>();
         UiInteractionAudio.Bind(button);
         button.targetGraphic = image;
-        button.onClick.AddListener(() => SetComboGuideOpen(false));
         var label = ReadingText(rect, "Label", 23f, Vector2.zero, Vector2.one);
-        label.text = "닫기";
+        label.text = caption;
         label.alignment = TextAlignmentOptions.Center;
+        return button;
     }
 
     private static RectTransform ReadingRect(Transform parent, string name, Vector2 min, Vector2 max)

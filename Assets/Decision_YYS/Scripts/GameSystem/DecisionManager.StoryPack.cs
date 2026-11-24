@@ -242,7 +242,7 @@ public partial class DecisionManager
         var hint = PackEvidenceLearningHint(story);
         uiController.SetStoryNotice((string)hint?[ready ? "ready" : "below"] ?? (ready
             ? "이제 통행료를 줄일 근거를 댈 수 있겠어."
-            : "통행료를 깎으려면 근거가 더 필요해. 지능 코인을 얻고 다시 와 보자."));
+            : "통행료를 깎으려면 근거가 더 필요해. 지능 코인을 얻고 다시 와 보자."), fadeOut: true);
     }
 
     private void PresentStoryPack()
