@@ -721,6 +721,14 @@ unity command run_script --caller plugin --skill unity-cli --file AgentScripts/K
 <tr><td>검증</td><td>Unity 에디터에서 실제 도감 UI를 열고 24장, 처음·마지막 이동 제한, 발견 기록 바로가기와 다른 도감 책을 확인했다. 화면 렌더링과 게임 내 마우스 입력은 확인하지 않았다. <a href="../Builds/ComboReferenceReview/Verification.log">결과 로그</a></td></tr></table>
 <p>임시 검증기 <code>Builds/ComboReferenceReview/ReviewComboReference.cs</code>와 격리 저장은 Git에서 제외했고 정리 대기 상태다.</p>
 </section>
+<hr><section id="white-board-coin-bundles">
+<h2>흰 보드의 코인 묶음과 징수 납부</h2>
+<p>2026-11-25 · 흰 보드의 빈 곳에서 범위를 드래그하면 이미 바닥에 놓인 배출 코인만 묶인다. 기존 점선과 윤곽선을 사용한다. 묶음은 일반세 저울의 오른쪽 접시나 연두색 직접 납부 보드에 내려놓을 수 있고, 코인통 위에서는 능력별로 반환된다. 지원하지 않는 곳에 놓으면 시작 위치로 돌아간다. <a href="../Assets/Decision_YYS/Scripts/Controller/Decision/JourneyCoinSupplyController.PaymentSelection.cs">범위 선택과 일괄 이동</a></p>
+<table><tr><th>단계</th><th>검증</th></tr>
+<tr><td>선택·이동</td><td>Unity Play에서 힘·속도 두 코인의 범위 선택, 선택 유지, 밖에 놓기, 코인통 반환, 오른쪽 접시 적재, 연두색 보드 위 착지를 기존 포인터 처리기에 테스트 좌표를 넣어 확인했다.</td></tr>
+<tr><td>징수</td><td>확정 전에 두 경로 모두 잔액이 유지됐다. 기존 미납 일반세의 납부 확정 경로가 실제로 힘·속도 1개씩 한 번만 차감하고 해당 고지서를 닫는지 확인했다. <a href="../Assets/Decision_YYS/Scripts/GameSystem/DecisionManager.Taxes.cs">납부 안내와 정산</a></td></tr></table>
+<p>임시 검증기 <code>Builds/WhiteCoinBundleReview/ReviewWhiteCoinBundle.cs</code>와 격리 저장은 Git에서 제외했고 정리 대기 상태다. <a href="../Builds/WhiteCoinBundleReview/Play.log">Play 검증 로그</a></p>
+</section>
 </body></html>
 
 

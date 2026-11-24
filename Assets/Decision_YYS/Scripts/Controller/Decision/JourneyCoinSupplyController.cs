@@ -221,7 +221,7 @@ public sealed partial class JourneyCoinSupplyController
             !AbilityPayment.IsValid(cost) || cost == null || !Array.Exists(cost, amount => amount > 0))
             return false;
         if (!useTaxPan) SetTaxScale(null);
-        CancelLearningSelection();
+        CancelCoinSelection();
         paymentCost = (int[])cost.Clone();
         paymentGrid = grid;
         paymentBowlOpening = bowlOpening;
@@ -263,7 +263,7 @@ public sealed partial class JourneyCoinSupplyController
     public void HandleBoardPaymentInput(Action ready, Action cancelled)
     {
         if (!CanStageCoins || absorbingPayment) return;
-        if (HasBoardPayment && draggedPaymentCoin == null && PaymentCoinCountMatches())
+        if (HasBoardPayment && draggedPaymentCoin == null && !DraggingPaymentBundle && PaymentCoinCountMatches())
         {
             ready();
             return;
@@ -271,7 +271,7 @@ public sealed partial class JourneyCoinSupplyController
 #if ENABLE_INPUT_SYSTEM
         if (Keyboard.current?.escapeKey.wasPressedThisFrame == true)
         {
-            if (CancelLearningSelection()) return;
+            if (CancelCoinSelection()) return;
             if (HasBoardPayment) cancelled(); else ClearBoardPayment();
             return;
         }
@@ -282,7 +282,7 @@ public sealed partial class JourneyCoinSupplyController
 #else
         if (Input.GetKeyDown(KeyCode.Escape))
         {
-            if (CancelLearningSelection()) return;
+            if (CancelCoinSelection()) return;
             if (HasBoardPayment) cancelled(); else ClearBoardPayment();
             return;
         }
@@ -294,6 +294,7 @@ public sealed partial class JourneyCoinSupplyController
 
     private void HandleBoardPaymentPointer(Vector2 point, bool down, bool held, bool up, Action ready)
     {
+        if (draggedPaymentCoin == null && HandlePaymentSelectionPointer(point, down, held, up)) return;
         if (draggedPaymentCoin == null && HandleLearningPointer(point, down, held, up)) return;
         if (!HasBoardPayment && taxScale == null && draggedPaymentCoin != null &&
             RefillSlot?.Invoke(point, draggedPaymentCoin.type) is Transform refill)
@@ -563,6 +564,7 @@ public sealed partial class JourneyCoinSupplyController
 
     public void ClearBoardPayment(bool keepBowlCoins = false)
     {
+        CancelPaymentSelection();
         foreach (var coin in paymentCoins)
             if (!keepBowlCoins || !coin.inPaymentBowl) RemovePaymentCoin(coin);
         paymentCoins.Clear();
@@ -580,6 +582,7 @@ public sealed partial class JourneyCoinSupplyController
     internal void SetTaxScale(TaxScaleView scale)
     {
         if (taxScale == scale) return;
+        CancelPaymentSelection();
         if (grabbedFromTaxPan && draggedPaymentCoin != null)
         {
             RemovePaymentCoin(draggedPaymentCoin);
@@ -606,6 +609,7 @@ public sealed partial class JourneyCoinSupplyController
 
     internal Transform[] TakeCollectorCoins(out bool allOnScale, out Vector3 boardCoinPosition)
     {
+        CancelPaymentSelection();
         allOnScale = paymentCoins.Count > 0 && paymentCoins.All(coin => coin.onTaxPan);
         var boardCoin = paymentCoins.FirstOrDefault(coin => !coin.onTaxPan);
         boardCoinPosition = boardCoin != null ? boardCoin.model.transform.position : Vector3.zero;

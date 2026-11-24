@@ -158,7 +158,7 @@ public partial class DecisionManager : MonoBehaviour
     {
         if (endTaxCollection != null)
         {
-            journeyCoinSupply?.CancelLearningSelection();
+            journeyCoinSupply?.CancelCoinSelection();
             if (collectorCollectionView == null || !collectorCollectionView.isActiveAndEnabled)
                 FinishTaxCollectionPresentation();
             return;
@@ -168,11 +168,11 @@ public partial class DecisionManager : MonoBehaviour
         TickLearning();
         if (uiController?.IsReadingOpen == true)
         {
-            journeyCoinSupply?.CancelLearningSelection();
+            journeyCoinSupply?.CancelCoinSelection();
             return;
         }
         if (uiController?.IsComboGuideInputBlocked == true)
-            journeyCoinSupply?.CancelLearningSelection();
+            journeyCoinSupply?.CancelCoinSelection();
         if (uiController?.IsComboGuideInputBlocked != true)
         {
             if (journeyCoinSupply?.HasBoardPayment == true)

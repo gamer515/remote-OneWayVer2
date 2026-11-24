@@ -30,8 +30,9 @@ public partial class DecisionManager
         SetYellowInputInteractable(false);
         journeyBoardInput?.SetChoiceCount(0);
         presentationController.ExitChoice();
-        string placement = useNpcBowl ? "코인을 꺼내 나무 통 안에 넣으세요." : "코인통에서 꺼내 초록 보드에 올리세요.";
-        if (useTaxPan) placement = "오른쪽 접시에 올린 코인을 먼저 사용합니다. 부족한 코인은 초록 보드에 올리세요.";
+        string placement = useNpcBowl ? "코인을 꺼내 나무 통 안에 넣으세요." : "코인을 꺼내 초록 보드에 올리세요.";
+        if (collectorPayment) placement += "\n흰 보드에서 범위를 그려 여러 코인을 옮길 수 있어요.";
+        if (useTaxPan) placement = "오른쪽 접시에 올린 코인을 먼저 사용합니다.\n흰 보드의 코인은 묶어서 오른쪽 접시나 초록 보드에 올리세요.";
         presentationController.ShowInteraction($"필요 코인 {DescribeTaxCost(cost)}\n{placement}\nEsc 취소", "납부");
         return true;
     }

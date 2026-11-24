@@ -291,7 +291,7 @@ public sealed partial class JourneyCoinSupplyController
     {
         if (learningSelectionGraphic == null)
         {
-            if (!area.HasValue && selectedLearningCoins.Count == 0) return;
+            if (!area.HasValue && selectedLearningCoins.Count == 0 && selectedPaymentCoins.Count == 0) return;
             var root = new GameObject("LearningCoinSelection", typeof(RectTransform), typeof(Canvas));
             root.transform.SetParent(coinContainer, false);
             var canvas = root.GetComponent<Canvas>();
@@ -314,6 +314,14 @@ public sealed partial class JourneyCoinSupplyController
             learningSelectionGraphic.AddCoin(CoinScreenPoint(top),
                 CoinScreenPoint(top + Vector3.right * coin.OutlineRadii.x),
                 CoinScreenPoint(top + Vector3.forward * coin.OutlineRadii.y));
+        }
+        foreach (var coin in selectedPaymentCoins)
+        {
+            var bounds = BoardItemDrop.ItemBounds(coin.model.transform);
+            Vector3 top = new(bounds.center.x, bounds.max.y, bounds.center.z);
+            learningSelectionGraphic.AddCoin(CoinScreenPoint(top),
+                CoinScreenPoint(top + Vector3.right * bounds.extents.x),
+                CoinScreenPoint(top + Vector3.forward * bounds.extents.z));
         }
         learningSelectionGraphic.EndFrame();
     }
