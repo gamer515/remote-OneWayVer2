@@ -33,21 +33,23 @@ public class SettingController : CancelPanelController
         }
 
         resolutionDropdown.AddOptions(options);
+        resolutionDropdown.SetValueWithoutNotify(currentResolutionIndex);
         resolutionDropdown.RefreshShownValue();
     }
 
     void LoadSettings()
     {
-        // 1. 전체화면 설정 불러오기 (기본값 1 = true)
-        bool isFull = PlayerPrefs.GetInt("FullScreen", 1) == 1;
-        fullScreenToggle.isOn = isFull;
-        Screen.fullScreen = isFull;
+        bool isFull = PlayerPrefs.GetInt("FullScreen", 0) == 1;
+        fullScreenToggle.SetIsOnWithoutNotify(isFull);
+        if (Screen.fullScreen != isFull)
+            Screen.fullScreen = isFull;
 
-        // 2. 해상도 설정 불러오기
-        int savedResIndex = PlayerPrefs.GetInt("ResolutionIndex", resolutions.Count - 1);
-        resolutionDropdown.value = savedResIndex;
-
-        ApplyResolution(savedResIndex, isFull);
+        int savedResIndex = PlayerPrefs.GetInt("ResolutionIndex", -1);
+        if (savedResIndex >= 0 && savedResIndex < resolutions.Count)
+        {
+            resolutionDropdown.SetValueWithoutNotify(savedResIndex);
+            ApplyResolution(savedResIndex, isFull);
+        }
     }
 
     public void OnResolutionChanged(int index)

@@ -185,11 +185,13 @@ internal static class LocalStoryGemmaDialogue
     }
 
     internal static async Task<(string Text, string Json, string Backend)> Generate(
-        string messages, int seed, CancellationToken token)
+        string messages, int seed, CancellationToken token, bool nextRun = false)
     {
         string root = Path.Combine(Application.streamingAssetsPath, "LocalStory");
+        var sampling = LocalStorySampling.Dialogue();
+        if (nextRun) sampling = sampling.WithTokenLimit(256);
         var output = await LocalStoryInference.Generate(root, messages, Grammar, seed, token, null,
-            LocalStorySampling.Dialogue(), LocalStoryTestModels.PathFor(root, LocalStoryTestModel.Gemma));
+            sampling, LocalStoryTestModels.PathFor(root, LocalStoryTestModel.Gemma));
         return (DirectLlmProtocol.Dialogue(output.json), output.json, output.backend);
     }
 }

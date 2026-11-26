@@ -66,6 +66,12 @@ public sealed class LocalStoryRuntimeService : MonoBehaviour
     private static LocalStoryRuntimeService instance;
     private CancellationTokenSource cancellation;
     private CancellationTokenSource preparation;
+    private DirectStoryGenerator dialogueGenerator;
+
+#if UNITY_STANDALONE_WIN && !UNITY_EDITOR
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+    private static void LimitPlayerFrameRate() => Application.targetFrameRate = 60;
+#endif
     public static bool IsBusy => instance != null && instance.cancellation != null;
     public static bool IsPreparing => instance != null && instance.preparation != null;
     public static string PreparationStatus { get; private set; } = "미검사";
@@ -161,7 +167,8 @@ public sealed class LocalStoryRuntimeService : MonoBehaviour
         {
             await Task.Yield();
             token.ThrowIfCancellationRequested();
-            var generator = new DirectStoryGenerator(DirectLlmSettings.CreateProjectClient());
+            var generator = dialogueGenerator ??= new DirectStoryGenerator(
+                DirectLlmSettings.CreateProjectClient(gameplay: true));
             var deferred = new HashSet<(int Run, string Job)>();
             LocalStoryDialogueJob job;
             while (!token.IsCancellationRequested && (job = LocalStoryDialogueQueue.Next(storage, deferred)) != null)

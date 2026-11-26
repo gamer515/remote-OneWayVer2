@@ -317,6 +317,13 @@ public static class LocalStoryInference
         string selectedModel = modelPath ?? LocalStoryTestModels.PathFor(root, LocalStoryTestModel.Gemma);
         // Load Unity Resources on the caller thread, before entering native/background work.
         var inference=(JObject)LocalStoryPrompt.Policy["inference"].DeepClone();
+        // Keep the Windows player GPU available for rendering. Editor benchmarks still use the configured backend.
+#if UNITY_STANDALONE_WIN && !UNITY_EDITOR
+        inference["gpuLayers"] = 0;
+        inference["cpuThreads"] = Math.Min((int)inference["cpuThreads"], 3);
+        inference["batchSize"] = Math.Min((int)inference["batchSize"], 64);
+#endif
+        bool useGpu = (int)inference["gpuLayers"] > 0;
         using var local = CancellationTokenSource.CreateLinkedTokenSource(token);
         LocalStoryLifetime.Register(local);
         bool acquired = false;
@@ -340,8 +347,8 @@ public static class LocalStoryInference
                 {
                     ReleaseUnderGate();
                     var loading = System.Diagnostics.Stopwatch.StartNew();
-                    try { session = new LocalStoryNative(runtime, selectedModel, true, inference); }
-                    catch (Exception e) when (!(e is FileNotFoundException) && !(e is OperationCanceledException) && !(e is PlatformNotSupportedException))
+                    try { session = new LocalStoryNative(runtime, selectedModel, useGpu, inference); }
+                    catch (Exception e) when (useGpu && !(e is FileNotFoundException) && !(e is OperationCanceledException) && !(e is PlatformNotSupportedException))
                     {
                         token.ThrowIfCancellationRequested(); sessionFallback = e.Message;
                         try { session = new LocalStoryNative(runtime, selectedModel, false, inference); }

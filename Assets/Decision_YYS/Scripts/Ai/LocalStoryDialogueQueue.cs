@@ -309,14 +309,16 @@ public static partial class LocalStoryDialogueQueue
         {
             token.ThrowIfCancellationRequested();
             LocalStoryLog.Write(LocalStoryLogStage.Working,
-                $"{job.storyPath} / 대사 {line.cardIndex + 1} / API {error.Attempts.Count}곳 실패 / 내장 Gemma 사용",
+                $"{job.storyPath} / 대사 {line.cardIndex + 1} / " +
+                string.Join(", ", error.Attempts.Select(attempt => $"{attempt.Provider}:{attempt.Code}")) +
+                " / 내장 Gemma 사용",
                 activity: "대사 생성");
             string messages = LocalStoryGemmaDialogue.Messages(line, job.emotion, original, nextRun: true);
             int seed = unchecked(job.sourceRun * 1000003 + line.cardIndex);
             string model = LocalStoryTestModels.Name(LocalStoryTestModel.Gemma);
             try
             {
-                var result = await LocalStoryGemmaDialogue.Generate(messages, seed, token);
+                var result = await LocalStoryGemmaDialogue.Generate(messages, seed, token, nextRun: true);
                 return (result.Text, LocalStoryGemmaDialogue.ProviderName, model);
             }
             catch (DirectLlmFailure)

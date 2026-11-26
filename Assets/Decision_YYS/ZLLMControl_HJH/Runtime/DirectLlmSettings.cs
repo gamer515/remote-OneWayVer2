@@ -37,10 +37,13 @@ namespace OneWay.Decision.DirectLlm
         public DirectLlmOptions options = new DirectLlmOptions();
         public DirectLlmClient CreateClient() => new DirectLlmClient(options);
 
-        public static DirectLlmClient CreateProjectClient()
+        public static DirectLlmClient CreateProjectClient(bool gameplay = false)
         {
-            var settings = Resources.Load<DirectLlmSettings>(nameof(DirectLlmSettings));
-            return settings == null ? new DirectLlmClient(new DirectLlmOptions()) : settings.CreateClient();
+            var options = Resources.Load<DirectLlmSettings>(nameof(DirectLlmSettings))?.options ?? new DirectLlmOptions();
+            return gameplay
+                ? new DirectLlmClient(options, requestTimeoutSeconds: Math.Min(options.timeoutSeconds, 12),
+                    providerCooldown: TimeSpan.FromMinutes(2))
+                : new DirectLlmClient(options);
         }
     }
 

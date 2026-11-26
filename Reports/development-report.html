@@ -729,6 +729,69 @@ unity command run_script --caller plugin --skill unity-cli --file AgentScripts/K
 <tr><td>징수</td><td>확정 전에 두 경로 모두 잔액이 유지됐다. 기존 미납 일반세의 납부 확정 경로가 실제로 힘·속도 1개씩 한 번만 차감하고 해당 고지서를 닫는지 확인했다. <a href="../Assets/Decision_YYS/Scripts/GameSystem/DecisionManager.Taxes.cs">납부 안내와 정산</a></td></tr></table>
 <p>임시 검증기 <code>Builds/WhiteCoinBundleReview/ReviewWhiteCoinBundle.cs</code>와 격리 저장은 Git에서 제외했고 정리 대기 상태다. <a href="../Builds/WhiteCoinBundleReview/Play.log">Play 검증 로그</a></p>
 </section>
+<hr><section id="windows-x64-game-build-20261126">
+<h2>Windows x64 게임 빌드</h2>
+<p>2026-11-26 · 현재 작업 트리에서 Unity 6000.3.12f1의 Windows x64 Mono 플레이어를 만들었다. 첫 씬은 MainMenuScene이며 기존 빌드 씬 5개와 LocalStoryBuild의 Gemma 배포 절차를 사용했다.</p>
+<table><tr><th>단계</th><th>상태</th><th>검증</th></tr>
+<tr><td>실행 파일 생성</td><td>완료</td><td>Unity 빌드가 성공했고 OneWay.exe의 PE 형식과 x64 아키텍처, 플레이어 데이터 및 필수 라이브러리를 확인했다.</td></tr>
+<tr><td>실행 및 모델 확인</td><td>완료</td><td>OneWayInVc 창의 응답과 플레이어 초기화를 확인했다. 게임의 시작 로그에서 3,155,051,328바이트 Gemma 모델의 SHA-256 사전 검사가 끝났다. 화면 캡처 도구의 Windows 프로세스 시작 오류 1920으로 화면을 직접 검증하지 못했다. 메뉴 입력, 이후 플레이, AI 응답 생성은 검증 범위에 포함하지 않았다.</td></tr>
+<tr><td>결과 정리</td><td>완료</td><td>아래 링크로 실행 파일과 빌드 로그를 확인할 수 있다.</td></tr></table>
+<p><a href="../Builds/Windows-x64/OneWay.exe">OneWay.exe</a> · <a href="../Logs/windows-x64-build.log">Unity 빌드 로그</a> · <a href="../ProjectSettings/EditorBuildSettings.asset">빌드 씬 설정</a> · <a href="../Assets/Decision_YYS/Editor/LocalStoryBuild.cs">Gemma 배포 처리</a></p>
+<p>게임을 옮길 때는 Windows-x64 폴더를 함께 복사한다. 프로젝트에서 다시 빌드하려면 Unity 6000.3.12f1, 설치된 Gemma 모델과 기존 Windows 추론 런타임을 사용해 Windows x64 Mono 대상으로 빌드한다. 이번 작업에서 만든 임시 코드는 없다.</p>
+</section>
+<hr><section id="windows-x64-windowed-20261126">
+<h2>Windows x64 창 모드 빌드</h2>
+<p>2026-11-26 · Windows 플레이어가 크기를 조절할 수 있는 1024×768 일반 창으로 시작하도록 변경했다. 메뉴에서는 저장된 전체 화면 선택과 해상도를 계속 적용하고, 새 설정의 기본값은 창 모드를 사용한다.</p>
+<table><tr><th>단계</th><th>상태</th><th>확인 내용</th></tr>
+<tr><td>창 모드 설정</td><td>완료</td><td>Unity Player 설정에 창 모드와 크기 조절을 적용했다. 게임 설정 메뉴에서 기본 해상도를 모니터의 최대 해상도로 덮어쓰던 동작을 제거했다.</td></tr>
+<tr><td>Windows x64 빌드</td><td>완료</td><td>Unity 6000.3.12f1 빌드와 기존 Gemma 패키지의 무결성 검사가 성공했다.</td></tr>
+<tr><td>실행 확인</td><td>완료</td><td>화면 옵션 없이 실행해 제목 표시줄이 있는 크기 조절 가능 창과 최대화되지 않은 상태를 확인했다. 실행 후 기록된 해상도는 1024×768이고 화면 모드는 Windowed였다. 설정 메뉴에서 화면 모드를 전환하는 입력은 검증하지 않았다.</td></tr></table>
+<p><a href="../Builds/Windows-x64-Windowed/OneWay.exe">창 모드 OneWay.exe</a> · <a href="../Logs/windows-x64-windowed-build.log">빌드 로그</a> · <a href="../ProjectSettings/ProjectSettings.asset">Unity Player 설정</a> · <a href="../Assets/MainMenu/MainMenuSceneScript/SettingController.cs">게임 화면 설정</a></p>
+<p>다른 PC로 옮길 때는 Windows-x64-Windowed 폴더를 함께 복사한다. 이번 작업에서 만든 임시 코드는 없다.</p>
+</section>
+<hr><section id="windows-x64-1280x720-20261126">
+<h2>Windows x64 1280×720 창 모드 빌드</h2>
+<p>2026-11-26 · Unity Player 기본 해상도를 1280×720으로 변경했다. 1920×1080과 같은 16:9 비율이다.</p>
+<table><tr><th>단계</th><th>상태</th><th>확인 내용</th></tr>
+<tr><td>기본 크기 설정</td><td>완료</td><td>요청에 따라 초기 960×540 크기에서 1280×720으로 확대했다.</td></tr>
+<tr><td>Windows x64 빌드</td><td>완료</td><td>Unity 6000.3.12f1 빌드가 성공했다.</td></tr>
+<tr><td>실행 확인</td><td>완료</td><td>실행 옵션 없이 열었다. Windows 창 정보에서 게임 영역이 1280×720픽셀이고 제목 표시줄이 있으며 크기를 조절할 수 있음을 확인했다. Gemma 모델의 시작 무결성 검사도 완료했다.</td></tr></table>
+<p><a href="../Builds/Windows-x64-1280x720/OneWay.exe">OneWay.exe</a> · <a href="../Logs/windows-x64-1280x720-build.log">빌드 로그</a> · <a href="../ProjectSettings/ProjectSettings.asset">Unity Player 설정</a></p>
+<p>다른 PC로 옮길 때는 Windows-x64-1280x720 폴더를 함께 복사한다. 이번 작업에서 만든 임시 코드는 없다.</p>
+</section>
+<hr><section id="windows-x64-1600x900-20261126">
+<h2>Windows x64 1600×900 창 모드 빌드</h2>
+<p>2026-11-26 · 기본 창 크기를 1600×900으로 키웠다. 1920×1080과 같은 16:9 비율이다.</p>
+<table><tr><th>단계</th><th>상태</th><th>확인 내용</th></tr>
+<tr><td>기본 크기 설정</td><td>완료</td><td>Unity Player 기본 해상도를 1600×900으로 설정했다.</td></tr>
+<tr><td>Windows x64 빌드</td><td>완료</td><td>Unity 6000.3.12f1 빌드와 Gemma 패키지 무결성 검사가 성공했다.</td></tr>
+<tr><td>실행 확인</td><td>완료</td><td>화면 옵션 없이 실행했다. 게임 영역이 1600×900픽셀이며 제목 표시줄이 있고, 최대화되지 않은 상태에서 크기 조절이 가능한 것을 확인했다.</td></tr></table>
+<p><a href="../Builds/Windows-x64-1600x900/OneWay.exe">OneWay.exe</a> · <a href="../Logs/windows-x64-1600x900-build.log">빌드 로그</a> · <a href="../ProjectSettings/ProjectSettings.asset">Unity Player 설정</a></p>
+<p>다른 PC로 옮길 때는 Windows-x64-1600x900 폴더를 함께 복사한다. 이번 작업에서 만든 임시 코드는 없다.</p>
+</section>
+<hr><section id="windows-x64-1760x990-20261126">
+<h2>Windows x64 1760×990 창 모드 빌드</h2>
+<p>2026-11-26 · 기본 창 크기를 1600×900에서 1760×990으로 변경했다. 가로와 세로를 각각 10% 확대했고 비율은 16:9다.</p>
+<table><tr><th>단계</th><th>상태</th><th>확인 내용</th></tr>
+<tr><td>기본 크기 설정</td><td>완료</td><td>Unity Player 기본 해상도를 1760×990으로 설정했다.</td></tr>
+<tr><td>Windows x64 빌드</td><td>완료</td><td>Unity 6000.3.12f1 빌드와 Gemma 패키지 검증이 성공했다.</td></tr>
+<tr><td>실행 확인</td><td>완료</td><td>화면 옵션 없이 실행했다. 게임 영역이 1760×990픽셀이고 제목 표시줄이 있으며, 최대화되지 않은 상태에서 크기 조절이 가능함을 확인했다.</td></tr></table>
+<p><a href="../Builds/Windows-x64-1760x990/OneWay.exe">OneWay.exe</a> · <a href="../Logs/windows-x64-1760x990-build.log">빌드 로그</a> · <a href="../ProjectSettings/ProjectSettings.asset">Unity Player 설정</a></p>
+<p>다른 PC로 옮길 때는 Windows-x64-1760x990 폴더를 함께 복사한다. 이번 작업에서 만든 임시 코드는 없다.</p>
+</section>
+<hr><section id="oneway-network-stability-20261127">
+<h2>Windows 게임 종료 및 네트워크 실패 안정화</h2>
+<p>2026-11-27 · 1760×990 창 모드에서 게임 렌더링과 대사 생성이 함께 동작할 때 발생한 종료를 조사했다.</p>
+<table><tr><th>단계</th><th>상태</th><th>결과</th></tr>
+<tr><td>종료 원인 확인</td><td>완료</td><td>보존된 OneWay 충돌 로그 4건 중 3건에서 Direct3D 12가 GPU 전용 메모리 예산을 994,507,980~1,049,885,900바이트 초과한 뒤 0x8007000e를 기록했다. 나머지 1건은 NVIDIA 드라이버 충돌로 기록됐다. 정상 실행 로그에서도 외부 API 실패 직후 내장 Gemma 대체가 이어졌다. 이 PC의 검사 환경에는 실행기에 필요한 공급자 키가 없었다. 캠퍼스 Wi‑Fi 자체의 장애나 실제 전송 여부는 확정할 수 없다.</td></tr>
+<tr><td>그래픽과 로컬 모델</td><td>완료</td><td>Windows 플레이어는 Direct3D 11, 60 FPS 목표, CPU AVX2 Gemma를 사용한다. 추론은 CPU 스레드 최대 3개, 배치 최대 64로 제한했고 다음 회차용 로컬 대사에는 256토큰 상한을 둔다. 모델은 20초 동안 사용하지 않으면 유휴 상태에서 해제한다. 창 기본값은 1760×990이다.</td></tr>
+<tr><td>외부 API 장애 대응</td><td>완료</td><td>게임 대사 작업은 공급자당 최대 12초를 기다린다. 연결 오류, 타임아웃, 권한 또는 호출 제한 등으로 사용 불가한 공급자는 2분 동안 건너뛴다. 사용 가능한 API를 우선 사용하고, 필요하면 로컬 모델을 사용한다. 대사 검증에서 탈락한 줄은 원문을 표시한다.</td></tr>
+<tr><td>모의 장애와 프레임 검증</td><td>완료</td><td>같은 배포 설정의 검증 사본으로 메인 메뉴를 거쳐 DecisionScene에 진입했다. 타임아웃, HTTP 429, 연결 실패를 모의한 두 번의 검증에서 외부 요청은 공급자당 1회로 총 3회였다. 두 실행 모두 CPU로 대사 3줄의 처리를 마쳤고, 2줄이 채택됐으며 1줄은 원문을 유지했다. 프레임 p95는 각각 22.6ms와 34.6ms였고 각각의 최대값은 463ms와 117ms였다. Windows 카운터를 사용한 두 번째 실행에서 프로세스 최대 작업 집합은 4,426MiB였고, 표본 GPU 전용 메모리 최대값은 798MiB였다. 홍익대 Wi‑Fi 실측은 수행하지 않았다.</td></tr>
+<tr><td>배포본과 바로가기</td><td>완료</td><td>배포본과 검증본을 Windows x64로 빌드했고 Gemma 패키지의 SHA-256 검사를 완료했다. 바탕화면 OneWay 바로가기를 새 배포본으로 갱신했다. 바로가기는 저장된 창 크기의 영향을 막기 위해 1760×990 창으로 실행한다.</td></tr></table>
+<p><a href="../Builds/Windows-x64-1760x990-Stable/OneWay.exe">안정화 OneWay.exe</a> · <a href="../Logs/oneway-stability-build.log">배포 빌드 로그</a> · <a href="../Builds/OneWayStabilityProbe/Batch/PerformanceSummary.json">프레임 및 메모리 측정</a> · <a href="../Builds/OneWayStabilityProbe/Batch/PerformanceResources.log">검증 플레이어 로그</a></p>
+<p>소스는 <a href="../Assets/Decision_YYS/Scripts/Ai/LocalStoryNative.cs">로컬 추론 설정</a>, <a href="../Assets/Decision_YYS/ZLLMControl_HJH/Runtime/DirectLlmClient.cs">공급자 재시도 처리</a>, <a href="../Assets/Decision_YYS/Scripts/Ai/LocalStoryPlayerSmoke.cs">격리 실행 검증</a>에서 확인할 수 있다. 다른 PC로 옮길 때는 Windows-x64-1760x990-Stable 폴더 전체를 복사한다.</p>
+<p>열려 있던 에디터에서 Unity 패키지의 문자 변환 오류가 발생해, 영문 경로 작업 복사본에서 배포 및 검증 빌드를 수행했다. 작업 복사본 <code>C:\Users\PC\AppData\Local\Temp\OneWayStability-20261126160529</code> 안의 임시 빌드 스크립트 <code>Assets/Editor/OneWayStabilityBuild.cs</code>와 작업 복사본은 정리 대기 상태다. 검증 사본과 로그는 <code>Builds/OneWayStabilityProbe/Batch</code>에 보관한다.</p>
+</section>
 </body></html>
 
 

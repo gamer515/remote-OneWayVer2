@@ -47,6 +47,8 @@ namespace OneWay.Decision.DirectLlm
         private readonly DirectLlmEndpoint[] endpoints;
         private readonly int timeoutSeconds;
         private readonly bool roundRobin;
+        private readonly TimeSpan providerCooldown;
+        private readonly Dictionary<DirectLlmProvider, long> unavailableUntil = new();
         private readonly IDirectLlmTransport transport;
         private readonly Func<DirectLlmProvider, DirectLlmCredentials> credentials;
         private int next, busy;
@@ -54,7 +56,8 @@ namespace OneWay.Decision.DirectLlm
         public string Identity { get; }
 
         public DirectLlmClient(DirectLlmOptions options, IDirectLlmTransport transport = null,
-            Func<DirectLlmProvider, DirectLlmCredentials> credentials = null)
+            Func<DirectLlmProvider, DirectLlmCredentials> credentials = null,
+            int? requestTimeoutSeconds = null, TimeSpan providerCooldown = default)
         {
             if (options?.endpoints == null || options.timeoutSeconds < 3 || options.timeoutSeconds > 120)
                 throw new ArgumentException("Direct LLM options require endpoints and a 3–120 second timeout.");
@@ -63,12 +66,17 @@ namespace OneWay.Decision.DirectLlm
                 throw new ArgumentException("Each provider may occur only once.");
             endpoints = options.endpoints.Where(e => e.enabled).Select(e => new DirectLlmEndpoint(e.provider, e.model)).ToArray();
             if (endpoints.Length == 0) throw new ArgumentException("Enable at least one provider.");
-            timeoutSeconds = options.timeoutSeconds; roundRobin = options.roundRobin;
+            timeoutSeconds = requestTimeoutSeconds ?? options.timeoutSeconds;
+            if (timeoutSeconds < 3 || timeoutSeconds > 120)
+                throw new ArgumentOutOfRangeException(nameof(requestTimeoutSeconds));
+            roundRobin = options.roundRobin;
+            this.providerCooldown = providerCooldown;
             this.transport = transport ?? new UnityDirectLlmTransport();
             this.credentials = credentials ?? DirectLlmCredentials.FromEnvironment;
             // Configuration snapshot: changing an Inspector asset requires creating a new client.
             Identity = "DirectHTTP-v1|" + string.Join("|", endpoints.Select(e => e.provider + ":" + e.model)) +
-                "|roundRobin=" + roundRobin + "|timeout=" + timeoutSeconds;
+                "|roundRobin=" + roundRobin + "|timeout=" + timeoutSeconds +
+                (providerCooldown > TimeSpan.Zero ? "|cooldown=" + providerCooldown.TotalSeconds : "");
         }
 
         public Task<DirectLlmResult> GenerateAsync(string messages, int maxTokens, int seed,
@@ -104,6 +112,12 @@ namespace OneWay.Decision.DirectLlm
                     var endpoint = endpoints[(start + i) % endpoints.Length];
                     var attempt = new DirectLlmAttempt { Provider = endpoint.provider };
                     attempts.Add(attempt);
+                    if (unavailableUntil.TryGetValue(endpoint.provider, out long retryAt) && Stopwatch.GetTimestamp() < retryAt)
+                    {
+                        attempt.Code = "ProviderCooldown";
+                        continue;
+                    }
+
                     var watch = Stopwatch.StartNew();
                     try
                     {
@@ -134,10 +148,18 @@ namespace OneWay.Decision.DirectLlm
                     // No raw server body, key, URL, prompt or exception message is retained in diagnostics.
                     catch (Exception) { attempt.Code = "ConfigurationOrTransportError"; }
                     finally { attempt.Seconds = watch.Elapsed.TotalSeconds; }
+                    if (providerCooldown > TimeSpan.Zero && ShouldCoolDown(attempt))
+                        unavailableUntil[attempt.Provider] = Stopwatch.GetTimestamp() +
+                            (long)(providerCooldown.TotalSeconds * Stopwatch.Frequency);
                 }
                 throw new DirectLlmGenerationException(attempts);
             }
             finally { Volatile.Write(ref busy, 0); }
         }
+
+        private static bool ShouldCoolDown(DirectLlmAttempt attempt) =>
+            attempt.Code is "Timeout" or "ConfigurationOrTransportError" or "MissingOrInvalidKey" or "InvalidCloudflareAccount" ||
+            (attempt.Code == "HttpOrNetworkError" &&
+                (attempt.HttpStatus is 0 or 401 or 403 or 429 || attempt.HttpStatus >= 500));
     }
 }
