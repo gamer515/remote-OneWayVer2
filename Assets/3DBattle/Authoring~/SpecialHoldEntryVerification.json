@@ -1,0 +1,21 @@
+{
+  "passed": true,
+  "checks": 86,
+  "scenarios": [
+    "idle hold, full special, both input callback orders: False",
+    "idle hold, full special, both input callback orders: True",
+    "short click starts normal attack",
+    "energy below 50",
+    "hold from normal two stops after normal three",
+    "third-to-fourth carried hold rejected, dt=0.01",
+    "third-to-fourth carried hold rejected, dt=0.03333334",
+    "third-to-fourth carried hold rejected, dt=0.05",
+    "release and freshly hold during fourth attack",
+    "press before fourth motion begins rejected",
+    "release before first special dash",
+    "cancel and focus-loss input cleanup"
+  ],
+  "scene": "isolated unsaved play-mode scene",
+  "motions": "PlayerCombatAttackSet",
+  "holdRecognitionSeconds": 0.2
+}

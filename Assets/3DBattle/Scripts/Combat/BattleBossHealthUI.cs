@@ -13,6 +13,7 @@ namespace OneWay.Battle3D
         public Text valueText;
         [Min(.01f)] public float revealSeconds = .7f;
         [Range(.1f, 1f)] public float screenWidth = .94f;
+        public bool alignToTop;
         public float RevealProgress { get; private set; }
         public bool IsRevealing { get; private set; }
         BattleStage shownStage;
@@ -71,8 +72,9 @@ namespace OneWay.Battle3D
             float width = Mathf.SmoothStep(0, screenWidth, RevealProgress);
             if (bar != null)
             {
-                bar.anchorMin = new Vector2(.5f - width * .5f, 0);
-                bar.anchorMax = new Vector2(.5f + width * .5f, 0);
+                float edge = alignToTop ? 1 : 0;
+                bar.anchorMin = new Vector2(.5f - width * .5f, edge);
+                bar.anchorMax = new Vector2(.5f + width * .5f, edge);
             }
             var boss = shownStage != null ? shownStage.boss : null;
             if (visibility != null)

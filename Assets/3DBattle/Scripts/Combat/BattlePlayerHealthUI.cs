@@ -9,14 +9,17 @@ namespace OneWay.Battle3D
         public RectTransform fill;
         public RectTransform damageFill;
         public Text valueText;
+        public Text energyValueText;
         public DebugPlayerSpecialCombo energy;
         public BattlePlayerVitalsGraphic vitals;
         readonly BattleHealthBarMotion motion = new BattleHealthBarMotion();
         float lastMaximum;
         Text lastValueText;
         double displayedCurrent = double.NaN, displayedMaximum = double.NaN;
+        Text lastEnergyText;
+        double displayedEnergy = double.NaN, displayedEnergyMaximum = double.NaN;
 
-        void OnEnable() { motion.Reset(); lastValueText = null; Refresh(); }
+        void OnEnable() { motion.Reset(); lastValueText = lastEnergyText = null; Refresh(); }
         void LateUpdate() => Tick(Time.unscaledDeltaTime);
         public void Refresh() => Tick(0);
 
@@ -29,7 +32,8 @@ namespace OneWay.Battle3D
             if (maximum != lastMaximum || !Application.isPlaying) motion.Reset();
             lastMaximum = maximum;
             motion.Update(ratio, deltaTime, fill, damageFill);
-            if (vitals != null) vitals.SetValues(motion.Displayed, motion.DamageEdge, energy != null ? energy.Gauge01 : 0);
+            if (vitals != null) vitals.SetValues(motion.Displayed, motion.DamageEdge,
+                energy != null ? energy.Gauge01 : 0, energy != null ? energy.maxGauge : 100);
             // Keep animating the bars even when the rounded numeric label is unchanged.
             if (valueText != null && valueText.isActiveAndEnabled)
             {
@@ -42,6 +46,19 @@ namespace OneWay.Battle3D
                 }
             }
             else lastValueText = null;
+            if (energyValueText != null && energyValueText.isActiveAndEnabled)
+            {
+                float maximumEnergy = energy != null ? Mathf.Max(1, energy.maxGauge) : 0;
+                float currentEnergy = energy != null ? energy.Gauge : 0;
+                double roundedEnergy = System.Math.Round(currentEnergy, 0, System.MidpointRounding.AwayFromZero);
+                double roundedMaximumEnergy = System.Math.Round(maximumEnergy, 0, System.MidpointRounding.AwayFromZero);
+                if (lastEnergyText != energyValueText || displayedEnergy != roundedEnergy || displayedEnergyMaximum != roundedMaximumEnergy)
+                {
+                    energyValueText.text = $"{currentEnergy:0}/{maximumEnergy:0}";
+                    lastEnergyText = energyValueText; displayedEnergy = roundedEnergy; displayedEnergyMaximum = roundedMaximumEnergy;
+                }
+            }
+            else lastEnergyText = null;
         }
     }
 }

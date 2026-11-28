@@ -38,7 +38,11 @@ namespace OneWay.Battle3D
         float AttackDashStart => AuthoredFinisher ? Mathf.Max(27, SpecialRules.finisherDashStartFrame) : 27;
         float AttackDashEnd => AuthoredFinisher ? Mathf.Max(AttackDashStart + .1f, SpecialRules.finisherDashEndFrame) : 30;
         public bool CanEnterSpecial => SpecialRules != null && !IsSpecialCombo && SpecialRules.Ready &&
-            ((IsActive && !InPreparation && SequenceIndex == 3 && jumpGateOpened) || (!IsActive && specialWindowRemaining > 0));
+            ((specialHoldOrigin == SpecialHoldOrigin.Idle && !IsActive) ||
+             (specialHoldOrigin == SpecialHoldOrigin.Jump &&
+              ((IsActive && !InPreparation && SequenceIndex == 3 && jumpGateOpened) || (!IsActive && specialWindowRemaining > 0))));
+        enum SpecialHoldOrigin { None, Idle, Jump }
+        SpecialHoldOrigin specialHoldOrigin;
         DebugPlayerSpecialCombo specialRules;
         bool attackHeld, jumpGateOpened, specialInterrupted, pendingNormalPress;
         bool specialEnergyPending;
@@ -55,6 +59,9 @@ namespace OneWay.Battle3D
         Vector3 direction;
         float groundY, previousHeight, retreated;
         Collider[] jumpObstacles;
+        bool CanAcceptAttack => player != null && !player.IsDefeated && motions != null &&
+            (locomotion == null || !locomotion.enabled ||
+             (!locomotion.DefenseMode && !locomotion.Rolling && !locomotion.Parrying && !locomotion.KnockedBack));
 
         void Awake() { player = GetComponent<BattlePlayerController>(); motor = GetComponent<CharacterController>(); locomotion = GetComponent<NewPlayerLocomotion>(); feel = GetComponent<DebugPlayerCombatFeel>(); specialRules = GetComponent<DebugPlayerSpecialCombo>(); }
         public void ProcessInput()
@@ -77,7 +84,7 @@ namespace OneWay.Battle3D
         {
             bool released = attackHeld && !held;
             attackHeld = held;
-            if (!held) attackHeldSeconds = 0;
+            if (!held) { attackHeldSeconds = 0; specialHoldOrigin = SpecialHoldOrigin.None; }
             if (!released || SpecialRules == null) return;
             if (IsSpecialCombo && !FinisherCommitted)
             {
@@ -89,26 +96,33 @@ namespace OneWay.Battle3D
             {
                 specialWindowRemaining = 0;
                 pendingNormalPress = false;
-                RequestAttack();
+                if (CanAcceptAttack) StartNormalAttack();
             }
         }
         void DropAttackHold()
         {
             attackHeld = false;
             attackHeldSeconds = 0;
+            specialHoldOrigin = SpecialHoldOrigin.None;
             pendingNormalPress = false;
             specialWindowRemaining = 0;
             if (IsSpecialCombo && !FinisherCommitted) CancelSpecial();
         }
         public void RequestAttack()
         {
-            if (!Application.isPlaying || motions == null || player == null || player.IsDefeated) return;
+            if (!Application.isPlaying || !CanAcceptAttack) return;
             if (SpecialRules != null)
             {
                 if (IsSpecialCombo) return;
-                // A fifth click is a potential hold, never an unconditional link to the special.
-                if ((IsActive && SequenceIndex == 3) || (!IsActive && specialWindowRemaining > 0 && SpecialRules.Ready))
-                { pendingNormalPress = true; return; }
+                if (IsActive && SequenceIndex == 3)
+                {
+                    // Only a fresh press during the actual fourth attack can arm its special link.
+                    // A press during the transition from attack three must not carry into the jump.
+                    pendingNormalPress = true;
+                    specialHoldOrigin = InPreparation ? SpecialHoldOrigin.None : SpecialHoldOrigin.Jump;
+                    attackHeldSeconds = 0;
+                    return;
+                }
             }
             if (CombatFeel != null && settlingJump) { bufferedAttackUntil = Time.time + CombatFeel.inputBufferSeconds; return; }
             if (locomotion != null && locomotion.enabled)
@@ -118,6 +132,8 @@ namespace OneWay.Battle3D
             }
             if (IsActive)
             {
+                specialHoldOrigin = SpecialHoldOrigin.None;
+                attackHeldSeconds = 0;
                 if (!InPreparation && Frame > current.chainFrame)
                 {
                     if (CombatFeel != null) bufferedAttackUntil = Time.time + CombatFeel.inputBufferSeconds;
@@ -126,6 +142,22 @@ namespace OneWay.Battle3D
                 Queued = true;
                 return;
             }
+            if (SpecialRules != null && SpecialRules.Ready)
+            {
+                // Decide click versus hold before playing any normal attack or applying its damage.
+                pendingNormalPress = true;
+                specialHoldOrigin = SpecialHoldOrigin.Idle;
+                attackHeldSeconds = 0;
+                specialWindowRemaining = 0;
+                bufferedAttackUntil = -1;
+                return;
+            }
+            StartNormalAttack();
+        }
+        void StartNormalAttack()
+        {
+            specialHoldOrigin = SpecialHoldOrigin.None;
+            attackHeldSeconds = 0;
             bufferedAttackUntil = -1;
             specialWindowRemaining = 0;
             jumpGateOpened = pendingNormalPress = false;
@@ -167,10 +199,13 @@ namespace OneWay.Battle3D
         }
         bool TryStartSpecial()
         {
-            if (!CanEnterSpecial || !attackHeld || attackHeldSeconds + .00001f < SpecialRules.holdRecognitionSeconds ||
+            if (!CanAcceptAttack || !CanEnterSpecial || !attackHeld || attackHeldSeconds + .00001f < SpecialRules.holdRecognitionSeconds ||
                 settlingJump || (locomotion != null && (locomotion.DefenseMode || locomotion.Rolling || locomotion.Parrying || locomotion.KnockedBack))) return false;
             specialEnergyPending = true;
             bool fromJump = IsActive;
+            if (!fromJump) AimAtCamera();
+            specialHoldOrigin = SpecialHoldOrigin.None;
+            attackHeldSeconds = 0;
             IsActive = IsSpecialCombo = true;
             specialInterrupted = pendingNormalPress = Queued = jumpGateOpened = false;
             FinisherCommitted = IsHoldingFinisher = false;
@@ -267,12 +302,22 @@ namespace OneWay.Battle3D
             if (dt <= 0 || (CombatFeel != null && CombatFeel.IsHitStopped)) return;
             if (SpecialRules != null)
             {
-                if (attackHeld) attackHeldSeconds += dt;
+                if (!CanAcceptAttack)
+                {
+                    specialHoldOrigin = SpecialHoldOrigin.None;
+                    pendingNormalPress = false;
+                    attackHeldSeconds = 0;
+                }
+                if (attackHeld && specialHoldOrigin != SpecialHoldOrigin.None) attackHeldSeconds += dt;
+                if (!IsActive && specialHoldOrigin == SpecialHoldOrigin.Idle)
+                {
+                    if (!TryStartSpecial() && !SpecialRules.Ready && !settlingJump) StartNormalAttack();
+                }
                 if (!IsActive && specialWindowRemaining > 0)
                 {
                     if (!TryStartSpecial()) specialWindowRemaining = Mathf.Max(0, specialWindowRemaining - dt);
                     if (!IsActive && specialWindowRemaining <= 0 && pendingNormalPress)
-                    { pendingNormalPress = false; RequestAttack(); }
+                    { pendingNormalPress = false; if (CanAcceptAttack) StartNormalAttack(); }
                 }
                 if (IsActive && !IsSpecialCombo && SequenceIndex == 3 && jumpGateOpened) TryStartSpecial();
             }
@@ -286,7 +331,7 @@ namespace OneWay.Battle3D
             }
             if (!IsActive && !settlingJump && bufferedAttackUntil >= Time.time &&
                 (locomotion == null || (!locomotion.Rolling && !locomotion.Parrying && !locomotion.DefenseMode && !locomotion.KnockedBack)))
-                RequestAttack();
+                StartNormalAttack();
             if (locomotion != null && locomotion.enabled && locomotion.Tick(dt)) return;
             if (!IsActive || dt <= 0 || current == null) return;
             float remaining = dt * 30f * Mathf.Max(.1f, playbackSpeed);
@@ -353,15 +398,22 @@ namespace OneWay.Battle3D
                         bool endedJump = SpecialRules != null && !IsSpecialCombo && SequenceIndex == 3;
                         bool endedSpecial = IsSpecialCombo;
                         bool pendingAfterJump = pendingNormalPress;
+                        bool heldDuringJump = specialHoldOrigin == SpecialHoldOrigin.Jump && attackHeld;
+                        float heldSecondsAfterJump = attackHeldSeconds;
                         bool restart = !endedSpecial && ((CombatFeel != null && bufferedAttackUntil >= Time.time) || (endedJump && pendingNormalPress && !attackHeld));
                         Finish();
-                        if (restart) RequestAttack();
+                        if (restart) StartNormalAttack();
                         else
                         {
                             if (endedJump)
                             {
                                 specialWindowRemaining = SpecialRules.specialEntryWindow;
                                 pendingNormalPress = pendingAfterJump;
+                                if (heldDuringJump)
+                                {
+                                    specialHoldOrigin = SpecialHoldOrigin.Jump;
+                                    attackHeldSeconds = heldSecondsAfterJump;
+                                }
                             }
                             break;
                         }
@@ -495,7 +547,8 @@ namespace OneWay.Battle3D
                 Vector3 toBoss = player.boss.transform.position-transform.position; toBoss.y=0;
                 if (Vector3.Angle(direction,toBoss)>75f) continue;
                 float healthBefore = player.boss.Health;
-                player.boss.TakeDamage(player.normalDamage);
+                float damage = IsSpecialCombo && SequenceIndex == 6 ? 100f : player.normalDamage;
+                player.boss.TakeDamage(damage);
                 if (player.boss.Health < healthBefore)
                 {
                     SpecialRules?.ChargeFromAttackHit();
@@ -509,6 +562,8 @@ namespace OneWay.Battle3D
         }
         void Finish(bool blendToIdle = false)
         {
+            specialHoldOrigin = SpecialHoldOrigin.None;
+            attackHeldSeconds = 0;
             specialEnergyPending = false;
             IsSpecialCombo = IsHoldingFinisher = FinisherCommitted = false;
             FinisherHoldElapsed = 0;
@@ -527,6 +582,7 @@ namespace OneWay.Battle3D
         }
         public void Cancel()
         {
+            specialHoldOrigin = SpecialHoldOrigin.None;
             bufferedAttackUntil = -1;
             pendingNormalPress = false;
             specialWindowRemaining = 0;
@@ -542,6 +598,7 @@ namespace OneWay.Battle3D
         }
         public void ResetAirRecovery()
         {
+            specialHoldOrigin = SpecialHoldOrigin.None;
             settlingJump = false;
             previousHeight = fallVelocity = 0;
             bufferedAttackUntil = -1;

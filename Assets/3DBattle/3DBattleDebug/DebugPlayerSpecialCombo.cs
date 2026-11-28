@@ -16,8 +16,14 @@ namespace OneWay.Battle3D
         public float specialCostPercent = 50;
         [Range(0, 100)] public float attackHitEnergyPercent = 5;
         [Range(0, 100)] public float parryEnergyPercent = 25;
-        [Header("After the fourth normal attack")]
-        [Min(.01f), Tooltip("Hold recognition time. A click never advances normal attacks automatically.")]
+        // Runtime overrides leave the serialized settings intact for direct scene/debug launches.
+        bool decisionEnergyConfigured;
+        float decisionAttackHitEnergy, decisionParryEnergy;
+        bool UsesFullGauge => alwaysFullGauge && !decisionEnergyConfigured;
+        float MaximumGauge => Mathf.Max(1, maxGauge);
+        const float DecisionStartingEnergy = 50f, DecisionSpecialCost = 50f;
+        [Header("Special combo entry")]
+        [Min(.01f), Tooltip("Hold from idle or freshly press during normal attack four. Normal attacks two and three never arm a special hold.")]
         public float holdRecognitionSeconds = .2f;
         [Min(0), Tooltip("Additional special-entry window after the jump's recovery ends.")]
         public float specialEntryWindow = .3f;
@@ -51,29 +57,45 @@ namespace OneWay.Battle3D
             return Mathf.Lerp(ready, finisherPreparation.length, progress);
         }
 
-        public float Gauge => alwaysFullGauge ? Mathf.Max(1, maxGauge) : Mathf.Clamp(currentGauge, 0, Mathf.Max(1,maxGauge));
-        public float Gauge01 => Gauge / Mathf.Max(1,maxGauge);
-        public float SpecialCost => Mathf.Max(1, maxGauge) * Mathf.Clamp(specialCostPercent, 1, 100) / 100f;
+        public float Gauge => UsesFullGauge ? MaximumGauge : Mathf.Clamp(currentGauge, 0, MaximumGauge);
+        public float Gauge01 => Gauge / MaximumGauge;
+        public float StartingEnergy => decisionEnergyConfigured ? DecisionStartingEnergy
+            : MaximumGauge * Mathf.Clamp01(startingEnergyPercent / 100f);
+        public float SpecialCost => decisionEnergyConfigured ? DecisionSpecialCost
+            : MaximumGauge * Mathf.Clamp(specialCostPercent, 1, 100) / 100f;
+        public float AttackHitEnergy => decisionEnergyConfigured ? decisionAttackHitEnergy
+            : MaximumGauge * Mathf.Clamp01(attackHitEnergyPercent / 100f);
+        public float ParryEnergy => decisionEnergyConfigured ? decisionParryEnergy
+            : MaximumGauge * Mathf.Clamp01(parryEnergyPercent / 100f);
         public bool Ready => Gauge + .00001f >= SpecialCost;
-        void Awake() => ResetGauge();
-        public void ResetGauge() => currentGauge = Mathf.Max(1, maxGauge) * (alwaysFullGauge ? 1 : Mathf.Clamp01(startingEnergyPercent / 100f));
-        public void ChargeFromAttackHit() => AddPercent(attackHitEnergyPercent);
-        public void ChargeFromParry() => AddPercent(parryEnergyPercent);
-        void AddPercent(float percent)
+
+        public void ConfigureDecisionEnergy(float maximum, float attackHitGain, float parryGain)
         {
-            if (!isActiveAndEnabled || alwaysFullGauge || GetComponent<BattlePlayerHealth>()?.IsAlive == false) return;
-            currentGauge = Mathf.Min(Mathf.Max(1, maxGauge), Gauge + Mathf.Max(1, maxGauge) * Mathf.Clamp01(percent / 100f));
+            maxGauge = Mathf.Max(1, maximum);
+            decisionAttackHitEnergy = Mathf.Max(0, attackHitGain);
+            decisionParryEnergy = Mathf.Max(0, parryGain);
+            decisionEnergyConfigured = true;
+        }
+
+        void Awake() => ResetGauge();
+        public void ResetGauge() => currentGauge = UsesFullGauge ? MaximumGauge : Mathf.Clamp(StartingEnergy, 0, MaximumGauge);
+        public void ChargeFromAttackHit() => AddEnergy(AttackHitEnergy);
+        public void ChargeFromParry() => AddEnergy(ParryEnergy);
+        void AddEnergy(float amount)
+        {
+            if (!isActiveAndEnabled || UsesFullGauge || GetComponent<BattlePlayerHealth>()?.IsAlive == false) return;
+            currentGauge = Mathf.Min(MaximumGauge, Gauge + Mathf.Max(0, amount));
         }
         public bool TryConsume()
         {
             if (!Ready) return false;
-            if (!alwaysFullGauge) currentGauge = Mathf.Max(0, Gauge - SpecialCost);
+            if (!UsesFullGauge) currentGauge = Mathf.Max(0, Gauge - SpecialCost);
             return true;
         }
         void OnValidate()
         {
             maxGauge = Mathf.Max(1,maxGauge);
-            currentGauge = alwaysFullGauge ? maxGauge : Mathf.Clamp(currentGauge,0,maxGauge);
+            currentGauge = UsesFullGauge ? maxGauge : Mathf.Clamp(currentGauge,0,maxGauge);
         }
     }
 }

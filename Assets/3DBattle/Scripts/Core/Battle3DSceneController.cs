@@ -60,13 +60,21 @@ namespace OneWay.Battle3D
 
         void Start()
         {
-            StartData = Battle3DEntry.TryTake(out var data)
-                ? data : Battle3DStartData.CreateDefault().WithStage(selectedStageIndex);
+            InitializeStartData();
             if (!SelectStage(StartData.StageIndex))
             {
                 Debug.LogError($"No valid 3D battle configuration for B{StartData.StageIndex}.", this);
                 if (player != null) player.enabled = false;
             }
+        }
+
+        void InitializeStartData()
+        {
+            bool received = Battle3DEntry.TryTake(out var data);
+            StartData = received ? data : Battle3DStartData.CreateDefault().WithStage(selectedStageIndex);
+            // The default Trait1..4 values are placeholders, not a Decision allocation.
+            // Apply before ResetForBattle refills health and energy for the selected stage.
+            if (received) BattlePlayerStatRules.Apply(player, data);
         }
 
         public BattleStage FindStage(int index)

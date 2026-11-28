@@ -58,19 +58,26 @@ MainMenu 시작 버튼도 로딩을 거치려면 MainMenu 담당자가 위 호�
 5. 로딩 화면 동작
 
 Open()은 목적지를 먼저 보관하고 LoadingScene을 엽니다.
-LoadingScene은 목적지를 비동기로 준비하면서 처음 5초 동안 빈 로딩바를 표시합니다.
-5초 후 준비 진행률에 맞춰 로딩바를 채웁니다. 100%를 표시한 뒤 목적지를 활성화하고 화면을 페이드합니다.
+LoadingScene은 목적지를 비동기로 준비하면서 빈 로딩바를 표시합니다.
+Battle 조작 안내는 Battle Fill Start Delay(5초), 그 외 목적지는 기존 Fill Start Delay(현재 씬 값 2초)를 사용합니다.
+해당 시간이 지나면 준비 진행률에 맞춰 로딩바를 채웁니다. 100%를 표시한 뒤 목적지를 활성화하고 화면을 페이드합니다.
 Preview Duration은 촬영 미리보기에만 적용되며 실제 로딩 길이를 강제로 늘리지 않습니다.
 목적지 Start에서 즉시 다른 씬으로 로딩을 요청하는 재개 흐름은 현재 전환 완료 후 한 번 이어서 처리합니다.
 
-Battle 문구: Assets/Loading/LoadingText/LoadBattleScene/*.txt
+Battle 화면: 마우스 조작 안내(공격/방어, 방패 꺼내기, 구르기)와 넓은 흰색 로딩바. 기존 Battle 도움말은 표시하지 않음.
 Decision 문구: Assets/Loading/LoadingText/LoadDecisionScene/*.txt
 MainMenu 문구: 표시하지 않음
-문구 폴더에 비어 있지 않은 UTF-8 txt를 추가하면 에디터에서 목록을 자동 갱신합니다.
+Decision 문구 폴더에 비어 있지 않은 UTF-8 txt를 추가하면 에디터에서 목록을 자동 갱신합니다.
+표시는 출발 씬이 아닌 목적지로 결정합니다. MainMenu -> Decision과 3DBattle -> Decision은 기존 문구와 로딩바를 유지합니다.
 
 LoadingScene을 직접 Play하면 Inspector의 Destination으로 실제 이동합니다.
 촬영용으로 로딩바만 보려면 LoadingScreen의 Preview Only를 켜세요.
 Open()을 통해 들어오면 Preview Only 설정과 관계없이 실제 목적지로 이동합니다.
+
+3DBattleScene만 열고 직접 Play하면 시작 전에 LoadingScene을 추가로 표시합니다.
+이 경로는 8초 동안 로딩바를 비운 뒤 채우며, 기존 전투 씬의 인스턴스와 Inspector 값을 그대로 이어서 사용합니다.
+전투 초기화/입력/보스 동작은 로딩바가 채워진 후 시작합니다. 처음 열린 씬만 판별하므로 재진입을 반복하지 않습니다.
+Decision -> Loading -> 3DBattle은 기존 전투 안내의 5초 설정을 사용합니다. 3DBattleDebug에는 적용하지 않습니다.
 
 6. 확인 방법
 

@@ -7,6 +7,7 @@ namespace OneWay.Battle3D
     public static class Battle3DEntry
     {
         private static Battle3DStartData pendingData;
+        public static bool HasPendingData => pendingData != null;
 
         public static bool TryTake(out Battle3DStartData data)
         {

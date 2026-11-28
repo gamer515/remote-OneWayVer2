@@ -4,7 +4,7 @@ using UnityEngine.UI;
 
 namespace OneWay.Battle3D
 {
-    // One shared metal frame. Energy colour coordinates span both slots, not each slot.
+    // Energy colours use coordinates across the entire capacity, including partial slots.
     [RequireComponent(typeof(CanvasRenderer))]
     public sealed class BattlePlayerVitalsGraphic : MaskableGraphic
     {
@@ -12,6 +12,11 @@ namespace OneWay.Battle3D
         [Range(0, 1)] public float health = 1;
         [Range(0, 1)] public float damage = 1;
         [Range(0, 1)] public float energy = .5f;
+        [Header("Layout")]
+        public bool minimalLayout;
+        [Range(0, 8)] public float minimalBarInset;
+        [Min(1)] public float energyMaximum = 100;
+        public const float EnergyRowTop = .38f, HealthRowBottom = .51f;
         [Header("Colours")]
         public Color healthBottom = new Color(.035f, .52f, .23f);
         public Color healthTop = new Color(.13f, .77f, .37f);
@@ -90,11 +95,13 @@ namespace OneWay.Battle3D
             base.OnDestroy();
         }
 
-        public void SetValues(float hp, float recentDamage, float charge)
+        public void SetValues(float hp, float recentDamage, float charge, float maximumEnergy = 100)
         {
             hp = Mathf.Clamp01(hp); recentDamage = Mathf.Clamp01(recentDamage); charge = Mathf.Clamp01(charge);
-            if (Mathf.Approximately(health, hp) && Mathf.Approximately(damage, recentDamage) && Mathf.Approximately(energy, charge)) return;
-            health = hp; damage = recentDamage; energy = charge; SetVerticesDirty();
+            maximumEnergy = Mathf.Max(1, maximumEnergy);
+            if (Mathf.Approximately(health, hp) && Mathf.Approximately(damage, recentDamage) && Mathf.Approximately(energy, charge)
+                && Mathf.Approximately(energyMaximum, maximumEnergy)) return;
+            health = hp; damage = recentDamage; energy = charge; energyMaximum = maximumEnergy; SetVerticesDirty();
         }
 
         public Color EnergyColour(float globalProgress)
@@ -107,6 +114,7 @@ namespace OneWay.Battle3D
         protected override void OnPopulateMesh(VertexHelper vh)
         {
             vh.Clear(); if (rectTransform.rect.width < 1 || rectTransform.rect.height < 1) return;
+            if (minimalLayout) { DrawMinimalBars(vh); return; }
             AppendFrame(vh);
             pointCursor = 0;
 
@@ -149,6 +157,50 @@ namespace OneWay.Battle3D
                     Polygon(vh, highlight, new Color(.78f, .92f, 1, .25f));
                 }
             }
+        }
+
+        void DrawMinimalBars(VertexHelper vh)
+        {
+            Rect r = rectTransform.rect;
+            float healthBottomY = Mathf.Lerp(r.yMin, r.yMax, HealthRowBottom);
+            float energyTopY = Mathf.Lerp(r.yMin, r.yMax, EnergyRowTop);
+            float inset = Mathf.Min(minimalBarInset, Mathf.Min(r.height * .15f, r.width * .1f));
+            Rect hp = Rect.MinMaxRect(r.xMin + inset, healthBottomY + inset, r.xMax - inset, r.yMax - inset);
+            Rect charge = Rect.MinMaxRect(r.xMin + inset, r.yMin + inset, r.xMax - inset, energyTopY - inset);
+            var emptyHealth = new Color(.012f, .055f, .035f, .85f);
+            var emptyEnergy = new Color(.015f, .022f, .06f, .85f);
+            Quad(vh, hp.xMin, hp.yMin, hp.xMax, hp.yMax, emptyHealth, emptyHealth, emptyHealth, emptyHealth);
+            Quad(vh, hp.xMin, hp.yMin, hp.xMin + hp.width * damage, hp.yMax,
+                new Color(.52f, .075f, .07f), new Color(.52f, .075f, .07f), new Color(.85f, .19f, .15f), new Color(.85f, .19f, .15f));
+            Quad(vh, hp.xMin, hp.yMin, hp.xMin + hp.width * health, hp.yMax, healthBottom, healthBottom, healthTop, healthTop);
+            Quad(vh, charge.xMin, charge.yMin, charge.xMax, charge.yMax, emptyEnergy, emptyEnergy, emptyEnergy, emptyEnergy);
+            // Two quads preserve the 75% sky-blue stop without clipping bands or allocations.
+            EnergySection(vh, charge, charge.yMax, 0, Mathf.Min(.75f, energy));
+            if (energy > .75f) EnergySection(vh, charge, charge.yMax, .75f, energy);
+            float maximum = Mathf.Max(1, energyMaximum);
+            var divider = new Color(.015f, .03f, .07f, .85f);
+            for (float value = 50; value < maximum; value += 50)
+            {
+                float x = charge.xMin + charge.width * (value / maximum);
+                Quad(vh, Mathf.Max(charge.xMin, x - 1), charge.yMin, Mathf.Min(charge.xMax, x + 1), charge.yMax, divider, divider, divider, divider);
+            }
+        }
+
+        void EnergySection(VertexHelper vh, Rect r, float top, float from, float to)
+        {
+            Color left = EnergyColour(from), right = EnergyColour(to);
+            Quad(vh, r.xMin + r.width * from, r.yMin, r.xMin + r.width * to, top, left, right, right, left);
+        }
+
+        void Quad(VertexHelper vh, float left, float bottom, float right, float top, Color bottomLeft, Color bottomRight, Color topRight, Color topLeft)
+        {
+            if (right <= left || top <= bottom) return;
+            int start = vh.currentVertCount;
+            vh.AddVert(new Vector3(left, bottom), bottomLeft * color, Vector2.zero);
+            vh.AddVert(new Vector3(right, bottom), bottomRight * color, Vector2.zero);
+            vh.AddVert(new Vector3(right, top), topRight * color, Vector2.zero);
+            vh.AddVert(new Vector3(left, top), topLeft * color, Vector2.zero);
+            vh.AddTriangle(start, start + 1, start + 2); vh.AddTriangle(start, start + 2, start + 3);
         }
 
         void DrawMetalFrame(VertexHelper vh)
